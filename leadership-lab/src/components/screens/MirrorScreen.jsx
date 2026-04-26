@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Scan, Activity, Zap, RefreshCw, Eye, Quote, Users, AlertTriangle, Share2 } from 'lucide-react';
+import { Scan, Activity, Zap, RefreshCw, Eye, Quote, Users, AlertTriangle, Share2, BookOpen, Loader2, FlaskConical } from 'lucide-react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../config/firebase.js';
 import { useAuth } from '../../hooks/useAuth.js';
@@ -9,15 +9,20 @@ import {
   getDualProfile,
   getReveals,
   getKeyEvidence,
+  getChallenges,
+  getReflections,
 } from '../../services/profileService.js';
+import { getConversations } from '../../services/conversationService.js';
 import { updateProfile } from '../../services/aiService.js';
 import { useNavigation } from '../../providers/NavigationProvider.jsx';
-import { SCREENS } from '../../config/navigation.js';
+import { SCREENS, WEEKLY_THEMES, TRACKS } from '../../config/navigation.js';
 
 const BAR_COLORS = ['teal', 'amber', 'coral', 'teal', 'amber', 'coral'];
 
 export default function MirrorScreen() {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
+  const userId = userProfile?._docId || user?.uid;
+  const currentWeek = userProfile?.currentWeek || 1;
   const { navigate } = useNavigation();
   const [profile, setProfile] = useState(null);
   const [reveals, setReveals] = useState([]);
@@ -25,21 +30,34 @@ export default function MirrorScreen() {
   const [threeSixty, setThreeSixty] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isCreating360, setIsCreating360] = useState(false);
+  const [narrativeData, setNarrativeData] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [conversations, setConversations] = useState([]);
+  const [reflections, setReflections] = useState([]);
+  const [challenges, setChallenges] = useState([]);
+  const [showJourney, setShowJourney] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
-    const unsubscribe = subscribeToProfile(user.uid, setProfile);
+    if (!userId) return;
+    const unsubscribe = subscribeToProfile(userId, setProfile);
 
     // Fetch reveals and evidence (non-realtime)
-    getReveals(user.uid).then(setReveals).catch(() => {});
-    getKeyEvidence(user.uid).then(setEvidence).catch(() => {});
+    getReveals(userId).then(setReveals).catch(() => {});
+    getKeyEvidence(userId).then(setEvidence).catch(() => {});
+    getConversations(userId, 50).then(setConversations).catch(() => {});
+    getReflections(userId).then(setReflections).catch(() => {});
+    getChallenges(userId).then(setChallenges).catch(() => {});
 
     // Fetch 360 summary
     const fn360 = httpsCallable(functions, 'labMy360Summary');
     fn360().then((result) => setThreeSixty(result.data)).catch(() => {});
 
+    // Fetch growth narrative
+    const fnNar = httpsCallable(functions, 'labMyNarrative');
+    fnNar().then((result) => setNarrativeData(result.data)).catch(() => {});
+
     return () => unsubscribe();
-  }, [user]);
+  }, [userId]);
 
   const tensions = getTensions(profile);
   const dual = getDualProfile(profile);
@@ -56,6 +74,47 @@ export default function MirrorScreen() {
       setIsRefreshing(false);
     }
   };
+
+  const handleGenerateNarrative = async () => {
+    if (isGenerating) return;
+    setIsGenerating(true);
+    try {
+      const fn = httpsCallable(functions, 'labGenerateNarrative');
+      const result = await fn();
+      setNarrativeData({
+        hasNarrative: true,
+        canGenerate: true,
+        narrative: result.data,
+      });
+    } catch {
+      // Silently fail
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Group activity by week for the Journey Timeline
+  const weeklyMap = {};
+  conversations.forEach((c) => {
+    const w = c.weekNumber || 1;
+    if (!weeklyMap[w]) weeklyMap[w] = { conversations: [], reflection: null, challenge: null, reveals: [], evidence: [] };
+    weeklyMap[w].conversations.push(c);
+  });
+  reflections.forEach((r) => {
+    const w = r.weekNumber;
+    if (!weeklyMap[w]) weeklyMap[w] = { conversations: [], reflection: null, challenge: null, reveals: [], evidence: [] };
+    weeklyMap[w].reflection = r;
+  });
+  challenges.forEach((ch) => {
+    const w = ch.weekNumber;
+    if (!weeklyMap[w]) weeklyMap[w] = { conversations: [], reflection: null, challenge: null, reveals: [], evidence: [] };
+    weeklyMap[w].challenge = ch;
+  });
+  reveals.forEach((r) => {
+    const w = r.weekNumber;
+    if (!weeklyMap[w]) weeklyMap[w] = { conversations: [], reflection: null, challenge: null, reveals: [], evidence: [] };
+    weeklyMap[w].reveals.push(r);
+  });
 
   return (
     <div className="min-h-screen pb-20 px-4 pt-6">
@@ -92,6 +151,58 @@ export default function MirrorScreen() {
         </div>
       ) : (
         <>
+          {/* Growth Narrative — top-of-mind storytelling */}
+          {(narrativeData?.hasNarrative || (currentWeek >= 2 && narrativeData?.canGenerate)) && (
+            <div className="glass-card p-6 mb-4">
+              <div className="flex items-center gap-2 mb-3">
+                <BookOpen className="text-lab-teal" size={20} />
+                <h2 className="font-semibold text-lab-navy">Your Growth Narrative</h2>
+                {narrativeData?.canGenerate && (
+                  <button
+                    onClick={handleGenerateNarrative}
+                    disabled={isGenerating}
+                    className="ml-auto text-xs font-medium text-lab-teal hover:underline disabled:opacity-50"
+                  >
+                    {isGenerating ? 'Writing...' : narrativeData?.hasNarrative ? 'Regenerate' : 'Generate'}
+                  </button>
+                )}
+              </div>
+              {isGenerating ? (
+                <div className="text-center py-6">
+                  <Loader2 className="animate-spin text-lab-teal mx-auto mb-2" size={20} />
+                  <p className="text-sm text-stone-400">
+                    Writing your story from {currentWeek} weeks of conversations...
+                  </p>
+                </div>
+              ) : narrativeData?.hasNarrative && narrativeData.narrative ? (
+                <div className="space-y-3">
+                  {narrativeData.narrative.title && (
+                    <h3 className="text-base font-semibold text-lab-navy italic">
+                      {narrativeData.narrative.title}
+                    </h3>
+                  )}
+                  <div className="prose prose-sm prose-stone max-w-none">
+                    {(narrativeData.narrative.narrative || '').split('\n\n').map((p, i) => (
+                      <p key={i} className="text-sm text-stone-600 leading-relaxed mb-3">{p}</p>
+                    ))}
+                  </div>
+                  {narrativeData.narrative.keyTheme && (
+                    <div className="bg-lab-teal/5 rounded-lg p-3">
+                      <p className="text-xs font-semibold text-lab-teal uppercase tracking-wider mb-1">
+                        Central Theme
+                      </p>
+                      <p className="text-sm text-stone-600 italic">{narrativeData.narrative.keyTheme}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-stone-500 leading-relaxed">
+                  Your story is ready to be written. Generate a narrative from your conversations to date.
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Dual Profile */}
           {(dual.presented || dual.observed) && (
             <div className="glass-card p-6 mb-4">
@@ -273,6 +384,108 @@ export default function MirrorScreen() {
               }
             }}
           />
+
+          {/* Journey Timeline — collapsible */}
+          <div className="glass-card p-6 mt-4">
+            <button
+              onClick={() => setShowJourney((v) => !v)}
+              className="w-full flex items-center justify-between"
+            >
+              <h2 className="font-semibold text-lab-navy">Journey Timeline</h2>
+              <span className="text-xs font-medium text-lab-teal">
+                {showJourney ? 'Hide' : 'Show all 16 weeks'}
+              </span>
+            </button>
+            {showJourney && (
+              <div className="mt-4 space-y-2">
+                {WEEKLY_THEMES.map((theme, idx) => {
+                  const week = theme.week;
+                  const prev = idx > 0 ? WEEKLY_THEMES[idx - 1] : null;
+                  const showTrackHeader = !prev || prev.track !== theme.track;
+                  const trackMeta = TRACKS[theme.track];
+                  const weekData = weeklyMap[week];
+                  const isActive = week <= currentWeek;
+                  const isLast = idx === WEEKLY_THEMES.length - 1;
+                  const hasData = weekData && (
+                    weekData.conversations.length > 0 ||
+                    weekData.reflection ||
+                    weekData.challenge ||
+                    weekData.reveals.length > 0
+                  );
+
+                  return (
+                    <div key={week}>
+                      {showTrackHeader && (
+                        <div className="mt-4 mb-2 first:mt-0">
+                          <p className="text-xs font-semibold text-lab-teal uppercase tracking-wider">
+                            {trackMeta?.label || theme.track}
+                            {trackMeta?.sublabel ? ` · ${trackMeta.sublabel}` : ''}
+                          </p>
+                        </div>
+                      )}
+                      <div className="flex items-start gap-3">
+                        <div className="flex flex-col items-center flex-shrink-0">
+                          <div
+                            className={`w-7 h-7 rounded-full flex items-center justify-center ${
+                              hasData ? 'bg-lab-teal/10' : isActive ? 'bg-stone-100' : 'bg-stone-50'
+                            }`}
+                          >
+                            <span
+                              className={`text-xs font-semibold ${
+                                hasData ? 'text-lab-teal' : isActive ? 'text-stone-500' : 'text-stone-300'
+                              }`}
+                            >
+                              {week}
+                            </span>
+                          </div>
+                          {!isLast && (
+                            <div className={`w-0.5 flex-1 min-h-[16px] mt-1 ${hasData ? 'bg-lab-teal/20' : 'bg-stone-100'}`} />
+                          )}
+                        </div>
+                        <div className="flex-1 pb-2">
+                          <p className={`text-sm font-medium ${hasData ? 'text-lab-navy' : 'text-stone-300'}`}>
+                            Week {week}: {theme?.shortTitle || ''}
+                          </p>
+                          {!hasData && !isActive && (
+                            <p className="text-xs text-stone-300 mt-1">Ahead</p>
+                          )}
+                          {!hasData && isActive && (
+                            <p className="text-xs text-stone-400 mt-1">No activity yet</p>
+                          )}
+                          {hasData && (
+                            <div className="mt-1.5 space-y-1.5">
+                              {weekData.reflection?.summary && (
+                                <p className="text-xs text-stone-600 leading-relaxed">
+                                  {weekData.reflection.summary}
+                                </p>
+                              )}
+                              {weekData.challenge && (
+                                <div className="flex items-start gap-1.5 text-xs text-stone-500">
+                                  <FlaskConical size={11} className="text-lab-amber mt-0.5 flex-shrink-0" />
+                                  <span>{weekData.challenge.personalizedExperiment || weekData.challenge.experiment}</span>
+                                </div>
+                              )}
+                              {weekData.reveals.filter((r) => r.status !== 'pending').slice(0, 1).map((r) => (
+                                <div key={r.id} className="flex items-start gap-1.5 text-xs text-stone-500">
+                                  <Eye size={11} className="text-lab-teal mt-0.5 flex-shrink-0" />
+                                  <span>{r.content}</span>
+                                </div>
+                              ))}
+                              {weekData.conversations.length > 0 && !weekData.reflection?.summary && (
+                                <p className="text-xs text-stone-400">
+                                  {weekData.conversations.length} conversation{weekData.conversations.length === 1 ? '' : 's'}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </>
       )}
     </div>

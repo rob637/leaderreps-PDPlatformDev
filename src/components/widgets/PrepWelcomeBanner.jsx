@@ -230,10 +230,10 @@ const PrepWelcomeBanner = () => {
     // Foundation phase - show level-based guidance
     if (isFoundationPhase) {
       if (completedMilestones === 0) {
-        return "Your Foundation journey has begun! Complete levels by practicing Real Reps and earning your certification at graduation.";
+        return "Your Foundation journey has begun! Complete levels by practicing Real Reps and earning your Foundation certificate.";
       }
       if (completedMilestones >= 5) {
-        return "Congratulations! You've completed all 5 Foundation levels. Prepare for your leadership Ascent!";
+        return "Congratulations! You've completed all 5 Foundation levels. Welcome to Ascent — your leadership journey continues.";
       }
       return `Level ${currentMilestone} of 5. Progress at your own pace — the Foundation is level-driven, not time-driven.`;
     }

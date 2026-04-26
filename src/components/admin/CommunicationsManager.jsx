@@ -20,7 +20,7 @@ const CATEGORIES = [
   { id: 'coaching', label: 'Coaching Sessions', icon: MessageSquare },
   { id: 'community', label: 'Community Events', icon: Bell },
   { id: 'notification', label: 'Scheduled Notifications', icon: Bell },
-  { id: 'milestone', label: 'Milestones & Graduation', icon: CheckCircle },
+  { id: 'milestone', label: 'Milestones & Capstone', icon: CheckCircle },
   { id: 'general', label: 'General / Test', icon: Send }
 ];
 

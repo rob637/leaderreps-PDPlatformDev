@@ -22,7 +22,8 @@ import {
   CheckCircle,
   Award,
   Mail,
-  Megaphone
+  Megaphone,
+  BarChart3
 } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
 import SystemDiagnostics from './SystemDiagnostics';
@@ -48,6 +49,7 @@ import NotificationManager from './NotificationManager';
 import CommunicationsManager from './CommunicationsManager';
 import AnnouncementsManager from './AnnouncementsManager';
 import ConditioningDashboard from './ConditioningDashboard';
+import AccountabilityInsights from './AccountabilityInsights';
 import ConditioningConfig from './ConditioningConfig';
 import UxAuditPanel from './UxAuditPanel';
 import VideoSeriesManager from './VideoSeriesManager';
@@ -161,7 +163,8 @@ const AdminPortal = () => {
         { id: 'sign-off-queue', label: 'Level Sign-Off', icon: CheckCircle },
         { id: 'coaching-cert', label: 'Leader Certification', icon: Award },
         { id: 'leader-profiles', label: 'Leader Profiles', icon: FileText },
-        { id: 'conditioning', label: 'Conditioning', icon: Zap }
+        { id: 'conditioning', label: 'Conditioning', icon: Zap },
+        { id: 'assessment-insights', label: 'Assessment Insights', icon: BarChart3 }
       ]
     },
     {
@@ -209,6 +212,8 @@ const AdminPortal = () => {
         return <LevelSignOffQueue />;
       case 'session-attendance':
         return <SessionAttendanceQueue />;
+      case 'assessment-insights':
+        return <AccountabilityInsights />;
       case 'coaching-cert':
         return <CoachingCertificationQueue />;
       // 'library' tab removed - Programs/Workouts/Skills now managed as LOVs

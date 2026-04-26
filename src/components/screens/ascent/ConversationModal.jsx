@@ -1,0 +1,174 @@
+// src/components/screens/ascent/ConversationModal.jsx
+//
+// Lead Team — Conversation drill-down modal.
+// Shows: tagline, when/avoid, framework steps, prompt starters, CTAs.
+// "Wow but simple" — clean motion, no clutter, copy that earns trust.
+
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  X, Target, MessageSquare, HelpCircle, Compass, Users,
+  PlayCircle, Send, Calendar, Copy, Check,
+} from 'lucide-react';
+import { getFrameworkById } from './frameworks.js';
+
+const ICONS = { Target, MessageSquare, HelpCircle, Compass, Users };
+
+const ConversationModal = ({ conversation, onClose, navigate }) => {
+  const [copiedIdx, setCopiedIdx] = useState(null);
+
+  if (!conversation) return null;
+  const Icon = ICONS[conversation.icon] || MessageSquare;
+  const framework = getFrameworkById(conversation.frameworkId);
+  const accent = conversation.accent || '#47A88D';
+
+  const copyStarter = async (text, idx) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedIdx(idx);
+      setTimeout(() => setCopiedIdx(null), 1500);
+    } catch (_) {
+      /* clipboard unavailable */
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ y: 40, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 40, opacity: 0 }}
+          transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+          className="bg-white dark:bg-slate-800 w-full sm:max-w-2xl sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div
+            className="px-6 py-5 text-white relative"
+            style={{ background: `linear-gradient(135deg, ${accent}, ${accent}dd)` }}
+          >
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="flex items-start gap-3 pr-10">
+              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center shrink-0">
+                <Icon className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="text-xs uppercase tracking-wider opacity-80">Lead Team · Conversation</div>
+                <h2 className="text-2xl font-extrabold mt-0.5">{conversation.title}</h2>
+                <p className="text-sm opacity-90 mt-1">{conversation.tagline}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="overflow-y-auto px-6 py-5 space-y-5">
+            {/* When / Avoid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-800 p-3">
+                <div className="text-[11px] uppercase tracking-wider font-bold text-emerald-700 dark:text-emerald-300">When to use</div>
+                <p className="text-sm text-slate-700 dark:text-slate-200 mt-1">{conversation.when}</p>
+              </div>
+              <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 p-3">
+                <div className="text-[11px] uppercase tracking-wider font-bold text-amber-700 dark:text-amber-300">What to avoid</div>
+                <p className="text-sm text-slate-700 dark:text-slate-200 mt-1">{conversation.avoid}</p>
+              </div>
+            </div>
+
+            {/* Framework */}
+            {framework && (
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900/40 border-b border-slate-200 dark:border-slate-700">
+                  <div className="text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400">Framework</div>
+                  <div className="font-bold text-corporate-navy dark:text-white">{framework.name}</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">{framework.summary}</div>
+                </div>
+                <ol className="divide-y divide-slate-200 dark:divide-slate-700">
+                  {framework.steps.map((s, i) => (
+                    <li key={s.label} className="flex items-start gap-3 px-4 py-3">
+                      <div
+                        className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                        style={{ background: accent }}
+                      >
+                        {i + 1}
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold text-corporate-navy dark:text-white">{s.label}</div>
+                        <div className="text-sm text-slate-600 dark:text-slate-300">{s.prompt}</div>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {/* Prompt starters */}
+            {Array.isArray(conversation.promptStarters) && conversation.promptStarters.length > 0 && (
+              <div>
+                <div className="text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 mb-2">
+                  Try saying it like this
+                </div>
+                <ul className="space-y-2">
+                  {conversation.promptStarters.map((p, i) => (
+                    <li
+                      key={i}
+                      className="group flex items-start justify-between gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/30 px-3 py-2 hover:border-corporate-teal/50"
+                    >
+                      <p className="text-sm text-corporate-navy dark:text-white italic">"{p}"</p>
+                      <button
+                        onClick={() => copyStarter(p, i)}
+                        aria-label="Copy"
+                        className="shrink-0 text-slate-400 hover:text-corporate-teal opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        {copiedIdx === i ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* Footer CTAs */}
+          <div className="border-t border-slate-200 dark:border-slate-700 px-6 py-4 bg-slate-50 dark:bg-slate-900/30">
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate?.('leadership-videos')}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-white"
+                style={{ background: accent }}
+              >
+                <PlayCircle className="w-4 h-4" /> Watch the {conversation.videoMinutes}-min video
+              </button>
+              <button
+                onClick={() => navigate?.('coaching-hub')}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border border-slate-300 dark:border-slate-600 text-corporate-navy dark:text-white hover:bg-white dark:hover:bg-slate-800"
+              >
+                <Calendar className="w-4 h-4" /> Practice in Open Gym
+              </button>
+              <button
+                onClick={() => navigate?.('rep-coach')}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border border-slate-300 dark:border-slate-600 text-corporate-navy dark:text-white hover:bg-white dark:hover:bg-slate-800"
+              >
+                <Send className="w-4 h-4" /> Prep with Rep
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
+export default ConversationModal;

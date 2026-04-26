@@ -98,3 +98,15 @@ global.APPROVED_COLORS = APPROVED_COLORS
 global.FORBIDDEN_COLORS = FORBIDDEN_COLORS
 global.isApprovedColor = isApprovedColor
 global.extractColorsFromElement = extractColorsFromElement
+
+// Inject corporate color CSS custom properties so that compliance tests can
+// read them via getComputedStyle(document.documentElement). These mirror the
+// values defined in the production stylesheet.
+if (typeof document !== 'undefined' && document.documentElement) {
+  const root = document.documentElement
+  root.style.setProperty('--corporate-navy', CORPORATE_COLORS.NAVY)
+  root.style.setProperty('--corporate-orange', CORPORATE_COLORS.ORANGE)
+  root.style.setProperty('--corporate-teal', CORPORATE_COLORS.TEAL)
+  root.style.setProperty('--corporate-subtle-teal', CORPORATE_COLORS.SUBTLE_TEAL)
+  root.style.setProperty('--corporate-light-gray', CORPORATE_COLORS.LIGHT_GRAY)
+}

@@ -150,6 +150,25 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Leadership Lab SMS idempotency markers — server-only (webhook dedupe)
+    match /ll-processed-sms/{document} {
+      allow read, write: if false;
+    }
+
+    // Leadership Lab consent / TCPA audit log — append-only, server-written.
+    // Admins may read for compliance review. NEVER mutable from client.
+    match /ll-consent-events/{document} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // Leadership Lab consent dead-letter queue — server-only writes when the
+    // primary audit log fails. Admin-readable for manual reconciliation.
+    match /ll-consent-events-dlq/{document} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     // Assessment leads (from Leadership DNA Assessment)
     // Admin read-only, Cloud Functions write
     match /assessment-leads/{document} {
@@ -176,6 +195,17 @@ service cloud.firestore {
     match /readiness-leads/{document} {
       allow read: if isAdmin();
       allow write: if false; // Only Cloud Functions can write
+    }
+
+    // Ascent — "Coming Soon" course waitlists (e.g. Lead Self, Lead Team v2)
+    // Authenticated user can write/read their own signup; admins can read all.
+    match /waitlists/{listId} {
+      allow read: if isAdmin();
+      allow write: if false;
+      match /signups/{userId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read: if isAdmin();
+      }
     }
     
     // Public read-only content
@@ -373,6 +403,16 @@ service cloud.firestore {
     match /cohorts/{document} {
       allow read: if request.auth != null;
       allow write: if isAdmin();
+    }
+
+    // Ascent v3 — Worklist inbox (cohort-scoped issue intake before Open Gym Round)
+    // Any authenticated leader may read and create items in their cohort.
+    // Updates/deletes restricted to admins.
+    match /cohorts/{cohortId}/worklist_inbox/{itemId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.submittedBy == request.auth.uid;
+      allow update, delete: if isAdmin();
     }
     
     // ============================================

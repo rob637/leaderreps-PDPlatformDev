@@ -30,16 +30,23 @@ const LEADERSHIP_ARCHETYPE_NAMES = {
 };
 
 // Accountability Assessment Archetypes
+// New keys (7-question assessment) plus legacy keys (5-question) for historical leads
 const ACCOUNTABILITY_ARCHETYPE_COLORS = {
+  'strong-system': '#277A68',
+  'room-to-strengthen': '#B84825',
+  'system-not-yet-installed': '#002E47',
+  // Legacy
   'execution-engine': '#277A68',
   'leaky-system': '#B84825',
-  'system-not-yet-installed': '#002E47',
 };
 
 const ACCOUNTABILITY_ARCHETYPE_NAMES = {
-  'execution-engine': 'Execution Engine (4-5 Yes)',
-  'leaky-system': 'Leaky System (2-3 Yes)',
-  'system-not-yet-installed': 'System Not Yet Installed (0-1 Yes)',
+  'strong-system': 'Strong System (6-7 Yes)',
+  'room-to-strengthen': 'Room to Strengthen (3-5 Yes)',
+  'system-not-yet-installed': 'System Not Yet Installed (0-2 Yes)',
+  // Legacy
+  'execution-engine': 'Execution Engine (4-5 Yes · legacy)',
+  'leaky-system': 'Leaky System (2-3 Yes · legacy)',
 };
 
 // ROI Calculator Industries

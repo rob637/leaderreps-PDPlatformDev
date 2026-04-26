@@ -946,7 +946,7 @@ export const MILESTONE_REP_UNLOCKS = {
  * Session 2: 1:1 Coaching → FUW, LWV
  * Session 3: Open Gym → RED, CTL
  * Session 4: Open Gym → HPB, HTL, BEC
- * Session 5: Graduation → Ascent access (not rep unlocking)
+ * Session 5: Capstone → Ascent access (not rep unlocking)
  */
 export const SESSION_REP_UNLOCKS = {
   'action-s1-deliberate-practice': ['set_clear_expectations', 'deliver_reinforcing_feedback'],
@@ -980,7 +980,7 @@ export const SESSION_METADATA = {
   'action-s2-deliberate-practice': { number: 2, name: 'Session 2: 1:1 Coaching' },
   'action-s3-deliberate-practice': { number: 3, name: 'Session 3: Open Gym' },
   'action-s4-deliberate-practice': { number: 4, name: 'Session 4: Open Gym' },
-  'action-s5-deliberate-practice': { number: 5, name: 'Session 5: Graduation' }
+  'action-s5-deliberate-practice': { number: 5, name: 'Session 5: Capstone' }
 };
 
 /**

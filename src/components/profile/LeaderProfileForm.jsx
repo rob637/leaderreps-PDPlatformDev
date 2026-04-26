@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Card, Button } from '../ui';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
+import { useLabEnrollment } from '../../hooks/useLabEnrollment';
 import { logActivity, ACTIVITY_TYPES } from '../../services/activityLogger';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../hooks/useAuth';
@@ -82,6 +83,7 @@ const STEPS = [
 const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
   const { profile, loading, saving, saveProfile, isComplete: profileAlreadyComplete } = useLeaderProfile();
   const { user } = useAuth();
+  const { enrolled: labEnrolled } = useLabEnrollment();
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
@@ -392,9 +394,10 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
                   <input 
                     type="checkbox" 
                     className="sr-only peer"
-                    checked={formData.notificationSettings?.channels?.sms ?? false}
-                    disabled={!formData.phoneNumber}
+                    checked={labEnrolled ? false : (formData.notificationSettings?.channels?.sms ?? false)}
+                    disabled={!formData.phoneNumber || labEnrolled}
                     onChange={(e) => {
+                      if (labEnrolled) return;
                       const currentSettings = formData.notificationSettings || { channels: { email: true, sms: false } };
                       setFormData(prev => ({
                         ...prev,
@@ -408,10 +411,14 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
                       }));
                     }}
                   />
-                  <div className={`w-9 h-5 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all ${!formData.phoneNumber ? 'bg-slate-100 dark:bg-slate-700 cursor-not-allowed' : 'bg-slate-200 peer-checked:bg-corporate-teal'}`}></div>
+                  <div className={`w-9 h-5 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all ${(!formData.phoneNumber || labEnrolled) ? 'bg-slate-100 dark:bg-slate-700 cursor-not-allowed' : 'bg-slate-200 peer-checked:bg-corporate-teal'}`}></div>
                 </label>
               </div>
-              {!formData.phoneNumber && (
+              {labEnrolled ? (
+                <p className="text-xs text-corporate-teal italic ml-6">
+                  You're enrolled in Leadership Lab — your coaching texts come from there. Reply STOP to that conversation to unsubscribe.
+                </p>
+              ) : !formData.phoneNumber && (
                 <p className="text-xs text-slate-400 italic ml-6">Add a phone number to enable SMS</p>
               )}
             </div>

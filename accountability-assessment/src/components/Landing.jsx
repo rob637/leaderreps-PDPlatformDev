@@ -43,19 +43,15 @@ const Landing = ({ onStart }) => {
 
             <h1 className="text-3xl md:text-5xl font-bold text-[#002E47] leading-tight mb-4">
               {ASSESSMENT_TITLE}
-              <span className="block text-[#B84825] mt-2">Take the 3-Minute Assessment</span>
+              <span className="block text-[#B84825] mt-2">Take the 3-Minute Test</span>
             </h1>
 
             <p className="text-slate-700 text-lg leading-relaxed mb-4">
-              When issues arise, it's tempting to blame your team: problems with attitude, urgency, follow-through. Sometimes that's true.
-            </p>
-
-            <p className="text-slate-700 text-lg leading-relaxed mb-4">
-              But more often, the system is broken. And when the system breaks, even great teams produce inconsistent results.
+              The managers with the strongest teams aren't working harder. They've built an accountability system that carries the load.
             </p>
 
             <p className="text-slate-700 text-lg leading-relaxed mb-8">
-              Find out where your system is strong, and where it's leaking.
+              Find out where your system is strong, and where it has room to grow.
             </p>
 
             <div className="grid sm:grid-cols-3 gap-3 mb-8">
@@ -65,7 +61,7 @@ const Landing = ({ onStart }) => {
               </div>
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 flex items-center gap-2">
                 <Target className="w-4 h-4 text-[#277A68]" />
-                5 questions
+                7 questions
               </div>
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-[#277A68]" />

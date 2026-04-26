@@ -11,12 +11,14 @@ import {
   getReveals,
   getKeyEvidence,
 } from '../../services/profileService.js';
-import { WEEKLY_THEMES } from '../../config/navigation.js';
+import { WEEKLY_THEMES, TRACKS, getWeekTheme } from '../../config/navigation.js';
 
 export default function StoryScreen() {
   const { user, userProfile } = useAuth();
+  const userId = userProfile?._docId || user?.uid;
   const currentWeek = userProfile?.currentWeek || 1;
-  const isAscent = userProfile?.phase === 'ascent';
+  const currentTheme = getWeekTheme(currentWeek);
+  const isAscent = currentTheme && currentTheme.track !== 'foundation';
 
   const [conversations, setConversations] = useState([]);
   const [profile, setProfile] = useState(null);
@@ -30,7 +32,7 @@ export default function StoryScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       setLoading(false);
       return;
     }
@@ -39,12 +41,12 @@ export default function StoryScreen() {
     (async () => {
       try {
         const promises = [
-          getConversations(user.uid, 50),
-          getLeadershipProfile(user.uid),
-          getReflections(user.uid),
-          getChallenges(user.uid),
-          getReveals(user.uid),
-          getKeyEvidence(user.uid),
+          getConversations(userId, 50),
+          getLeadershipProfile(userId),
+          getReflections(userId),
+          getChallenges(userId),
+          getReveals(userId),
+          getKeyEvidence(userId),
         ];
 
         const [convos, lp, refl, chall, rev, ev] = await Promise.all(promises);
@@ -256,7 +258,7 @@ export default function StoryScreen() {
               Every exchange, every experiment, every moment of honesty contributes to this story.
             </p>
             <p className="text-xs text-stone-400 mt-4">
-              It becomes undeniable by Graduation.
+              It becomes undeniable as your weeks compound.
             </p>
           </div>
         )}
@@ -265,11 +267,15 @@ export default function StoryScreen() {
       {/* Journey Timeline */}
       <div className="glass-card p-6">
         <h3 className="font-semibold text-lab-navy mb-4">Journey Timeline</h3>
-        <div className="space-y-6">
-          {[1, 2, 3, 4, 5].map((week) => {
-            const theme = WEEKLY_THEMES[week - 1];
+        <div className="space-y-2">
+          {WEEKLY_THEMES.map((theme, idx) => {
+            const week = theme.week;
+            const prev = idx > 0 ? WEEKLY_THEMES[idx - 1] : null;
+            const showTrackHeader = !prev || prev.track !== theme.track;
+            const trackMeta = TRACKS[theme.track];
             const weekData = weeklyMap[week];
             const isActive = week <= currentWeek;
+            const isLast = idx === WEEKLY_THEMES.length - 1;
             const hasData = weekData && (
               weekData.conversations.length > 0 ||
               weekData.reflection ||
@@ -278,7 +284,16 @@ export default function StoryScreen() {
             );
 
             return (
-              <div key={week} className="flex items-start gap-3">
+              <div key={week}>
+                {showTrackHeader && (
+                  <div className="mt-4 mb-2 first:mt-0">
+                    <p className="text-xs font-semibold text-lab-teal uppercase tracking-wider">
+                      {trackMeta?.label || theme.track}
+                      {trackMeta?.sublabel ? ` · ${trackMeta.sublabel}` : ''}
+                    </p>
+                  </div>
+                )}
+              <div className="flex items-start gap-3">
                 {/* Week indicator */}
                 <div className="flex flex-col items-center flex-shrink-0">
                   <div
@@ -302,7 +317,7 @@ export default function StoryScreen() {
                       {week}
                     </span>
                   </div>
-                  {week < 5 && (
+                  {!isLast && (
                     <div className={`w-0.5 flex-1 min-h-[16px] mt-1 ${hasData ? 'bg-lab-teal/20' : 'bg-stone-100'}`} />
                   )}
                 </div>
@@ -401,6 +416,7 @@ export default function StoryScreen() {
                     </div>
                   )}
                 </div>
+              </div>
               </div>
             );
           })}

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="LeaderReps">
+  <defs>
+    <linearGradient id="lrGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#002E47" />
+      <stop offset="100%" stop-color="#47A88D" />
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="96" height="96" rx="22" fill="url(#lrGrad)" />
+  <text x="50" y="64" font-family="'Nunito Sans', system-ui, sans-serif" font-size="42" font-weight="800" fill="white" text-anchor="middle" letter-spacing="-1">LR</text>
+</svg>

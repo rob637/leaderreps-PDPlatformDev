@@ -1138,14 +1138,14 @@ const ContentManager = () => {
     5: {
       id: 5,
       name: 'Milestone 5',
-      title: 'Graduation',
+      title: 'Capstone',
       emoji: '🏆',
-      description: 'Program completion and graduation',
+      description: 'Foundation Program completion — integrate your skills and transition to Ascent',
       bgColor: 'bg-rose-50 dark:bg-rose-900/20',
       textColor: 'text-rose-700',
       borderColor: 'border-rose-300',
       activeColor: 'bg-rose-500'
-      // No sessionPrep - Milestone 5 is graduation
+      // No sessionPrep - Milestone 5 is the Capstone
     }
   };
 

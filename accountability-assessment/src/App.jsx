@@ -12,8 +12,12 @@ function App() {
   const [stage, setStage] = useState('landing'); // landing | assessment | results
   const [answers, setAnswers] = useState([]);
   const [results, setResults] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [submitState, setSubmitState] = useState('idle');
+
+  const [isEmailSubmitting, setIsEmailSubmitting] = useState(false);
+  const [emailSubmitState, setEmailSubmitState] = useState('idle');
+
+  const [isSmsSubmitting, setIsSmsSubmitting] = useState(false);
+  const [smsSubmitState, setSmsSubmitState] = useState('idle');
 
   const handleStart = useCallback(() => {
     setStage('assessment');
@@ -23,46 +27,85 @@ function App() {
     setAnswers(finalAnswers);
     const calculatedResults = calculateResults(finalAnswers);
     setResults(calculatedResults);
-    setSubmitState('idle');
+    setEmailSubmitState('idle');
+    setSmsSubmitState('idle');
     setStage('results');
   }, []);
 
-  const handleEmailSubmit = useCallback(async (submittedEmail, firstName = '', smsOptIn = {}) => {
-    setIsLoading(true);
-    setSubmitState('idle');
+  const handleEmailSubmit = useCallback(
+    async (submittedEmail, firstName = '') => {
+      setIsEmailSubmitting(true);
+      setEmailSubmitState('idle');
 
-    try {
-      const response = await fetch(`${FUNCTION_URL}/analyzeAccountabilityAssessment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: submittedEmail,
-          firstName,
-          answers,
-          results,
-          // Optional A2P 10DLC SMS opt-in payload (only present when user checked consent box)
-          ...smsOptIn,
-        }),
-      });
+      try {
+        const response = await fetch(
+          `${FUNCTION_URL}/analyzeAccountabilityAssessment`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: submittedEmail,
+              firstName,
+              answers,
+              results,
+            }),
+          },
+        );
 
-      if (!response.ok) {
-        throw new Error('Failed to submit email.');
+        if (!response.ok) {
+          throw new Error('Failed to submit email.');
+        }
+
+        setEmailSubmitState('success');
+      } catch (error) {
+        console.error('Failed to send accountability resources:', error);
+        setEmailSubmitState('error');
       }
 
-      setSubmitState('success');
-    } catch (error) {
-      console.error('Failed to send accountability resources:', error);
-      setSubmitState('error');
-    }
+      setIsEmailSubmitting(false);
+    },
+    [answers, results],
+  );
 
-    setIsLoading(false);
-  }, [answers, results]);
+  const handleSmsSubmit = useCallback(
+    async ({ phone, email, smsConsent, consentText, source }) => {
+      setIsSmsSubmitting(true);
+      setSmsSubmitState('idle');
+
+      try {
+        const response = await fetch(`${FUNCTION_URL}/submitSmsOptIn`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone,
+            email,
+            smsConsent,
+            consentText,
+            source: source || 'accountability-assessment-results',
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to subscribe to SMS.');
+        }
+
+        setSmsSubmitState('success');
+      } catch (error) {
+        console.error('Failed to record SMS opt-in:', error);
+        setSmsSubmitState('error');
+      }
+
+      setIsSmsSubmitting(false);
+    },
+    [],
+  );
 
   const handleRestart = useCallback(() => {
     setStage('landing');
     setAnswers([]);
     setResults(null);
-    setSubmitState('idle');
+    setEmailSubmitState('idle');
+    setSmsSubmitState('idle');
   }, []);
 
   return (
@@ -71,22 +114,25 @@ function App() {
         {stage === 'landing' && (
           <Landing key="landing" onStart={handleStart} />
         )}
-        
+
         {stage === 'assessment' && (
-          <AssessmentFlow 
-            key="assessment" 
+          <AssessmentFlow
+            key="assessment"
             onComplete={handleAssessmentComplete}
           />
         )}
 
         {stage === 'results' && (
-          <Results 
+          <Results
             key="results"
             results={results}
             onRestart={handleRestart}
             onEmailSubmit={handleEmailSubmit}
-            isSubmitting={isLoading}
-            submitState={submitState}
+            onSmsSubmit={handleSmsSubmit}
+            isEmailSubmitting={isEmailSubmitting}
+            isSmsSubmitting={isSmsSubmitting}
+            emailSubmitState={emailSubmitState}
+            smsSubmitState={smsSubmitState}
           />
         )}
       </AnimatePresence>

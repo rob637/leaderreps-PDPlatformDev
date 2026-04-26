@@ -32,11 +32,16 @@ const MILESTONE_THEMES = {
     gradient: 'from-corporate-teal to-teal-600'
   },
   5: { 
-    name: 'Graduation',
+    name: 'Foundation Complete',
     color: '#002E47',
     gradient: 'from-corporate-navy to-corporate-teal'
   }
 };
+
+// Milestone 5 marks completion of the entire Foundation program, so its
+// certificate is presented as a program-level credential rather than a
+// single-level milestone certificate.
+const isFoundationCertificate = (milestone) => Number(milestone) === 5;
 
 const LeaderCertificateViewer = ({ 
   isOpen, 
@@ -68,11 +73,22 @@ const LeaderCertificateViewer = ({
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
     
+    const isFoundation = isFoundationCertificate(milestone);
+    const printMainTitle = isFoundation ? 'Foundation Leader Certification' : 'Leader Certification';
+    const printSubtitle = isFoundation ? 'Foundation Program — Level 5' : theme.name;
+    const printAchievementHTML = isFoundation
+      ? `has successfully completed the <strong>LeaderReps Foundation Program</strong>
+              and demonstrated the leadership capabilities required for Foundation certification.`
+      : `has successfully demonstrated mastery of the core competencies 
+              and leadership skills required for <strong>${theme.name}</strong>, 
+              completing all required activities and receiving trainer certification.`;
+    const printBadgeText = isFoundation ? 'Foundation Complete' : `Level ${milestone} Complete`;
+
     const certificateHTML = `
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Leader Certification - ${theme.name}</title>
+        <title>${printMainTitle} - ${theme.name}</title>
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap');
           
@@ -228,8 +244,8 @@ const LeaderCertificateViewer = ({
               <path d="M50 35 L65 70 H35 Z" fill="${theme.color}"/>
             </svg>
             <div class="title">LeaderReps Leadership Program</div>
-            <div class="main-title">Leader Certification</div>
-            <div class="subtitle">${theme.name}</div>
+            <div class="main-title">${printMainTitle}</div>
+            <div class="subtitle">${printSubtitle}</div>
           </div>
           
           <div class="recipient">
@@ -239,15 +255,13 @@ const LeaderCertificateViewer = ({
           
           <div class="achievement">
             <div class="achievement-text">
-              has successfully demonstrated mastery of the core competencies 
-              and leadership skills required for <strong>${theme.name}</strong>, 
-              completing all required activities and receiving trainer certification.
+              ${printAchievementHTML}
             </div>
             <div class="milestone-badge">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
               </svg>
-              Level ${milestone} Complete
+              ${printBadgeText}
             </div>
           </div>
           
@@ -310,8 +324,8 @@ const LeaderCertificateViewer = ({
                   <Award className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">Leader Certification</h2>
-                  <p className="text-white/80 text-sm">{theme.name} - Level {milestone}</p>
+                  <h2 className="text-xl font-bold">{isFoundationCertificate(milestone) ? 'Foundation Leader Certification' : 'Leader Certification'}</h2>
+                  <p className="text-white/80 text-sm">{isFoundationCertificate(milestone) ? 'Foundation Program — Level 5' : `${theme.name} - Level ${milestone}`}</p>
                 </div>
               </div>
               <button
@@ -341,9 +355,9 @@ const LeaderCertificateViewer = ({
                   LeaderReps Leadership Program
                 </p>
                 <h3 className="text-2xl font-bold mb-1" style={{ color: theme.color }}>
-                  Leader Certification
+                  {isFoundationCertificate(milestone) ? 'Foundation Leader Certification' : 'Leader Certification'}
                 </h3>
-                <p className="text-slate-600 dark:text-slate-300 mb-6">{theme.name}</p>
+                <p className="text-slate-600 dark:text-slate-300 mb-6">{isFoundationCertificate(milestone) ? 'Foundation Program — Level 5' : theme.name}</p>
                 
                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
                   This is to certify that
@@ -354,14 +368,17 @@ const LeaderCertificateViewer = ({
                 </p>
                 
                 <p className="text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto mb-6">
-                  has successfully completed all required activities and received 
-                  trainer certification for <strong>{theme.name}</strong>.
+                  {isFoundationCertificate(milestone) ? (
+                    <>has successfully completed the <strong>LeaderReps Foundation Program</strong> and demonstrated the leadership capabilities required for Foundation certification.</>
+                  ) : (
+                    <>has successfully completed all required activities and received trainer certification for <strong>{theme.name}</strong>.</>
+                  )}
                 </p>
                 
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-white text-sm font-bold"
                   style={{ backgroundColor: theme.color }}>
                   <Star className="w-4 h-4" />
-                  Level {milestone} Complete
+                  {isFoundationCertificate(milestone) ? 'Foundation Complete' : `Level ${milestone} Complete`}
                 </div>
                 
                 <div className="flex justify-between mt-8 pt-4 border-t border-slate-200 dark:border-slate-600">

@@ -504,10 +504,10 @@ The Arena program uses a **5-Milestone Foundation phase**, followed by ongoing p
 - **Milestone 4**: Handle Pushback + Hold the Line
 - **Milestone 5**: Be Curious + Integration
 
-**Ascent Phase** (After graduation)
+**Ascent Phase** (After Foundation)
 - Continue daily conditioning
 - Access content library
-- Connect with alumni community
+- Connect with the community
 - Advanced development opportunities
 
 ### How Milestones Work
@@ -520,11 +520,13 @@ Each milestone:
 
 ### After Foundation
 
-When you complete all 5 milestones, you graduate to Ascent:
+When you complete all 5 milestones, you transition into Ascent:
 - Ongoing conditioning access
 - Full content library
 - Community events
 - Leadership certification
+
+Foundation isn’t the end — it’s the beginning. All Foundation resources remain available in the Content section of the navigation.
         `,
         relatedArticles: ['what-is-cohort', 'session-one']
       },
@@ -729,7 +731,7 @@ The Arena is your visual representation of leadership growth—a gamified view o
 ### Key Elements
 
 **Milestone Progress**
-Track your progress through the 5 Foundation milestones toward graduation.
+Track your progress through the 5 Foundation milestones — the gateway into Ascent.
 
 **XP (Experience Points)**
 Earned through daily conditioning, content completion, and engagement.
@@ -746,7 +748,7 @@ Tracking consistency in your daily conditioning.
 - Finish content items (+15-25 XP)
 - Progress through rep stages (+5-10 XP per stage)
 - Complete milestones (+100 XP)
-- Graduate from Foundation (+500 XP)
+- Complete Foundation (+500 XP)
 
 ### Why Gamification?
 

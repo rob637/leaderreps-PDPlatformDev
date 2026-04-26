@@ -58,6 +58,31 @@ export async function sendText(cohortId, memberId, message) {
 }
 
 /**
+ * Link a Lab participant's record to a Firebase Auth account by email.
+ * Calls labLinkIdentity Cloud Function (admin-only).
+ *
+ * @param {string} memberId
+ * @param {string} email   The email of the auth user to link
+ * @param {boolean} [force=false]  Overwrite existing link if present
+ * @returns {Promise<{ success, authUid, email }>}
+ */
+export async function linkMemberLogin(memberId, email, force = false) {
+  const fn = httpsCallable(functions, 'labLinkIdentity');
+  const result = await fn({ memberId, email, force });
+  return result.data;
+}
+
+/**
+ * Fetch current system health (SMS delivery, open crises, recent failures).
+ * Admin-only. Calls labSystemHealth.
+ */
+export async function getSystemHealth() {
+  const fn = httpsCallable(functions, 'labSystemHealth');
+  const result = await fn();
+  return result.data;
+}
+
+/**
  * Fetch full conversation transcript for facilitator review.
  *
  * @param {string} cohortId

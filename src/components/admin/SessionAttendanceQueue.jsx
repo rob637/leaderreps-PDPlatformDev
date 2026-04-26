@@ -70,10 +70,10 @@ const FACILITATOR_SESSIONS = {
   },
   5: {
     id: 'action-s5-deliberate-practice',
-    name: 'Session 5: Graduation',
+    name: 'Session 5: Capstone',
     shortName: 'S5',
     level: 5,
-    description: 'Graduation session - unlocks Ascent phase',
+    description: 'Capstone session — completes Foundation and unlocks Ascent phase',
     unlocksReps: null // Unlocks Ascent, not specific reps
   }
 };

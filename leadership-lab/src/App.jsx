@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { AuthProvider } from './providers/AuthProvider.jsx';
 import { useAuth } from './hooks/useAuth.js';
-import { NavigationProvider } from './providers/NavigationProvider.jsx';
+import { NavigationProvider, useNavigation } from './providers/NavigationProvider.jsx';
 import { SCREENS } from './config/navigation.js';
 import ScreenRouter from './components/layout/ScreenRouter.jsx';
 import BottomNav from './components/layout/BottomNav.jsx';
+import Header from './components/layout/Header.jsx';
 import LoginScreen from './components/screens/LoginScreen.jsx';
 import OnboardingScreen from './components/screens/OnboardingScreen.jsx';
 
@@ -96,19 +97,32 @@ function AppContent() {
     return <OnboardingScreen />;
   }
 
-  // Facilitators/admins start on the Admin screen, participants on Feed
+  // Facilitators/admins start on the Pulse triage screen, participants on Feed
   const viewingAsFacilitator = isFacilitator && viewAs === 'facilitator';
-  const initialScreen = viewingAsFacilitator ? SCREENS.ADMIN : SCREENS.FEED;
+  const initialScreen = viewingAsFacilitator ? SCREENS.PULSE : SCREENS.FEED;
 
   return (
     <NavigationProvider initialScreen={initialScreen}>
-      <div className="min-h-screen bg-lab-cream">
-        <main className="max-w-lg mx-auto">
-          <ScreenRouter />
-        </main>
-        <BottomNav />
-      </div>
+      <ChromeWithHeader />
     </NavigationProvider>
+  );
+}
+
+/**
+ * Inside NavigationProvider so we can hide the header on full-screen views.
+ */
+function ChromeWithHeader() {
+  const { currentScreen } = useNavigation();
+  const hideChrome = currentScreen === SCREENS.CONVERSATION;
+
+  return (
+    <div className="min-h-screen bg-lab-cream">
+      {!hideChrome && <Header />}
+      <main className="max-w-lg mx-auto">
+        <ScreenRouter />
+      </main>
+      <BottomNav />
+    </div>
   );
 }
 

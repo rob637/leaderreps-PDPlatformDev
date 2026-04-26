@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, limit, query, updateDoc, where } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
 import { X, Save, RefreshCw, Bell, Mail, MessageSquare, Globe, CheckCircle, AlertTriangle, AtSign, TestTube } from 'lucide-react';
 
@@ -25,6 +25,7 @@ const NotificationSettingsModal = ({ isOpen, onClose, userId, userName }) => {
   const [error, setError] = useState(null);
   const [userEmail, setUserEmail] = useState('');
   const [isTestUser, setIsTestUser] = useState(false);
+  const [labEnrolled, setLabEnrolled] = useState(false);
   const [testNotificationRecipient, setTestNotificationRecipient] = useState('');
   const [settings, setSettings] = useState({
     enabled: false,
@@ -50,6 +51,24 @@ const NotificationSettingsModal = ({ isOpen, onClose, userId, userName }) => {
         setUserEmail(data.email || '');
         setIsTestUser(data.isTestUser === true);
         setTestNotificationRecipient(data.testNotificationRecipient || '');
+
+        // Detect Leadership Lab enrollment — Lab owns SMS for enrolled users
+        try {
+          let llSnap = await getDoc(doc(db, 'll-users', userId));
+          let llData = llSnap.exists() ? llSnap.data() : null;
+          if (!llData) {
+            const q = query(
+              collection(db, 'll-users'),
+              where('firebaseAuthUid', '==', userId),
+              limit(1)
+            );
+            const results = await getDocs(q);
+            if (!results.empty) llData = results.docs[0].data();
+          }
+          setLabEnrolled(!!llData && llData.smsOptIn !== false);
+        } catch {
+          setLabEnrolled(false);
+        }
         
         if (data.notificationSettings) {
           // Derive enabled state: if no explicit 'enabled' field, infer from channels/reminders
@@ -104,6 +123,7 @@ const NotificationSettingsModal = ({ isOpen, onClose, userId, userName }) => {
   };
 
   const toggleChannel = (channel) => {
+    if (channel === 'sms' && labEnrolled) return; // Lab owns SMS — block toggle
     setSettings(prev => ({
       ...prev,
       channels: {
@@ -244,23 +264,30 @@ const NotificationSettingsModal = ({ isOpen, onClose, userId, userName }) => {
 
                 <div 
                   onClick={() => toggleChannel('sms')}
-                  className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${
-                    settings.channels.sms 
-                      ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20' 
-                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-slate-300'
+                  className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+                    labEnrolled
+                      ? 'border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 cursor-not-allowed opacity-60'
+                      : settings.channels.sms 
+                      ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 cursor-pointer' 
+                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-slate-300 cursor-pointer'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    {settings.channels.sms ? (
+                    {settings.channels.sms && !labEnrolled ? (
                       <CheckCircle className="w-5 h-5 text-emerald-600" />
                     ) : (
                       <MessageSquare className="w-5 h-5 text-slate-400" />
                     )}
-                    <span className={`text-sm font-medium ${settings.channels.sms ? 'text-emerald-800' : 'text-slate-700 dark:text-slate-200'}`}>
+                    <span className={`text-sm font-medium ${settings.channels.sms && !labEnrolled ? 'text-emerald-800' : 'text-slate-700 dark:text-slate-200'}`}>
                       SMS / Text
                     </span>
                   </div>
                 </div>
+                {labEnrolled && (
+                  <p className="text-xs text-corporate-teal italic px-1">
+                    User is enrolled in Leadership Lab — coaching texts come from there. PD platform SMS is suppressed to avoid duplicates.
+                  </p>
+                )}
               </div>
 
               {/* Phone Number Input (Conditional) */}

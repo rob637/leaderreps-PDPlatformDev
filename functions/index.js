@@ -24,6 +24,12 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Anthropic = require("@anthropic-ai/sdk");
 const nodemailer = require("nodemailer");
 const Telnyx = require("telnyx");
+const dailyRep = require("./dailyRep");
+const {
+  LL_CURRICULUM,
+  getCurriculumWeek,
+  getCurriculumWeekCount,
+} = require("./labCurriculum");
 const path = require("path");
 const os = require("os");
 const fs = require("fs");
@@ -1840,27 +1846,27 @@ exports.sendMilestoneCompletionEmail = onCall(async (request) => {
       subject = applyTemplateVariables(graduationTemplate.subject, templateVars);
       bodyHtml = generateEmailHtml(graduationTemplate, templateVars, appUrl);
     } else {
-      subject = `🎓 Congratulations! You've Graduated from LeaderReps!`;
+      subject = `� Congratulations! You've Completed the LeaderReps Foundation Program!`;
       bodyHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 30px; border-radius: 8px 8px 0 0; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">🎓 Congratulations!</h1>
-            <p style="color: #9CE0C8; margin: 10px 0 0 0; font-size: 18px;">You've Graduated!</p>
+            <h1 style="color: white; margin: 0; font-size: 28px;">🎉 Foundation Complete!</h1>
+            <p style="color: #9CE0C8; margin: 10px 0 0 0; font-size: 18px;">Welcome to Ascent</p>
           </div>
           <div style="background: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; border-top: none;">
             <p style="margin-top: 0; font-size: 18px;">Hi ${userName || 'there'},</p>
-            <p style="font-size: 16px;">You've successfully completed all 5 milestones and earned your <strong>LeaderReps Leadership Certification</strong>!</p>
+            <p style="font-size: 16px;">You've successfully completed all 5 milestones of the <strong>LeaderReps Foundation Program</strong> and earned your <strong>Foundation Leader Certification</strong>.</p>
             <div style="background: linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #D4AF37 100%); padding: 4px; border-radius: 12px; margin: 24px 0;">
               <div style="background: white; padding: 24px; border-radius: 10px; text-align: center;">
-                <p style="margin: 0 0 8px 0; font-size: 14px; color: #666;">CERTIFICATE OF COMPLETION</p>
-                <p style="margin: 0; font-size: 24px; font-weight: bold; color: #002E47;">LeaderReps Leadership Program</p>
+                <p style="margin: 0 0 8px 0; font-size: 14px; color: #666;">FOUNDATION LEADER CERTIFICATION</p>
+                <p style="margin: 0; font-size: 24px; font-weight: bold; color: #002E47;">LeaderReps Foundation Program</p>
                 <p style="margin: 8px 0 0 0; font-size: 16px; color: #47A88D;">All 5 Milestones Complete</p>
               </div>
             </div>
             <p style="text-align: center; margin-top: 24px;">
-              <a href="${appUrl}?screen=certificates" style="background: #47A88D; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">View Your Certificate</a>
+              <a href="${appUrl}?screen=certificates" style="background: #47A88D; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">View Your Foundation Certificate</a>
             </p>
-            <p style="margin-top: 24px; color: #666; font-size: 14px;">You can print or share your certificate from the app. Thank you for your dedication to becoming a better leader!</p>
+            <p style="margin-top: 24px; color: #666; font-size: 14px;">You can print or share your certificate from the app. Thank you for your dedication to becoming a better leader — your Ascent begins now.</p>
           </div>
           <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
             <p style="margin: 0; color: #64748b; font-size: 12px;">Congratulations from the LeaderReps Team!</p>
@@ -4859,7 +4865,13 @@ exports.sendTestNotification = onRequest(
  * SEND TEST EMAIL/SMS NOTIFICATION (Callable - Gen 2)
  * Kept for backward compatibility (dev works). Still requires Firebase Auth.
  */
-exports.sendTestEmailSms = onCall({ region: "us-central1", invoker: "public" }, async (request) => {
+exports.sendTestEmailSms = onCall(
+  {
+    region: "us-central1",
+    invoker: "public",
+    secrets: ["TELNYX_API_KEY", "TELNYX_MESSAGING_PROFILE_ID", "TELNYX_PHONE_NUMBER"],
+  },
+  async (request) => {
     if (!request.auth) {
       throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
     }
@@ -4872,7 +4884,13 @@ exports.sendTestEmailSms = onCall({ region: "us-central1", invoker: "public" }, 
  * SEND TEST EMAIL/SMS NOTIFICATION (HTTP with CORS)
  * Explicit CORS handling to satisfy browsers (esp. test env).
  */
-exports.sendTestEmailSmsHttp = onRequest({ region: "us-central1", invoker: "public" }, (req, res) => {
+exports.sendTestEmailSmsHttp = onRequest(
+  {
+    region: "us-central1",
+    invoker: "public",
+    secrets: ["TELNYX_API_KEY", "TELNYX_MESSAGING_PROFILE_ID", "TELNYX_PHONE_NUMBER"],
+  },
+  (req, res) => {
   cors(req, res, async () => {
     if (req.method === 'OPTIONS') {
       res.status(204).send('');
@@ -4919,18 +4937,15 @@ async function handleTestEmailSms(email, phone, message, type) {
     }
   }
 
-  // SMS disabled for go-live - uncomment when Twilio is configured
-  /*
-  // Send SMS (not implemented yet)
+  // Send SMS via Telnyx (10DLC campaign CPNJ6BU — provisioned 22 Apr 2026)
   if (phone && (!type || type === 'sms' || type === 'both')) {
     try {
       await sendSmsNotification(phone, testMessage);
-      results.sms = { success: false, error: "SMS not implemented" };
+      results.sms = { success: true, sentTo: phone };
     } catch (e) {
       results.sms = { success: false, error: e.message };
     }
   }
-  */
 
   return { success: true, results };
 }
@@ -5090,7 +5105,13 @@ exports.scheduledFollowUpReminders = onSchedule("every 6 hours", async (event) =
  * SCHEDULED NOTIFICATION CHECK
  * Runs every 15 minutes to check for scheduled notifications based on user timezones.
  */
-exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event) => {
+exports.scheduledNotificationCheck = onSchedule(
+  {
+    schedule: "every 15 minutes",
+    region: "us-central1",
+    secrets: ["TELNYX_API_KEY", "TELNYX_MESSAGING_PROFILE_ID", "TELNYX_PHONE_NUMBER"],
+  },
+  async (event) => {
   logger.info("Starting scheduled notification check...");
   
   try {
@@ -5208,40 +5229,37 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
       // Determine channels based on strategy and escalation
       let sendPush = false;
       let sendEmail = false;
-      // SMS disabled for go-live - uncomment when Twilio is configured
-      // let sendSms = false;
-      
+      let sendSms = false;
+
       // Get escalation data for smart escalation
       const escalation = settings.escalation || { missedDays: 0 };
       const missedDays = escalation.missedDays || 0;
-      
+
       switch (strategy) {
         case 'smart_escalation':
           // Level 0 (Day 1): Push only
           // Level 1 (Day 2): Push + Email
-          // Level 2 (Day 3+): Push + Email + SMS (disabled for go-live)
+          // Level 2 (Day 3+): Push + Email + SMS
           sendPush = settings.channels?.push !== false;
           sendEmail = missedDays >= 1 && settings.channels?.email !== false;
-          // SMS disabled for go-live - uncomment when Twilio is configured
-          // sendSms = missedDays >= 2 && settings.channels?.sms !== false && settings.phoneNumber;
-          logger.info(`Smart escalation for ${user.email}: missedDays=${missedDays}, push=${sendPush}, email=${sendEmail}`);
+          sendSms = missedDays >= 2 && settings.channels?.sms !== false && !!settings.phoneNumber;
+          logger.info(`Smart escalation for ${user.email}: missedDays=${missedDays}, push=${sendPush}, email=${sendEmail}, sms=${sendSms}`);
           break;
-          
+
         case 'push_only':
           sendPush = true;
           break;
-          
+
         case 'email_only':
           sendEmail = true;
           break;
-          
+
         case 'full_accountability':
           sendPush = settings.channels?.push !== false;
           sendEmail = settings.channels?.email !== false;
-          // SMS disabled for go-live - uncomment when Twilio is configured
-          // sendSms = settings.channels?.sms !== false && settings.phoneNumber;
+          sendSms = settings.channels?.sms !== false && !!settings.phoneNumber;
           break;
-          
+
         default:
           // Fallback to old behavior using channel settings directly
           sendEmail = settings.channels?.email === true;
@@ -5286,17 +5304,14 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
         }
       }
 
-      // SMS disabled for go-live - uncomment when Twilio is configured
-      /*
-      // SMS via Twilio - Skip for test users (don't send test SMS)
-      // SMS includes a shortened link at the end
+      // SMS via Telnyx — Skip for test users (don't send test SMS)
+      // SMS includes the app link at the end and STOP opt-out language.
       if (sendSms && settings.phoneNumber && !isTestUser) {
         await sendSmsNotification(settings.phoneNumber, rule.message, linkOptions);
       } else if (sendSms && isTestUser) {
         logger.info(`🧪 SMS skipped for test user ${user.email}`);
       }
-      */
-      
+
       // Update escalation tracking for smart escalation strategy
       if (strategy === 'smart_escalation') {
         try {
@@ -5316,18 +5331,14 @@ exports.scheduledNotificationCheck = onSchedule("every 15 minutes", async (event
   } catch (error) {
     logger.error("Error in scheduledNotificationCheck", error);
   }
-});
+  }
+);
 
 // Helper to send SMS via Telnyx
-// NOTE: SMS functionality is disabled for go-live. Uncomment all sendSms references when Telnyx is configured.
+// 10DLC campaign CPNJ6BU (Brand: LeaderReps) provisioned 22 Apr 2026.
+// Requires Firebase Functions secrets: TELNYX_API_KEY, TELNYX_MESSAGING_PROFILE_ID, TELNYX_PHONE_NUMBER.
 // Options can include: { linkText, linkUrl } to append a link to the message
 async function sendSmsNotification(phoneNumber, message, options = {}) {
-  // SMS disabled for go-live - early return
-  logger.info("SMS disabled for go-live. Would have sent to:", phoneNumber);
-  return;
-  
-  // Original implementation below (disabled until 10DLC campaign approved)
-  /*
   const apiKey = process.env.TELNYX_API_KEY;
   const messagingProfileId = process.env.TELNYX_MESSAGING_PROFILE_ID;
   const telnyxFrom = process.env.TELNYX_PHONE_NUMBER;
@@ -5337,27 +5348,36 @@ async function sendSmsNotification(phoneNumber, message, options = {}) {
     return;
   }
 
+  // Mutual exclusion: Lab enrollment supersedes Daily Rep SMS.
+  // If this phone is in Leadership Lab, suppress the Daily Rep send.
+  if (await isPhoneEnrolledInLab(phoneNumber)) {
+    logger.info("Daily Rep SMS suppressed — phone enrolled in Leadership Lab", {
+      phone: maskPhone(phoneNumber),
+    });
+    return;
+  }
+
   // Dynamically determine the app URL based on the Firebase project
-  const projectId = process.env.GCLOUD_PROJECT || process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId;
+  const projectId = process.env.GCLOUD_PROJECT || (process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId);
   const appDomain = projectId === 'leaderreps-prod'
     ? 'arena.leaderreps.com'
-    : projectId === 'leaderreps-test' 
-      ? 'leaderreps-test.web.app' 
+    : projectId === 'leaderreps-test'
+      ? 'leaderreps-test.web.app'
       : 'leaderreps-pd-platform.web.app';
   const appUrl = `https://${appDomain}`;
 
   // Determine the link to include
   let linkToInclude = appUrl;
   if (options.linkUrl) {
-    linkToInclude = options.linkUrl.startsWith('http') 
-      ? options.linkUrl 
+    linkToInclude = options.linkUrl.startsWith('http')
+      ? options.linkUrl
       : `${appUrl}${options.linkUrl.startsWith('/') ? '' : '/'}${options.linkUrl}`;
   }
 
   try {
-    const telnyx = Telnyx(apiKey);
+    const telnyx = new Telnyx({ apiKey });
     const msgOptions = {
-      text: `LeaderReps: ${message} ${linkToInclude}`,
+      text: `LeaderReps: ${message} ${linkToInclude}\nReply STOP to opt out.`,
       to: phoneNumber
     };
     if (messagingProfileId) {
@@ -5366,12 +5386,11 @@ async function sendSmsNotification(phoneNumber, message, options = {}) {
     } else {
       msgOptions.from = telnyxFrom;
     }
-    const result = await telnyx.messages.create(msgOptions);
+    const result = await telnyx.messages.send(msgOptions);
     logger.info(`SMS sent to ${phoneNumber}: ${result.data?.id}`);
   } catch (e) {
     logger.error(`Failed to send SMS to ${phoneNumber}`, e);
   }
-  */
 }
 
 // Helper to send email
@@ -10918,9 +10937,9 @@ const generateAccountabilityInsights = async (results, firstName) => {
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
   const yesCount = Number(results.yesCount || 0);
-  const totalQuestions = Number(results.totalQuestions || 5);
-  const scoreBand = results.scoreBand || (yesCount >= 4 ? '4-5' : (yesCount >= 2 ? '2-3' : '0-1'));
-  const scoreLabel = results.scoreLabel || (scoreBand === '4-5' ? 'Execution Engine' : (scoreBand === '2-3' ? 'Leaky System' : 'System Not Yet Installed'));
+  const totalQuestions = Number(results.totalQuestions || 7);
+  const scoreBand = results.scoreBand || (yesCount >= 6 ? '6-7' : (yesCount >= 3 ? '3-5' : '0-2'));
+  const scoreLabel = results.scoreLabel || (scoreBand === '6-7' ? 'Strong System' : (scoreBand === '3-5' ? 'Room to Strengthen' : 'System Not Yet Installed'));
   const questionResults = Array.isArray(results.questionResults) ? results.questionResults : [];
 
   const notYetItems = questionResults
@@ -10930,14 +10949,14 @@ const generateAccountabilityInsights = async (results, firstName) => {
 
   const prompt = `You are a world-class executive coach specializing in accountability and leadership development, providing personalized feedback to ${firstName || "a leader"}.
 
-Based on their Accountability System Assessment results:
+Based on their Accountability System Pulse Check results:
 - Yes answers: ${yesCount}/${totalQuestions}
 - Score band: ${scoreBand} (${scoreLabel})
 - Not yet areas: ${notYetItems || 'None flagged'}
 
 Write a personalized coaching insight (160-220 words) that:
 1. Names what this score suggests about their current system
-2. Picks one high-leverage behavior to improve this week
+2. Picks one high-leverage behavior to improve this week (drawn from their not-yet areas if any)
 3. Encourages a repeatable weekly practice instead of trying to fix everything at once
 4. Ends with a direct call to action to keep ownership on their team
 
@@ -10979,7 +10998,12 @@ const generateResultsPdf = (firstName, results) => {
     // ── Header — white background with logo, then navy accent bar ─────
     const logoBuffer = Buffer.from(LEADERREPS_LOGO_BASE64, 'base64');
     doc.rect(0, 0, doc.page.width, 70).fill('#FFFFFF');
-    doc.image(logoBuffer, 50, 17, { height: 36 });
+    const logoX = 50, logoY = 17, logoH = 36;
+    // Embed image first; specifying height auto-scales width. The PNG aspect
+    // ratio (831 × 209) yields a width of ~143pt at 36pt height.
+    doc.image(logoBuffer, logoX, logoY, { height: logoH });
+    // Make the logo a clickable link to the homepage
+    doc.link(logoX, logoY, 143, logoH, 'https://www.leaderreps.com');
     // Thin navy accent line under the header
     doc.rect(0, 70, doc.page.width, 4).fill(NAVY);
 
@@ -10991,61 +11015,150 @@ const generateResultsPdf = (firstName, results) => {
 
     // ── Score: answer count first then status ────────────────────────
     const yesCount = Number(results.yesCount || 0);
-    const total = Number(results.totalQuestions || 5);
+    const total = Number(results.totalQuestions || 7);
     const scoreLabel = results.scoreLabel || '';
-    const pillColor = results.archetype === 'execution-engine' ? TEAL : results.archetype === 'system-not-yet-installed' ? NAVY : SIENNA;
+    const pillColor = results.archetype === 'strong-system' ? TEAL : results.archetype === 'system-not-yet-installed' ? NAVY : SIENNA;
 
     doc.fontSize(13).fillColor(NAVY).font('Helvetica-Bold')
-      .text(`You answered Yes to ${yesCount} of ${total} Questions`, 50, doc.y, { width: PAGE_W });
+      .text(`You answered "Yes" to ${yesCount} out of ${total} questions.`, 50, doc.y, { width: PAGE_W });
     doc.moveDown(0.4);
 
-    // Status pill
+    // Status pill — compact, sized to text (matches results page + email)
+    const pillLabel = (scoreLabel || '').toUpperCase();
     const pillY = doc.y;
-    doc.roundedRect(50, pillY, PAGE_W, 32, 6).fill(pillColor);
-    doc.fontSize(11).fillColor('#fff').font('Helvetica-Bold')
-      .text(`Status: ${scoreLabel}`, 62, pillY + 9, { width: PAGE_W - 24 });
-    doc.y = pillY + 44;
-    doc.moveDown(1);
+    const pillPadX = 14;
+    const pillPadY = 7;
+    const pillFontSize = 9;
+    const pillCharSpacing = 1.2;
+    doc.fontSize(pillFontSize).font('Helvetica-Bold');
+    // widthOfString + characterSpacing under-reports trailing space, so pad
+    // generously so labels like "ROOM TO STRENGTHEN" never wrap.
+    const textW = doc.widthOfString(pillLabel, { characterSpacing: pillCharSpacing }) + pillCharSpacing;
+    const pillW = Math.ceil(textW) + pillPadX * 2;
+    const pillH = pillFontSize + pillPadY * 2;
+    doc.roundedRect(50, pillY, pillW, pillH, 6).fill(pillColor);
+    doc.fontSize(pillFontSize).fillColor('#fff').font('Helvetica-Bold')
+      .text(pillLabel, 50 + pillPadX, pillY + pillPadY, { width: pillW - pillPadX * 2 + 4, characterSpacing: pillCharSpacing, lineBreak: false });
+    doc.y = pillY + pillH + 14;
+
+    // Headline (band-specific)
+    if (results.headline) {
+      doc.fontSize(14).fillColor(NAVY).font('Helvetica-Bold')
+        .text(results.headline, 50, doc.y, { width: PAGE_W });
+      doc.moveDown(0.5);
+    }
+
+    // Summary paragraphs
+    if (results.summary) {
+      const paragraphs = String(results.summary).split('\n\n');
+      paragraphs.forEach((para) => {
+        doc.fontSize(9.5).fillColor('#374151').font('Helvetica')
+          .text(para, 50, doc.y, { width: PAGE_W, lineGap: 2 });
+        doc.moveDown(0.4);
+      });
+    }
+
+    doc.moveDown(0.6);
 
     // ── Divider ──────────────────────────────────────────────────────
     doc.moveTo(50, doc.y).lineTo(50 + PAGE_W, doc.y).strokeColor('#e2e8f0').lineWidth(1).stroke();
     doc.moveDown(0.8);
 
-    // ── Question by Question ─────────────────────────────────────────
+    // ── Question by Question — full Yes/Not Yet analysis ─────────────
     doc.fontSize(8).fillColor('#94a3b8').font('Helvetica-Bold')
       .text('QUESTION BY QUESTION', { width: PAGE_W, characterSpacing: 1.5 });
     doc.moveDown(0.8);
 
+    // Mix a hex color with white. mix=0 -> white, mix=1 -> color.
+    // PDFKit doesn't honor an "alpha" suffix on hex strings, so we precompute
+    // a real RGB tint instead of writing e.g. `${color}10`.
+    const tint = (hex, mix) => {
+      const h = hex.replace('#', '');
+      const r = parseInt(h.slice(0, 2), 16);
+      const g = parseInt(h.slice(2, 4), 16);
+      const b = parseInt(h.slice(4, 6), 16);
+      const m = Math.max(0, Math.min(1, mix));
+      return [
+        Math.round(255 + (r - 255) * m),
+        Math.round(255 + (g - 255) * m),
+        Math.round(255 + (b - 255) * m),
+      ];
+    };
+
+    // Helper: render an analysis box (Yes or Not Yet) with a "Your Answer" pill
+    const renderAnalysisBox = (label, text, color, isYourAnswer, x, boxW) => {
+      const padX = 10;
+      const padY = 8;
+      const labelFontSize = 9;
+      const bodyFontSize = 8.5;
+      const bodyLineGap = 2;
+
+      // Compute body height
+      doc.fontSize(bodyFontSize).font('Helvetica');
+      const bodyH = doc.heightOfString(text || '', { width: boxW - padX * 2, lineGap: bodyLineGap });
+      // Header height (label line)
+      const headerH = labelFontSize + 4;
+      const totalH = padY + headerH + 4 + bodyH + padY;
+
+      // Background — light tint of the accent color when this is the user's answer
+      const fill = isYourAnswer ? tint(color, 0.12) : '#FFFFFF';
+      doc.roundedRect(x, doc.y, boxW, totalH, 6).fillAndStroke(fill, isYourAnswer ? color : '#e2e8f0');
+
+      const innerY = doc.y + padY;
+      // Label
+      doc.fontSize(labelFontSize).fillColor(isYourAnswer ? color : '#94a3b8').font('Helvetica-Bold')
+        .text(label.toUpperCase(), x + padX, innerY, { width: boxW - padX * 2, characterSpacing: 1.2, lineBreak: false });
+
+      // "Your Answer" mini-pill on the right
+      if (isYourAnswer) {
+        const pillTxt = 'YOUR ANSWER';
+        const pillFs = 6.5;
+        doc.fontSize(pillFs).font('Helvetica-Bold');
+        const pTextW = doc.widthOfString(pillTxt, { characterSpacing: 0.8 });
+        const pPadX = 5;
+        const pPadY = 2.5;
+        const pW = pTextW + pPadX * 2;
+        const pH = pillFs + pPadY * 2;
+        const pX = x + boxW - padX - pW;
+        const pY = innerY - 1;
+        doc.roundedRect(pX, pY, pW, pH, 4).fill(color);
+        doc.fontSize(pillFs).fillColor('#fff').font('Helvetica-Bold')
+          .text(pillTxt, pX + pPadX, pY + pPadY, { width: pTextW + 1, characterSpacing: 0.8, lineBreak: false });
+      }
+
+      // Body
+      doc.fontSize(bodyFontSize).fillColor('#374151').font('Helvetica')
+        .text(text || '', x + padX, innerY + headerH + 4, { width: boxW - padX * 2, lineGap: bodyLineGap });
+
+      return totalH;
+    };
+
     const questionResults = Array.isArray(results.questionResults) ? results.questionResults : [];
     questionResults.forEach((item, i) => {
-      if (doc.y > 700) doc.addPage();
+      if (doc.y > 680) doc.addPage();
 
       const isYes = item.answer === 'yes';
-      const answerColor = isYes ? TEAL : SIENNA;
-      const answerLabel = isYes ? 'Yes' : 'Inconsistent / Not Yet';
 
       // Question number + short label (navy bold)
       doc.fontSize(11).fillColor(NAVY).font('Helvetica-Bold')
-        .text(`${i + 1}. ${item.shortLabel || ''}`, 50, doc.y, { width: PAGE_W });
+        .text(`Question ${i + 1}: ${item.shortLabel || ''}`, 50, doc.y, { width: PAGE_W });
       doc.moveDown(0.3);
 
-      // Prompt (oblique)
+      // Prompt
       doc.fontSize(9).fillColor('#475569').font('Helvetica-Oblique')
         .text(item.prompt || '', 50, doc.y, { width: PAGE_W, lineGap: 2 });
       doc.moveDown(0.5);
 
-      // Your Answer label (colored)
-      doc.fontSize(9).fillColor(answerColor).font('Helvetica-Bold')
-        .text(`Your Answer: ${answerLabel}`, 50, doc.y, { width: PAGE_W });
-      doc.moveDown(0.3);
+      // Two-column Yes / Not Yet boxes
+      const gap = 10;
+      const boxW = (PAGE_W - gap) / 2;
+      const startY = doc.y;
+      const yesH = renderAnalysisBox('Yes', item.ifYes, TEAL, isYes, 50, boxW);
+      doc.y = startY;
+      const notYetH = renderAnalysisBox('Not Yet', item.ifNotYet, SIENNA, !isYes, 50 + boxW + gap, boxW);
+      doc.y = startY + Math.max(yesH, notYetH) + 12;
 
-      // Analysis for their answer
-      const analysis = isYes ? item.ifYes : item.ifNotYet;
-      doc.fontSize(9).fillColor('#374151').font('Helvetica')
-        .text(analysis || '', 50, doc.y, { width: PAGE_W, lineGap: 3 });
-      doc.moveDown(0.8);
-
-      // Gray horizontal divider between questions
+      // Divider
       if (i < questionResults.length - 1) {
         doc.moveTo(50, doc.y).lineTo(50 + PAGE_W, doc.y).strokeColor('#CBD5E1').lineWidth(0.75).stroke();
         doc.moveDown(0.8);
@@ -11089,35 +11202,49 @@ const generateBlueprintPdf = () => {
     const components = [
       {
         num: '1',
-        title: 'Shared Understanding',
+        title: 'Clear Expectations',
         color: TEAL,
         practice: 'Before work starts, define success explicitly. Ask: "What does done look like?" Get alignment — not just acknowledgment.',
-        signal: 'Your direct report can describe their #1 priority\'s success criteria as clearly as you can.',
+        signal: 'Your direct report can describe their top priority\'s success criteria as clearly as you can.',
       },
       {
         num: '2',
-        title: 'Ownership Language',
+        title: 'Clean Handoff',
         color: TEAL,
-        practice: 'Require a specific ownership claim for every assignment.\n"I\'ll have X done by Friday" — not "I\'m on it" or "I\'ll try."',
+        practice: 'Require a specific commitment for every assignment.\n"I\'ll have X done by Friday" — not "I\'m on it" or "I\'ll try."',
         signal: 'Vague language triggers a follow-up question, not acceptance.',
       },
       {
         num: '3',
-        title: 'Ownership Discipline',
+        title: 'Avoiding Rescue',
         color: TEAL,
         practice: 'When it\'s faster to step in — don\'t. Return the work. Stay the coach. Every time you take work back, you signal you don\'t trust the handoff.',
         signal: 'Your team solves problems without bringing them back to you.',
       },
       {
         num: '4',
-        title: 'Timely Feedback',
+        title: 'Follow-Up on the Work',
+        color: TEAL,
+        practice: 'Each week, check in on work in progress. Stay connected without taking it over. A short "where are we on this?" keeps standards visible.',
+        signal: 'You stay informed and your team stays accountable — without surprise problems.',
+      },
+      {
+        num: '5',
+        title: 'Timely Redirecting Feedback',
         color: ORANGE,
         practice: 'Address issues within 24 hours of noticing them. Short, direct, no softening. Delayed feedback teaches your team that standards are flexible.',
         signal: 'Standards feel real. Small problems don\'t accumulate into patterns.',
       },
       {
-        num: '5',
-        title: 'Pattern Feedback',
+        num: '6',
+        title: 'Reinforcing Feedback',
+        color: ORANGE,
+        practice: 'Catch someone doing something right and tell them specifically what they did well. Name the behavior so it can be repeated deliberately.',
+        signal: 'Your team knows what good looks like — and reaches for it on their own.',
+      },
+      {
+        num: '7',
+        title: 'Pattern Recognition',
         color: ORANGE,
         practice: 'When the same issue appears more than once, name the behavior pattern — not just the task. The pattern is what needs to change.',
         signal: 'You\'re having the same conversation less often.',
@@ -11158,9 +11285,23 @@ const generateBlueprintPdf = () => {
     });
 
     // ── Bottom CTA ────────────────────────────────────────────────────
+    // Use a real white-tinted RGB (PDFKit ignores hex alpha suffixes, which
+    // was previously rendering this band as solid navy with unreadable text).
+    const tintCta = (hex, mix) => {
+      const h = hex.replace('#', '');
+      const r = parseInt(h.slice(0, 2), 16);
+      const g = parseInt(h.slice(2, 4), 16);
+      const b = parseInt(h.slice(4, 6), 16);
+      const m = Math.max(0, Math.min(1, mix));
+      return [
+        Math.round(255 + (r - 255) * m),
+        Math.round(255 + (g - 255) * m),
+        Math.round(255 + (b - 255) * m),
+      ];
+    };
     doc.moveDown(1);
-    doc.rect(50, doc.y, PAGE_W, 48).fill(`${NAVY}10`).stroke('#e2e8f0');
     const ctaY = doc.y;
+    doc.roundedRect(50, ctaY, PAGE_W, 48, 4).fillAndStroke(tintCta(NAVY, 0.08), '#e2e8f0');
     doc.fontSize(10).fillColor(NAVY).font('Helvetica-Bold')
       .text('Foundation — Build this system through practice, not lectures.', 60, ctaY + 10, { width: PAGE_W - 20 });
     doc.fontSize(9).fillColor(TEAL).font('Helvetica')
@@ -11199,15 +11340,16 @@ const uploadPdfAndGetUrl = async (buffer, storagePath) => {
  */
 const buildAccountabilityAssessmentEmail = (firstName, results, aiInsights, pdfUrls = {}) => {
   const yesCount = Number(results.yesCount || 0);
-  const totalQuestions = Number(results.totalQuestions || 5);
+  const totalQuestions = Number(results.totalQuestions || 7);
   const scoreLabel = results.scoreLabel || 'Accountability System Score';
+  const headline = results.headline || '';
   const summary = results.summary || '';
   const questionResults = Array.isArray(results.questionResults) ? results.questionResults : [];
 
   // Pill color based on archetype — matches results page design
-  const archetype = results.archetype || 'leaky-system';
+  const archetype = results.archetype || 'room-to-strengthen';
   let pillBg, pillText;
-  if (archetype === 'execution-engine') {
+  if (archetype === 'strong-system') {
     pillBg = 'rgba(39,122,104,0.12)';
     pillText = '#277A68';
   } else if (archetype === 'system-not-yet-installed') {
@@ -11218,26 +11360,44 @@ const buildAccountabilityAssessmentEmail = (firstName, results, aiInsights, pdfU
     pillText = '#B84825';
   }
 
+  // Each question row shows the answer (with a "Your Answer" pill) and the
+  // matching analysis copy. Mirrors the results page question-by-question section.
+  const escapeHtml = (str) => String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
   const questionRows = questionResults.map((item, index) => {
-    const answerLabel = item.answer === 'yes' ? 'Yes' : 'Inconsistent / Not Yet';
+    const isYes = item.answer === 'yes';
+    const yourAnswerLabel = isYes ? 'Yes' : 'Not Yet';
+    const yourAnswerColor = isYes ? '#277A68' : '#B84825';
+    const yourAnswerBg = isYes ? 'rgba(39,122,104,0.12)' : 'rgba(184,72,37,0.12)';
+    const analysis = isYes ? item.ifYes : item.ifNotYet;
+
     return `
-      <tr>
-        <td style="padding: 10px 0; border-bottom: 1px solid rgba(0,46,71,0.1); color: #002E47; font-size: 14px;">
-          ${index + 1}. ${item.shortLabel || 'Question'}
-        </td>
-        <td style="padding: 10px 0; border-bottom: 1px solid rgba(0,46,71,0.1); color: ${item.answer === 'yes' ? '#349881' : '#C85530'}; font-size: 14px; font-weight: 700; text-align: right;">
-          ${answerLabel}
-        </td>
-      </tr>
+      <div style="padding: 18px 0; border-top: 1px solid rgba(0,46,71,0.08);">
+        <p style="margin: 0 0 6px 0; color: #002E47; font-size: 16px; font-weight: 700;">
+          Question ${index + 1}: ${escapeHtml(item.shortLabel || '')}
+        </p>
+        <p style="margin: 0 0 10px 0; color: #475569; font-size: 13px; line-height: 1.5; font-style: italic;">
+          ${escapeHtml(item.prompt || '')}
+        </p>
+        <p style="margin: 0 0 10px 0;">
+          <span style="display: inline-block; padding: 4px 10px; background: ${yourAnswerBg}; color: ${yourAnswerColor}; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;">
+            Your Answer: ${yourAnswerLabel}
+          </span>
+        </p>
+        <p style="margin: 0; color: #002E47; font-size: 14px; line-height: 1.6;">
+          ${escapeHtml(analysis || '')}
+        </p>
+      </div>
     `;
   }).join('');
 
   // Summary paragraphs with spacing
   const summaryHtml = summary.split('\n\n').map(para =>
-    `<p style="margin: 0 0 16px 0; color: #002E47; font-size: 15px; line-height: 1.7;">${para}</p>`
+    `<p style="margin: 0 0 16px 0; color: #002E47; font-size: 15px; line-height: 1.7;">${escapeHtml(para)}</p>`
   ).join('');
-
-  const primaryPdfUrl = pdfUrls.resultsPdf || pdfUrls.blueprint || null;
 
   return `<!DOCTYPE html>
 <html>
@@ -11257,13 +11417,18 @@ const buildAccountabilityAssessmentEmail = (firstName, results, aiInsights, pdfU
     <!-- Score / Results — cream background -->
     <div style="background: #FAF8F5; padding: 32px 28px 8px 28px; text-align: center;">
       <h1 style="margin: 0 0 16px 0; color: #002E47; font-size: 22px; font-weight: 700; line-height: 1.4;">
-        You answered Yes to <span style="color: #C85530;">${yesCount} out of ${totalQuestions}</span> questions on the Accountability System Pulse Check.
+        You answered &quot;Yes&quot; to <span style="color: #C85530;">${yesCount} out of ${totalQuestions}</span> questions.
       </h1>
-      <div style="margin-bottom: 24px;">
+      <div style="margin-bottom: 16px;">
         <span style="display: inline-block; padding: 8px 18px; background: ${pillBg}; color: ${pillText}; border-radius: 8px; font-weight: 900; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;">
-          ${scoreLabel}
+          ${escapeHtml(scoreLabel)}
         </span>
       </div>
+      ${headline ? `
+      <h2 style="margin: 0 0 8px 0; color: #002E47; font-size: 20px; font-weight: 800; line-height: 1.3;">
+        ${escapeHtml(headline)}
+      </h2>
+      ` : ''}
     </div>
 
     <!-- Summary — cream background -->
@@ -11271,14 +11436,10 @@ const buildAccountabilityAssessmentEmail = (firstName, results, aiInsights, pdfU
       ${summaryHtml}
     </div>
 
-    <!-- Question by Question — cream background -->
+    <!-- Question by Question — cream background, full Yes/Not Yet analysis -->
     <div style="background: #FAF8F5; padding: 0 28px 32px 28px;">
-      <p style="margin: 0 0 16px 0; color: #002E47; font-size: 11px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase;">Question by Question</p>
-      <table style="width: 100%; border-collapse: collapse;">
-        <tbody>
-          ${questionRows}
-        </tbody>
-      </table>
+      <p style="margin: 0 0 8px 0; color: #002E47; font-size: 11px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase;">Question by Question</p>
+      ${questionRows}
     </div>
 
     <!-- AI Insights — cream background -->
@@ -11290,14 +11451,21 @@ const buildAccountabilityAssessmentEmail = (firstName, results, aiInsights, pdfU
     ` : ''}
 
     <!-- Download Section — navy background, white font -->
-    ${primaryPdfUrl ? `
+    ${(pdfUrls.resultsPdf || pdfUrls.blueprint) ? `
     <div style="background: #002E47; padding: 32px; text-align: center;">
       <h3 style="margin: 0 0 20px 0; color: #fff; font-size: 20px; font-weight: 700;">
         Download Your Free Resources
       </h3>
-      <a href="${primaryPdfUrl}" style="display: inline-block; padding: 14px 24px; background: #C85530; color: #fff; text-decoration: none; border-radius: 10px; font-size: 14px; font-weight: 700;">
-        Your Results and Accountability System Blueprint
+      ${pdfUrls.resultsPdf ? `
+      <a href="${pdfUrls.resultsPdf}" style="display: inline-block; margin: 0 6px 12px 6px; padding: 14px 24px; background: #C85530; color: #fff; text-decoration: none; border-radius: 10px; font-size: 14px; font-weight: 700;">
+        Your Results
       </a>
+      ` : ''}
+      ${pdfUrls.blueprint ? `
+      <a href="${pdfUrls.blueprint}" style="display: inline-block; margin: 0 6px 12px 6px; padding: 14px 24px; background: #C85530; color: #fff; text-decoration: none; border-radius: 10px; font-size: 14px; font-weight: 700;">
+        Accountability System Blueprint
+      </a>
+      ` : ''}
     </div>
     ` : ''}
 
@@ -11307,7 +11475,7 @@ const buildAccountabilityAssessmentEmail = (firstName, results, aiInsights, pdfU
         <strong>Your assessment showed you the gaps. Foundation is where you close them.</strong> A small cohort. Live practice on the exact behaviors you just assessed. If you&apos;re ready to build the system, reply to this email with &ldquo;Foundation&rdquo; for details and to get on the waitlist.
       </p>
       <p style="margin: 0;">
-        <a href="https://www.leaderreps.com" style="color: #277A68; font-weight: 700; text-decoration: none; font-size: 15px;">Learn More &rarr;</a>
+        <a href="https://www.leaderreps.com/foundation" style="color: #277A68; font-weight: 700; text-decoration: none; font-size: 15px;">Learn More &rarr;</a>
       </p>
     </div>
 
@@ -11342,6 +11510,7 @@ exports.submitSmsOptIn = onRequest(
     timeoutSeconds: 30,
     memory: "256MiB",
     cors: true,
+    secrets: ["TELNYX_API_KEY", "TELNYX_MESSAGING_PROFILE_ID", "TELNYX_PHONE_NUMBER"],
   },
   async (req, res) => {
     if (req.method === 'OPTIONS') {
@@ -11418,8 +11587,47 @@ exports.submitSmsOptIn = onRequest(
 
       logger.info(`SMS opt-in recorded for ${normalizedPhone} (docId: ${docId})`);
 
+      // Best-effort welcome SMS. Failures here must not break the opt-in
+      // (consent record is the source of truth; we can backfill the welcome).
+      // Mutual exclusion: if phone is in Lab, skip welcome — Lab is sending.
+      let welcomeSent = false;
+      const labConflict = await isPhoneEnrolledInLab(normalizedPhone);
+      if (labConflict) {
+        logger.info("Daily Rep welcome SMS suppressed — phone in Leadership Lab", {
+          phone: maskPhone(normalizedPhone),
+        });
+        await db.collection('sms_opt_ins').doc(docId).update({
+          welcomeSentAt: null,
+          welcomeSmsError: 'suppressed-lab-enrollment',
+          labEnrolled: true,
+          // Flip suspendedByLab so the daily cron also skips this doc on its
+          // own check, not just the runtime isPhoneEnrolledInLab() lookup.
+          // Keeps the doc state consistent with users who joined Lab AFTER
+          // opting in to Daily Rep (handled by labAddParticipant).
+          suspendedByLab: true,
+          suspendedByLabAt: admin.firestore.FieldValue.serverTimestamp(),
+          suspendedReason: 'Phone enrolled in Leadership Lab at opt-in time',
+        });
+      } else {
+        try {
+          const result = await dailyRep.sendDailyRepSms(
+            normalizedPhone,
+            dailyRep.WELCOME_SMS(firstName)
+          );
+          welcomeSent = result.ok;
+          await db.collection('sms_opt_ins').doc(docId).update({
+            welcomeSentAt: result.ok ? admin.firestore.FieldValue.serverTimestamp() : null,
+            welcomeSmsId: result.id || null,
+            welcomeSmsError: result.ok ? null : (result.error || 'unknown'),
+          });
+        } catch (smsErr) {
+          logger.error(`Welcome SMS send threw for ${normalizedPhone}`, smsErr);
+        }
+      }
+
       res.json({
         success: true,
+        welcomeSent,
         message: 'You\'re subscribed. Reply STOP to any message to opt out.',
       });
     } catch (err) {
@@ -11479,7 +11687,7 @@ exports.analyzeAccountabilityAssessment = onRequest(
     logger.info(`Processing accountability assessment for ${email}`);
 
     // Destructure scoring fields from results object
-    const { yesCount = 0, totalQuestions = 5, scoreBand = '0-1', scoreLabel = '', kitTag = '' } = results;
+    const { yesCount = 0, totalQuestions = 7, scoreBand = '0-2', scoreLabel = '', kitTag = '' } = results;
 
     try {
       // 1. Generate AI insights
@@ -11523,7 +11731,7 @@ exports.analyzeAccountabilityAssessment = onRequest(
         const htmlEmail = buildAccountabilityAssessmentEmail(firstName, results, aiInsights, pdfUrls);
 
         await transporter.sendMail({
-          from: `"LeaderReps" <team@leaderreps.com>`,
+          from: `"LeaderReps" <arena@leaderreps.com>`,
           to: email,
           subject: `Your Accountability System Pulse Check Results from LeaderReps`,
           html: htmlEmail,
@@ -11542,7 +11750,7 @@ exports.analyzeAccountabilityAssessment = onRequest(
         totalQuestions,
         scoreBand,
         scoreLabel,
-        archetype: results.archetype || (scoreBand === '4-5' ? 'execution-engine' : (scoreBand === '2-3' ? 'leaky-system' : 'system-not-yet-installed')),
+        archetype: results.archetype || (scoreBand === '6-7' ? 'strong-system' : (scoreBand === '3-5' ? 'room-to-strengthen' : 'system-not-yet-installed')),
         archetypeName: scoreLabel,
         overallScore: results.overallScore || 0,
         summary: results.summary || '',
@@ -11599,13 +11807,36 @@ exports.analyzeAccountabilityAssessment = onRequest(
           logger.info(`Accountability lead created for ${email}, docId: ${docRef.id}`);
         }
 
+        // Anonymous aggregate stats — increment a single global counter doc
+        // so we can reference rollups in content (e.g. "75% of managers told
+        // us their expectations weren't consistently clear"). NOT tied to a
+        // specific user; one increment per submission.
+        try {
+          const statsRef = db.collection('accountability-stats').doc('global');
+          const questionResults = Array.isArray(results.questionResults) ? results.questionResults : [];
+          const statsUpdate = {
+            totalSubmissions: admin.firestore.FieldValue.increment(1),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            [`bands.${scoreBand}`]: admin.firestore.FieldValue.increment(1),
+          };
+          questionResults.forEach((item) => {
+            if (!item || !item.id) return;
+            const bucket = item.answer === 'yes' ? 'yes' : 'notYet';
+            statsUpdate[`questions.${item.id}.${bucket}`] = admin.firestore.FieldValue.increment(1);
+            statsUpdate[`questions.${item.id}.shortLabel`] = item.shortLabel || '';
+          });
+          await statsRef.set(statsUpdate, { merge: true });
+        } catch (statsErr) {
+          logger.warn(`Stats aggregation failed for ${email}:`, statsErr.message);
+        }
+
         // Sync to Kit — must be awaited before res.json() in Gen 2 functions
         // (process terminates on response, so non-blocking .then() never runs)
-        const kitSource = scoreBand === '4-5'
-          ? 'accountability-asa-4-5'
-          : scoreBand === '2-3'
-            ? 'accountability-asa-2-3'
-            : 'accountability-asa-0-1';
+        const kitSource = scoreBand === '6-7'
+          ? 'accountability-asa-6-7'
+          : scoreBand === '3-5'
+            ? 'accountability-asa-3-5'
+            : 'accountability-asa-0-2';
 
         try {
           const kitResult = await syncLeadToKit(email, firstName, kitSource, {
@@ -12020,18 +12251,25 @@ exports.analyzeReadinessAssessment = onRequest(
 const KIT_TAG_MAPPINGS = {
   'leadership-dna': 'leadership-dna-assessment',
   'accountability': 'accountability-assessment',
-  'accountability-asa-4-5': 'ASA 4-5',
-  'accountability-asa-2-3': 'ASA 2-3',
-  'accountability-asa-0-1': 'ASA 0-1',
+  'accountability-asa-6-7': 'ASA 6-7',
+  'accountability-asa-3-5': 'ASA 3-5',
+  'accountability-asa-0-2': 'ASA 0-2',
   'roi-calculator': 'roi-calculator',
   'readiness': 'leadership-readiness-assessment',
 };
 
 // Kit tag IDs (numeric IDs from app.kit.com)
+// NOTE: When the assessment expanded from 5 → 7 questions the band names
+// changed (ASA 4-5/2-3/0-1 → ASA 6-7/3-5/0-2). We reuse the existing Kit
+// tag IDs by severity (high/mid/low) so historical sequences keep firing
+// for the equivalent band. Rename the labels in app.kit.com to match.
+//   18928677 — high   (was "ASA 4-5"  → now "ASA 6-7")
+//   18928684 — mid    (was "ASA 2-3"  → now "ASA 3-5")
+//   18928687 — low    (was "ASA 0-1"  → now "ASA 0-2")
 const KIT_TAG_IDS = {
-  'ASA 4-5': 18928677,
-  'ASA 2-3': 18928684,
-  'ASA 0-1': 18928687,
+  'ASA 6-7': 18928677,
+  'ASA 3-5': 18928684,
+  'ASA 0-2': 18928687,
 };
 
 /**
@@ -12052,12 +12290,12 @@ async function syncLeadToKit(email, firstName, source, customFields = {}) {
 
   try {
     // Step 1: Create or update the subscriber
-    // Kit v4 API uses the API Key as a Bearer token
+    // Kit v4 API: API keys use X-Kit-Api-Key header (Bearer is for OAuth tokens only)
     const subscriberResponse = await fetch('https://api.kit.com/v4/subscribers', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${kitApiKey}`,
+        'X-Kit-Api-Key': kitApiKey,
       },
       body: JSON.stringify({
         email_address: email.toLowerCase(),
@@ -12081,6 +12319,7 @@ async function syncLeadToKit(email, firstName, source, customFields = {}) {
     logger.info(`Kit subscriber created/updated: ${email}, id: ${subscriberId}`);
 
     // Step 2: Add tag based on source (if tag ID is configured)
+    // Kit v4 API requires `email_address` in the body — `subscriber_id` is rejected with HTTP 422.
     const tagName = KIT_TAG_MAPPINGS[source];
     const tagId = tagName ? KIT_TAG_IDS[tagName] : null;
     if (tagId && subscriberId) {
@@ -12088,9 +12327,9 @@ async function syncLeadToKit(email, firstName, source, customFields = {}) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${kitApiKey}`,
+          'X-Kit-Api-Key': kitApiKey,
         },
-        body: JSON.stringify({ subscriber_id: subscriberId }),
+        body: JSON.stringify({ email_address: email.toLowerCase() }),
       });
       if (tagResponse.ok) {
         logger.info(`Kit: Tagged subscriber ${subscriberId} with '${tagName}' (id: ${tagId})`);
@@ -13452,31 +13691,55 @@ const LL_PREFIX = 'll-';
  * Validate required Lab environment variables on cold start.
  * Logs errors for any missing secrets so misconfiguration is immediately visible.
  */
+/**
+ * Shared secrets array for every Leadership Lab Cloud Function.
+ * Declared once and reused so the binding stays consistent across all
+ * onCall/onRequest/onSchedule entry points. Any function that may need
+ * to send SMS, verify a Telnyx webhook, run AI inference, or transcribe
+ * voice memos must include this list.
+ */
+const LL_SECRETS = [
+  'ANTHROPIC_API_KEY',
+  'GEMINI_API_KEY',
+  'TELNYX_API_KEY',
+  'TELNYX_PUBLIC_KEY',
+  'TELNYX_PHONE_NUMBER',
+  'TELNYX_MESSAGING_PROFILE_ID',
+  'LL_TRAINER_PHONE', // optional — if set, trainer gets an SMS alert when a participant goes 21d silent
+];
+
 let _labEnvValidated = false;
 function validateLabEnvironment() {
   if (_labEnvValidated) return;
   _labEnvValidated = true;
+  // Required secrets — without these the SMS coaching loop cannot function.
+  // TELNYX_PHONE_NUMBER OR TELNYX_MESSAGING_PROFILE_ID is sufficient (either
+  // can drive sendLabSms), so they are validated together below.
   const required = [
     'ANTHROPIC_API_KEY',
-    'TWILIO_ACCOUNT_SID',
-    'TWILIO_AUTH_TOKEN',
-    'TWILIO_MESSAGING_SERVICE_SID',
+    'TELNYX_API_KEY',
+    'TELNYX_PUBLIC_KEY',
   ];
   const missing = required.filter((k) => !process.env[k]);
   if (missing.length > 0) {
     logger.error('CRITICAL: Lab environment misconfigured — missing secrets', { missing });
   }
+  if (!process.env.TELNYX_PHONE_NUMBER && !process.env.TELNYX_MESSAGING_PROFILE_ID) {
+    logger.error('CRITICAL: Lab SMS sender not configured — set TELNYX_PHONE_NUMBER or TELNYX_MESSAGING_PROFILE_ID');
+  }
   const optional = ['GEMINI_API_KEY'];
   const missingOptional = optional.filter((k) => !process.env[k]);
   if (missingOptional.length > 0) {
-    logger.warn('Lab optional env vars missing (fallback AI, transcription may fail)', { missingOptional });
+    logger.warn('Lab optional env vars missing (fallback AI, voice memo transcription may fail)', { missingOptional });
   }
 }
 
-/** Mask a phone number for safe logging: +1xxxxx3200 */
+/** Mask a phone number for safe logging: +1xxxxxxx (last-4 also masked).
+ *  Keeps country code prefix only; everything else replaced with 'x'.
+ *  Logs aren't a debug surface — use Telnyx dashboard for full numbers. */
 function maskPhone(phone) {
   if (!phone || phone.length < 6) return '***';
-  return phone.slice(0, 2) + 'x'.repeat(phone.length - 6) + phone.slice(-4);
+  return phone.slice(0, 2) + 'x'.repeat(Math.max(4, phone.length - 2));
 }
 
 /** Get the Firebase project ID at runtime. */
@@ -13491,6 +13754,77 @@ function labFunctionUrl(functionName) {
   return `https://us-central1-${getLabProjectId()}.cloudfunctions.net/${functionName}`;
 }
 
+/**
+ * Build the contact-card URL appended to first-touch SMS messages so the
+ * leader can save the LeaderReps coach number with one tap.
+ *  iOS: opens Safari → vCard preview → "Add Contact"
+ *  Android: downloads .vcf → opens with Contacts → "Save"
+ * Customise per-cohort or per-coach by passing optional fields.
+ */
+function buildVcardLink(opts = {}) {
+  const params = new URLSearchParams();
+  if (opts.firstName) params.set("name", opts.firstName);
+  const qs = params.toString();
+  return `${labFunctionUrl("coachVcard")}${qs ? `?${qs}` : ""}`;
+}
+
+/**
+ * coachVcard — Public HTTPS endpoint that serves a vCard (.vcf) for the
+ * LeaderReps coach number. Tapping the link in an SMS prompts the user to
+ * save the contact.
+ *
+ *   GET /coachVcard            → generic "LeaderReps Coach" card
+ *   GET /coachVcard?name=Rob   → personalises the FN line ("Rob's LeaderReps Coach")
+ *
+ * Returns Content-Type text/vcard with a download disposition. Carriers and
+ * mobile OS handle vCard previews natively.
+ */
+exports.coachVcard = onRequest(
+  {
+    region: "us-central1",
+    cors: true,
+    invoker: "public",
+    secrets: ["TELNYX_PHONE_NUMBER"],
+    maxInstances: 5,
+  },
+  async (req, res) => {
+    const phone = process.env.TELNYX_PHONE_NUMBER || "";
+    if (!phone) {
+      res.status(503).send("Coach phone not configured.");
+      return;
+    }
+
+    // vCard 3.0 — broadest cross-platform support (iOS, Android, Outlook).
+    // Format helpers strip control chars and limit length to keep the
+    // attachment under ~1KB so MMS gateways don't choke on links.
+    const safeName = String(req.query.name || "")
+      .replace(/[^A-Za-z0-9 .'-]/g, "")
+      .slice(0, 32)
+      .trim();
+    const fn = safeName ? `LeaderReps Coach (${safeName})` : "LeaderReps Coach";
+
+    const vcard = [
+      "BEGIN:VCARD",
+      "VERSION:3.0",
+      `FN:${fn}`,
+      "N:Coach;LeaderReps;;;",
+      "ORG:LeaderReps",
+      "TITLE:AI Leadership Coach",
+      `TEL;TYPE=CELL,VOICE:${phone}`,
+      "URL:https://leaderreps.com",
+      "NOTE:Your AI coach. Text anytime — STOP to opt out, HELP for help.",
+      "END:VCARD",
+      "",
+    ].join("\r\n");
+
+    res.set("Content-Type", "text/vcard; charset=utf-8");
+    res.set("Content-Disposition", 'attachment; filename="LeaderReps-Coach.vcf"');
+    res.set("Cache-Control", "public, max-age=300");
+    res.status(200).send(vcard);
+  }
+);
+
+
 /** Get the Leadership Lab hosting domain based on project ID. */
 function labHostingDomain() {
   const projectId = getLabProjectId();
@@ -13499,21 +13833,12 @@ function labHostingDomain() {
   return 'https://leaderreps-lab.web.app';
 }
 
-const LL_WEEK_THEMES = [
-  "Reinforcing — Recognizing & Reinforcing Great Leadership",
-  "One-on-One — Mastering the 1:1 Conversation",
-  "Redirecting — Giving Feedback That Actually Lands",
-  "Readiness — Handling Pushback & Resistance",
-  "Graduation — Leading With Confidence",
-];
-
-const LL_EXPERIMENTS = [
-  "Before your first meeting today, write down the one thing each person in that room does better than anyone else on the team. During the meeting, find a natural moment to name ONE of those things — out loud, in front of the group. Watch what happens to the room.",
-  "The 2-Minute Silence: In your next 1:1, ask your most important question. After they answer, say nothing. Just stay present for a full two minutes. The real answer almost always comes after the first one.",
-  "Think of the person you MOST need to give redirecting feedback to — the one you've been putting off. Write it in one sentence: 'When you [behavior], the impact is [consequence].' Now deliver it today. Not tomorrow. Today.",
-  "The Columbo Method: Next time someone pushes back, say 'You might be right — help me see what I'm missing.' Then actually listen. Track three things: their energy shift, how the conversation changes, and your own impulse to fight back.",
-  "Before your most important meeting this week, write down: What would the leader I'm becoming do differently than the leader I was 5 weeks ago? Then walk in and do exactly that. After, tell your coach what happened.",
-];
+// LL_WEEK_THEMES / LL_EXPERIMENTS are derived from the curriculum spine in
+// ./labCurriculum.js. The spine is the source of truth — themes and the base
+// (un-personalized) experiment for each week. Claude personalizes delivery;
+// it does NOT invent themes or replace anchor experiments.
+const LL_WEEK_THEMES = LL_CURRICULUM.map((w) => w.theme);
+const LL_EXPERIMENTS = LL_CURRICULUM.map((w) => w.anchorExperiment);
 
 /** Safely clamp a weekNumber to a valid array index for themes/experiments. */
 function weekIdx(weekNumber) {
@@ -13524,7 +13849,10 @@ function weekIdx(weekNumber) {
  * evolveProfileIfStale — Background profile evolution.
  * Checks if the Leadership Profile hasn't been updated recently, and if stale,
  * runs a lightweight profile update from recent conversations.
- * Threshold: at least 3 days AND at least 3 conversations since last update.
+ *
+ * Threshold:
+ *   - New profiles (<7 days old): 1 day + 2 conversations (rapid early refinement)
+ *   - Mature profiles (>=7 days old): 3 days + 3 conversations
  */
 async function evolveProfileIfStale(uid, apiKey) {
   const db = admin.firestore();
@@ -13535,20 +13863,25 @@ async function evolveProfileIfStale(uid, apiKey) {
   const profile = lpSnap.data();
   const lastUpdated = profile.updatedAt?.toDate?.() || profile.createdAt?.toDate?.() || new Date(0);
   const daysSinceUpdate = (Date.now() - lastUpdated.getTime()) / (1000 * 60 * 60 * 24);
+  const profileCreated = profile.createdAt?.toDate?.() || lastUpdated;
+  const profileAgeDays = (Date.now() - profileCreated.getTime()) / (1000 * 60 * 60 * 24);
+  const isNewProfile = profileAgeDays < 7;
 
-  // Not stale yet — at least 3 days between updates
-  if (daysSinceUpdate < 3) return;
+  const minDays = isNewProfile ? 1 : 3;
+  const minConvos = isNewProfile ? 2 : 3;
+
+  if (daysSinceUpdate < minDays) return;
 
   // Check if there are enough new conversations since last update
   const recentConvos = await db
     .collection(`${LL_PREFIX}users/${uid}/conversations`)
     .where("updatedAt", ">", profile.updatedAt || profile.createdAt)
-    .limit(3)
+    .limit(minConvos)
     .get();
 
-  if (recentConvos.size < 3) return;
+  if (recentConvos.size < minConvos) return;
 
-  logger.info("evolveProfileIfStale: profile is stale, updating", { uid, daysSinceUpdate });
+  logger.info("evolveProfileIfStale: profile is stale, updating", { uid, daysSinceUpdate, isNewProfile });
 
   // Load last 10 conversations for analysis
   const convosSnap = await db
@@ -13656,8 +13989,240 @@ async function summarizeConversation(convoRef, messages, apiKey) {
 
   const summary = response.content[0]?.text || "";
   if (summary) {
-    await convoRef.update({ summary });
+    // Cap stored summary length to avoid Firestore doc bloat. Claude was asked
+    // for 1-2 sentences but occasionally over-runs.
+    const SUMMARY_MAX = 280;
+    const trimmed = summary.length > SUMMARY_MAX
+      ? summary.slice(0, SUMMARY_MAX - 1).trimEnd() + "…"
+      : summary;
+    await convoRef.update({ summary: trimmed });
   }
+}
+
+/**
+ * loadRecentSmsContext — Pull verbatim recent SMS messages across the most
+ * recently updated SMS conversation(s). This is the working-memory layer:
+ * when a user replies to a thread that was auto-closed, the AI still sees
+ * what was just said. Fixes the "I haven't said anything to you yet today"
+ * disconnect.
+ *
+ * Returns up to `maxMessages` of the most recent verbatim exchanges, in
+ * chronological order, drawn from the most recent SMS conversation that
+ * is NOT the current one.
+ */
+async function loadRecentSmsContext(uid, currentConversationId, maxMessages = 8) {
+  const db = admin.firestore();
+  try {
+    const snap = await db
+      .collection(`${LL_PREFIX}users/${uid}/conversations`)
+      .where("channel", "==", "sms")
+      .orderBy("updatedAt", "desc")
+      .limit(3)
+      .get();
+
+    // Find the most recent SMS conversation that ISN'T the current one
+    const prior = snap.docs.find((d) => d.id !== currentConversationId);
+    if (!prior) return [];
+
+    const data = prior.data();
+    const messages = data.messages || [];
+    const updated = data.updatedAt?.toDate?.() || null;
+    const minutesAgo = updated ? Math.round((Date.now() - updated.getTime()) / 60000) : null;
+
+    return {
+      conversationId: prior.id,
+      mode: data.mode,
+      status: data.status || "open",
+      minutesAgo,
+      summary: data.summary || null,
+      messages: messages.slice(-maxMessages),
+    };
+  } catch (err) {
+    logger.warn("loadRecentSmsContext failed", { uid, error: err.message });
+    return null;
+  }
+}
+
+/**
+ * computeProgramDays — Returns days since the leader started the program and
+ * the current week (1-indexed). Uses the cohort startDate when available,
+ * else falls back to the user's onboardedAt timestamp. Always Eastern Time.
+ *
+ * Returns: { daysSinceStart, currentWeek, dayOfWeek (1=Mon..7=Sun) }
+ */
+function computeProgramDays(userProfile, cohort) {
+  const start =
+    cohort?.startDate?.toDate?.() ||
+    (cohort?.startDate ? new Date(cohort.startDate) : null) ||
+    userProfile?.onboardedAt?.toDate?.() ||
+    (userProfile?.onboardedAt ? new Date(userProfile.onboardedAt) : null) ||
+    userProfile?.createdAt?.toDate?.() ||
+    null;
+
+  if (!start) return { daysSinceStart: 0, currentWeek: 1, dayOfWeek: null };
+
+  const nowET = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
+  const startET = new Date(start.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  nowET.setHours(0, 0, 0, 0);
+  startET.setHours(0, 0, 0, 0);
+  const daysSinceStart = Math.max(0, Math.floor((nowET - startET) / (1000 * 60 * 60 * 24)));
+  const currentWeek = Math.max(1, Math.floor(daysSinceStart / 7) + 1);
+  const dayOfWeek = ((nowET.getDay() + 6) % 7) + 1; // 1=Mon..7=Sun
+  return { daysSinceStart, currentWeek, dayOfWeek };
+}
+
+/**
+ * extractPeopleAndCommitments — Synchronous post-message extraction. Pulls
+ * named people and explicit commitments from the latest exchange and merges
+ * them into the leadershipProfile. Runs on every conversation turn so the
+ * cast of characters builds up immediately rather than waiting for the
+ * next nightly profile evolution.
+ *
+ * Cheap (Haiku, ~150 tokens). Fire-and-forget — never blocks the response.
+ */
+async function extractPeopleAndCommitments(uid, recentMessages, apiKey) {
+  if (!recentMessages || recentMessages.length < 2) return;
+  const db = admin.firestore();
+  try {
+    const snippet = recentMessages
+      .slice(-6)
+      .map((m) => `${m.role === "user" ? "LEADER" : "COACH"}: ${m.content}`)
+      .join("\n");
+
+    const anthropic = new Anthropic({ apiKey });
+    const resp = await anthropic.messages.create({
+      model: "claude-haiku-4-5",
+      max_tokens: 400,
+      system: `Extract from the LEADER's messages only:
+1. NAMED PEOPLE they mention (real first names — not generic roles like "my boss" alone). Capture role + 1-sentence context.
+2. EXPLICIT COMMITMENTS — things they said they would do, try, or attempt. Include when they said they'd do it (e.g. "tomorrow", "this week").
+3. SCHEDULED EVENTS — things happening in the future they mentioned (e.g. "meeting with my boss tomorrow at 3").
+
+Return ONLY JSON:
+{
+  "people": [{"name": "Jeff", "role": "direct-report", "context": "Junior manager, strong attention to detail"}],
+  "commitments": [{"what": "Send recognition message to Jeff", "when": "tomorrow"}],
+  "events": [{"what": "Meeting with boss about employee lateness", "when": "this afternoon"}]
+}
+
+Empty arrays are fine. No prose. No markdown.`,
+      messages: [{ role: "user", content: snippet }],
+    });
+    const raw = resp?.content?.[0]?.text || "{}";
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) return;
+    let parsed;
+    try { parsed = JSON.parse(match[0]); } catch { return; }
+
+    const people = Array.isArray(parsed.people) ? parsed.people.filter((p) => p?.name) : [];
+    const commitments = Array.isArray(parsed.commitments) ? parsed.commitments.filter((c) => c?.what) : [];
+    const events = Array.isArray(parsed.events) ? parsed.events.filter((e) => e?.what) : [];
+    if (people.length === 0 && commitments.length === 0 && events.length === 0) return;
+
+    const lpRef = db.doc(`${LL_PREFIX}users/${uid}/leadershipProfile/current`);
+    const lpSnap = await lpRef.get();
+    const lp = lpSnap.exists ? lpSnap.data() : {};
+
+    // Merge people by case-insensitive name
+    const existingPeople = Array.isArray(lp.people) ? lp.people : [];
+    const mergedPeople = [...existingPeople];
+    for (const p of people) {
+      const idx = mergedPeople.findIndex((e) => e.name?.toLowerCase() === p.name.toLowerCase());
+      if (idx === -1) {
+        mergedPeople.push({ ...p, firstSeenAt: new Date().toISOString() });
+      } else {
+        // Update context only if new context is longer/richer
+        if (p.context && p.context.length > (mergedPeople[idx].context || "").length) {
+          mergedPeople[idx] = { ...mergedPeople[idx], ...p };
+        }
+      }
+    }
+
+    // Append commitments (status=pending). Don't dedupe heavily — the AI can.
+    const existingCommitments = Array.isArray(lp.commitments) ? lp.commitments : [];
+    const mergedCommitments = [
+      ...existingCommitments,
+      ...commitments.map((c) => ({
+        ...c,
+        status: "pending",
+        capturedAt: new Date().toISOString(),
+      })),
+    ].slice(-30); // cap so it doesn't grow forever
+
+    await lpRef.set(
+      {
+        people: mergedPeople,
+        commitments: mergedCommitments,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    // Schedule reminders for events / commitments with concrete future timing
+    for (const e of [...commitments, ...events]) {
+      const dueAt = parseRelativeTime(e.when);
+      if (!dueAt) continue;
+      try {
+        await db.collection(`${LL_PREFIX}users/${uid}/scheduled-followups`).add({
+          what: e.what,
+          when: e.when,
+          dueAt: admin.firestore.Timestamp.fromDate(dueAt),
+          status: "scheduled",
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      } catch (_) { /* non-fatal */ }
+    }
+  } catch (err) {
+    logger.warn("extractPeopleAndCommitments failed", { uid, error: err.message });
+  }
+}
+
+/**
+ * parseRelativeTime — Quick & dirty natural-language to Date converter for
+ * SMS commitment follow-ups. Returns null if it can't parse confidently.
+ * Always returns a time during business hours (10 AM ET) on the target day
+ * so a follow-up nudge doesn't fire at midnight.
+ */
+function parseRelativeTime(when) {
+  if (!when || typeof when !== "string") return null;
+  const lower = when.toLowerCase();
+  const nowET = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
+  const target = new Date(nowET);
+  target.setHours(10, 0, 0, 0);
+
+  if (/\b(today|tonight|this afternoon|this evening)\b/.test(lower)) {
+    // For today, schedule the follow-up for tomorrow morning so we ask "how did it go"
+    target.setDate(target.getDate() + 1);
+  } else if (/\btomorrow\b/.test(lower)) {
+    target.setDate(target.getDate() + 2); // day after tomorrow morning
+  } else if (/\bthis week\b/.test(lower)) {
+    target.setDate(target.getDate() + 5);
+  } else if (/\bnext week\b/.test(lower)) {
+    target.setDate(target.getDate() + 8);
+  } else if (/\bmonday\b/.test(lower)) {
+    return nextDayOfWeek(target, 1, 11);
+  } else if (/\btuesday\b/.test(lower)) {
+    return nextDayOfWeek(target, 2, 11);
+  } else if (/\bwednesday\b/.test(lower)) {
+    return nextDayOfWeek(target, 3, 11);
+  } else if (/\bthursday\b/.test(lower)) {
+    return nextDayOfWeek(target, 4, 11);
+  } else if (/\bfriday\b/.test(lower)) {
+    return nextDayOfWeek(target, 5, 11);
+  } else {
+    return null;
+  }
+  return target;
+}
+
+function nextDayOfWeek(fromDate, dayIdx, hour = 10) {
+  const d = new Date(fromDate);
+  const cur = d.getDay();
+  let add = (dayIdx - cur + 7) % 7;
+  if (add === 0) add = 7;
+  d.setDate(d.getDate() + add);
+  d.setHours(hour, 0, 0, 0);
+  return d;
 }
 
 /**
@@ -13694,6 +14259,9 @@ async function processLabMessage(uid, text, options = {}) {
   const nowISO = new Date().toISOString();
 
   // --- Per-user rate limit: prevent runaway AI costs ---
+  // Counts user messages in active conversations from the last hour.
+  // Skips completed/closed conversations so a user with a recently hard-capped
+  // simulation can still start a new coaching thread without false-positives.
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
   const recentMsgsSnap = await db
     .collection(`${LL_PREFIX}users/${uid}/conversations`)
@@ -13701,7 +14269,10 @@ async function processLabMessage(uid, text, options = {}) {
     .get();
   let recentUserMsgCount = 0;
   recentMsgsSnap.forEach((doc) => {
-    const msgs = doc.data().messages || [];
+    const data = doc.data();
+    // Skip closed conversations — their messages don't represent active engagement.
+    if (data.status === "completed" || data.status === "closed") return;
+    const msgs = data.messages || [];
     recentUserMsgCount += msgs.filter(
       (m) => m.role === "user" && m.timestamp && new Date(m.timestamp) >= oneHourAgo
     ).length;
@@ -13851,8 +14422,8 @@ async function processLabMessage(uid, text, options = {}) {
 
   // --- Server-side conversation hard cap ---
   if (mode !== "onboarding") {
-    const smsHardCap = 14;
-    const appHardCap = 24;
+    const smsHardCap = 30;
+    const appHardCap = 40;
     const msgCount = existingMessages.length;
     if ((channel === "sms" && msgCount >= smsHardCap) || (channel === "app" && msgCount >= appHardCap)) {
       const closers = [
@@ -13900,6 +14471,41 @@ async function processLabMessage(uid, text, options = {}) {
     // OK if no current week convos exist
   }
 
+  // --- Load recent SMS history from any prior thread (working memory).
+  //     Fixes the "I haven't said anything to you yet today" disconnect when
+  //     a user follows up after a thread was closed. ~200 tokens, big payoff. ---
+  let recentSmsContext = null;
+  if (channel === "sms") {
+    recentSmsContext = await loadRecentSmsContext(uid, convoRef.id, 8);
+  }
+
+  // --- Load cohort + compute precise day/week facts so the AI doesn't have to guess.
+  //     Eliminates "Day 3 of recognition week" hallucinations. ---
+  let cohortDoc = null;
+  if (userProfile?.cohortId) {
+    try {
+      const cSnap = await db.doc(`${LL_PREFIX}cohorts/${userProfile.cohortId}`).get();
+      if (cSnap.exists) cohortDoc = cSnap.data();
+    } catch (_) { /* non-fatal */ }
+  }
+  const programTime = computeProgramDays(userProfile, cohortDoc);
+  const dayOfExperiment = programTime.dayOfWeek || (((programTime.daysSinceStart % 7) || 0) + 1); // 1..7 (Mon-Sun)
+
+  // --- Detect active trainer presence (24h TTL flag set by labSendText). ---
+  // When a human trainer has stepped into the thread we let the AI know so
+  // it defers, references the trainer by name, and doesn't contradict.
+  let trainerPresence = null;
+  const ta = userProfile?.trainerActive;
+  if (ta && ta.until && typeof ta.until.toMillis === "function" && ta.until.toMillis() > Date.now()) {
+    trainerPresence = {
+      name: ta.name || "your coach",
+      lastMessage: ta.lastMessage || "",
+      minutesAgo: ta.startedAt && typeof ta.startedAt.toMillis === "function"
+        ? Math.round((Date.now() - ta.startedAt.toMillis()) / 60000)
+        : null,
+    };
+  }
+
   // --- Append user message ---
   const userMessage = { role: "user", content: sanitizedText, timestamp: nowISO, channel };
   existingMessages.push(userMessage);
@@ -13920,7 +14526,8 @@ async function processLabMessage(uid, text, options = {}) {
   // --- Build system prompt ---
   // Use stored simulation prompt for practice-mode SMS, otherwise build standard prompt
   const wIdx = weekIdx(weekNumber);
-  const systemPrompt = simulationPrompt || buildLabSystemPrompt({
+  let systemPrompt = simulationPrompt || buildLabSystemPrompt({
+    trainerPresence,
     mode,
     userName,
     weekNumber,
@@ -13933,11 +14540,34 @@ async function processLabMessage(uid, text, options = {}) {
     recentSummaries,
     engagementSignals,
     currentWeekContext,
+    recentSmsContext,
+    programTime,
+    dayOfExperiment,
     messageCount: existingMessages.length,
     channel,
     interactionType,
     phase: userProfile.phase || (weekNumber > 5 ? "ascent" : "foundation"),
   });
+
+  // --- Server-side simulation guardrail ---
+  // Prevents simulations from running indefinitely. The base sim prompt asks
+  // the AI to break character after 4-5 exchanges, but a determined user can
+  // keep them in-character. After 8 user turns inside a sim conversation we
+  // append a hard instruction to break character and start the debrief NOW.
+  if (simulationPrompt) {
+    const simUserTurns = existingMessages.filter((m) => m.role === "user").length;
+    if (simUserTurns >= 8) {
+      systemPrompt = `${systemPrompt}
+
+--- SYSTEM OVERRIDE (turn ${simUserTurns}) ---
+This simulation has run long enough. On THIS reply you MUST:
+1. Break character immediately. Open with: --- TIMEOUT ---
+2. Drop back to coach voice (warm, brief).
+3. Ask one debrief question about what they noticed in themselves during the practice.
+Do NOT continue the role-play under any circumstances.`;
+      logger.info("Simulation debrief enforced", { uid, simUserTurns, conversationId: convoRef.id });
+    }
+  }
 
   // --- Prepare messages for Claude ---
   const claudeMessages = existingMessages.map((m) => ({
@@ -13950,16 +14580,153 @@ async function processLabMessage(uid, text, options = {}) {
   const maxTokens = channel === "sms" ? 400 : 1024;
   let aiText;
   let usageInfo;
+  // Tools — give Claude the ability to ground itself in real time/date and
+  // commit reminders the user asks for. Server executes; results are fed back
+  // into Claude as a tool_result before it generates the final user-facing reply.
+  const labTools = [
+    {
+      name: "get_current_date_time",
+      description:
+        "Get the current date and time in the user's likely timezone (America/New_York). Use BEFORE answering any question about today's date, day of week, or how long until a date.",
+      input_schema: { type: "object", properties: {}, required: [] },
+    },
+    {
+      name: "set_reminder",
+      description:
+        "Schedule a future SMS check-in for the user. Use ONLY when the user explicitly asks to be reminded, OR commits to doing something at a specific future time (e.g. 'remind me Thursday', 'I'll talk to Jeff tomorrow at 3pm'). Do not use for vague intentions.",
+      input_schema: {
+        type: "object",
+        properties: {
+          when: {
+            type: "string",
+            description: "Natural-language time expression: 'tomorrow', 'Thursday at 3pm', 'next Monday morning', 'in 2 hours'.",
+          },
+          what: {
+            type: "string",
+            description: "Short description of what to follow up on (e.g. 'your conversation with Jeff', 'the team meeting prep').",
+          },
+        },
+        required: ["when", "what"],
+      },
+    },
+    {
+      name: "note_commitment",
+      description:
+        "Record a leadership commitment the user has made out loud (e.g. 'I'm going to ask my team for feedback', 'I'll start doing 1-on-1s'). This persists into their leadership profile so you remember it next session.",
+      input_schema: {
+        type: "object",
+        properties: {
+          what: { type: "string", description: "The commitment in the user's voice." },
+          when: { type: "string", description: "Optional: when they said they'd do it." },
+        },
+        required: ["what"],
+      },
+    },
+  ];
+
+  // Server-side tool executors. Each returns a short string for tool_result.
+  async function executeLabTool(name, input) {
+    if (name === "get_current_date_time") {
+      const nowET = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
+      const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      return JSON.stringify({
+        date: nowET.toISOString().slice(0, 10),
+        day_of_week: dayNames[nowET.getDay()],
+        time_local: nowET.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
+        timezone: "America/New_York",
+      });
+    }
+    if (name === "set_reminder") {
+      const when = (input?.when || "").toString();
+      const what = (input?.what || "").toString();
+      const dueAt = parseRelativeTime(when);
+      if (!dueAt) {
+        return JSON.stringify({ ok: false, reason: "Could not parse the time. Ask the user to be more specific." });
+      }
+      try {
+        await db.collection(`${LL_PREFIX}users/${uid}/scheduled-followups`).add({
+          what, when,
+          dueAt: admin.firestore.Timestamp.fromDate(dueAt),
+          status: "scheduled",
+          source: "tool-call",
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        return JSON.stringify({ ok: true, scheduledFor: dueAt.toISOString() });
+      } catch (err) {
+        return JSON.stringify({ ok: false, reason: err.message });
+      }
+    }
+    if (name === "note_commitment") {
+      const what = (input?.what || "").toString();
+      const when = (input?.when || "").toString();
+      if (!what) return JSON.stringify({ ok: false, reason: "Missing 'what'." });
+      try {
+        const lpRef = db.doc(`${LL_PREFIX}users/${uid}/leadership-profile/main`);
+        const lpSnap = await lpRef.get();
+        const existing = (lpSnap.exists && Array.isArray(lpSnap.data().commitments)) ? lpSnap.data().commitments : [];
+        const newEntry = { what, when: when || null, ts: new Date().toISOString(), source: "tool-call" };
+        // Dedupe: skip if same `what` already exists (case-insensitive)
+        const dup = existing.some((c) => (c.what || "").toLowerCase() === what.toLowerCase());
+        if (!dup) {
+          existing.push(newEntry);
+          await lpRef.set(
+            { commitments: existing.slice(-50), updatedAt: admin.firestore.FieldValue.serverTimestamp() },
+            { merge: true }
+          );
+        }
+        return JSON.stringify({ ok: true, recorded: !dup });
+      } catch (err) {
+        return JSON.stringify({ ok: false, reason: err.message });
+      }
+    }
+    return JSON.stringify({ ok: false, reason: "Unknown tool." });
+  }
+
   try {
     const anthropic = new Anthropic({ apiKey });
-    const response = await anthropic.messages.create({
+    let response = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: maxTokens,
       system: systemPrompt,
       messages: claudeMessages,
+      tools: labTools,
     });
-    aiText = response.content[0]?.text || "I'm here. Tell me more.";
     usageInfo = response.usage;
+    // Handle up to 3 tool-use rounds before forcing a final answer.
+    let toolRounds = 0;
+    while (response.stop_reason === "tool_use" && toolRounds < 3) {
+      toolRounds++;
+      const toolUseBlocks = (response.content || []).filter((b) => b.type === "tool_use");
+      const toolResults = [];
+      for (const tu of toolUseBlocks) {
+        let resultStr;
+        try {
+          resultStr = await executeLabTool(tu.name, tu.input || {});
+        } catch (toolErr) {
+          resultStr = JSON.stringify({ ok: false, reason: toolErr.message });
+        }
+        toolResults.push({
+          type: "tool_result",
+          tool_use_id: tu.id,
+          content: resultStr,
+        });
+        logger.info("Lab tool executed", { uid, tool: tu.name, round: toolRounds });
+      }
+      // Append assistant tool_use turn + user tool_result turn, then re-call.
+      claudeMessages.push({ role: "assistant", content: response.content });
+      claudeMessages.push({ role: "user", content: toolResults });
+      response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages: claudeMessages,
+        tools: labTools,
+      });
+      usageInfo = response.usage;
+    }
+    // Extract text from final response.
+    const textBlock = (response.content || []).find((b) => b.type === "text");
+    aiText = textBlock?.text || "I'm here. Tell me more.";
   } catch (claudeErr) {
     logger.warn("Claude API failed, falling back to Gemini", { uid, error: claudeErr.message });
     // Fallback to Gemini 2.0 Flash
@@ -13989,9 +14756,13 @@ async function processLabMessage(uid, text, options = {}) {
 
   // --- Save to Firestore ---
   const totalMsgs = existingMessages.length;
+  // Only auto-complete on natural close. Web sessions get an upper bound at
+  // 30 (was 20) to give room. SMS no longer auto-closes by message count —
+  // we rely on silence-based closure (see below) and the hard cap at 30.
+  // This fixes the "I haven't said anything to you yet today" disconnect
+  // that happened when a follow-up SMS landed against a freshly-closed thread.
   const shouldComplete =
-    (channel === "sms" && totalMsgs >= 12 && mode !== "onboarding") ||
-    (channel === "app" && totalMsgs >= 20 && mode !== "onboarding");
+    channel === "app" && totalMsgs >= 30 && mode !== "onboarding";
   const updateData = {
     messages: existingMessages,
     updatedAt: now,
@@ -14026,11 +14797,26 @@ async function processLabMessage(uid, text, options = {}) {
     else if (medPattern.test(lowerText) && /\b(texts?|messages?|frequen|hear from)\b/.test(lowerText)) newLevel = 2;
 
     if (newLevel !== null && newLevel !== (userProfile.engagementLevel || 2)) {
-      const levelNames = { 1: "Light", 2: "Medium", 3: "Heavy" };
-      await db.doc(`${LL_PREFIX}users/${uid}`).update({ engagementLevel: newLevel });
-      logger.info("Engagement level auto-adjusted from conversation", {
-        uid, oldLevel: userProfile.engagementLevel || 2, newLevel, levelName: levelNames[newLevel],
-      });
+      // Don't override an explicit user choice (LIGHT/MEDIUM/HEAVY keyword or
+      // admin-set value). Only auto-adjust if the previous source was also
+      // auto-detected, or no source has been recorded yet.
+      const prevSource = userProfile.engagementLevelSource || null;
+      const explicitSources = ["sms-keyword", "user-explicit", "admin-set"];
+      if (prevSource && explicitSources.includes(prevSource)) {
+        logger.info("Skipping engagement auto-adjust — explicit prior choice", {
+          uid, prevSource, suggested: newLevel,
+        });
+      } else {
+        const levelNames = { 1: "Light", 2: "Medium", 3: "Heavy" };
+        await db.doc(`${LL_PREFIX}users/${uid}`).update({
+          engagementLevel: newLevel,
+          engagementLevelSource: "auto-detected",
+          engagementLevelUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        logger.info("Engagement level auto-adjusted from conversation", {
+          uid, oldLevel: userProfile.engagementLevel || 2, newLevel, levelName: levelNames[newLevel],
+        });
+      }
     }
   }
 
@@ -14038,6 +14824,16 @@ async function processLabMessage(uid, text, options = {}) {
   if (mode !== "onboarding" && totalMsgs >= 6) {
     summarizeConversation(convoRef, existingMessages, apiKey).catch((err) =>
       logger.warn("Background conversation summary failed", { uid, error: err.message })
+    );
+  }
+
+  // --- Synchronous people + commitment extraction (fire-and-forget but fast).
+  //     Names appear in the profile within seconds, not days. This is the single
+  //     biggest "smart coach" upgrade — once Jeff/Sarah/etc are in profile.people,
+  //     every future prompt can reference them by name. ---
+  if (mode !== "onboarding" && existingMessages.length >= 4) {
+    extractPeopleAndCommitments(uid, existingMessages, apiKey).catch((err) =>
+      logger.warn("People/commitment extraction failed", { uid, error: err.message })
     );
   }
 
@@ -14062,10 +14858,11 @@ async function processLabMessage(uid, text, options = {}) {
 }
 
 /**
- * Send an SMS via Twilio for Leadership Lab.
+ * Send an SMS via Telnyx for Leadership Lab.
+ * Auto-truncates to a single SMS-friendly length and logs the segment count.
  * @param {string} to - Phone number in E.164 format
  * @param {string} body - Message text
- * @returns {Promise<string>} Twilio message SID
+ * @returns {Promise<string>} Telnyx message id
  */
 async function sendLabSms(to, body) {
   const apiKey = process.env.TELNYX_API_KEY;
@@ -14077,8 +14874,38 @@ async function sendLabSms(to, body) {
     throw new Error("SMS service not configured");
   }
 
-  const telnyx = Telnyx(apiKey);
-  const msgOptions = { text: body, to };
+  // --- SAFETY: Truncate excessively long bodies ---
+  // SMS standard is 160 chars/segment (GSM-7) or 70 (UCS-2). Telnyx will
+  // concatenate up to ~10 segments, but very long replies hurt UX, cost
+  // money, and a few US carriers still mangle 1500+ char concatenations.
+  // Cap at ~480 chars (≈3 segments) and append an ellipsis.
+  const HARD_LIMIT = 480;
+  let safeBody = (body || "").trim();
+  if (!safeBody) {
+    logger.warn("sendLabSms called with empty body — skipping", { to: maskPhone(to) });
+    return null;
+  }
+  if (safeBody.length > HARD_LIMIT) {
+    logger.warn("Truncating long Lab SMS", { to: maskPhone(to), originalLength: safeBody.length });
+    // Truncate at the last sentence boundary before HARD_LIMIT to avoid
+    // cutting mid-word/mid-thought. Falls back to a hard slice if no boundary.
+    const slice = safeBody.slice(0, HARD_LIMIT - 1);
+    const lastBoundary = Math.max(
+      slice.lastIndexOf(". "),
+      slice.lastIndexOf("! "),
+      slice.lastIndexOf("? "),
+      slice.lastIndexOf("\n"),
+    );
+    if (lastBoundary > HARD_LIMIT * 0.5) {
+      // Keep complete sentences if we can land past the halfway mark.
+      safeBody = slice.slice(0, lastBoundary + 1).trimEnd();
+    } else {
+      safeBody = slice.trimEnd() + "…";
+    }
+  }
+
+  const telnyx = new Telnyx({ apiKey });
+  const msgOptions = { text: safeBody, to };
   if (messagingProfileId) {
     msgOptions.messaging_profile_id = messagingProfileId;
     // from is optional when using a messaging profile — Telnyx picks the number
@@ -14086,10 +14913,182 @@ async function sendLabSms(to, body) {
   } else {
     msgOptions.from = from;
   }
-  const result = await telnyx.messages.create(msgOptions);
-  const sid = result.data?.id || result.id;
-  logger.info("Lab SMS sent via Telnyx", { to: maskPhone(to), id: sid });
+
+  // --- RETRY: One quick retry on transient Telnyx errors (5xx / network) ---
+  let lastErr;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const result = await telnyx.messages.send(msgOptions);
+      const sid = result.data?.id || result.id;
+      logger.info("Lab SMS sent via Telnyx", {
+        to: maskPhone(to),
+        id: sid,
+        length: safeBody.length,
+        attempt,
+      });
+      return sid;
+    } catch (err) {
+      lastErr = err;
+      const status = err?.statusCode || err?.status;
+      const isTransient = !status || status >= 500 || status === 429;
+      logger.warn("Telnyx send failed", {
+        to: maskPhone(to),
+        attempt,
+        status,
+        message: err?.message,
+        willRetry: attempt === 1 && isTransient,
+      });
+      if (attempt === 1 && isTransient) {
+        // small backoff
+        await new Promise((r) => setTimeout(r, 400));
+        continue;
+      }
+      throw err;
+    }
+  }
+  // Unreachable, but satisfy linters
+  throw lastErr;
+}
+
+/**
+ * logLabSmsSend — Record every outbound SMS to `ll-sms-log` so we can match
+ * Telnyx delivery receipts, compute health metrics, and retry failures.
+ *
+ * Non-fatal: a logging failure never blocks the send (we still have the raw
+ * `sent_via_telnyx` Cloud Logging record).
+ */
+async function logLabSmsSend({ sid, uid, phone, body, interactionType, context }) {
+  if (!sid) return;
+  try {
+    await admin.firestore().doc(`${LL_PREFIX}sms-log/${sid}`).set({
+      sid,
+      uid: uid || null,
+      phone: phone || null,
+      phoneMasked: phone ? maskPhone(phone) : null,
+      body: (body || "").slice(0, 500),
+      length: (body || "").length,
+      interactionType: interactionType || null,
+      context: context || null,
+      status: "sent",
+      sentAt: admin.firestore.FieldValue.serverTimestamp(),
+      // Filled in by the delivery-receipt webhook branch
+      deliveredAt: null,
+      failedAt: null,
+      carrierError: null,
+      retryCount: 0,
+    }, { merge: true });
+  } catch (err) {
+    logger.warn("logLabSmsSend failed", { sid, error: err.message });
+  }
+}
+
+/**
+ * sendLabSmsTracked — Thin wrapper around sendLabSms that also writes to the
+ * SMS log. Prefer this over raw sendLabSms for anything outbound so delivery
+ * receipts can reconcile.
+ */
+async function sendLabSmsTracked(to, body, meta = {}) {
+  const sid = await sendLabSms(to, body);
+  await logLabSmsSend({
+    sid,
+    uid: meta.uid || null,
+    phone: to,
+    body,
+    interactionType: meta.interactionType || null,
+    context: meta.context || null,
+  });
   return sid;
+}
+
+/**
+ * buildTailoredReengagementHook — Write a re-engagement SMS that references
+ * something specific from the leader's profile (a growth edge, a tension, a
+ * person they mentioned). Falls back to a generic-but-warm nudge when no
+ * signal is available. Used for 14+ day silent users.
+ */
+function buildTailoredReengagementHook(userProfile, name) {
+  const fname = name || userProfile?.firstName || "there";
+  const lp = userProfile?.leadershipProfileCache || {};
+  const edges = Array.isArray(lp.growthEdges) ? lp.growthEdges : [];
+  const tensions = Array.isArray(lp.tensions) ? lp.tensions : [];
+  const people = Array.isArray(lp.people) ? lp.people : [];
+
+  if (people.length > 0 && people[0]?.name) {
+    return `${fname} — been thinking. Last time we talked you were working through something with ${people[0].name}. Where did that land?`;
+  }
+  if (tensions.length > 0 && tensions[0]?.left && tensions[0]?.right) {
+    return `${fname} — the tension between ${tensions[0].left.toLowerCase()} and ${tensions[0].right.toLowerCase()} was showing up for you. Has it shifted?`;
+  }
+  if (edges.length > 0 && edges[0]) {
+    const edge = typeof edges[0] === "string" ? edges[0] : edges[0]?.text || "";
+    if (edge) return `${fname} — your growth edge was "${edge.toLowerCase()}". What's one thing you've noticed about it in the last two weeks?`;
+  }
+  return `${fname} — two weeks is a long time. No judgment. One sentence: what's been pulling at your attention lately?`;
+}
+
+/**
+ * classifyInboundIntent — Lightweight Claude Haiku classification of an
+ * inbound SMS message into one of: sim-request, crisis, reflection,
+ * question, status, off-topic. Falls back to "question" on any error.
+ */
+async function classifyInboundIntent(text, userProfileContext = "") {
+  const trimmed = (text || "").trim();
+  if (!trimmed) return { intent: "question", confidence: 0 };
+  // Fast path: known keywords → no API call
+  const lower = trimmed.toLowerCase();
+  if (/^(rehearse|practice|role ?play|sim|simulate)\b/.test(lower)) {
+    return { intent: "sim-request", confidence: 1, source: "keyword" };
+  }
+  // Crisis keywords — only flag with HIGH confidence on unambiguous self-harm
+  // language. The previous regex matched "can't go on" which produced false
+  // positives on innocuous phrases. Real crisis phrases are explicit.
+  if (/(suicide|suicidal|kill myself|killing myself|end my life|hurt myself|harm myself|want to die|wanna die)/i.test(lower)) {
+    return { intent: "crisis", confidence: 1, source: "keyword" };
+  }
+  // Very short acknowledgements — skip the API
+  if (trimmed.length <= 8 && /^(ok|k|done|did it|got it|yep|yes|no|maybe|thx|thanks)\W*$/i.test(trimmed)) {
+    return { intent: "status", confidence: 0.9, source: "keyword" };
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return { intent: "question", confidence: 0, source: "fallback-no-key" };
+
+  try {
+    const anthropic = new Anthropic({ apiKey });
+    const prompt = `Classify the leader's SMS message into ONE of: sim-request | crisis | reflection | question | status | off-topic.
+
+Definitions:
+- sim-request: wants to rehearse a specific conversation or decision
+- crisis: acute distress, burnout, safety concern, or overwhelming urgency
+- reflection: sharing an observation/thought about themselves or their team, no question
+- question: asking for coaching input on a specific situation
+- status: short update on an experiment ("did it", "went well")
+- off-topic: unrelated chit-chat, test messages, non-leadership content
+
+${userProfileContext ? `Leader context: ${userProfileContext}\n\n` : ""}Message: ${JSON.stringify(trimmed.slice(0, 500))}
+
+Return ONLY JSON: {"intent":"...","confidence":0-1,"reason":"<6 words"}`;
+    const resp = await anthropic.messages.create({
+      model: "claude-haiku-4-5",
+      max_tokens: 80,
+      messages: [{ role: "user", content: prompt }],
+    });
+    const raw = (resp?.content?.[0]?.text || "").trim();
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) return { intent: "question", confidence: 0, source: "fallback-parse" };
+    const parsed = JSON.parse(match[0]);
+    const valid = ["sim-request", "crisis", "reflection", "question", "status", "off-topic"];
+    const intent = valid.includes(parsed.intent) ? parsed.intent : "question";
+    return {
+      intent,
+      confidence: Math.min(1, Math.max(0, Number(parsed.confidence) || 0.5)),
+      reason: String(parsed.reason || "").slice(0, 60),
+      source: "claude-haiku",
+    };
+  } catch (err) {
+    logger.warn("classifyInboundIntent failed, using fallback", { error: err.message });
+    return { intent: "question", confidence: 0, source: "fallback-error" };
+  }
 }
 
 /**
@@ -14109,6 +15108,163 @@ function normalizePhoneE164(phone) {
   if (cleaned.length === 10) return `+1${cleaned}`;
   // Fallback — add + prefix
   return `+${cleaned}`;
+}
+
+/**
+ * isWithinQuietHours — Returns true if the given Date falls outside the
+ * recipient's local 8 AM – 9 PM window (TCPA / CTIA recommended quiet hours).
+ *
+ * Defaults to America/New_York when the user has no stored timezone.
+ *
+ * @param {Date} now - Current instant
+ * @param {string} [timezone] - IANA timezone, e.g. "America/Los_Angeles"
+ * @returns {boolean} true if the local hour is < 8 or >= 21 (quiet)
+ */
+function isWithinQuietHours(now, timezone) {
+  const tz = timezone || "America/New_York";
+  let localHour;
+  try {
+    // Intl.DateTimeFormat is the safest cross-platform way to read local hour
+    localHour = parseInt(
+      new Intl.DateTimeFormat("en-US", {
+        timeZone: tz,
+        hour: "numeric",
+        hour12: false,
+      }).format(now),
+      10,
+    );
+  } catch {
+    // Bad timezone string — fall back to ET
+    localHour = now.getHours();
+  }
+  return localHour < 8 || localHour >= 21;
+}
+
+/**
+ * isUsHoliday — Returns true if the given date (in America/New_York) is one
+ * of the US federal/major holidays we skip Lab SMS on. Computed, not table
+ * driven, so it's good for any year.
+ *
+ * Skipped: New Year's Day, MLK Day, Presidents Day, Memorial Day, Juneteenth,
+ * Independence Day, Labor Day, Thanksgiving + day after, Christmas Eve +
+ * Christmas Day, New Year's Eve.
+ */
+function isUsHoliday(now = new Date()) {
+  const et = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  const y = et.getFullYear();
+  const m = et.getMonth(); // 0-based
+  const d = et.getDate();
+  const dow = et.getDay();
+
+  // Fixed-date holidays (observed on weekday if they fall on a weekend)
+  const fixed = [
+    { m: 0, d: 1 },   // New Year's Day
+    { m: 5, d: 19 },  // Juneteenth
+    { m: 6, d: 4 },   // Independence Day
+    { m: 11, d: 24 }, // Christmas Eve
+    { m: 11, d: 25 }, // Christmas Day
+    { m: 11, d: 31 }, // New Year's Eve
+  ];
+  for (const f of fixed) {
+    if (m === f.m && d === f.d) return true;
+    // Sat -> observed Fri
+    if (dow === 5 && m === f.m && d === f.d - 1) return true;
+    // Sun -> observed Mon
+    if (dow === 1 && m === f.m && d === f.d + 1) return true;
+  }
+
+  // Nth-weekday holidays
+  // MLK Day = 3rd Mon of Jan
+  if (m === 0 && dow === 1 && Math.ceil(d / 7) === 3) return true;
+  // Presidents Day = 3rd Mon of Feb
+  if (m === 1 && dow === 1 && Math.ceil(d / 7) === 3) return true;
+  // Memorial Day = LAST Mon of May
+  if (m === 4 && dow === 1) {
+    const lastDayOfMay = new Date(y, 5, 0).getDate();
+    if (d > lastDayOfMay - 7) return true;
+  }
+  // Labor Day = 1st Mon of Sep
+  if (m === 8 && dow === 1 && d <= 7) return true;
+  // Thanksgiving = 4th Thu of Nov
+  if (m === 10 && dow === 4 && Math.ceil(d / 7) === 4) return true;
+  // Day after Thanksgiving (Black Friday) = 4th Thu + 1
+  if (m === 10 && dow === 5 && d >= 23 && d <= 29) return true;
+
+  return false;
+}
+
+/**
+ * recordConsentEvent — Append-only audit log of every TCPA-relevant action.
+ *
+ * Writes one document per event to `ll-consent-events/`. Documents are
+ * server-generated and never modified or deleted (rules must enforce this).
+ * Retain indefinitely so opt-in/opt-out claims can be defended.
+ *
+ * @param {object} event
+ * @param {string} event.phone - Recipient phone (E.164)
+ * @param {string|null} [event.uid] - ll-users doc id, if known
+ * @param {'opt-in'|'opt-out'|'help-requested'|'enrolled'|'engagement-changed'} event.action
+ * @param {string} event.source - 'sms-stop' | 'sms-start' | 'enrollment' | 'admin-action' | etc.
+ * @param {string} [event.rawMessage] - Raw inbound text, if SMS-driven
+ * @param {object} [event.metadata] - Any extra context (engagement level, etc.)
+ */
+async function recordConsentEvent(event) {
+  // Critical actions (opt-in / opt-out / account-claimed) must NOT fall through
+  // silently — losing one of these breaks our TCPA defense. We retry once and
+  // mirror to a dead-letter collection if persistence still fails so admins
+  // can reconcile manually.
+  const CRITICAL_ACTIONS = new Set(["opt-in", "opt-out", "account-claimed"]);
+  const isCritical = CRITICAL_ACTIONS.has(event?.action);
+  const db = admin.firestore();
+  const payload = {
+    phone: event.phone || null,
+    uid: event.uid || null,
+    action: event.action,
+    source: event.source,
+    rawMessage: event.rawMessage ? String(event.rawMessage).slice(0, 500) : null,
+    metadata: event.metadata || null,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+
+  const attempt = async () => db.collection(`${LL_PREFIX}consent-events`).add(payload);
+
+  try {
+    await attempt();
+    return;
+  } catch (err) {
+    logger.error("Failed to record consent event (attempt 1)", {
+      action: event?.action,
+      source: event?.source,
+      error: err?.message,
+    });
+    if (!isCritical) return; // non-critical: log and move on (preserves UX)
+  }
+
+  // Critical-only retry path
+  try {
+    await attempt();
+    return;
+  } catch (err2) {
+    logger.error("Failed to record consent event (retry)", {
+      action: event?.action,
+      source: event?.source,
+      error: err2?.message,
+    });
+    // Last-resort: write to dead-letter collection so we don't lose TCPA evidence.
+    try {
+      await db.collection(`${LL_PREFIX}consent-events-dlq`).add({
+        ...payload,
+        deadLetteredAt: admin.firestore.FieldValue.serverTimestamp(),
+        lastError: err2?.message || String(err2),
+      });
+    } catch (dlqErr) {
+      // We have explicit instrumentation; alerting layer can pick this up.
+      logger.error("Consent event dead-letter write also failed", {
+        action: event?.action,
+        error: dlqErr?.message,
+      });
+    }
+  }
 }
 
 /**
@@ -14132,12 +15288,38 @@ async function lookupLabUserByPhone(phone) {
 }
 
 /**
+ * isPhoneEnrolledInLab — Mutual-exclusion guard between Leadership Lab SMS
+ * and Daily Rep SMS. A phone number can only receive coaching from ONE source
+ * at a time. Lab takes precedence: if a phone exists in `ll-users` and has not
+ * opted out, all Daily Rep SMS sends to that phone are suppressed.
+ *
+ * Used by `sendSmsNotification` and the Daily Rep welcome / scheduled paths.
+ * @param {string} phone - phone number (any format)
+ * @returns {Promise<boolean>}
+ */
+async function isPhoneEnrolledInLab(phone) {
+  if (!phone) return false;
+  try {
+    const match = await lookupLabUserByPhone(phone);
+    if (!match) return false;
+    // smsOptIn === false means they explicitly left Lab — Daily Rep can resume.
+    return match.profile?.smsOptIn !== false;
+  } catch (err) {
+    // On lookup failure, fail OPEN so Daily Rep doesn't silently die.
+    logger.warn("isPhoneEnrolledInLab lookup failed — allowing Daily Rep send", {
+      phone: maskPhone(phone), error: err.message,
+    });
+    return false;
+  }
+}
+
+/**
  * Get the current week number for a cohort based on its start date.
  * Uses Eastern Time to match the cohort schedule.
  * @param {Date|FirebaseTimestamp} startDate
- * @param {number} [maxWeeks=6] - Maximum week number (from cohort weekCount)
+ * @param {number} [maxWeeks] - Maximum week number (from cohort weekCount). Defaults to full curriculum length.
  */
-function getCohortWeekNumber(startDate, maxWeeks = 6, { clamp = true } = {}) {
+function getCohortWeekNumber(startDate, maxWeeks = getCurriculumWeekCount(), { clamp = true } = {}) {
   const start = startDate instanceof Date ? startDate : startDate.toDate();
   // Use Eastern Time for consistent day boundaries
   const nowET = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
@@ -14150,24 +15332,34 @@ function getCohortWeekNumber(startDate, maxWeeks = 6, { clamp = true } = {}) {
 }
 
 /**
- * Get the active SMS conversation for a user (today in ET), or null.
+ * Get the active SMS conversation for a user. A conversation is "active" if
+ * it was updated within the last QUIET_HOURS (default 4) and has not been
+ * explicitly closed/completed. This is silence-based continuation: a quick
+ * follow-up text sticks to the same thread; a fresh text the next morning
+ * starts a new one. Fixes the multi-thread fragmentation that broke memory.
  */
-async function getActiveSmsConversation(uid) {
+async function getActiveSmsConversation(uid, { quietHours = 4 } = {}) {
   const db = admin.firestore();
-  // Use Eastern Time for "today" boundary so conversations don't fragment at 7PM ET
-  const todayET = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
-  todayET.setHours(0, 0, 0, 0);
+  const cutoff = new Date(Date.now() - quietHours * 60 * 60 * 1000);
 
   const snap = await db
     .collection(`${LL_PREFIX}users/${uid}/conversations`)
     .where("channel", "==", "sms")
-    .where("createdAt", ">=", todayET)
-    .orderBy("createdAt", "desc")
-    .limit(1)
+    .orderBy("updatedAt", "desc")
+    .limit(5)
     .get();
 
   if (snap.empty) return null;
-  return { conversationId: snap.docs[0].id, data: snap.docs[0].data() };
+  const active = snap.docs.find((d) => {
+    const data = d.data();
+    const status = data.status;
+    if (status && status !== "active" && status !== "open") return false;
+    const updated = data.updatedAt?.toDate?.();
+    if (!updated) return false;
+    return updated >= cutoff;
+  });
+  if (!active) return null;
+  return { conversationId: active.id, data: active.data() };
 }
 
 // ---- Exported Cloud Functions ----
@@ -14177,7 +15369,7 @@ async function getActiveSmsConversation(uid) {
  */
 exports.labCoach = onCall(
   {
-    secrets: ["ANTHROPIC_API_KEY"],
+    secrets: LL_SECRETS,
     cors: [
       /leaderreps-pd-platform\.web\.app$/,
       /leaderreps-pd-platform\.firebaseapp\.com$/,
@@ -14263,12 +15455,210 @@ exports.labCoach = onCall(
 );
 
 /**
+ * lookupLabUserByEmail — Find an ll-users doc by email (case-insensitive).
+ * Returns { uid, profile } or null. Used by labClaimSmsAccount and
+ * labLinkIdentity for email-based identity linking.
+ */
+async function lookupLabUserByEmail(email) {
+  if (!email || typeof email !== "string") return null;
+  const db = admin.firestore();
+  const lower = email.trim().toLowerCase();
+  if (!lower) return null;
+  // Try exact match first (most user docs store lowercase already), then
+  // a fallback unindexed scan if needed (small collection in Lab).
+  const snap = await db
+    .collection(`${LL_PREFIX}users`)
+    .where("email", "==", lower)
+    .limit(1)
+    .get();
+  if (!snap.empty) {
+    const doc = snap.docs[0];
+    return { uid: doc.id, profile: doc.data() };
+  }
+  // Case-insensitive fallback (only scans a few hundred docs in Lab)
+  const all = await db.collection(`${LL_PREFIX}users`).get();
+  for (const doc of all.docs) {
+    const e = (doc.data().email || "").trim().toLowerCase();
+    if (e && e === lower) return { uid: doc.id, profile: doc.data() };
+  }
+  return null;
+}
+
+/**
+ * mintLabClaimLink — Creates a one-time unlock code + Firebase Auth user
+ * (by phone or email) and returns a magic-link URL. Shared by
+ * labUnlockApp (admin-driven) and the SMS webhook auto-claim path.
+ *
+ * @param {string} memberId  ll-users doc id
+ * @param {object} profile   ll-users doc data
+ * @returns {Promise<{ link, code, authUid, expiresAt }>}
+ */
+async function mintLabClaimLink(memberId, profile) {
+  const db = admin.firestore();
+  const phone = profile?.phone || null;
+  const email = profile?.email || null;
+
+  let authUser = null;
+  // Prefer existing-by-uid, then phone, then email, else create.
+  if (profile?.firebaseAuthUid) {
+    try { authUser = await admin.auth().getUser(profile.firebaseAuthUid); } catch (_) { authUser = null; }
+  }
+  if (!authUser && phone) {
+    try { authUser = await admin.auth().getUserByPhoneNumber(phone); } catch (_) { authUser = null; }
+  }
+  if (!authUser && email) {
+    try { authUser = await admin.auth().getUserByEmail(email); } catch (_) { authUser = null; }
+  }
+  if (!authUser) {
+    const createReq = {};
+    if (phone) createReq.phoneNumber = phone;
+    if (email) createReq.email = email;
+    const displayName = [profile?.firstName, profile?.lastName].filter(Boolean).join(" ");
+    if (displayName) createReq.displayName = displayName;
+    if (!createReq.phoneNumber && !createReq.email) {
+      throw new Error("Cannot mint claim link: member has neither phone nor email");
+    }
+    authUser = await admin.auth().createUser(createReq);
+  }
+
+  // Persist the link on the ll-users doc so we don't fork identities.
+  await db.doc(`${LL_PREFIX}users/${memberId}`).update({
+    firebaseAuthUid: authUser.uid,
+    appUnlocked: true,
+    appUnlockedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  const code = require("crypto").randomBytes(20).toString("hex");
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  await db.doc(`${LL_PREFIX}unlock-codes/${code}`).set({
+    memberId,
+    authUid: authUser.uid,
+    phone: phone || null,
+    email: email || null,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    expiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
+    used: false,
+  });
+
+  return {
+    link: `${labHostingDomain()}?unlock=${code}`,
+    code,
+    authUid: authUser.uid,
+    expiresAt,
+  };
+}
+
+/**
+ * labClaimSmsAccount — Links a Firebase Auth account to an existing SMS-only
+ * Leadership Lab user record by matching phone numbers OR email.
+ *
+ * Trust model: only verified token claims are used — `phone_number` for phone
+ * auth, or `email` + `email_verified` for Google / email-link sign-in. We do
+ * NOT accept identity parameters from the client.
+ *
+ * Behavior:
+ *  - If no ll-users record matches → no-op success.
+ *  - If a record matches and `firebaseAuthUid` is unset → claim it.
+ *  - If a record matches and `firebaseAuthUid` is already this user → no-op.
+ *  - If a record matches and `firebaseAuthUid` is a *different* uid → refuse.
+ */
+exports.labClaimSmsAccount = onCall(
+  {
+    secrets: LL_SECRETS,
+    cors: [
+      /leaderreps-pd-platform\.web\.app$/,
+      /leaderreps-pd-platform\.firebaseapp\.com$/,
+      /leaderreps-test\.web\.app$/,
+      /leaderreps-test\.firebaseapp\.com$/,
+      /leaderreps-prod\.web\.app$/,
+      /leaderreps-prod\.firebaseapp\.com$/,
+      /leaderreps-lab\.web\.app$/,
+      /leaderreps-lab\.firebaseapp\.com$/,
+      /localhost/,
+    ],
+    invoker: "public",
+    region: "us-central1",
+    maxInstances: 5,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "User must be authenticated");
+    }
+    const authUid = request.auth.uid;
+    const verifiedPhone = request.auth.token.phone_number || null;
+    const verifiedEmail = request.auth.token.email_verified
+      ? (request.auth.token.email || null)
+      : null;
+    if (!verifiedPhone && !verifiedEmail) {
+      // Not a hard error — user may sign in with neither (e.g. anonymous)
+      // and there's simply nothing to link. Return graceful no-op.
+      return { success: true, claimed: false, reason: "no-verified-identity" };
+    }
+
+    const db = admin.firestore();
+    let existing = null;
+    let matchedBy = null;
+    if (verifiedPhone) {
+      existing = await lookupLabUserByPhone(verifiedPhone);
+      if (existing) matchedBy = "phone";
+    }
+    if (!existing && verifiedEmail) {
+      existing = await lookupLabUserByEmail(verifiedEmail);
+      if (existing) matchedBy = "email";
+    }
+    if (!existing) {
+      return { success: true, claimed: false, reason: "no-matching-sms-user" };
+    }
+
+    const { uid: smsUid, profile } = existing;
+    // Already pointing at this auth user → idempotent success.
+    if (profile.firebaseAuthUid === authUid) {
+      return { success: true, claimed: true, uid: smsUid, alreadyLinked: true };
+    }
+    // Linked to a *different* auth uid — refuse.
+    if (profile.firebaseAuthUid && profile.firebaseAuthUid !== authUid) {
+      logger.warn("labClaimSmsAccount conflict", {
+        smsUid,
+        existingAuthUid: profile.firebaseAuthUid,
+        attemptedAuthUid: authUid,
+        matchedBy,
+      });
+      throw new HttpsError(
+        "already-exists",
+        "This account is already linked to a different sign-in. Contact your facilitator.",
+      );
+    }
+
+    // Claim — only the caller (auth user) can claim an unclaimed record.
+    await db.doc(`${LL_PREFIX}users/${smsUid}`).update({
+      firebaseAuthUid: authUid,
+      claimedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    await recordConsentEvent({
+      phone: verifiedPhone || profile.phone || null,
+      uid: smsUid,
+      action: "account-claimed",
+      source: matchedBy === "email" ? "web-email-auth" : "web-phone-auth",
+      metadata: { firebaseAuthUid: authUid, matchedBy },
+    });
+
+    logger.info("SMS account claimed by web auth user", {
+      smsUid, authUid, matchedBy,
+      phone: maskPhone(verifiedPhone || profile.phone || ""),
+    });
+    return { success: true, claimed: true, uid: smsUid, matchedBy };
+  },
+);
+
+/**
  * labCompleteOnboarding — Called after the onboarding conversation concludes.
  * Web app callable — delegates to shared completeLabOnboarding().
  */
 exports.labCompleteOnboarding = onCall(
   {
-    secrets: ["ANTHROPIC_API_KEY"],
+    secrets: LL_SECRETS,
     cors: [
       /leaderreps-pd-platform\.web\.app$/,
       /leaderreps-pd-platform\.firebaseapp\.com$/,
@@ -14336,7 +15726,7 @@ exports.labCompleteOnboarding = onCall(
  */
 exports.labUpdateProfile = onCall(
   {
-    secrets: ["ANTHROPIC_API_KEY"],
+    secrets: LL_SECRETS,
     cors: [
       /leaderreps-pd-platform\.web\.app$/,
       /leaderreps-pd-platform\.firebaseapp\.com$/,
@@ -14460,9 +15850,22 @@ Return ONLY valid JSON. No markdown, no explanation.`,
 /**
  * Build the system prompt for Leadership Lab coaching modes.
  */
-function buildLabSystemPrompt({ mode, userName, weekNumber, weekTheme, experiment, personalizedExperiment, leadershipProfile, recentEvidence, activeReveal, recentSummaries, engagementSignals, currentWeekContext, messageCount, channel, interactionType, phase }) {
+function buildLabSystemPrompt({ mode, userName, weekNumber, weekTheme, experiment, personalizedExperiment, leadershipProfile, recentEvidence, activeReveal, recentSummaries, engagementSignals, currentWeekContext, recentSmsContext, programTime, dayOfExperiment, trainerPresence, messageCount, channel, interactionType, phase }) {
   // --- Base context ---
   const isAscent = phase === "ascent" || weekNumber > 5;
+
+  // Pull spine fields from the curriculum so we can inject the *why* of the
+  // week, not just the theme + experiment. The spine is the anchor; Claude
+  // personalizes the delivery but does NOT invent these.
+  const spine = getCurriculumWeek(weekNumber) || null;
+  const corePromise = spine?.corePromise || null;
+  const coreConcept = spine?.coreConcept || null;
+  const signatureQuestion = spine?.signatureQuestion || null;
+  const trackLabel = spine?.track === "ascent-team"
+    ? "Lead Team"
+    : spine?.track === "ascent-self"
+      ? "Lead Self"
+      : "Lead Work (Foundation)";
 
   let prompt;
   if (isAscent) {
@@ -14470,14 +15873,14 @@ function buildLabSystemPrompt({ mode, userName, weekNumber, weekTheme, experimen
 
 Your purpose: continue building your model of this leader's identity, deepen self-awareness, and help them apply what they learned during Foundations to evolving real-world challenges. You know them well by now — coach accordingly.
 
-They are in Week ${weekNumber} overall. There is no end date. You are their permanent leadership coach.
+They are in Week ${weekNumber} overall (${trackLabel} track). There is no end date. You are their permanent leadership coach.
 `;
   } else {
     prompt = `You are the AI coach for Leadership Lab — a text-based coaching companion that supports leaders going through the Arena Foundations in-person training program. Your job is to fill the gap between live training sessions: reinforce what was taught, provide quick practice moments, and keep leaders engaged between sessions. Be warm, concise, a little fun — never annoying.
 
-The program has 5 milestones: Reinforcing → One-on-One → Redirecting → Readiness → Graduation. Each milestone is gated by an in-person training session.
+The full Leadership Lab arc has 16 milestones across three tracks: Lead Work (Foundation, weeks 1-5) → Lead Team (Ascent, weeks 6-11) → Lead Self (Ascent, weeks 12-16). Each milestone has a fixed theme, core concept, signature question, and anchor experiment. Your job is to PERSONALIZE the delivery — never invent or substitute the spine.
 
-${weekNumber > 0 ? `You are coaching ${userName}, who is currently in Milestone ${weekNumber}: "${weekTheme}".
+${weekNumber > 0 ? `You are coaching ${userName}, who is currently in Milestone ${weekNumber}: "${weekTheme}" (${trackLabel} track).
 
 This week's practice challenge: "${experiment}"${personalizedExperiment ? `
 
@@ -14488,6 +15891,125 @@ Your purpose: reinforce the concepts being taught in live sessions, help leaders
 `;
   }
 
+  // --- Curriculum spine (the WHY of this week) ---
+  if (corePromise || coreConcept || signatureQuestion) {
+    prompt += `
+THIS WEEK'S SPINE — the fixed teaching for Milestone ${weekNumber}. Reference these. Do not substitute.
+`;
+    if (corePromise) prompt += `CORE PROMISE: ${corePromise}\n`;
+    if (coreConcept) prompt += `CORE CONCEPT: ${coreConcept}\n`;
+    if (signatureQuestion) prompt += `SIGNATURE QUESTION (echo this back during the week when it lands): "${signatureQuestion}"\n`;
+  }
+
+  // --- ADAPTIVE MASTERY LOGIC (World-Class Coaching) ---
+  // We don't just "move on" to new concepts; we ensure mastery of the current one.
+  // Use dayOfExperiment and recentEvidence to decide how to pitch the challenge.
+  if (dayOfExperiment) {
+    const hasProgressThisWeek = 
+      (recentEvidence || []).some(e => e.milestoneNumber === weekNumber) ||
+      (leadershipProfile?.commitments || []).some(c => 
+        c.status === "pending" && 
+        c.capturedAt && 
+        new Date(c.capturedAt) > new Date(Date.now() - (dayOfExperiment * 86400000))
+      );
+
+    prompt += `
+ADAPTIVE MASTERY RULES — Today is Day ${dayOfExperiment} of Week ${weekNumber}.
+`;
+
+    if (dayOfExperiment <= 2) {
+      // MON-TUE: CHALLENGE PHASE
+      prompt += `- Phase: HIGH CHALLENGE. Push for the full Anchor Experiment. Motivate them to take the first real step. Be bold.\n`;
+    } else if (dayOfExperiment <= 4) {
+      // WED-THU: ADAPTATION PHASE
+      if (hasProgressThisWeek) {
+        prompt += `- Phase: MASTERY. They've already engaged/practiced. Deepen the insight. Ask about nuances or obstacles they encountered. Prepare them to "pre-shadow" next week.\n`;
+      } else {
+        prompt += `- Phase: DEGRADE GRACEFULLY. They haven't practiced yet. Simplify the friction. Offer a "micro-version" of the experiment (e.g. if the experiment was a 1:1, suggest a 2-minute quick check-in or a specific text message instead).\n`;
+      }
+    } else if (dayOfExperiment >= 5) {
+      // FRI-SUN: REFLECTION PHASE
+      if (hasProgressThisWeek) {
+        prompt += `- Phase: CELEBRATION & CLOSURE. Lock in the win. Ask what this week taught them about their "Lead Work" style.\n`;
+      } else {
+        prompt += `- Phase: FAILURE ANALYSIS. Don't guilt them. Get curious. Ask: "What was the actual blocker this week?" The insight into why they DIDN'T practice is often more valuable than the practice itself.\n`;
+      }
+    }
+  }
+
+  // --- Hard temporal facts (so the AI never guesses "Day 3 of recognition week") ---
+  if (programTime) {
+    const dayNames = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    prompt += `
+TEMPORAL FACTS — these are GROUND TRUTH. Use these instead of guessing or saying "a few days in":
+- Today is ${dayNames[programTime.dayOfWeek] || "today"}.
+- ${userName} has been in the program for ${programTime.daysSinceStart} day${programTime.daysSinceStart === 1 ? "" : "s"} (Week ${programTime.currentWeek}).
+- This is Day ${dayOfExperiment} of this week's experiment.
+${programTime.daysSinceStart === 0 ? "- They onboarded TODAY. This is your FIRST coaching exchange after onboarding. Acknowledge it warmly." : ""}
+${programTime.daysSinceStart === 1 ? "- They onboarded yesterday. This is one of your earliest exchanges. Calibrate accordingly." : ""}
+`;
+  }
+
+  // --- Trainer presence (highest-priority context) ---
+  // A human coach has stepped into this thread within the last 24 hours.
+  // Defer to them, reference them by name, and don't contradict.
+  if (trainerPresence) {
+    const ago =
+      trainerPresence.minutesAgo == null ? "" :
+      trainerPresence.minutesAgo < 60 ? ` (${trainerPresence.minutesAgo} min ago)` :
+      ` (${Math.round(trainerPresence.minutesAgo / 60)} hr ago)`;
+    prompt += `
+TRAINER PRESENCE — ${trainerPresence.name} (a human coach) just stepped into this thread${ago}. Their last message was:
+"${trainerPresence.lastMessage}"
+
+How to behave:
+- The user's reply is most likely to ${trainerPresence.name}, not to you. Read it that way.
+- Do NOT contradict, override, or pivot away from what ${trainerPresence.name} said.
+- If the user's reply clearly continues the trainer's thread, be brief and supportive. You can add one observation, but defer the lead to the human coach.
+- If the user changes the subject entirely, you can resume normal coaching — but reference that ${trainerPresence.name} reached out so the user feels the seams are tight.
+- Never pretend you sent the trainer's message yourself.
+`;
+  }
+
+  // --- Available tools ---
+  prompt += `
+TOOLS YOU CAN CALL (use them — don't pretend):
+- get_current_date_time: call BEFORE answering anything time-sensitive ("what day is it", "how long until Friday", "is it morning"). Never guess the date.
+- set_reminder: call when the user asks to be reminded OR commits to something at a specific future time ("remind me Thursday", "I'll talk to Jeff tomorrow at 3pm").
+- note_commitment: call when the user makes a leadership commitment ("I'm going to start doing 1-on-1s") so it persists into their profile.
+
+If the user asks about weather, sports, news, or anything you genuinely cannot know, say so plainly in one short line and pivot back to leadership. Do not invent facts.
+`;
+
+  // --- Recent SMS context (working memory across thread boundaries) ---
+  // Critical fix for "I haven't said anything to you yet today" disconnect.
+  if (recentSmsContext && recentSmsContext.messages && recentSmsContext.messages.length > 0) {
+    const minsAgo = recentSmsContext.minutesAgo;
+    const timeNote =
+      minsAgo == null ? "" :
+      minsAgo < 60 ? ` (${minsAgo} min ago)` :
+      minsAgo < 1440 ? ` (${Math.round(minsAgo / 60)} hr ago)` :
+      ` (${Math.round(minsAgo / 1440)} days ago)`;
+    prompt += `
+RECENT SMS HISTORY${timeNote} — verbatim from the most recent thread with ${userName}. If the new message is short ("you're right", "ok", "yeah") it almost certainly refers to something here. NEVER say "I haven't said anything to you" — you have. Reference this context naturally:
+`;
+    recentSmsContext.messages.forEach((m) => {
+      const role = m.role === "user" ? userName.toUpperCase() : "YOU";
+      prompt += `${role}: ${(m.content || "").slice(0, 280)}\n`;
+    });
+    if (recentSmsContext.summary) {
+      prompt += `\nThread summary: ${recentSmsContext.summary}\n`;
+    }
+    // Warm-reopen: if it's been more than a day since the last exchange,
+    // explicitly tell the AI to acknowledge the gap by name/topic so the
+    // user feels remembered rather than meeting a stranger.
+    if (typeof minsAgo === "number" && minsAgo > 1440) {
+      const daysAgo = Math.round(minsAgo / 1440);
+      prompt += `
+WARM REOPEN — it's been ${daysAgo} day${daysAgo === 1 ? "" : "s"} since you last spoke. Open by referencing the most concrete thing from the recent thread above (a person they mentioned, the experiment they were running, the question that was still open) before you ask anything new. Do not start with a generic "How are you?" — show you remember.
+`;
+    }
+  }
 
   // --- Leadership Profile context ---
   if (leadershipProfile) {
@@ -14787,12 +16309,15 @@ SMS CHANNEL RULES (in addition to above):
 // ============================================================================
 
 /**
- * transcribeVoiceMemo — Downloads audio from Twilio and transcribes via Gemini.
+ * transcribeVoiceMemo — Downloads audio from Telnyx MMS and transcribes via Gemini.
  *
  * Uses Gemini's native audio understanding (no File API needed for short clips).
- * Twilio voice memos are typically < 2 min, well within Gemini's inline limit.
+ * Telnyx voice memos are typically < 2 min, well within Gemini's inline limit.
  *
- * @param {string} mediaUrl - Twilio MediaUrl (includes auth)
+ * Telnyx media URLs are public, time-limited links — no Authorization header
+ * is required. (Carrier MMS is fetched server-side by Telnyx then re-hosted.)
+ *
+ * @param {string} mediaUrl - Telnyx media URL
  * @param {string} mimeType - e.g. "audio/ogg", "audio/amr", "audio/mpeg"
  * @returns {Promise<string>} Transcribed text
  */
@@ -14803,17 +16328,8 @@ async function transcribeVoiceMemo(mediaUrl, mimeType) {
     throw new Error("Transcription service not configured");
   }
 
-  // Download audio from Twilio (URL includes account auth)
-  const twilioSid = process.env.TWILIO_ACCOUNT_SID;
-  const twilioAuth = process.env.TWILIO_AUTH_TOKEN;
-  const fetchOptions = {};
-  if (twilioSid && twilioAuth) {
-    fetchOptions.headers = {
-      Authorization: "Basic " + Buffer.from(`${twilioSid}:${twilioAuth}`).toString("base64"),
-    };
-  }
-
-  const response = await fetch(mediaUrl, fetchOptions);
+  // Telnyx media URLs are pre-signed and require no auth header.
+  const response = await fetch(mediaUrl);
   if (!response.ok) {
     throw new Error(`Failed to download voice memo: ${response.status}`);
   }
@@ -14868,7 +16384,7 @@ async function transcribeVoiceMemo(mediaUrl, mimeType) {
  */
 exports.labSmsWebhook = onRequest(
   {
-    secrets: ["ANTHROPIC_API_KEY"],
+    secrets: LL_SECRETS,
     region: "us-central1",
     maxInstances: 20,
   },
@@ -14890,8 +16406,25 @@ exports.labSmsWebhook = onRequest(
     }
     const signature = req.headers["telnyx-signature-ed25519"];
     const timestamp = req.headers["telnyx-timestamp"];
+    const writeDebug = async (reason, extra = {}) => {
+      try {
+        await admin.firestore().collection(`${LL_PREFIX}webhook-debug`).add({
+          reason,
+          at: admin.firestore.FieldValue.serverTimestamp(),
+          headerKeys: Object.keys(req.headers || {}),
+          hasSig: !!signature,
+          hasTs: !!timestamp,
+          sigLen: signature ? String(signature).length : 0,
+          tsHeader: timestamp || null,
+          pubKeyLen: telnyxPublicKey ? telnyxPublicKey.length : 0,
+          rawBodyLen: req.rawBody ? req.rawBody.length : 0,
+          ...extra,
+        });
+      } catch (_) { /* swallow */ }
+    };
     if (!signature || !timestamp) {
       logger.warn("Missing Telnyx signature headers on labSmsWebhook");
+      await writeDebug("missing-headers");
       res.status(403).send("Forbidden");
       return;
     }
@@ -14899,48 +16432,181 @@ exports.labSmsWebhook = onRequest(
       const crypto = require("crypto");
       const rawBody = (req.rawBody || Buffer.from(JSON.stringify(req.body))).toString("utf8");
       const message = `${timestamp}|${rawBody}`;
-      const keyDer = Buffer.from(telnyxPublicKey, "base64");
       const sigBytes = Buffer.from(signature, "base64");
-      const valid = crypto.verify(null, Buffer.from(message), { key: keyDer, format: "der", type: "spki" }, sigBytes);
+      // Telnyx public key may arrive in several formats. Detect and normalize:
+      //  - PEM (contains "BEGIN PUBLIC KEY")
+      //  - Base64 of raw 32-byte Ed25519
+      //  - Base64 of 44-byte SPKI DER
+      //  - Hex of raw 32 bytes
+      let publicKey;
+      const rawKey = (telnyxPublicKey || "").trim();
+      const keyPreview = rawKey.slice(0, 30) + "..." + rawKey.slice(-15);
+      if (rawKey.includes("BEGIN PUBLIC KEY") || rawKey.includes("BEGIN ED25519")) {
+        const pem = rawKey.replace(/\\n/g, "\n");
+        publicKey = crypto.createPublicKey({ key: pem, format: "pem" });
+      } else if (/^[0-9a-fA-F]+$/.test(rawKey) && rawKey.length === 64) {
+        const keyBytes = Buffer.from(rawKey, "hex");
+        const spkiPrefix = Buffer.from("302a300506032b6570032100", "hex");
+        publicKey = crypto.createPublicKey({ key: Buffer.concat([spkiPrefix, keyBytes]), format: "der", type: "spki" });
+      } else {
+        // Try base64
+        const keyBytes = Buffer.from(rawKey, "base64");
+        if (keyBytes.length === 32) {
+          const spkiPrefix = Buffer.from("302a300506032b6570032100", "hex");
+          publicKey = crypto.createPublicKey({ key: Buffer.concat([spkiPrefix, keyBytes]), format: "der", type: "spki" });
+        } else if (keyBytes.length === 44) {
+          publicKey = crypto.createPublicKey({ key: keyBytes, format: "der", type: "spki" });
+        } else {
+          // Last resort: maybe the secret is base64-of-PEM
+          const decodedAsText = keyBytes.toString("utf8");
+          if (decodedAsText.includes("BEGIN PUBLIC KEY")) {
+            publicKey = crypto.createPublicKey({ key: decodedAsText, format: "pem" });
+          } else {
+            await writeDebug("unknown-key-format", {
+              keyPreview,
+              decodedLen: keyBytes.length,
+              decodedPreview: decodedAsText.slice(0, 60),
+            });
+            res.status(403).send("Forbidden");
+            return;
+          }
+        }
+      }
+      const valid = crypto.verify(null, Buffer.from(message), publicKey, sigBytes);
       if (!valid) {
         logger.warn("Invalid Telnyx signature on labSmsWebhook");
+        await writeDebug("invalid-signature", {
+          keyPreview,
+          sigByteLen: sigBytes.length,
+          msgPreview: message.slice(0, 120),
+        });
         res.status(403).send("Forbidden");
         return;
       }
     } catch (sigErr) {
       logger.warn("Telnyx signature verification error on labSmsWebhook", { error: sigErr.message });
+      await writeDebug("verify-error", { error: sigErr.message, keyPreview: (telnyxPublicKey || "").slice(0, 30) + "..." + (telnyxPublicKey || "").slice(-15) });
       res.status(403).send("Forbidden");
       return;
     }
 
     // Parse Telnyx webhook payload
     const payload = req.body?.data?.payload || {};
+    const eventType = req.body?.data?.event_type || "";
     const fromPhone = payload?.from?.phone_number; // E.164
     const body = (payload?.text || "").trim();
     const numMedia = (payload?.media || []).length;
     const smsSid = payload?.id;
 
-    // --- IDEMPOTENCY: Prevent duplicate processing on Twilio retries ---
+    // --- DELIVERY RECEIPTS: Reconcile Telnyx outbound status events. ---
+    // Telnyx emits message.sent (accepted by carrier), message.finalized
+    // (delivered or permanently failed), and delivery_updated (intermediate
+    // status). We update `ll-sms-log/{sid}` so the health monitor and War
+    // Room can show true delivery state.
+    if (eventType && eventType !== "message.received") {
+      try {
+        const outboundSid = smsSid || null;
+        if (outboundSid) {
+          const status = payload?.to?.[0]?.status || payload?.status || eventType;
+          const carrierError = payload?.errors?.[0] || null;
+          const update = {
+            status,
+            telnyxEventType: eventType,
+            lastEventAt: admin.firestore.FieldValue.serverTimestamp(),
+          };
+          if (/delivered|delivery_ok|delivered_to_carrier/i.test(String(status))) {
+            update.deliveredAt = admin.firestore.FieldValue.serverTimestamp();
+            update.status = "delivered";
+          } else if (/failed|undelivered|delivery_failed|sending_failed/i.test(String(status)) ||
+                     /failed|undelivered/i.test(eventType)) {
+            update.failedAt = admin.firestore.FieldValue.serverTimestamp();
+            update.status = "failed";
+            update.carrierError = carrierError;
+          }
+          await admin.firestore()
+            .doc(`${LL_PREFIX}sms-log/${outboundSid}`)
+            .set(update, { merge: true });
+        }
+        await admin.firestore().collection(`${LL_PREFIX}webhook-debug`).add({
+          reason: "delivery-event",
+          eventType,
+          smsSid: smsSid || null,
+          at: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      } catch (recErr) {
+        logger.warn("Delivery receipt update failed", { eventType, error: recErr.message });
+      }
+      res.status(200).json({ success: true, eventType });
+      return;
+    }
+
+    // --- IDEMPOTENCY: Prevent duplicate processing on Telnyx retries ---
+    // Use a transactional claim with TTL: an in-flight claim blocks concurrent
+    // duplicates for IDEMPOTENCY_TTL_MS, but a crashed run (no `completedAt`)
+    // can be retried after the TTL expires. Successful runs are marked
+    // `completedAt` and skipped permanently.
+    const IDEMPOTENCY_TTL_MS = 90 * 1000; // 90s — covers AI call + SMS reply
+    let dedupRef = null;
     if (smsSid) {
-      const dedupRef = admin.firestore().doc(`${LL_PREFIX}processed-sms/${smsSid}`);
-      const dedupSnap = await dedupRef.get();
-      if (dedupSnap.exists) {
+      dedupRef = admin.firestore().doc(`${LL_PREFIX}processed-sms/${smsSid}`);
+      const claimed = await admin.firestore().runTransaction(async (txn) => {
+        const snap = await txn.get(dedupRef);
+        if (snap.exists) {
+          const data = snap.data() || {};
+          if (data.completedAt) return false; // already finished — skip
+          const claimedAtMs = data.claimedAt?.toMillis?.() || 0;
+          if (Date.now() - claimedAtMs < IDEMPOTENCY_TTL_MS) return false; // in-flight
+          // Stale claim (previous run crashed) — re-claim and retry
+        }
+        txn.set(dedupRef, {
+          claimedAt: admin.firestore.FieldValue.serverTimestamp(),
+          attempt: ((snap.exists && snap.data().attempt) || 0) + 1,
+        }, { merge: true });
+        return true;
+      });
+      if (!claimed) {
         logger.info("Duplicate SMS webhook ignored", { smsSid, from: maskPhone(fromPhone) });
         res.status(200).json({ success: true });
         return;
       }
-      // Mark as processing immediately (before AI call)
-      await dedupRef.set({ processedAt: admin.firestore.FieldValue.serverTimestamp() });
     }
 
     logger.info("Lab SMS received", { from: maskPhone(fromPhone), bodyLength: body.length, numMedia });
 
-    // Telnyx reply helper — sends SMS via Telnyx API and acknowledges webhook
+    // Telnyx reply helper — sends SMS via Telnyx API and acknowledges webhook.
+    // Also marks the idempotency claim as completed so retries are skipped.
     const reply = async (message) => {
       try {
-        await sendLabSms(fromPhone, message);
+        const sid = await sendLabSms(fromPhone, message);
+        try {
+          await admin.firestore().collection(`${LL_PREFIX}webhook-debug`).add({
+            reason: "reply-sent",
+            telnyxId: sid || null,
+            replyPreview: (message || "").slice(0, 200),
+            replyLen: (message || "").length,
+            to: maskPhone(fromPhone),
+            at: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        } catch (_) {}
       } catch (smsErr) {
+        try {
+          await admin.firestore().collection(`${LL_PREFIX}webhook-debug`).add({
+            reason: "reply-failed",
+            error: smsErr.message,
+            replyPreview: (message || "").slice(0, 200),
+            to: maskPhone(fromPhone),
+            at: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        } catch (_) {}
         logger.error("Failed to send Telnyx reply", { to: maskPhone(fromPhone), error: smsErr.message });
+      }
+      // Mark idempotency claim complete so Telnyx retries are skipped.
+      if (dedupRef) {
+        try {
+          await dedupRef.set({
+            completedAt: admin.firestore.FieldValue.serverTimestamp(),
+          }, { merge: true });
+        } catch (_) { /* swallow */ }
       }
       res.status(200).json({ success: true });
     };
@@ -14949,9 +16615,11 @@ exports.labSmsWebhook = onRequest(
     const upperBody = body.toUpperCase();
     if (["STOP", "UNSUBSCRIBE", "CANCEL", "END", "QUIT"].includes(upperBody)) {
       // Mark user as opted out in Firestore
+      let optOutUid = null;
       try {
         const optOutUser = await lookupLabUserByPhone(fromPhone);
         if (optOutUser) {
+          optOutUid = optOutUser.uid;
           await admin.firestore().doc(`${LL_PREFIX}users/${optOutUser.uid}`).update({
             smsOptIn: false,
             smsOptOutAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -14961,21 +16629,64 @@ exports.labSmsWebhook = onRequest(
       } catch (optOutErr) {
         logger.error("Failed to record opt-out", { phone: maskPhone(fromPhone), error: optOutErr.message });
       }
+      // Mirror opt-out to Daily Rep — carrier-level STOP silences both sources
+      // anyway, so we keep the database consistent with reality.
+      try {
+        const drSubs = await admin.firestore()
+          .collection("sms_opt_ins")
+          .where("phone", "==", normalizePhoneE164(fromPhone))
+          .limit(1)
+          .get();
+        if (!drSubs.empty) {
+          await drSubs.docs[0].ref.update({
+            unsubscribed: true,
+            unsubscribedAt: admin.firestore.FieldValue.serverTimestamp(),
+            unsubscribeSource: "lab-sms-stop",
+          });
+          logger.info("Mirrored Lab STOP to Daily Rep opt-out", { phone: maskPhone(fromPhone) });
+        }
+      } catch (mirrorErr) {
+        logger.warn("Failed to mirror Lab STOP to Daily Rep", {
+          phone: maskPhone(fromPhone), error: mirrorErr.message,
+        });
+      }
+      // Append to immutable audit trail (TCPA defense)
+      await recordConsentEvent({
+        phone: fromPhone,
+        uid: optOutUid,
+        action: "opt-out",
+        source: `sms-${upperBody.toLowerCase()}`,
+        rawMessage: body,
+      });
       // With Telnyx, STOP opt-outs are handled by the carrier automatically, but we still send confirmation
       await reply("You've been unsubscribed from Leadership Lab texts. Reply START to re-subscribe anytime.");
       return;
     }
 
     if (["HELP", "INFO"].includes(upperBody)) {
+      try {
+        const helpUser = await lookupLabUserByPhone(fromPhone);
+        await recordConsentEvent({
+          phone: fromPhone,
+          uid: helpUser?.uid || null,
+          action: "help-requested",
+          source: "sms-help",
+          rawMessage: body,
+        });
+      } catch {
+        // non-fatal
+      }
       await reply("Leadership Lab \u2014 AI leadership coaching via text. Reply STOP to unsubscribe. For support, contact your facilitator or email support@leaderreps.com.");
       return;
     }
 
     if (upperBody === "START") {
       // Re-subscribe
+      let startUid = null;
       try {
         const startUser = await lookupLabUserByPhone(fromPhone);
         if (startUser) {
+          startUid = startUser.uid;
           await admin.firestore().doc(`${LL_PREFIX}users/${startUser.uid}`).update({
             smsOptIn: true,
             smsOptOutAt: null,
@@ -14985,6 +16696,13 @@ exports.labSmsWebhook = onRequest(
       } catch (startErr) {
         logger.error("Failed to record re-subscribe", { phone: maskPhone(fromPhone), error: startErr.message });
       }
+      await recordConsentEvent({
+        phone: fromPhone,
+        uid: startUid,
+        action: "opt-in",
+        source: "sms-start",
+        rawMessage: body,
+      });
       await reply("Welcome back! You're re-subscribed to Leadership Lab. Your coach is here whenever you need.");
       return;
     }
@@ -14998,6 +16716,8 @@ exports.labSmsWebhook = onRequest(
         if (engUser) {
           await admin.firestore().doc(`${LL_PREFIX}users/${engUser.uid}`).update({
             engagementLevel: levelMap[upperBody],
+            engagementLevelSource: "sms-keyword",
+            engagementLevelUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           });
           logger.info("User changed engagement level", { phone: maskPhone(fromPhone), level: upperBody });
@@ -15013,6 +16733,19 @@ exports.labSmsWebhook = onRequest(
       // --- Look up user by phone ---
       const user = await lookupLabUserByPhone(fromPhone);
 
+      try {
+        await admin.firestore().collection(`${LL_PREFIX}webhook-debug`).add({
+          reason: "inbound-routed",
+          eventType,
+          fromPreview: maskPhone(fromPhone),
+          bodyPreview: body.slice(0, 60),
+          userFound: !!user,
+          uid: user?.uid || null,
+          onboardingComplete: !!user?.profile?.onboardingComplete,
+          at: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      } catch (_) { /* swallow */ }
+
       if (!user) {
         await reply("Hey — this number isn't enrolled in Leadership Lab yet. If you think this is a mistake, reach out to your facilitator.");
         return;
@@ -15027,8 +16760,8 @@ exports.labSmsWebhook = onRequest(
         const mediaType = payload?.media?.[0]?.content_type || "";
         if (mediaType.startsWith("audio/")) {
           // Voice memo — transcribe via Gemini
+          const mediaUrl = payload?.media?.[0]?.url;
           try {
-            const mediaUrl = payload?.media?.[0]?.url;
             const transcription = await transcribeVoiceMemo(mediaUrl, mediaType);
             // Use transcription as the message (append to any accompanying text)
             messageText = body
@@ -15038,9 +16771,27 @@ exports.labSmsWebhook = onRequest(
             logger.info("Voice memo transcribed for Lab user", { uid, length: transcription.length });
           } catch (transcribeErr) {
             logger.warn("Voice memo transcription failed", { uid, error: transcribeErr.message });
+            // Persist the failed memo so admins can retry transcription or
+            // hand-process the audio rather than lose user input.
+            try {
+              await admin.firestore()
+                .collection(`${LL_PREFIX}users/${uid}/voice-memos-pending`)
+                .add({
+                  mediaUrl: mediaUrl || null,
+                  mediaType,
+                  smsSid: smsSid || null,
+                  fromPhone: maskPhone(fromPhone),
+                  accompanyingText: body || null,
+                  errorMessage: transcribeErr?.message || String(transcribeErr),
+                  status: "pending-retry",
+                  createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+            } catch (persistErr) {
+              logger.error("Failed to persist failed voice memo", { uid, error: persistErr.message });
+            }
             // Graceful fallback — let them know we heard them
             if (!body) {
-              await reply("I got your voice memo but had trouble understanding it. Could you text me what you were saying?");
+              await reply("I got your voice memo but had trouble understanding it. Could you text me what you were saying? (I've saved the audio so we can come back to it.)");
               return;
             }
             // If they sent text + voice, just process the text
@@ -15114,9 +16865,15 @@ exports.labSmsWebhook = onRequest(
               stakes: parsed.stakes || "",
               weekNumber,
             });
-
             // Reply with the simulation's first message (already sent via SMS by initiateSimulation)
             // Just acknowledge the webhook — Telnyx reply was already sent inside initiateSimulation
+            if (dedupRef) {
+              try {
+                await dedupRef.set({
+                  completedAt: admin.firestore.FieldValue.serverTimestamp(),
+                }, { merge: true });
+              } catch (_) {}
+            }
             res.status(200).json({ success: true });
             return;
           }
@@ -15130,20 +16887,75 @@ exports.labSmsWebhook = onRequest(
       }
 
       // --- Process through AI ---
+      // First, classify intent so we can route short/edge cases without a
+      // full coaching round-trip. Saves AI cost + improves UX for status
+      // updates and off-topic messages.
+      let intent = { intent: "question", confidence: 0, source: "default" };
+      if (!isVoiceMemo && mode !== "onboarding") {
+        const profileCtx = [
+          profile?.currentWeek ? `Week ${profile.currentWeek}` : "",
+          profile?.phase || "",
+        ].filter(Boolean).join(" · ");
+        intent = await classifyInboundIntent(messageText, profileCtx);
+      }
+
+      // Crisis intent: warm, brief acknowledgement + hard flag to trainer.
+      // Require high confidence AND a substantive message (≥6 words) UNLESS
+      // the keyword classifier already locked it in. This prevents false
+      // positives on terse off-topic replies like "I can't go on with this".
+      const crisisWordCount = (messageText.match(/\S+/g) || []).length;
+      const isHardCrisis =
+        intent.intent === "crisis" &&
+        (intent.source === "keyword" ||
+          (intent.confidence >= 0.85 && crisisWordCount >= 6));
+      if (isHardCrisis) {
+        try {
+          await admin.firestore().collection(`${LL_PREFIX}alerts`).add({
+            type: "crisis-signal",
+            uid, phone: fromPhone, message: messageText.slice(0, 500),
+            cohortId: profile?.cohortId || null,
+            intent,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            resolved: false,
+          });
+        } catch (_) { /* non-fatal */ }
+        const name = profile?.firstName || "";
+        const reply_ = `${name ? name + " — " : ""}I hear you, and I'm glad you sent that. This is bigger than a text thread. Please reach out to someone who can be with you right now — a trusted person, your EAP, or 988 (24/7). I'll be here when you're ready.`;
+        await reply(reply_);
+        try { await admin.firestore().doc(`${LL_PREFIX}users/${uid}`).update({ flaggedAt: admin.firestore.FieldValue.serverTimestamp(), flagReason: "crisis-signal" }); } catch (_) {}
+        if (dedupRef) {
+          try { await dedupRef.set({ completedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true }); } catch (_) {}
+        }
+        res.status(200).json({ success: true, routed: "crisis" });
+        return;
+      }
+
       const result = await processLabMessage(uid, messageText, {
         conversationId,
         mode,
         weekNumber,
         channel: "sms",
-        interactionType: activeConvo?.data?.interactionType || null,
+        interactionType: activeConvo?.data?.interactionType || intent.intent || null,
+        inboundIntent: intent.intent,
       });
 
 // Track last SMS response time + response rate stats
     try {
-      await admin.firestore().doc(`${LL_PREFIX}users/${uid}`).update({
+      // Distinguish substantive replies (>15 words or >60 chars) from
+      // acknowledgements ("k", "ok", "done", etc.) so the trainer can see
+      // real engagement vs ghost-replies in cohort health dashboards.
+      const wordCount = (messageText || "").trim().split(/\s+/).filter(Boolean).length;
+      const isSubstantive = wordCount > 15 || (messageText || "").trim().length > 60;
+      const statsUpdate = {
         lastSmsResponseAt: admin.firestore.FieldValue.serverTimestamp(),
         "smsStats.replied": admin.firestore.FieldValue.increment(1),
-      });
+      };
+      if (isSubstantive) {
+        statsUpdate["smsStats.substantiveReplies"] = admin.firestore.FieldValue.increment(1);
+      } else {
+        statsUpdate["smsStats.ackReplies"] = admin.firestore.FieldValue.increment(1);
+      }
+      await admin.firestore().doc(`${LL_PREFIX}users/${uid}`).update(statsUpdate);
     } catch (trackErr) {
       logger.warn("Failed to track SMS response stats", { uid, error: trackErr.message });
       }
@@ -15187,8 +16999,46 @@ exports.labSmsWebhook = onRequest(
       }
 
       await reply(result.response);
+
+      // --- AUTO-CLAIM: First time we hear from a participant whose web
+      //     dashboard hasn't been claimed yet, send them a one-tap link.
+      //     Idempotent via `claimLinkSentAt` flag so they only get it once.
+      try {
+        const userRef = admin.firestore().doc(`${LL_PREFIX}users/${uid}`);
+        const fresh = (await userRef.get()).data() || {};
+        const alreadyLinked = !!fresh.firebaseAuthUid;
+        const alreadyOffered = !!fresh.claimLinkSentAt;
+        if (!alreadyLinked && !alreadyOffered) {
+          const minted = await mintLabClaimLink(uid, fresh);
+          await userRef.update({
+            claimLinkSentAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          const fname = fresh.firstName || "Hey";
+          await sendLabSms(
+            fromPhone,
+            `${fname} — your private dashboard is ready. See what I'm noticing about your leadership, run simulations, and go deeper. One-tap sign-in (no password):\n\n${minted.link}`,
+          );
+          logger.info("Auto-claim link sent to first-time SMS participant", {
+            uid, phone: maskPhone(fromPhone),
+          });
+        }
+      } catch (claimErr) {
+        logger.warn("Auto-claim link send failed (non-fatal)", {
+          uid, error: claimErr.message,
+        });
+      }
     } catch (error) {
       logger.error("labSmsWebhook error", error);
+      try {
+        await admin.firestore().collection(`${LL_PREFIX}webhook-debug`).add({
+          reason: "handler-error",
+          error: error?.message || String(error),
+          stack: (error?.stack || "").slice(0, 800),
+          fromPreview: maskPhone(fromPhone),
+          bodyPreview: (body || "").slice(0, 100),
+          at: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      } catch (_) { /* swallow */ }
       await reply("Something went wrong on my end. Try again in a minute.");
     }
   }
@@ -15281,10 +17131,6 @@ Return ONLY the JSON object. No markdown. Be honest but compassionate.`,
       tensions: [],
       corePatterns: [],
       keyInsights: [],
-      growthEdges: [],
-      coachingApproach: "",
-      people: [],
-      emotionalArc: "",
     };
   }
 
@@ -15300,6 +17146,24 @@ Return ONLY the JSON object. No markdown. Be honest but compassionate.`,
     });
     await userDocRef.update({ _onboardingLock: admin.firestore.FieldValue.delete() });
     throw new Error("Profile extraction produced insufficient data — will retry");
+  }
+
+  // Flag thin profiles (passed bare minimum but still low quality) so the trainer
+  // knows to manually follow up. Threshold: filled < 5 out of 7 signals.
+  const profileScore = filledFields + hasArrayContent;
+  if (profileScore < 5) {
+    try {
+      await db.collection(`${LL_PREFIX}alerts`).add({
+        type: "thin-onboarding-profile",
+        uid,
+        profileScore,
+        filledFields,
+        hasArrayContent,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        resolved: false,
+      });
+      logger.warn("Thin onboarding profile flagged for trainer review", { uid, profileScore });
+    } catch (_) {}
   }
 
   const now = admin.firestore.FieldValue.serverTimestamp();
@@ -15324,16 +17188,23 @@ Return ONLY the JSON object. No markdown. Be honest but compassionate.`,
   await convoRef.update({ summary, updatedAt: now });
 
   // Mark user as onboarded
-  // Parse engagement level preference from conversation
-  const lastUserMsgs = messages.filter((m) => m.role === "user").slice(-2);
-  const lastMsgText = lastUserMsgs.map((m) => m.content.toLowerCase()).join(" ");
+  // Parse engagement level preference from full transcript — searching only
+  // the last 2 messages misses the answer when the user pivots to a new topic
+  // before the wrap-up question lands. We scan all user messages backwards
+  // and pick the most recent explicit light / medium / heavy mention.
+  const userMessages = messages.filter((m) => m.role === "user");
   let engagementLevel = 2; // default medium
-  if (/\bheavy\b/.test(lastMsgText)) engagementLevel = 3;
-  else if (/\blight\b/.test(lastMsgText)) engagementLevel = 1;
+  for (let i = userMessages.length - 1; i >= 0; i -= 1) {
+    const t = (userMessages[i].content || "").toLowerCase();
+    if (/\bheavy\b/.test(t)) { engagementLevel = 3; break; }
+    if (/\bmedium\b/.test(t)) { engagementLevel = 2; break; }
+    if (/\blight\b/.test(t)) { engagementLevel = 1; break; }
+  }
 
   await db.doc(`${LL_PREFIX}users/${uid}`).update({
     onboardingComplete: true,
-    currentPhase: "foundation",
+    phase: "foundation",
+    currentPhase: "foundation", // legacy alias — keep both in sync
     currentWeek: 1,
     engagementLevel,
     onboardedAt: now,
@@ -15371,13 +17242,16 @@ exports.labSetupCohort = onCall(
       throw new HttpsError("permission-denied", "Admin access required");
     }
 
-    const { name, startDate, facilitatorIds = [], weekCount = 6 } = request.data || {};
+    const { name, startDate, facilitatorIds = [], weekCount = getCurriculumWeekCount() } = request.data || {};
 
     if (!name || typeof name !== "string") {
       throw new HttpsError("invalid-argument", "Cohort name is required");
     }
     if (!startDate || typeof startDate !== "string") {
       throw new HttpsError("invalid-argument", "Start date is required (YYYY-MM-DD)");
+    }
+    if (!Number.isInteger(weekCount) || weekCount < 4 || weekCount > getCurriculumWeekCount()) {
+      throw new HttpsError("invalid-argument", `weekCount must be an integer between 4 and ${getCurriculumWeekCount()}`);
     }
 
     // Validate date format
@@ -15428,7 +17302,7 @@ exports.labSetupCohort = onCall(
  */
 exports.labAddParticipant = onCall(
   {
-    secrets: ["ANTHROPIC_API_KEY"],
+    secrets: LL_SECRETS,
     cors: true,
     region: "us-central1",
     invoker: "public",
@@ -15495,7 +17369,8 @@ exports.labAddParticipant = onCall(
         role: role || null,
         cohortId,
         onboardingComplete: false,
-        currentPhase: "prep",
+        phase: "prep",
+        currentPhase: "prep", // legacy alias — keep both in sync
         currentWeek: 0,
         smsOptIn: true,
         engagementLevel: [1, 2, 3].includes(engagementLevel) ? engagementLevel : 2,
@@ -15518,17 +17393,71 @@ exports.labAddParticipant = onCall(
       updatedAt: now,
     });
 
-    // Send welcome text
+    // Send welcome text — TCPA: respect recipient quiet hours.
+    // If admin enrolls during the user's nighttime, defer the welcome to next morning.
     const cohortData = cohortSnap.data();
+    const recipientTz = (existing && existing.profile && existing.profile.timezone) || "America/New_York";
+    if (isWithinQuietHours(new Date(), recipientTz)) {
+      logger.info("Welcome SMS deferred — recipient in quiet hours", { uid, tz: recipientTz });
+      // Mark for the next scheduled batch to pick up
+      try {
+        await db.doc(`${LL_PREFIX}users/${uid}`).set({
+          welcomeSmsDeferred: true,
+          welcomeSmsDeferredAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+      } catch (_) {}
+    } else {
+      try {
+        const vcardUrl = buildVcardLink({ firstName });
+        await sendLabSms(
+          phone,
+          `Welcome to LeaderReps Lab${firstName ? ", " + firstName : ""}. I'll be your AI coach — texting you 1-2x a day to help you travel down your leadership journey. And anytime you have a leadership question or challenge, just ask — I'm here for that too. No app needed. Just talk to me through texts. Talk soon.
+
+📇 Save my number: ${vcardUrl}`
+        );
+        logger.info("Welcome SMS sent", { uid, phone });
+      } catch (smsErr) {
+        logger.warn("Failed to send welcome SMS", { phone, error: smsErr.message });
+        // Don't fail the operation — user is still enrolled
+      }
+    }
+
+    // --- TCPA AUDIT TRAIL: enrollment is a consent event ---
+    await recordConsentEvent({
+      phone,
+      uid,
+      action: "enrolled",
+      source: "admin-enrollment",
+      metadata: {
+        cohortId,
+        enrolledByEmail: userEmail,
+        engagementLevel: [1, 2, 3].includes(engagementLevel) ? engagementLevel : 2,
+      },
+    });
+
+    // --- MUTUAL EXCLUSION: Lab supersedes Daily Rep ---
+    // If this phone is already opted in to Daily Rep, mark that subscription
+    // suspended so the cron skips it. We don't delete consent — they can
+    // resume Daily Rep automatically if they leave Lab.
     try {
-      await sendLabSms(
-        phone,
-        `Welcome to Leadership Lab${firstName ? ", " + firstName : ""}. Over the next ${cohortData.weekCount || 6} weeks, I'll be your AI coach — texting you 1-2x a day to help you see your leadership clearly. No app needed. Just reply to my texts. Your first real message comes when your program starts. Talk soon.`
-      );
-      logger.info("Welcome SMS sent", { uid, phone });
-    } catch (smsErr) {
-      logger.warn("Failed to send welcome SMS", { phone, error: smsErr.message });
-      // Don't fail the operation — user is still enrolled
+      const dailyRepSubs = await db.collection("sms_opt_ins")
+        .where("phone", "==", phone)
+        .limit(1)
+        .get();
+      if (!dailyRepSubs.empty) {
+        await dailyRepSubs.docs[0].ref.update({
+          suspendedByLab: true,
+          suspendedByLabAt: admin.firestore.FieldValue.serverTimestamp(),
+          suspendedReason: `Enrolled in Leadership Lab cohort ${cohortId}`,
+        });
+        logger.info("Daily Rep subscription suspended due to Lab enrollment", {
+          phone: maskPhone(phone), cohortId,
+        });
+      }
+    } catch (suspendErr) {
+      logger.warn("Failed to suspend Daily Rep on Lab enrollment", {
+        phone: maskPhone(phone), error: suspendErr.message,
+      });
     }
 
     logger.info("labAddParticipant success", { uid, cohortId, phone });
@@ -15558,9 +17487,9 @@ exports.labAddParticipant = onCall(
  */
 exports.labScheduledSms = onSchedule(
   {
-    schedule: "0 9,17 * * 1-5", // 9 AM and 5 PM ET, weekdays
+    schedule: "0 9,16 * * 1-5", // 9 AM and 4 PM ET, weekdays
     timeZone: "America/New_York",
-    secrets: ["ANTHROPIC_API_KEY"],
+    secrets: LL_SECRETS,
     region: "us-central1",
     maxInstances: 1,
     timeoutSeconds: 540,
@@ -15572,7 +17501,45 @@ exports.labScheduledSms = onSchedule(
     const hour = now.getHours(); // In ET due to timeZone config
     const isAM = hour < 12;
 
+    // US holiday skip — never blast a coaching nudge on a federal holiday.
+    if (isUsHoliday(now)) {
+      logger.info("labScheduledSms skipped — US holiday", { date: now.toISOString().slice(0, 10) });
+      return;
+    }
+
     logger.info("labScheduledSms triggered", { hour, isAM });
+
+    // --- DEFERRED WELCOME SMS: Pick up enrollments that happened during quiet hours ---
+    // Runs on every scheduled tick so both AM (9 AM ET) and PM (4 PM ET) can reach
+    // participants in western timezones whose welcome was held overnight.
+    try {
+      const deferredSnap = await db.collection(`${LL_PREFIX}users`)
+        .where("welcomeSmsDeferred", "==", true)
+        .limit(50)
+        .get();
+      for (const deferredDoc of deferredSnap.docs) {
+        const deferredProfile = deferredDoc.data();
+        if (!deferredProfile.phone || !deferredProfile.smsOptIn) continue;
+        if (isWithinQuietHours(now, deferredProfile.timezone)) continue;
+        try {
+          const vcardUrl = buildVcardLink({ firstName: deferredProfile.firstName });
+          await sendLabSms(
+            deferredProfile.phone,
+            `Welcome to LeaderReps Lab${deferredProfile.firstName ? ", " + deferredProfile.firstName : ""}. I'll be your AI coach — texting you 1-2x a day to help you travel down your leadership journey. And anytime you have a leadership question or challenge, just ask — I'm here for that too. No app needed. Just talk to me through texts. Talk soon.\n\n📇 Save my number: ${vcardUrl}`
+          );
+          await deferredDoc.ref.update({
+            welcomeSmsDeferred: admin.firestore.FieldValue.delete(),
+            welcomeSmsDeferredAt: admin.firestore.FieldValue.delete(),
+            welcomeSmsSentAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          logger.info("Deferred welcome SMS sent", { uid: deferredDoc.id, phone: maskPhone(deferredProfile.phone) });
+        } catch (wErr) {
+          logger.warn("Failed to send deferred welcome SMS", { uid: deferredDoc.id, error: wErr.message });
+        }
+      }
+    } catch (deferredErr) {
+      logger.warn("Deferred welcome sweep failed", { error: deferredErr.message });
+    }
 
     // Get active cohorts
     const cohortsSnap = await db
@@ -15591,9 +17558,9 @@ exports.labScheduledSms = onSchedule(
     for (const cohortDoc of cohortsSnap.docs) {
       const cohort = cohortDoc.data();
       const cohortId = cohortDoc.id;
-      const weekNumber = getCohortWeekNumber(cohort.startDate, cohort.weekCount || 6);
+      const weekNumber = getCohortWeekNumber(cohort.startDate, cohort.weekCount || getCurriculumWeekCount());
 
-      if (weekNumber > (cohort.weekCount || 6)) {
+      if (weekNumber > (cohort.weekCount || getCurriculumWeekCount())) {
         logger.info("Cohort past end date, skipping", { cohortId });
         continue;
       }
@@ -15614,8 +17581,61 @@ exports.labScheduledSms = onSchedule(
           if (!userSnap.exists) continue;
           const userProfile = userSnap.data();
 
-          // Skip if not onboarded or opted out
-          if (!userProfile.onboardingComplete || !userProfile.smsOptIn) continue;
+          // Skip if opted out
+          if (!userProfile.smsOptIn) continue;
+
+          // Onboarding gate with 48-hour grace bypass.
+          // If the user still hasn't completed onboarding (i.e. never replied to the
+          // kickoff text), auto-complete after 48h so daily texts aren't blocked forever.
+          // Grace clock starts from the LATER of cohort start or individual enrollment —
+          // so late-added members always get their own 48h window, not a head start.
+          if (!userProfile.onboardingComplete) {
+            const enrolledAt = member.joinedAt?.toDate ? member.joinedAt.toDate()
+              : member.joinedAt ? new Date(member.joinedAt) : null;
+            const cohortStart = cohort.startDate?.toDate ? cohort.startDate.toDate()
+              : cohort.startDate ? new Date(cohort.startDate) : null;
+            const graceClock = enrolledAt && cohortStart
+              ? new Date(Math.max(enrolledAt.getTime(), cohortStart.getTime()))
+              : (enrolledAt || cohortStart);
+            const hoursActive = graceClock ? (now - graceClock) / (1000 * 60 * 60) : 0;
+            if (hoursActive >= 48) {
+              logger.info("Auto-completing onboarding — 48h grace period elapsed", { memberId });
+              await db.doc(`${LL_PREFIX}users/${memberId}`).update({
+                onboardingComplete: true,
+                onboardingAutoCompleted: true,
+                onboardingAutoCompletedAt: admin.firestore.FieldValue.serverTimestamp(),
+              });
+            } else {
+              continue; // Still within grace window — skip for now
+            }
+          }
+
+          // --- TCPA QUIET HOURS: Respect 8 AM – 9 PM in user's local timezone ---
+          // (Telnyx is the recipient's transport but TCPA liability is ours.)
+          i
+
+          // Compute AM/PM from the recipient's local timezone rather than the server ET
+          // clock. Pacific/Mountain members correctly receive their "AM" coaching text
+          // on the 4 PM ET run (which is their local morning), and PM texts at their
+          // local afternoon — regardless of which scheduled slot fires.
+          const recipientIsAM = (() => {
+            const tz = userProfile.timezone || "America/New_York";
+            try {
+              const localHour = parseInt(
+                new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", hour12: false }).format(now),
+                10,
+              );
+              return localHour < 12;
+            } catch {
+              return isAM; // fallback to server ET
+            }
+          })();f (isWithinQuietHours(now, userProfile.timezone)) {
+            logger.info("Skipping send — outside recipient quiet hours", {
+              memberId,
+              tz: userProfile.timezone || "America/New_York",
+            });
+            continue;
+          }
 
           // --- ENGAGEMENT LEVEL FILTERING ---
           // 1=light (~2-3/wk: Mon AM + Thu PM reveal only)
@@ -15625,10 +17645,10 @@ exports.labScheduledSms = onSchedule(
           const weekDay = now.getDay();
           if (engLevel === 1) {
             // Light: only Mon AM and Thu PM
-            if (!(weekDay === 1 && isAM) && !(weekDay === 4 && !isAM)) continue;
+            if (!(weekDay === 1 && recipientIsAM) && !(weekDay === 4 && !recipientIsAM)) continue;
           } else if (engLevel === 2) {
             // Medium: AM only (no PM texts)
-            if (!isAM) continue;
+            if (!recipientIsAM) continue;
           }
           // engLevel 3 (heavy): no filtering, send AM + PM
 
@@ -15636,14 +17656,96 @@ exports.labScheduledSms = onSchedule(
           const memberWeek = userProfile.currentWeek || weekNumber;
 
           // --- RE-ENGAGEMENT: Graduated disengagement detection ---
-          if (isAM) {
+          // Clock starts from cohort activation, not first reply — catches people
+          // who were auto-onboarded and have never replied at all.
+          if (recipientIsAM) {
             const lastActivity = userProfile.lastSmsResponseAt;
-            if (lastActivity) {
-              const lastDate = lastActivity.toDate ? lastActivity.toDate() : new Date(lastActivity);
+            const cohortStart = cohort.startDate?.toDate ? cohort.startDate.toDate()
+              : cohort.startDate ? new Date(cohort.startDate) : null;
+            const engagementClock = lastActivity
+              ? (lastActivity.toDate ? lastActivity.toDate() : new Date(lastActivity))
+              : cohortStart; // fallback: treat cohort start as "last activity" for never-replied users
+            if (engagementClock) {
+              const lastDate = engagementClock;
               const daysSilent = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
               const name = userProfile.displayName || userProfile.firstName || "there";
 
               // 7+ days: ultra-light — send max 1/week (Monday AM only)
+              if (daysSilent >= 21) {
+                // 21+: pause + trainer alert (one-time) via Firestore alert,
+                // email to admins, and SMS to the trainer phone if configured.
+                if (!userProfile.pausedAlertSentAt) {
+                  try {
+                    const participantName = userProfile.displayName || userProfile.firstName || memberId;
+                    const cohortName = cohort.name || cohortId;
+                    const neverReplied = !userProfile.lastSmsResponseAt;
+
+                    await db.collection(`${LL_PREFIX}alerts`).add({
+                      type: "program-paused",
+                      uid: memberId, cohortId,
+                      daysSilent,
+                      neverReplied,
+                      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                      resolved: false,
+                    });
+                    await db.doc(`${LL_PREFIX}users/${memberId}`).update({
+                      pausedAlertSentAt: admin.firestore.FieldValue.serverTimestamp(),
+                    });
+
+                    // Email all admins
+                    const alertSubject = `Leadership Lab — ${participantName} has gone silent (${daysSilent} days)`;
+                    const alertBody = neverReplied
+                      ? `${participantName} (cohort: ${cohortName}) has never replied to any Lab message since enrollment ${daysSilent} days ago. Outbound texts have been paused. A manual outreach is recommended.`
+                      : `${participantName} (cohort: ${cohortName}) hasn't replied to any Lab message in ${daysSilent} days. Outbound texts have been paused. A manual outreach is recommended.`;
+                    try {
+                      const configDoc = await db.doc("metadata/config").get();
+                      const adminEmails = configDoc.exists ? (configDoc.data().adminemails || []) : [];
+                      for (const adminEmail of adminEmails) {
+                        await sendEmailNotification(adminEmail, alertSubject, alertBody);
+                      }
+                    } catch (emailErr) {
+                      logger.warn("Failed to email trainer alert", { memberId, error: emailErr.message });
+                    }
+
+                    // SMS trainer phone if a dedicated LL_TRAINER_PHONE secret is set
+                    const trainerPhone = process.env.LL_TRAINER_PHONE;
+                    if (trainerPhone) {
+                      try {
+                        const smsAlert = `Lab alert: ${participantName} (${cohortName}) — ${daysSilent}d silent${neverReplied ? ", never replied" : ""}. Texts paused. Manual outreach needed.`;
+                        await sendLabSms(trainerPhone, smsAlert);
+                      } catch (smsAlertErr) {
+                        logger.warn("Failed to SMS trainer alert", { memberId, error: smsAlertErr.message });
+                      }
+                    }
+
+                    logger.info("Program paused — trainer alerted via Firestore + email" + (trainerPhone ? " + SMS" : ""), { memberId, daysSilent, neverReplied });
+                  } catch (_) {}
+                }
+                continue;
+              }
+
+              if (daysSilent >= 14) {
+                // 14-20: tailored hook built from profile signal
+                if (now.getDay() !== 1) continue;
+                const hook = buildTailoredReengagementHook(userProfile, name);
+                const convoRef = db.collection(`${LL_PREFIX}users/${memberId}/conversations`).doc();
+                const serverNow = admin.firestore.FieldValue.serverTimestamp();
+                await convoRef.set({
+                  mode: "coach", weekNumber: memberWeek, channel: "sms",
+                  interactionType: "re-engagement-tailored", aiInitiated: true,
+                  messages: [{ role: "assistant", content: hook, timestamp: new Date().toISOString(), channel: "sms" }],
+                  summary: "", createdAt: serverNow, updatedAt: serverNow,
+                });
+                await sendLabSmsTracked(member.phone, hook, { uid: memberId, interactionType: "re-engagement-tailored" });
+                totalSent++;
+                await db.doc(`${LL_PREFIX}users/${memberId}`).update({
+                  "smsStats.sent": admin.firestore.FieldValue.increment(1),
+                  "smsStats.lastSentAt": serverNow,
+                });
+                logger.info("Tailored re-engagement sent", { memberId, daysSilent });
+                continue;
+              }
+
               if (daysSilent >= 7) {
                 if (now.getDay() !== 1) continue; // Only Monday
                 const deepNudges = [
@@ -15722,18 +17824,18 @@ exports.labScheduledSms = onSchedule(
           // Select interaction type
           const interactionType = selectInteractionType({
             weekNumber: memberWeek,
-            isAM,
+            isAM: recipientIsAM,
             userProfile,
             weekDay: now.getDay(), // 0=Sun, 1=Mon, ...
           });
 
           // Skip PM if AM already covered this type
-          if (!isAM && todayConvos && todayConvos.data.interactionType === interactionType) {
+          if (!recipientIsAM && todayConvos && todayConvos.data.interactionType === interactionType) {
             continue;
           }
 
           // --- REVEAL ENGINE: Thursday PM = reveal delivery slot ---
-          const pendingReveal = (!isAM && now.getDay() === 4) ? await getPendingReveal(memberId) : null;
+          const pendingReveal = (!recipientIsAM && now.getDay() === 4) ? await getPendingReveal(memberId) : null;
 
           if (pendingReveal) {
             // Deliver the reveal instead of a normal SMS
@@ -15952,6 +18054,141 @@ exports.labScheduledSms = onSchedule(
 );
 
 /**
+ * labScheduledFollowUps — Hourly cron that delivers commitment / reminder
+ * follow-ups created by extractPeopleAndCommitments() during live SMS chats.
+ *
+ * Reads ll-users/{uid}/scheduled-followups where dueAt <= now and status =
+ * "scheduled", sends a short SMS nudge, marks status = "sent". Respects the
+ * recipient's TCPA quiet hours.
+ */
+exports.labScheduledFollowUps = onSchedule(
+  {
+    schedule: "0 * * * *", // top of every hour
+    timeZone: "America/New_York",
+    secrets: LL_SECRETS,
+    region: "us-central1",
+    maxInstances: 1,
+    timeoutSeconds: 300,
+  },
+  async (event) => {
+    validateLabEnvironment();
+    const db = admin.firestore();
+    const now = new Date();
+    const nowTs = admin.firestore.Timestamp.fromDate(now);
+
+    // US holiday skip — defer all follow-ups one day rather than firing on a holiday.
+    if (isUsHoliday(now)) {
+      logger.info("labScheduledFollowUps skipped — US holiday", { date: now.toISOString().slice(0, 10) });
+      return;
+    }
+
+    // Cross-collection query: collectionGroup on scheduled-followups.
+    let dueSnap;
+    try {
+      dueSnap = await db
+        .collectionGroup("scheduled-followups")
+        .where("status", "==", "scheduled")
+        .where("dueAt", "<=", nowTs)
+        .limit(200)
+        .get();
+    } catch (err) {
+      logger.error("labScheduledFollowUps query failed", { error: err.message });
+      return;
+    }
+
+    if (dueSnap.empty) {
+      logger.info("labScheduledFollowUps: nothing due");
+      return;
+    }
+
+    let sent = 0;
+    let skipped = 0;
+    let errors = 0;
+
+    for (const docSnap of dueSnap.docs) {
+      const fu = docSnap.data();
+      // Path: ll-users/{uid}/scheduled-followups/{id}
+      const parts = docSnap.ref.path.split("/");
+      const uid = parts[1];
+      if (!uid) {
+        await docSnap.ref.update({ status: "error", error: "no-uid" }).catch(() => {});
+        errors++;
+        continue;
+      }
+
+      try {
+        const userSnap = await db.doc(`${LL_PREFIX}users/${uid}`).get();
+        if (!userSnap.exists) {
+          await docSnap.ref.update({ status: "skipped", reason: "no-user" });
+          skipped++;
+          continue;
+        }
+        const userProfile = userSnap.data();
+
+        if (!userProfile.smsOptIn || !userProfile.phone) {
+          await docSnap.ref.update({ status: "skipped", reason: "no-sms-opt-in" });
+          skipped++;
+          continue;
+        }
+        if (userProfile.suspendedByLab === false && userProfile.labOptOut === true) {
+          await docSnap.ref.update({ status: "skipped", reason: "opted-out" });
+          skipped++;
+          continue;
+        }
+        if (isWithinQuietHours(now, userProfile.timezone)) {
+          // Defer 1 hour by bumping dueAt
+          const bumped = new Date(now.getTime() + 60 * 60 * 1000);
+          await docSnap.ref.update({
+            dueAt: admin.firestore.Timestamp.fromDate(bumped),
+            deferredQuietHours: admin.firestore.FieldValue.increment(1),
+          });
+          skipped++;
+          continue;
+        }
+
+        const what = (fu.what || "").trim();
+        const when = (fu.when || "").trim();
+        // Short, deterministic, conversational nudge that re-opens the thread.
+        // Coach AI takes over once the user replies.
+        const firstName = (userProfile.firstName || userProfile.displayName || "").split(" ")[0];
+        const greet = firstName ? `${firstName}, ` : "";
+        const body = what
+          ? `${greet}quick check-in — you mentioned ${what}${when ? ` (${when})` : ""}. How did it land?`
+          : `${greet}quick check-in — how did that thing you mentioned go?`;
+
+        await sendLabSmsTracked(userProfile.phone, body, {
+          uid,
+          source: "scheduled-followup",
+          followupId: docSnap.id,
+        });
+
+        await docSnap.ref.update({
+          status: "sent",
+          sentAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        sent++;
+      } catch (err) {
+        errors++;
+        logger.warn("labScheduledFollowUps send failed", {
+          uid,
+          followupId: docSnap.id,
+          error: err.message,
+        });
+        await docSnap.ref
+          .update({
+            status: "error",
+            error: err.message,
+            erroredAt: admin.firestore.FieldValue.serverTimestamp(),
+          })
+          .catch(() => {});
+      }
+    }
+
+    logger.info("labScheduledFollowUps complete", { sent, skipped, errors });
+  }
+);
+
+/**
  * Select the right interaction type based on week, time of day, and user context.
  */
 function selectInteractionType({ weekNumber, isAM, userProfile, weekDay }) {
@@ -16056,7 +18293,7 @@ Write ONLY the text message itself. No preamble, no explanation, no "Here's a me
  */
 exports.labStartCohort = onCall(
   {
-    secrets: ["ANTHROPIC_API_KEY"],
+    secrets: LL_SECRETS,
     cors: true,
     region: "us-central1",
     invoker: "public",
@@ -16122,11 +18359,12 @@ exports.labStartCohort = onCall(
         if (userProfile.onboardingComplete) continue; // Already onboarded
 
         const firstName = userProfile.firstName || userProfile.displayName || "";
+        const vcardUrl = buildVcardLink({ firstName });
+        const kickoffBody = `${firstName ? firstName + ", it's" : "It's"} time. Your Leadership Lab program starts now. I'm your AI coach, and I want to understand how you lead. Let's start simple — what's your role, and how big is your team? Just text back.
 
-        await sendLabSms(
-          member.phone,
-          `${firstName ? firstName + ", it's" : "It's"} time. Your Leadership Lab program starts now. I'm your AI coach, and I want to understand how you lead. Let's start simple — what's your role, and how big is your team? Just text back.`
-        );
+📇 Save my number: ${vcardUrl}`;
+
+        await sendLabSms(member.phone, kickoffBody);
 
         // Create the onboarding conversation so replies continue it
         const convoRef = db.collection(`${LL_PREFIX}users/${memberId}/conversations`).doc();
@@ -16138,7 +18376,7 @@ exports.labStartCohort = onCall(
           messages: [
             {
               role: "assistant",
-              content: `${firstName ? firstName + ", it's" : "It's"} time. Your Leadership Lab program starts now. I'm your AI coach, and I want to understand how you lead. Let's start simple — what's your role, and how big is your team? Just text back.`,
+              content: kickoffBody,
               timestamp: new Date().toISOString(),
               channel: "sms",
             },
@@ -16298,7 +18536,7 @@ SMS RULES: No formatting. No asterisks. No bullets. Text naturally, in character
  */
 exports.labSimulate = onCall(
   {
-    secrets: ["ANTHROPIC_API_KEY"],
+    secrets: LL_SECRETS,
     cors: [
       /leaderreps-pd-platform\.web\.app$/,
       /leaderreps-pd-platform\.firebaseapp\.com$/,
@@ -16367,7 +18605,7 @@ exports.labSimulate = onCall(
  */
 exports.labDesignExperiment = onCall(
   {
-    secrets: ["ANTHROPIC_API_KEY"],
+    secrets: LL_SECRETS,
     cors: true,
     region: "us-central1",
     invoker: "public",
@@ -16449,6 +18687,11 @@ async function designExperimentForUser(uid, weekNumber) {
 
   const baseTheme = LL_WEEK_THEMES[wIdx];
   const baseExperiment = LL_EXPERIMENTS[wIdx];
+  const spine = getCurriculumWeek(week);
+  const corePromise = spine?.corePromise || "";
+  const coreConcept = spine?.coreConcept || "";
+  const signatureQuestion = spine?.signatureQuestion || "";
+  const baseNoticePrompts = spine?.noticePrompts || [];
   const userName = userProfile.displayName || userProfile.firstName || "this leader";
 
   // Build the prompt
@@ -16488,24 +18731,23 @@ LAST WEEK'S EXPERIMENT:
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-20250514",
     max_tokens: 1024,
-    system: `You are the Experiment Designer for Leadership Lab, a 5-milestone leadership development program that supports the Arena Foundations in-person training.
+    system: `You are the Experiment Designer for Leadership Lab, a 16-week curriculum across three tracks (Lead Work, Lead Team, Lead Self).
 
-Your job: take this week's BASE experiment and PERSONALIZE it for this specific leader based on their Leadership Profile, behavioral patterns, and recent conversations.
-
-The base experiment is the starting point — your job is to make it hit harder and land more precisely for THIS person. Target their specific growth edges, tensions, and blind spots.
+Each week has a FIXED spine: theme, core concept, signature question, and one anchor experiment. You do NOT invent or replace any of these. Your job is to PERSONALIZE THE DELIVERY of the anchor experiment for this specific leader so it lands harder and more precisely on their growth edges.
 
 Rules:
-- The personalized experiment must be BEHAVIORAL — something they DO, not something they think about
+- Keep the SHAPE and INTENT of the base anchor experiment. You may sharpen the target, swap generic targets for specific people in their world, tighten the constraint, or raise the stakes — but the practice itself is the practice.
+- The personalized version must be BEHAVIORAL — something they DO, not something they think about
 - It must be completable in a normal work week
 - It must be specific enough that they'll know if they did it or didn't
 - It should feel slightly uncomfortable — right at the edge of their comfort zone
 - Include a "why this matters for YOU" sentence that connects it to their profile
 - Keep the experiment description under 100 words
-- Add 2-3 "notice" prompts — specific things to pay attention to while doing the experiment
+- Add 2-3 "notice" prompts. You may use or refine the spine's notice prompts; do not replace them with generic ones.
 
 Return ONLY a JSON object:
 {
-  "personalizedExperiment": "The tailored experiment description",
+  "personalizedExperiment": "The tailored experiment description (same spine, sharper for this leader)",
   "whyThisMatters": "1-2 sentences connecting this to their specific growth edge",
   "noticePrompts": ["What to notice #1", "What to notice #2", "What to notice #3"],
   "difficulty": "stretch | edge | deep-end",
@@ -16518,7 +18760,12 @@ Return ONLY valid JSON. No markdown.`,
       content: `Design a personalized experiment for ${userName}.
 
 WEEK ${week}: ${baseTheme}
-BASE EXPERIMENT: ${baseExperiment}
+CORE PROMISE: ${corePromise}
+CORE CONCEPT: ${coreConcept}
+SIGNATURE QUESTION: ${signatureQuestion}
+ANCHOR EXPERIMENT (do not replace — personalize): ${baseExperiment}
+SPINE NOTICE PROMPTS (refine if helpful):
+${baseNoticePrompts.map((n) => `- ${n}`).join("\n")}
 ${profileContext}
 ${prevContext}
 ${recentContextStr}`,
@@ -16546,10 +18793,14 @@ ${recentContextStr}`,
   await challengeRef.set({
     weekNumber: week,
     theme: baseTheme,
+    track: spine?.track || null,
+    corePromise,
+    coreConcept,
+    signatureQuestion,
     experiment: baseExperiment,
     personalizedExperiment: design.personalizedExperiment,
     whyThisMatters: design.whyThisMatters,
-    noticePrompts: design.noticePrompts || [],
+    noticePrompts: design.noticePrompts || baseNoticePrompts,
     difficulty: design.difficulty || "stretch",
     targetPattern: design.targetPattern || "",
     status: "assigned", // assigned → in-progress → completed
@@ -16632,6 +18883,11 @@ async function prescribeContentForUser(uid, weekNumber) {
   evidenceSnap.forEach((doc) => {
     const d = doc.data();
     if (d.quote) recentEvidence.push(`"${d.quote}"`);
+  const spine = getCurriculumWeek(weekNumber);
+  const corePromise = spine?.corePromise || "";
+  const coreConcept = spine?.coreConcept || "";
+  const signatureQuestion = spine?.signatureQuestion || "";
+  const candidateTopics = spine?.prescriptionTopics || [];
     if (d.observation) recentEvidence.push(d.observation);
   });
 
@@ -16670,9 +18926,14 @@ async function prescribeContentForUser(uid, weekNumber) {
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-20250514",
     max_tokens: 1024,
-    system: `You are a leadership development content curator for Leadership Lab, a 5-milestone program supporting Arena Foundations in-person training.
+    system: `You are a leadership development content curator for Leadership Lab, a 16-week curriculum across three tracks (Lead Work, Lead Team, Lead Self).
 
-Your job: prescribe ONE specific leadership concept, framework, or micro-exercise that is precisely matched to this leader's current growth edge and behavioral patterns. You are NOT building a content library — you are making a SURGICAL prescription based on what you know about this person.
+Your job: prescribe ONE specific leadership concept, framework, or micro-exercise that is precisely matched to this leader's current growth edge AND grounded in this week's spine. You are NOT building a content library — you are making a SURGICAL prescription.
+
+THIS WEEK'S SPINE (the why of the week — your prescription should reinforce it):
+- Theme: ${weekTheme}
+- Core Concept: ${coreConcept}
+- Signature Question: ${signatureQuestion}
 
 PRESCRIPTION TYPES (pick the most fitting):
 - "concept" — A leadership framework or mental model they need right now (e.g., "Radical Candor's 2x2", "Lencioni's vulnerability-based trust")
@@ -16681,6 +18942,7 @@ PRESCRIPTION TYPES (pick the most fitting):
 - "reading" — A specific article concept, book chapter idea, or thought leader's framework (describe the core idea, don't just name-drop)
 
 Rules:
+- Prefer one of the candidate topics from the spine (provided below) unless the leader's profile clearly demands a different angle.
 - NEVER prescribe something generic. Every prescription must reference THIS leader's specific patterns or tensions.
 - The "whyYou" field should feel like the coach is speaking directly to them — connecting the prescription to something specific from their profile or conversations.
 - The "smsDelivery" field is the actual text message that will be sent — keep it under 300 characters, make it compelling and personal, and end with a question or call to reflection.
@@ -16703,6 +18965,9 @@ Return ONLY valid JSON. No markdown.`,
       content: `Prescribe content for ${userName}.
 
 WEEK ${weekNumber}: ${weekTheme}
+CORE PROMISE: ${corePromise}
+CANDIDATE PRESCRIPTION TOPICS (prefer one of these):
+${candidateTopics.map((t) => `- ${t}`).join("\n")}
 ${profileContext}
 ${experimentContext}
 ${evidenceContext}
@@ -17087,7 +19352,7 @@ exports.labWeekTransition = onSchedule(
   {
     schedule: "0 6 * * 1", // Monday 6 AM
     timeZone: "America/New_York",
-    secrets: ["ANTHROPIC_API_KEY"],
+    secrets: LL_SECRETS,
     region: "us-central1",
     maxInstances: 1,
     timeoutSeconds: 540,
@@ -17113,9 +19378,9 @@ exports.labWeekTransition = onSchedule(
     for (const cohortDoc of cohortsSnap.docs) {
       const cohort = cohortDoc.data();
       const cohortId = cohortDoc.id;
-      const weekNumber = getCohortWeekNumber(cohort.startDate, cohort.weekCount || 6, { clamp: false });
+      const weekNumber = getCohortWeekNumber(cohort.startDate, cohort.weekCount || getCurriculumWeekCount(), { clamp: false });
 
-      if (weekNumber > (cohort.weekCount || 6)) {
+      if (weekNumber > (cohort.weekCount || getCurriculumWeekCount())) {
         // Program ended — mark cohort as post-program
         await cohortDoc.ref.update({
           isActive: false,
@@ -17135,6 +19400,7 @@ exports.labWeekTransition = onSchedule(
           // Update user profile to ascent phase
           batch.update(db.doc(`${LL_PREFIX}users/${mDoc.id}`), {
             phase: "ascent",
+            currentPhase: "ascent", // legacy alias — keep both in sync
             ascentStartDate: now,
             updatedAt: now,
           });
@@ -17284,6 +19550,37 @@ exports.labWeekTransition = onSchedule(
         },
         { merge: true }
       );
+
+      // --- Auto-archive stale "delivered" reveals across cohort members ---
+      // A reveal that was delivered >14 days ago without acknowledgement
+      // gets marked `expired` so it doesn't block new reveals from generating
+      // and so analytics correctly reflect engagement.
+      const STALE_REVEAL_DAYS = 14;
+      const staleCutoff = new Date(Date.now() - STALE_REVEAL_DAYS * 24 * 60 * 60 * 1000);
+      for (const memberDoc of membersSnap.docs) {
+        try {
+          const staleSnap = await db
+            .collection(`${LL_PREFIX}users/${memberDoc.id}/reveals`)
+            .where("status", "==", "delivered")
+            .get();
+          for (const r of staleSnap.docs) {
+            const data = r.data();
+            const deliveredAt = data.deliveredAt?.toDate?.() || data.createdAt?.toDate?.();
+            if (deliveredAt && deliveredAt < staleCutoff) {
+              await r.ref.update({
+                status: "expired",
+                expiredAt: admin.firestore.FieldValue.serverTimestamp(),
+              });
+              logger.info("Auto-expired stale reveal", { memberId: memberDoc.id, revealId: r.id });
+            }
+          }
+        } catch (revealCleanupErr) {
+          logger.warn("Stale reveal cleanup failed for member", {
+            memberId: memberDoc.id,
+            error: revealCleanupErr.message,
+          });
+        }
+      }
     }
 
     logger.info("labWeekTransition complete", { totalProcessed, totalErrors });
@@ -17297,7 +19594,7 @@ exports.labWeekTransition = onSchedule(
  */
 exports.labTestAdvanceWeek = onCall(
   {
-    secrets: ["ANTHROPIC_API_KEY"],
+    secrets: LL_SECRETS,
     cors: true,
     region: "us-central1",
     invoker: "public",
@@ -17400,6 +19697,7 @@ exports.labTestAdvanceWeek = onCall(
  */
 exports.labTestTriggerOnboarding = onCall(
   {
+    secrets: LL_SECRETS,
     cors: true,
     region: "us-central1",
     invoker: "public",
@@ -17488,11 +19786,286 @@ exports.labTestTriggerOnboarding = onCall(
 );
 
 /**
+ * labBackfillUserMemory — Admin-only. Reconstruct a user's memory layers
+ * (leadership profile, evidence, weekly reflections) from existing
+ * conversation transcripts. Use when onboarding completed but profile
+ * generation failed, or when migrating users.
+ */
+exports.labBackfillUserMemory = onCall(
+  {
+    secrets: LL_SECRETS,
+    cors: true,
+    region: "us-central1",
+    invoker: "public",
+    timeoutSeconds: 540,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const db = admin.firestore();
+    const adminDoc = await db.doc("metadata/config").get();
+    const adminEmails = adminDoc.exists ? (adminDoc.data().adminemails || []) : [];
+    const userEmail = (request.auth.token.email || "").toLowerCase();
+    if (!adminEmails.map((e) => e.toLowerCase()).includes(userEmail)) {
+      throw new HttpsError("permission-denied", "Admin access required");
+    }
+
+    const { memberId, regenerateProfile, extractEvidence, generateReflections } = request.data || {};
+    if (!memberId || typeof memberId !== "string") {
+      throw new HttpsError("invalid-argument", "memberId is required");
+    }
+
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) throw new HttpsError("failed-precondition", "ANTHROPIC_API_KEY not configured");
+
+    const userRef = db.doc(`${LL_PREFIX}users/${memberId}`);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) throw new HttpsError("not-found", "User not found");
+    const userProfile = userSnap.data();
+
+    const result = { memberId, profileBuilt: false, evidenceCount: 0, reflectionsCount: 0 };
+
+    // ---- 1. Profile rebuild from any available conversation ----
+    if (regenerateProfile !== false) {
+      // Prefer onboarding conversation if it exists; else use longest conversation.
+      const onboardingSnap = await db
+        .collection(`${LL_PREFIX}users/${memberId}/conversations`)
+        .where("mode", "==", "onboarding")
+        .limit(1)
+        .get();
+
+      let sourceConvo = null;
+      if (!onboardingSnap.empty) {
+        sourceConvo = onboardingSnap.docs[0];
+      } else {
+        const allSnap = await db
+          .collection(`${LL_PREFIX}users/${memberId}/conversations`)
+          .orderBy("createdAt", "asc")
+          .limit(20)
+          .get();
+        let bestLen = 0;
+        allSnap.forEach((d) => {
+          const len = (d.data().messages || []).length;
+          if (len > bestLen) {
+            bestLen = len;
+            sourceConvo = d;
+          }
+        });
+      }
+
+      if (sourceConvo) {
+        const messages = sourceConvo.data().messages || [];
+        if (messages.length >= 4) {
+          const transcript = messages
+            .map((m) => `${m.role === "user" ? "LEADER" : "COACH"}: ${m.content}`)
+            .join("\n\n");
+
+          const anthropic = new Anthropic({ apiKey });
+          const profileResponse = await anthropic.messages.create({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 2048,
+            system: `You are a leadership psychologist analyzing a coaching conversation. Build an initial Leadership Profile from this transcript.
+
+Return ONLY a JSON object:
+{
+  "presentedSelf": "2-3 sentences on how they describe themselves",
+  "observedSelf": "2-3 sentences on observed patterns",
+  "tensions": [{"left": "Value A", "right": "Value B", "position": 0-100, "evidence": "..."}],
+  "corePatterns": ["Pattern in 1 sentence"],
+  "keyInsights": [{"insight": "...", "evidence": "..."}],
+  "growthEdges": ["..."],
+  "coachingApproach": "2-sentence coaching recommendation",
+  "people": [{"name": "First name", "role": "boss/direct-report/peer/mentor/partner/other", "context": "1 sentence"}],
+  "emotionalArc": "1 sentence on current state and openness"
+}
+
+Be honest but compassionate. Return ONLY valid JSON. No markdown.`,
+            messages: [{ role: "user", content: transcript }],
+          });
+
+          const profileText = profileResponse.content[0]?.text || "{}";
+          let profile;
+          try {
+            profile = JSON.parse(profileText);
+          } catch {
+            profile = { presentedSelf: profileText.slice(0, 500), observedSelf: "", tensions: [], corePatterns: [], keyInsights: [], growthEdges: [], coachingApproach: "", people: [], emotionalArc: "" };
+          }
+
+          const now = admin.firestore.FieldValue.serverTimestamp();
+          await db.doc(`${LL_PREFIX}users/${memberId}/leadershipProfile/current`).set({
+            ...profile,
+            createdAt: now,
+            updatedAt: now,
+            source: "backfill",
+            sourceConversationId: sourceConvo.id,
+          });
+          result.profileBuilt = true;
+        }
+      }
+    }
+
+    // ---- 2. Per-week reflections + evidence extraction ----
+    const lpSnap = await db.doc(`${LL_PREFIX}users/${memberId}/leadershipProfile/current`).get();
+    const lp = lpSnap.exists ? lpSnap.data() : null;
+    const currentWeek = userProfile.currentWeek || 1;
+
+    for (let w = 1; w < currentWeek; w++) {
+      const weekConvos = await db
+        .collection(`${LL_PREFIX}users/${memberId}/conversations`)
+        .where("weekNumber", "==", w)
+        .get();
+
+      if (weekConvos.empty) continue;
+
+      const transcripts = [];
+      weekConvos.forEach((doc) => {
+        const data = doc.data();
+        const msgs = (data.messages || [])
+          .map((m) => `${m.role === "user" ? "LEADER" : "COACH"}: ${m.content}`)
+          .join("\n");
+        if (msgs) transcripts.push(msgs);
+      });
+      if (transcripts.length === 0) continue;
+      const joined = transcripts.join("\n---\n");
+
+      // Reflection
+      if (generateReflections !== false) {
+        const reflectionRef = db.doc(`${LL_PREFIX}users/${memberId}/reflections/${w}`);
+        const refSnap = await reflectionRef.get();
+        if (!refSnap.exists) {
+          try {
+            const anthropic = new Anthropic({ apiKey });
+            const obsResponse = await anthropic.messages.create({
+              model: "claude-sonnet-4-20250514",
+              max_tokens: 512,
+              system: `You are a leadership psychologist analyzing a week of coaching conversations. Write a brief observation note about this leader's week. Include: key themes, behavioral patterns noticed, experiment follow-through, and any shifts. Keep it under 150 words. Write in third person ("They...").`,
+              messages: [{ role: "user", content: joined }],
+            });
+            const observation = obsResponse.content[0]?.text || "";
+            const now = admin.firestore.FieldValue.serverTimestamp();
+            await reflectionRef.set({
+              weekNumber: w,
+              summary: observation,
+              conversationCount: weekConvos.size,
+              keyInsights: [],
+              patterns: [],
+              source: "backfill",
+              createdAt: now,
+            });
+            result.reflectionsCount++;
+          } catch (err) {
+            logger.warn("Backfill reflection failed", { memberId, week: w, error: err.message });
+          }
+        }
+      }
+
+      // Evidence
+      if (extractEvidence !== false) {
+        try {
+          await extractEvidenceFromConversations(memberId, w, joined, lp);
+          result.evidenceCount++;
+        } catch (err) {
+          logger.warn("Backfill evidence extraction failed", { memberId, week: w, error: err.message });
+        }
+      }
+    }
+
+    logger.info("labBackfillUserMemory complete", result);
+    return { success: true, ...result };
+  }
+);
+
+/**
+ * labManualWeekTransition — Admin-only. Run the same week-transition logic
+ * as the scheduled cron, but for a single cohort on demand. Use to recover
+ * from missed scheduler runs without waiting for next Monday.
+ */
+exports.labManualWeekTransition = onCall(
+  {
+    secrets: LL_SECRETS,
+    cors: true,
+    region: "us-central1",
+    invoker: "public",
+    timeoutSeconds: 540,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const db = admin.firestore();
+    const adminDoc = await db.doc("metadata/config").get();
+    const adminEmails = adminDoc.exists ? (adminDoc.data().adminemails || []) : [];
+    const userEmail = (request.auth.token.email || "").toLowerCase();
+    if (!adminEmails.map((e) => e.toLowerCase()).includes(userEmail)) {
+      throw new HttpsError("permission-denied", "Admin access required");
+    }
+
+    const { cohortId } = request.data || {};
+    if (!cohortId || typeof cohortId !== "string") {
+      throw new HttpsError("invalid-argument", "cohortId is required");
+    }
+
+    const cohortRef = db.doc(`${LL_PREFIX}cohorts/${cohortId}`);
+    const cohortSnap = await cohortRef.get();
+    if (!cohortSnap.exists) throw new HttpsError("not-found", "Cohort not found");
+    const cohort = cohortSnap.data();
+
+    const weekNumber = getCohortWeekNumber(cohort.startDate, cohort.weekCount || getCurriculumWeekCount(), { clamp: false });
+    const result = { cohortId, weekNumber, processed: 0, skipped: 0, errors: 0, members: [] };
+
+    const membersSnap = await db
+      .collection(`${LL_PREFIX}cohorts/${cohortId}/members`)
+      .where("status", "==", "enrolled")
+      .get();
+
+    for (const memberDoc of membersSnap.docs) {
+      const memberId = memberDoc.id;
+      try {
+        const userSnap = await db.doc(`${LL_PREFIX}users/${memberId}`).get();
+        if (!userSnap.exists) { result.skipped++; continue; }
+        const userProfile = userSnap.data();
+        if (!userProfile.onboardingComplete) { result.skipped++; result.members.push({ memberId, status: "skipped-not-onboarded" }); continue; }
+
+        const prevWeek = userProfile.currentWeek || 1;
+        if (weekNumber <= prevWeek) {
+          result.skipped++;
+          result.members.push({ memberId, status: "skipped-already-current", currentWeek: prevWeek, computedWeek: weekNumber });
+          continue;
+        }
+
+        // Advance the week
+        await db.doc(`${LL_PREFIX}users/${memberId}`).update({
+          currentWeek: weekNumber,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        try { await designExperimentForUser(memberId, weekNumber); } catch (e) { logger.warn("Manual rollover: experiment failed", { memberId, error: e.message }); }
+        try { await prescribeContentForUser(memberId, weekNumber); } catch (e) { logger.warn("Manual rollover: prescription failed", { memberId, error: e.message }); }
+
+        result.processed++;
+        result.members.push({ memberId, status: "advanced", from: prevWeek, to: weekNumber });
+      } catch (err) {
+        result.errors++;
+        result.members.push({ memberId, status: "error", error: err.message });
+        logger.error("Manual rollover member error", { memberId, error: err.message });
+      }
+    }
+
+    logger.info("labManualWeekTransition complete", { cohortId, ...result });
+    return { success: true, ...result };
+  }
+);
+
+/**
  * labRevealStatus — Fetch a user's reveal history and evidence summary.
  * Used by the web app's Mirror screen.
  */
 exports.labRevealStatus = onCall(
   {
+    secrets: LL_SECRETS,
     cors: [
       /leaderreps-pd-platform\.web\.app$/,
       /leaderreps-pd-platform\.firebaseapp\.com$/,
@@ -17613,6 +20186,7 @@ async function isFacilitatorOrAdmin(auth, cohortId) {
  */
 exports.labWarRoom = onCall(
   {
+    secrets: LL_SECRETS,
     cors: [
       /leaderreps-pd-platform\.web\.app$/,
       /leaderreps-pd-platform\.firebaseapp\.com$/,
@@ -17778,7 +20352,7 @@ exports.labWarRoom = onCall(
  */
 exports.labDeepDive = onCall(
   {
-    secrets: ["ANTHROPIC_API_KEY"],
+    secrets: LL_SECRETS,
     cors: [
       /leaderreps-pd-platform\.web\.app$/,
       /leaderreps-pd-platform\.firebaseapp\.com$/,
@@ -17932,6 +20506,7 @@ exports.labDeepDive = onCall(
  */
 exports.labGetConversation = onCall(
   {
+    secrets: LL_SECRETS,
     cors: [
       /leaderreps-pd-platform\.web\.app$/,
       /leaderreps-pd-platform\.firebaseapp\.com$/,
@@ -17999,7 +20574,7 @@ exports.labGetConversation = onCall(
  */
 exports.labSessionPlanner = onCall(
   {
-    secrets: ["ANTHROPIC_API_KEY"],
+    secrets: LL_SECRETS,
     cors: [
       /leaderreps-pd-platform\.web\.app$/,
       /leaderreps-pd-platform\.firebaseapp\.com$/,
@@ -18183,6 +20758,7 @@ ${memberContext}`,
  */
 exports.labSendText = onCall(
   {
+    secrets: LL_SECRETS,
     cors: [
       /leaderreps-pd-platform\.web\.app$/,
       /leaderreps-pd-platform\.firebaseapp\.com$/,
@@ -18231,25 +20807,89 @@ exports.labSendText = onCall(
         throw new HttpsError("failed-precondition", "Member has no phone number");
       }
 
+      // TCPA: refuse facilitator-initiated send during recipient quiet hours.
+      const memberTz = userSnap.data().timezone || "America/New_York";
+      if (isWithinQuietHours(new Date(), memberTz)) {
+        throw new HttpsError(
+          "failed-precondition",
+          `Cannot send SMS — recipient is in quiet hours (${memberTz}, 9 PM–8 AM local). Schedule for later.`
+        );
+      }
+
       const weekNumber = userSnap.data().currentWeek || 1;
       const now = admin.firestore.FieldValue.serverTimestamp();
+      const nowIso = new Date().toISOString();
 
-      // Save as a facilitator-initiated conversation
-      const convoRef = db.collection(`${LL_PREFIX}users/${memberId}/conversations`).doc();
-      await convoRef.set({
-        mode: "coach",
-        weekNumber,
+      // Look up the active SMS conversation so the trainer message lands in
+      // the SAME thread the AI is using. Falls back to creating a new one if
+      // none is active (silence-based 4-hour window — same logic the inbound
+      // webhook uses).
+      const active = await getActiveSmsConversation(memberId).catch(() => null);
+      let convoRef;
+      let conversationId;
+      const facilitatorSnap = await db.doc(`${LL_PREFIX}users/${request.auth.uid}`).get().catch(() => null);
+      const trainerName =
+        facilitatorSnap?.exists
+          ? (facilitatorSnap.data().displayName || facilitatorSnap.data().firstName || "Coach")
+          : "Coach";
+
+      const trainerMessage = {
+        role: "assistant",
+        content: sanitizedMessage,
+        timestamp: nowIso,
         channel: "sms",
-        interactionType: "facilitator-manual",
-        aiInitiated: false,
-        facilitatorId: request.auth.uid,
-        messages: [
-          { role: "assistant", content: sanitizedMessage, timestamp: new Date().toISOString(), channel: "sms" },
-        ],
-        summary: "",
-        createdAt: now,
-        updatedAt: now,
-      });
+        authorRole: "trainer",
+        authorUid: request.auth.uid,
+        authorName: trainerName,
+      };
+
+      if (active && active.conversationId) {
+        // Append into the existing thread so the AI sees it on the next reply.
+        convoRef = db.doc(`${LL_PREFIX}users/${memberId}/conversations/${active.conversationId}`);
+        const existing = Array.isArray(active.data.messages) ? active.data.messages : [];
+        existing.push(trainerMessage);
+        await convoRef.update({
+          messages: existing,
+          updatedAt: now,
+          lastTrainerMessageAt: now,
+          lastTrainerUid: request.auth.uid,
+        });
+        conversationId = active.conversationId;
+      } else {
+        // No active thread — open a new one but mark it as trainer-initiated.
+        convoRef = db.collection(`${LL_PREFIX}users/${memberId}/conversations`).doc();
+        await convoRef.set({
+          mode: "coach",
+          weekNumber,
+          channel: "sms",
+          interactionType: "facilitator-manual",
+          aiInitiated: false,
+          facilitatorId: request.auth.uid,
+          lastTrainerMessageAt: now,
+          lastTrainerUid: request.auth.uid,
+          messages: [trainerMessage],
+          summary: "",
+          createdAt: now,
+          updatedAt: now,
+        });
+        conversationId = convoRef.id;
+      }
+
+      // Flag trainer presence on the user doc with a 24-hour TTL so the AI
+      // knows to defer and reference the trainer in subsequent replies.
+      const trainerUntil = admin.firestore.Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000);
+      await db.doc(`${LL_PREFIX}users/${memberId}`).set(
+        {
+          trainerActive: {
+            uid: request.auth.uid,
+            name: trainerName,
+            startedAt: now,
+            until: trainerUntil,
+            lastMessage: sanitizedMessage.slice(0, 280),
+          },
+        },
+        { merge: true }
+      );
 
       // Send SMS
       const sid = await sendLabSms(phone, sanitizedMessage);
@@ -18258,12 +20898,15 @@ exports.labSendText = onCall(
         facilitatorId: request.auth.uid,
         memberId,
         cohortId,
+        conversationId,
+        appended: !!active,
       });
 
       return {
         success: true,
-        conversationId: convoRef.id,
+        conversationId,
         messageSid: sid,
+        appended: !!active,
       };
     } catch (error) {
       if (error instanceof HttpsError) throw error;
@@ -18283,6 +20926,7 @@ exports.labSendText = onCall(
  */
 exports.labMyPrescriptions = onCall(
   {
+    secrets: LL_SECRETS,
     cors: [
       /leaderreps-pd-platform\.web\.app$/,
       /leaderreps-pd-platform\.firebaseapp\.com$/,
@@ -18368,6 +21012,7 @@ const { randomBytes } = require("crypto");
  */
 exports.labCreate360 = onCall(
   {
+    secrets: LL_SECRETS,
     cors: [
       /leaderreps-pd-platform\.web\.app$/,
       /leaderreps-pd-platform\.firebaseapp\.com$/,
@@ -18480,6 +21125,7 @@ exports.labCreate360 = onCall(
  */
 exports.lab360Form = onRequest(
   {
+    secrets: LL_SECRETS,
     region: "us-central1",
     maxInstances: 20,
   },
@@ -18640,7 +21286,7 @@ function escapeHtml(str) {
  */
 exports.lab360Submit = onRequest(
   {
-    secrets: ["ANTHROPIC_API_KEY"],
+    secrets: LL_SECRETS,
     region: "us-central1",
     maxInstances: 20,
     cors: true,
@@ -18887,18 +21533,27 @@ ${responseText}`,
     await db.doc(`${LL_PREFIX}users/${uid}/leadershipProfile/current`).update(updatedProfile);
   }
 
-  // Notify user via SMS
+  // Notify user via SMS — TCPA: respect quiet hours
   const userSnap = await db.doc(`${LL_PREFIX}users/${uid}`).get();
   if (userSnap.exists) {
     const userData = userSnap.data();
     if (userData.phone && userData.smsOptIn) {
-      try {
-        await sendLabSms(
-          userData.phone,
-          `Your 360 feedback is ready. ${responses.length} people shared their perspective on your leadership. Open the app to see the full picture — what they see that you might not.`
-        );
-      } catch {
-        // SMS is supplemental
+      if (isWithinQuietHours(new Date(), userData.timezone)) {
+        logger.info("360 ready SMS deferred — quiet hours", { uid });
+        try {
+          await db.doc(`${LL_PREFIX}users/${uid}`).set({
+            pending360NotificationSms: true,
+          }, { merge: true });
+        } catch (_) {}
+      } else {
+        try {
+          await sendLabSms(
+            userData.phone,
+            `Your 360 feedback is ready. ${responses.length} people shared their perspective on your leadership. Open the app to see the full picture — what they see that you might not.`
+          );
+        } catch {
+          // SMS is supplemental
+        }
       }
     }
   }
@@ -18914,6 +21569,7 @@ ${responseText}`,
  */
 exports.labMy360Summary = onCall(
   {
+    secrets: LL_SECRETS,
     cors: [
       /leaderreps-pd-platform\.web\.app$/,
       /leaderreps-pd-platform\.firebaseapp\.com$/,
@@ -19224,7 +21880,7 @@ exports.labGenerateWeatherReport = onSchedule(
   {
     schedule: "0 6 1 * *", // 1st of month, 6 AM
     timeZone: "America/New_York",
-    secrets: ["ANTHROPIC_API_KEY"],
+    secrets: LL_SECRETS,
     region: "us-central1",
     maxInstances: 1,
     timeoutSeconds: 540,
@@ -19255,13 +21911,17 @@ exports.labGenerateWeatherReport = onSchedule(
         // Send the teaser via SMS if user has a phone
         const userData = userDoc.data();
         if (userData.phone && userData.smsOptIn) {
-          await sendLabSms(userData.phone, report.smsTeaser || "Your monthly leadership weather report is ready. Open the app to see the full forecast.");
+          if (isWithinQuietHours(new Date(), userData.timezone)) {
+            logger.info("Weather report SMS skipped — quiet hours", { uid: userDoc.id });
+          } else {
+            await sendLabSms(userData.phone, report.smsTeaser || "Your monthly leadership weather report is ready. Open the app to see the full forecast.");
 
-          // Mark as delivered
-          await db.doc(`${LL_PREFIX}users/${userDoc.id}/weatherReports/${report.id}`).update({
-            status: "delivered",
-            deliveredAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
+            // Mark as delivered
+            await db.doc(`${LL_PREFIX}users/${userDoc.id}/weatherReports/${report.id}`).update({
+              status: "delivered",
+              deliveredAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+          }
         }
 
         generated++;
@@ -19285,7 +21945,7 @@ exports.labAscentScheduledSms = onSchedule(
   {
     schedule: "0 9 * * 1", // Monday 9 AM
     timeZone: "America/New_York",
-    secrets: ["ANTHROPIC_API_KEY"],
+    secrets: LL_SECRETS,
     region: "us-central1",
     maxInstances: 1,
     timeoutSeconds: 540,
@@ -19314,6 +21974,12 @@ exports.labAscentScheduledSms = onSchedule(
       const uid = userDoc.id;
 
       if (!userData.phone || !userData.smsOptIn) continue;
+
+      // --- TCPA QUIET HOURS ---
+      if (isWithinQuietHours(new Date(), userData.timezone)) {
+        logger.info("Ascent SMS skipped — outside recipient quiet hours", { uid });
+        continue;
+      }
 
       try {
         // Load Leadership Profile
@@ -19429,6 +22095,7 @@ ${recentContext.join("\n") || "No recent exchanges"}`,
  */
 exports.labMyWeatherReports = onCall(
   {
+    secrets: LL_SECRETS,
     cors: [
       /leaderreps-pd-platform\.web\.app$/,
       /leaderreps-pd-platform\.firebaseapp\.com$/,
@@ -19749,7 +22416,7 @@ exports.labGenerateNarrative = onCall(
     ],
     invoker: "public",
     region: "us-central1",
-    secrets: ["ANTHROPIC_API_KEY"],
+    secrets: LL_SECRETS,
     maxInstances: 10,
     timeoutSeconds: 120,
   },
@@ -19802,6 +22469,7 @@ exports.labGenerateNarrative = onCall(
  */
 exports.labMyNarrative = onCall(
   {
+    secrets: LL_SECRETS,
     cors: [
       /leaderreps-pd-platform\.web\.app$/,
       /leaderreps-pd-platform\.firebaseapp\.com$/,
@@ -19860,6 +22528,77 @@ exports.labMyNarrative = onCall(
   }
 );
 
+/**
+ * labLinkIdentity — Admin-only: link a Lab participant's `ll-users` record
+ * to a specific Firebase Auth account, identified by email. Used by the
+ * Member Deep Dive "Link login" button so trainers can resolve the common
+ * "I added them by phone, they sign in with Google" mismatch in one tap.
+ *
+ * Caller must be in metadata/config.adminemails. Refuses if the participant
+ * is already linked to a *different* uid unless `force: true` is passed.
+ */
+exports.labLinkIdentity = onCall(
+  {
+    secrets: LL_SECRETS,
+    cors: true,
+    region: "us-central1",
+    invoker: "public",
+    maxInstances: 5,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+    const db = admin.firestore();
+    const adminDoc = await db.doc("metadata/config").get();
+    const adminEmails = adminDoc.exists ? (adminDoc.data().adminemails || []) : [];
+    const callerEmail = (request.auth.token.email || "").toLowerCase();
+    if (!adminEmails.map((e) => e.toLowerCase()).includes(callerEmail)) {
+      throw new HttpsError("permission-denied", "Admin access required");
+    }
+
+    const { memberId, email, force } = request.data || {};
+    if (!memberId) throw new HttpsError("invalid-argument", "memberId required");
+    if (!email) throw new HttpsError("invalid-argument", "email required");
+
+    const userRef = db.doc(`${LL_PREFIX}users/${memberId}`);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) throw new HttpsError("not-found", "Member not found");
+    const userData = userSnap.data();
+
+    // Resolve auth uid by email (must already exist — we don't create here).
+    let authUser;
+    try {
+      authUser = await admin.auth().getUserByEmail(email.trim().toLowerCase());
+    } catch (_) {
+      throw new HttpsError(
+        "not-found",
+        `No Firebase Auth user exists for ${email}. Have them sign in once first, then try again.`,
+      );
+    }
+
+    if (userData.firebaseAuthUid && userData.firebaseAuthUid !== authUser.uid && !force) {
+      throw new HttpsError(
+        "already-exists",
+        `Member is already linked to a different login. Pass force=true to overwrite.`,
+      );
+    }
+
+    await userRef.update({
+      firebaseAuthUid: authUser.uid,
+      email: email.trim().toLowerCase(),
+      claimedAt: admin.firestore.FieldValue.serverTimestamp(),
+      claimedBy: callerEmail,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    logger.info("labLinkIdentity: linked", {
+      memberId, authUid: authUser.uid, email, by: callerEmail,
+    });
+    return { success: true, authUid: authUser.uid, email };
+  },
+);
+
 // ============================================================================
 // LEADERSHIP LAB — App Unlock (SMS → App upgrade)
 // ============================================================================
@@ -19871,6 +22610,7 @@ exports.labMyNarrative = onCall(
  */
 exports.labUnlockApp = onCall(
   {
+    secrets: LL_SECRETS,
     cors: true,
     region: "us-central1",
     invoker: "public",
@@ -20054,5 +22794,567 @@ exports.labRedeemUnlock = onRequest(
       logger.error("Failed to create custom token", { error: err.message });
       res.status(500).json({ error: "Failed to sign in. Please try again." });
     }
+  }
+);
+
+/**
+ * labFridayMirrorDigest — Weekly "what we noticed" SMS, sent every Friday
+ * at 4 PM ET. Pulls each onboarded participant's latest evidence, reveal,
+ * and reflection from the week, has Claude write a tight 1-2 sentence
+ * mirror, and sends an SMS with a link back to The Mirror in the app.
+ *
+ * Skips users who have no new material (avoids generic filler).
+ * Suppressed for users who opted out via STOP / smsOptIn === false.
+ */
+exports.labFridayMirrorDigest = onSchedule(
+  {
+    schedule: "0 16 * * 5", // Fridays 4:00 PM ET
+    timeZone: "America/New_York",
+    secrets: LL_SECRETS,
+    region: "us-central1",
+    maxInstances: 1,
+    timeoutSeconds: 540,
+  },
+  async () => {
+    validateLabEnvironment();
+    const db = admin.firestore();
+    const usersSnap = await db
+      .collection(`${LL_PREFIX}users`)
+      .where("onboardingComplete", "==", true)
+      .get();
+
+    const sevenDaysAgo = admin.firestore.Timestamp.fromMillis(
+      Date.now() - 7 * 24 * 60 * 60 * 1000,
+    );
+
+    let sent = 0;
+    let skipped = 0;
+    let errored = 0;
+
+    for (const doc of usersSnap.docs) {
+      const uid = doc.id;
+      const profile = doc.data();
+      try {
+        if (!profile.phone || profile.smsOptIn === false) { skipped++; continue; }
+        if (!profile.currentWeek || profile.currentWeek < 1) { skipped++; continue; }
+
+        // Pull this week's signal: most recent evidence + delivered reveal + reflection.
+        const [evSnap, revSnap, refSnap] = await Promise.all([
+          db.collection(`${LL_PREFIX}users/${uid}/evidence`)
+            .where("createdAt", ">=", sevenDaysAgo)
+            .orderBy("createdAt", "desc").limit(3).get().catch(() => ({ docs: [] })),
+          db.collection(`${LL_PREFIX}users/${uid}/reveals`)
+            .where("createdAt", ">=", sevenDaysAgo)
+            .orderBy("createdAt", "desc").limit(2).get().catch(() => ({ docs: [] })),
+          db.collection(`${LL_PREFIX}users/${uid}/reflections`)
+            .where("weekNumber", "==", profile.currentWeek)
+            .limit(1).get().catch(() => ({ docs: [] })),
+        ]);
+
+        const evidence = evSnap.docs.map((d) => d.data());
+        const reveals = revSnap.docs.map((d) => d.data());
+        const reflection = refSnap.docs[0]?.data() || null;
+
+        // Need at least SOMETHING to mirror — otherwise stay quiet.
+        if (evidence.length === 0 && reveals.length === 0 && !reflection) {
+          skipped++; continue;
+        }
+
+        // Build a tight prompt — Claude writes 1-2 sentences, no greeting,
+        // no closing. We assemble the SMS shell.
+        const ctx = [
+          `Leader: ${profile.firstName || "the leader"} (Week ${profile.currentWeek})`,
+          evidence.length ? `\nEvidence this week:\n${evidence.map((e, i) => `${i + 1}. ${e.quote || e.observation || ""}`).join("\n")}` : "",
+          reveals.length ? `\nReveals delivered this week:\n${reveals.map((r) => `- ${r.content}`).join("\n")}` : "",
+          reflection?.summary ? `\nWeekly reflection: ${reflection.summary}` : "",
+        ].filter(Boolean).join("\n");
+
+        const prompt = `You are the leader's coach writing a Friday "mirror update" via SMS. Based on the week's evidence, write 1-2 sentences that name ONE specific thing you noticed about how they led this week. Be direct, specific, and earn the right to be heard. No greeting, no sign-off, no emoji. Max 240 characters.\n\n${ctx}`;
+
+        let mirrorLine = "";
+        try {
+          const apiKey = process.env.ANTHROPIC_API_KEY;
+          if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set");
+          const anthropic = new Anthropic({ apiKey });
+          const ai = await anthropic.messages.create({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 200,
+            messages: [{ role: "user", content: prompt }],
+          });
+          mirrorLine = (ai?.content?.[0]?.text || "").trim();
+        } catch (aiErr) {
+          logger.warn("Friday digest Claude call failed", { uid, error: aiErr.message });
+          continue;
+        }
+        if (!mirrorLine || mirrorLine.length < 20) { skipped++; continue; }
+
+        const link = `${labHostingDomain()}?tab=mirror`;
+        const fname = profile.firstName || "Hey";
+        const sms = `${fname} — Friday mirror:\n\n${mirrorLine}\n\nFull picture: ${link}`;
+
+        await sendLabSms(profile.phone, sms);
+
+        // Save as a delivered "weekly-mirror" conversation entry so it
+        // shows up in the Feed timeline.
+        try {
+          await db.collection(`${LL_PREFIX}users/${uid}/conversations`).add({
+            mode: "coach",
+            channel: "sms",
+            interactionType: "friday-mirror",
+            weekNumber: profile.currentWeek,
+            messages: [
+              { role: "assistant", content: sms, at: admin.firestore.FieldValue.serverTimestamp() },
+            ],
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        } catch (_) { /* logged elsewhere */ }
+
+        sent++;
+      } catch (err) {
+        errored++;
+        logger.warn("labFridayMirrorDigest user failed", { uid, error: err.message });
+      }
+    }
+
+    logger.info("labFridayMirrorDigest complete", { sent, skipped, errored, total: usersSnap.size });
+    return { sent, skipped, errored };
+  },
+);
+
+// ============================================================================
+// LEADERSHIP LAB — System Health Monitor
+// ============================================================================
+
+/**
+ * labHealthCheck — Every 15 minutes, computes SMS + function health from the
+ * last hour of telemetry and writes to `ll-system/health`. Fires an alert
+ * doc if any metric breaches thresholds for 3 consecutive checks.
+ */
+exports.labHealthCheck = onSchedule(
+  {
+    schedule: "every 15 minutes",
+    timeZone: "America/New_York",
+    secrets: LL_SECRETS,
+    region: "us-central1",
+    maxInstances: 1,
+    timeoutSeconds: 120,
+  },
+  async () => {
+    const db = admin.firestore();
+    const now = admin.firestore.Timestamp.now();
+    const oneHourAgo = admin.firestore.Timestamp.fromMillis(Date.now() - 60 * 60 * 1000);
+
+    // SMS delivery health
+    let totalSent = 0, delivered = 0, failed = 0, pending = 0;
+    try {
+      const logSnap = await db.collection(`${LL_PREFIX}sms-log`)
+        .where("sentAt", ">=", oneHourAgo)
+        .get();
+      logSnap.forEach((d) => {
+        totalSent++;
+        const s = d.data().status;
+        if (s === "delivered") delivered++;
+        else if (s === "failed") failed++;
+        else pending++;
+      });
+    } catch (err) {
+      logger.warn("health: sms-log query failed", { error: err.message });
+    }
+
+    const deliveryRate = totalSent > 0 ? delivered / totalSent : 1;
+    const failureRate = totalSent > 0 ? failed / totalSent : 0;
+
+    // Webhook liveness — any inbound processed in last hour?
+    let inboundCount = 0;
+    try {
+      const webhookSnap = await db.collection(`${LL_PREFIX}webhook-debug`)
+        .where("at", ">=", oneHourAgo)
+        .where("reason", "==", "inbound-routed")
+        .limit(100)
+        .get();
+      inboundCount = webhookSnap.size;
+    } catch (_) { /* non-fatal */ }
+
+    // Unresolved crisis signals
+    let openCrises = 0;
+    try {
+      const cs = await db.collection(`${LL_PREFIX}alerts`)
+        .where("type", "==", "crisis-signal")
+        .where("resolved", "==", false)
+        .limit(10)
+        .get();
+      openCrises = cs.size;
+    } catch (_) { /* non-fatal */ }
+
+    // Traffic-light logic
+    let status = "green";
+    const issues = [];
+    if (totalSent > 0 && deliveryRate < 0.8) {
+      status = "red";
+      issues.push(`SMS delivery rate ${(deliveryRate * 100).toFixed(0)}% (<80%)`);
+    } else if (totalSent > 5 && deliveryRate < 0.95) {
+      status = status === "red" ? "red" : "yellow";
+      issues.push(`SMS delivery rate ${(deliveryRate * 100).toFixed(0)}% (<95%)`);
+    }
+    if (failureRate > 0.1) {
+      status = "red";
+      issues.push(`SMS failure rate ${(failureRate * 100).toFixed(0)}%`);
+    }
+    if (openCrises > 0) {
+      status = "red";
+      issues.push(`${openCrises} unresolved crisis signal${openCrises === 1 ? "" : "s"}`);
+    }
+
+    const healthDoc = {
+      status,
+      issues,
+      sms: { totalSent, delivered, failed, pending, deliveryRate, failureRate },
+      inboundCount,
+      openCrises,
+      checkedAt: now,
+    };
+
+    await db.doc(`${LL_PREFIX}system/health`).set(healthDoc, { merge: true });
+
+    // Consecutive-failure alerting
+    try {
+      const prevSnap = await db.doc(`${LL_PREFIX}system/health`).get();
+      const prev = prevSnap.exists ? prevSnap.data() : {};
+      const streak = (status === "red" ? (prev.redStreak || 0) + 1 : 0);
+      await db.doc(`${LL_PREFIX}system/health`).set({ redStreak: streak }, { merge: true });
+      if (streak === 3) {
+        await db.collection(`${LL_PREFIX}alerts`).add({
+          type: "system-red-streak",
+          issues,
+          health: healthDoc,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          resolved: false,
+        });
+        logger.error("System health RED for 3 consecutive checks", { issues });
+      }
+    } catch (_) { /* non-fatal */ }
+
+    logger.info("labHealthCheck complete", { status, ...healthDoc.sms, inboundCount, openCrises });
+    return healthDoc;
+  },
+);
+
+/**
+ * labSystemHealth — Admin-only callable returning the current health doc,
+ * plus pending retry count and last 10 failed sends for the admin console.
+ */
+exports.labSystemHealth = onCall(
+  {
+    secrets: LL_SECRETS,
+    cors: true,
+    region: "us-central1",
+    invoker: "public",
+    maxInstances: 5,
+  },
+  async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Must be authenticated");
+    const db = admin.firestore();
+    const adminDoc = await db.doc("metadata/config").get();
+    const adminEmails = adminDoc.exists ? (adminDoc.data().adminemails || []) : [];
+    const callerEmail = (request.auth.token.email || "").toLowerCase();
+    if (!adminEmails.map((e) => e.toLowerCase()).includes(callerEmail)) {
+      throw new HttpsError("permission-denied", "Admin access required");
+    }
+    const healthSnap = await db.doc(`${LL_PREFIX}system/health`).get();
+    const health = healthSnap.exists ? healthSnap.data() : { status: "unknown" };
+    let recentFailures = [];
+    try {
+      const oneDay = admin.firestore.Timestamp.fromMillis(Date.now() - 24 * 60 * 60 * 1000);
+      const failSnap = await db.collection(`${LL_PREFIX}sms-log`)
+        .where("status", "==", "failed")
+        .where("sentAt", ">=", oneDay)
+        .orderBy("sentAt", "desc")
+        .limit(10)
+        .get();
+      recentFailures = failSnap.docs.map((d) => {
+        const x = d.data();
+        return {
+          sid: d.id,
+          phoneMasked: x.phoneMasked,
+          body: (x.body || "").slice(0, 80),
+          interactionType: x.interactionType || null,
+          carrierError: x.carrierError || null,
+          sentAt: x.sentAt?.toDate?.()?.toISOString?.() || null,
+        };
+      });
+    } catch (_) { /* non-fatal */ }
+    return { health, recentFailures };
+  },
+);
+
+// ============================================================================
+// THE DAILY REP — public SMS coaching nudges
+// ============================================================================
+// - sendDailyRep:           Mon–Fri 10am ET, skips US federal holidays
+// - telnyxInboundWebhook:   STOP/HELP/START handler (10DLC compliance)
+// - seedDailyRepPrompts:    one-shot admin callable to seed Firestore overrides
+// ============================================================================
+
+const DAILY_REP_TELNYX_SECRETS = [
+  "TELNYX_API_KEY",
+  "TELNYX_MESSAGING_PROFILE_ID",
+  "TELNYX_PHONE_NUMBER",
+];
+
+/**
+ * Daily 10am ET sender. Cron is in ET via timeZone. Skips weekends (cron) and
+ * US federal holidays (in-function). Idempotent per UTC date — if the function
+ * fires twice in a window we won't double-send.
+ */
+exports.sendDailyRep = onSchedule(
+  {
+    schedule: "0 10 * * 1-5",
+    timeZone: "America/New_York",
+    region: "us-central1",
+    secrets: DAILY_REP_TELNYX_SECRETS,
+    timeoutSeconds: 540,
+    memory: "512MiB",
+    maxInstances: 1,
+  },
+  async () => {
+    const now = new Date();
+    const etDate = dailyRep.getDateInEastern(now);
+    const dateKey = etDate.toISOString().slice(0, 10); // YYYY-MM-DD in ET
+
+    if (dailyRep.isUsFederalHoliday(etDate)) {
+      logger.info(`Daily Rep skipped — US federal holiday (${dateKey})`);
+      return;
+    }
+
+    // Idempotency guard
+    const sendDoc = db.collection("daily-rep-sends").doc(dateKey);
+    const existing = await sendDoc.get();
+    if (existing.exists && existing.data().completedAt) {
+      logger.info(`Daily Rep already sent for ${dateKey} — skipping`);
+      return;
+    }
+
+    const prompt = await dailyRep.resolvePromptForToday(db, etDate);
+    logger.info(`Daily Rep ${dateKey}: prompt #${prompt.index} (${prompt.source})`);
+
+    // Subscribers: consent === true AND not unsubscribed
+    const subsSnap = await db
+      .collection("sms_opt_ins")
+      .where("consent", "==", true)
+      .get();
+
+    let attempted = 0;
+    let sent = 0;
+    let failed = 0;
+    let skipped = 0;
+    const errors = [];
+
+    for (const doc of subsSnap.docs) {
+      const data = doc.data();
+      if (data.unsubscribed === true) {
+        skipped += 1;
+        continue;
+      }
+      // Lab enrollment supersedes Daily Rep — set by labAddParticipant.
+      if (data.suspendedByLab === true) {
+        skipped += 1;
+        continue;
+      }
+      const phone = data.phone;
+      if (!phone || !phone.startsWith("+")) {
+        skipped += 1;
+        continue;
+      }
+      // Mutual exclusion: skip if this phone is enrolled in Leadership Lab.
+      // Lab takes precedence over Daily Rep coaching nudges.
+      if (await isPhoneEnrolledInLab(phone)) {
+        logger.info("Daily Rep cron skip — phone enrolled in Lab", { phone: maskPhone(phone) });
+        skipped += 1;
+        continue;
+      }
+      attempted += 1;
+      const result = await dailyRep.sendDailyRepSms(phone, prompt.text);
+      if (result.ok) {
+        sent += 1;
+      } else {
+        failed += 1;
+        errors.push({ phone, error: result.error });
+      }
+    }
+
+    await sendDoc.set(
+      {
+        dateKey,
+        promptIndex: prompt.index,
+        promptText: prompt.text,
+        promptSource: prompt.source,
+        attempted,
+        sent,
+        failed,
+        skipped,
+        errors: errors.slice(0, 25),
+        startedAt: existing.exists ? existing.data().startedAt : admin.firestore.FieldValue.serverTimestamp(),
+        completedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    logger.info(
+      `Daily Rep ${dateKey} done — attempted=${attempted} sent=${sent} failed=${failed} skipped=${skipped}`
+    );
+  }
+);
+
+/**
+ * Telnyx inbound webhook — handles STOP/HELP/START keywords for 10DLC
+ * compliance. Configure URL in Telnyx Mission Control after deploy:
+ *   Messaging Profile → Inbound Settings → Webhook URL
+ *
+ * Telnyx posts JSON with shape: { data: { event_type, payload: {...} } }
+ * Inbound messages have event_type === "message.received".
+ */
+exports.telnyxInboundWebhook = onRequest(
+  {
+    region: "us-central1",
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    secrets: DAILY_REP_TELNYX_SECRETS,
+  },
+  async (req, res) => {
+    if (req.method !== "POST") {
+      res.status(405).send("Method not allowed");
+      return;
+    }
+
+    try {
+      const event = req.body && req.body.data;
+      const eventType = event && event.event_type;
+
+      if (eventType !== "message.received") {
+        // Acknowledge other events (delivery receipts, etc.) so Telnyx doesn't retry
+        res.status(200).json({ ok: true, ignored: eventType || "unknown" });
+        return;
+      }
+
+      const payload = event.payload || {};
+      const fromNumber =
+        payload.from && (typeof payload.from === "string" ? payload.from : payload.from.phone_number);
+      const body = (payload.text || "").trim();
+      const upper = body.toUpperCase();
+
+      if (!fromNumber) {
+        logger.warn("telnyxInboundWebhook: missing from number", { payload });
+        res.status(200).json({ ok: true, ignored: "no-from" });
+        return;
+      }
+
+      // Find subscriber doc (if any)
+      const subSnap = await db
+        .collection("sms_opt_ins")
+        .where("phone", "==", fromNumber)
+        .limit(1)
+        .get();
+
+      const STOP_WORDS = new Set(["STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT"]);
+      const START_WORDS = new Set(["START", "UNSTOP", "RESUBSCRIBE", "YES"]);
+      const HELP_WORDS = new Set(["HELP", "INFO"]);
+
+      let action = "noop";
+      let reply = null;
+
+      if (STOP_WORDS.has(upper)) {
+        action = "stop";
+        reply = dailyRep.STOP_CONFIRM_SMS;
+        if (!subSnap.empty) {
+          await subSnap.docs[0].ref.update({
+            unsubscribed: true,
+            unsubscribedAt: admin.firestore.FieldValue.serverTimestamp(),
+            unsubscribeReason: upper,
+          });
+        }
+      } else if (START_WORDS.has(upper)) {
+        action = "start";
+        reply = dailyRep.RESTART_CONFIRM_SMS;
+        if (!subSnap.empty) {
+          await subSnap.docs[0].ref.update({
+            unsubscribed: false,
+            resubscribedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
+      } else if (HELP_WORDS.has(upper)) {
+        action = "help";
+        reply = dailyRep.HELP_SMS;
+      }
+
+      // Log every inbound for the audit trail
+      await db.collection("sms_inbound").add({
+        from: fromNumber,
+        body,
+        action,
+        eventId: payload.id || null,
+        receivedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      if (reply) {
+        await dailyRep.sendDailyRepSms(fromNumber, reply);
+      }
+
+      res.status(200).json({ ok: true, action });
+    } catch (err) {
+      logger.error("telnyxInboundWebhook error", err);
+      // Still 200 so Telnyx doesn't retry storm — we logged the failure.
+      res.status(200).json({ ok: false, error: err.message });
+    }
+  }
+);
+
+/**
+ * One-shot admin callable to seed Firestore prompt overrides from the
+ * built-in corpus. Idempotent — overwrites docs by index.
+ *
+ * Call from a logged-in admin context with: { adminToken: "<value>" }
+ * matching env DAILY_REP_SEED_TOKEN (or skip if not set, allowed only in
+ * non-prod). Use sparingly; daily content is sourced from the in-code corpus
+ * if the Firestore doc is missing, so seeding is optional.
+ */
+exports.seedDailyRepPrompts = onCall(
+  {
+    region: "us-central1",
+    timeoutSeconds: 120,
+    memory: "256MiB",
+  },
+  async (request) => {
+    const expectedToken = process.env.DAILY_REP_SEED_TOKEN;
+    const providedToken = request.data && request.data.adminToken;
+    const projectId = process.env.GCLOUD_PROJECT || "";
+    const isProd = projectId === "leaderreps-prod";
+
+    if (isProd && (!expectedToken || providedToken !== expectedToken)) {
+      throw new HttpsError("permission-denied", "Invalid or missing admin token.");
+    }
+
+    const batchSize = 400;
+    let written = 0;
+    for (let start = 0; start < dailyRep.PROMPTS.length; start += batchSize) {
+      const batch = db.batch();
+      const slice = dailyRep.PROMPTS.slice(start, start + batchSize);
+      slice.forEach((text, i) => {
+        const idx = start + i;
+        batch.set(
+          db.collection("daily-rep-prompts").doc(String(idx)),
+          {
+            index: idx,
+            text,
+            active: true,
+            seededAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+        written += 1;
+      });
+      await batch.commit();
+    }
+    return { ok: true, written, total: dailyRep.PROMPTS.length };
   }
 );
