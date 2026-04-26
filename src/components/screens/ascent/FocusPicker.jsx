@@ -9,10 +9,11 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, ArrowRight, Target, MessageSquare, HelpCircle, Compass, Users,
+  Zap, AlertTriangle, RefreshCw, Star,
 } from 'lucide-react';
 import { CONVERSATIONS, getFeaturedConversation } from './conversationLibrary.js';
 
-const ICONS = { Target, MessageSquare, HelpCircle, Compass, Users };
+const ICONS = { Target, MessageSquare, HelpCircle, Compass, Users, Zap, AlertTriangle, RefreshCw, Star };
 
 const FocusPicker = ({ open, onPick, firstName = 'Leader' }) => {
   const [hovered, setHovered] = useState(null);

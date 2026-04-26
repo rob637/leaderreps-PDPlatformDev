@@ -9,10 +9,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Target, MessageSquare, HelpCircle, Compass, Users,
   PlayCircle, Send, Calendar, Copy, Check,
+  Zap, AlertTriangle, RefreshCw, Star,
 } from 'lucide-react';
 import { getFrameworkById } from './frameworks.js';
 
-const ICONS = { Target, MessageSquare, HelpCircle, Compass, Users };
+const ICONS = { Target, MessageSquare, HelpCircle, Compass, Users, Zap, AlertTriangle, RefreshCw, Star };
 
 const ConversationModal = ({ conversation, onClose, navigate }) => {
   const [copiedIdx, setCopiedIdx] = useState(null);
