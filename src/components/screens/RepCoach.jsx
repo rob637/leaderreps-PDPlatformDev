@@ -348,7 +348,7 @@ const RepCoach = ({ mode, skillTitle, skillTagline }) => {
   const TimeIcon = timeOfDay === 'morning' ? Sun : timeOfDay === 'evening' ? Moon : Coffee;
 
   return (
-    <div className="h-screen bg-slate-50 dark:bg-slate-900 flex flex-col overflow-hidden">
+    <div className="h-full bg-slate-50 dark:bg-slate-900 flex flex-col overflow-hidden">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-center justify-between px-4 py-3">
