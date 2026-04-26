@@ -11754,6 +11754,7 @@ exports.analyzeAccountabilityAssessment = onRequest(
         archetypeName: scoreLabel,
         overallScore: results.overallScore || 0,
         summary: results.summary || '',
+        questionResults: Array.isArray(results.questionResults) ? results.questionResults : [],
       };
 
       try {
