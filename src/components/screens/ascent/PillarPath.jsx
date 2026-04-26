@@ -64,7 +64,7 @@ const pillarProgress = (pillarId, getJourney) => {
     const done = CONVERSATIONS.filter((c) => journeyState(getJourney?.(c.id)) === 'done').length;
     return done / total;
   }
-  return pillarId === 'lead-work' ? 0.3 : 0; // Lead Work: Foundation partial
+  return pillarId === 'lead-work' ? 1.0 : 0; // Lead Work: Foundation complete
 };
 
 // ─── Progress ring (SVG) ─────────────────────────────────────────────────
@@ -224,7 +224,7 @@ const SkillNode = ({ skill, convo, state, isFocus, onClick, delay }) => {
 
         {/* Sub-state */}
         <div className="text-[9px] uppercase tracking-wider mt-1 text-slate-400">
-          {isDone ? 'done' : isActive ? 'in progress' : isLocked ? 'Q3 2026' : 'to do'}
+          {isDone ? 'Review ↗' : isActive ? 'in progress' : isLocked ? 'Q3 2026' : 'to do'}
         </div>
       </button>
     </motion.div>
