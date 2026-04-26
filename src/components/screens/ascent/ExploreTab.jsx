@@ -207,12 +207,12 @@ const ExploreTab = ({
         <div className="flex items-end justify-between mb-3">
           <div>
             <div className="text-[11px] uppercase tracking-wider font-bold text-corporate-navy dark:text-slate-400">
-              From your Foundation
+              From Lead Work
             </div>
             <h2 className="text-lg font-extrabold text-corporate-navy dark:text-white">
               {focusConvo
                 ? `Reinforce what you learned — tied to ${focusConvo.title}`
-                : 'Pick a focus to see tailored Foundation content'}
+                : 'Pick a focus to see tailored Lead Work content'}
             </h2>
           </div>
         </div>

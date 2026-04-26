@@ -400,7 +400,7 @@ const AscentArena = ({ navigate }) => {
               Welcome back, {firstName}.
             </h1>
             <p className="text-sm sm:text-base opacity-90 mt-2 max-w-2xl">
-              You finished Foundation. Lead Team is your next climb — mastering the conversations that actually define how you lead.
+              You finished Lead Work. Lead Team is your next climb — mastering the conversations that actually define how you lead.
             </p>
           </div>
         </div>

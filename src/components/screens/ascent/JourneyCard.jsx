@@ -22,10 +22,10 @@ import { getFrameworkById } from './frameworks.js';
 const ICONS = { Target, MessageSquare, HelpCircle, Compass, Users, Zap, AlertTriangle, RefreshCw, Star };
 
 const STEP_CTA = {
-  learn:    { label: 'Watch the video',   icon: PlayCircle, target: 'leadership-videos' },
-  prep:     { label: 'Open prep card',    icon: Edit3,      target: null /* opens modal */ },
-  practice: { label: 'Find an Open Gym',  icon: Calendar,   target: 'coaching-hub' },
-  reflect:  { label: 'Add a Field Note',  icon: Send,       target: 'rep-coach' },
+  learn:    { label: 'Watch the video',     icon: PlayCircle, target: 'leadership-videos' },
+  prep:     { label: 'Open prep card',      icon: Edit3,      target: null /* opens modal */ },
+  practice: { label: 'Find a Practice/Rep', icon: Calendar,   target: 'coaching-hub' },
+  reflect:  { label: 'Add a Field Note',    icon: Send,       target: 'rep-coach' },
 };
 
 const StepRow = ({ stepKey, journey, isNext, accent, onCta, onToggle }) => {

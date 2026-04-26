@@ -77,7 +77,7 @@ const PathStrip = ({ focusId, getJourney, onPickConversation }) => {
             Your Path
           </div>
           <div className="text-sm font-bold text-corporate-navy dark:text-white">
-            Foundation → Lead Team → Lead Self
+            Lead Work → Lead Team → Lead Self
           </div>
         </div>
       </div>
@@ -86,7 +86,7 @@ const PathStrip = ({ focusId, getJourney, onPickConversation }) => {
         <Node
           accent="#002E47"
           state="done"
-          label="Foundation"
+          label="Lead Work"
           sub="Done"
           delay={0}
         >
