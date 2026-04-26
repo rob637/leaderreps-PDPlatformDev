@@ -10,20 +10,44 @@ import {
   X, Target, MessageSquare, HelpCircle, Compass, Users,
   PlayCircle, Send, Calendar, Copy, Check,
   Zap, AlertTriangle, RefreshCw, Star, BookOpen, Video,
+  Trophy, ArrowRight,
 } from 'lucide-react';
 import { getFrameworkById } from './frameworks.js';
+import { STEP_KEYS, STEP_META } from '../../../hooks/useAscentJourney.js';
 
 const ICONS = { Target, MessageSquare, HelpCircle, Compass, Users, Zap, AlertTriangle, RefreshCw, Star };
 
-const ConversationModal = ({ conversation, onClose, navigate }) => {
+const STEP_CTA_LABEL = {
+  learn:    'Read the script',
+  prep:     'Open prep card',
+  practice: 'Schedule a rep',
+  reflect:  'Add a field note',
+};
+
+const ConversationModal = ({ conversation, journey, onToggleStep, onStepCta, onPickNext, onClose, navigate }) => {
   const [copiedIdx, setCopiedIdx] = useState(null);
   const bodyRef = useRef(null);
   const scriptRef = useRef(null);
+  const frameworkRef = useRef(null);
 
   if (!conversation) return null;
   const Icon = ICONS[conversation.icon] || MessageSquare;
   const framework = getFrameworkById(conversation.frameworkId);
   const accent = conversation.accent || '#47A88D';
+
+  const doneCount = onToggleStep ? STEP_KEYS.filter(k => !!journey?.steps?.[k]?.done).length : 0;
+  const complete = onToggleStep ? doneCount === STEP_KEYS.length : false;
+  const nextStepKey = complete ? null : (onToggleStep ? STEP_KEYS.find(k => !journey?.steps?.[k]?.done) : null);
+
+  const handleInternalStepCta = (stepKey) => {
+    if (stepKey === 'learn' && scriptRef.current && bodyRef.current) {
+      bodyRef.current.scrollTo({ top: scriptRef.current.offsetTop - 12, behavior: 'smooth' });
+    } else if (stepKey === 'prep' && frameworkRef.current && bodyRef.current) {
+      bodyRef.current.scrollTo({ top: frameworkRef.current.offsetTop - 12, behavior: 'smooth' });
+    } else {
+      onStepCta?.(stepKey);
+    }
+  };
 
   const copyStarter = async (text, idx) => {
     try {
@@ -78,6 +102,88 @@ const ConversationModal = ({ conversation, onClose, navigate }) => {
 
           {/* Body */}
           <div ref={bodyRef} className="overflow-y-auto px-6 py-5 space-y-5">
+
+            {/* Journey Progress — 4-step tracker */}
+            {onToggleStep && (
+              <div className="rounded-2xl border-2 p-4" style={{ borderColor: `${accent}44`, background: `${accent}08` }}>
+                {/* Step dots + labels */}
+                <div className="flex items-start gap-1 mb-4">
+                  {STEP_KEYS.map((k, i) => {
+                    const done = !!journey?.steps?.[k]?.done;
+                    const isNextStep = k === nextStepKey;
+                    return (
+                      <React.Fragment key={k}>
+                        <button
+                          onClick={() => onToggleStep(k)}
+                          className="flex flex-col items-center flex-1 min-w-0"
+                          title={done ? 'Mark incomplete' : 'Mark complete'}
+                        >
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center mb-1 transition-colors ${
+                            done ? 'bg-emerald-500' : isNextStep ? 'bg-corporate-teal' : 'bg-slate-200 dark:bg-slate-700'
+                          }`}>
+                            {done
+                              ? <Check className="w-3.5 h-3.5 text-white" />
+                              : <div className={`w-2 h-2 rounded-full ${isNextStep ? 'bg-white' : 'bg-slate-400 dark:bg-slate-500'}`} />
+                            }
+                          </div>
+                          <span className={`text-[9px] uppercase tracking-wider font-bold leading-tight text-center ${
+                            done ? 'text-emerald-600 dark:text-emerald-400' : isNextStep ? 'text-corporate-teal' : 'text-slate-400'
+                          }`}>{STEP_META[k].label}</span>
+                        </button>
+                        {i < STEP_KEYS.length - 1 && (
+                          <div className="shrink-0 w-6 h-0.5 mt-3 self-start rounded-full" style={{ background: `${accent}30` }} />
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+
+                {/* Active step action or completion */}
+                {complete ? (
+                  <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="w-5 h-5 text-corporate-orange shrink-0" />
+                      <div>
+                        <div className="text-sm font-bold text-corporate-navy dark:text-white">Conversation complete!</div>
+                        <div className="text-xs text-slate-500">Don't stop — pick the next one.</div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={onPickNext}
+                      className="shrink-0 inline-flex items-center gap-1 text-sm font-semibold text-white px-3 py-1.5 rounded-lg"
+                      style={{ background: accent }}
+                    >
+                      Next <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : nextStepKey ? (
+                  <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                    <div className="min-w-0">
+                      <div className="text-[10px] uppercase tracking-wider font-bold" style={{ color: accent }}>
+                        Next · {STEP_META[nextStepKey].label}
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{STEP_META[nextStepKey].sub}</div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => handleInternalStepCta(nextStepKey)}
+                        className="text-xs font-semibold px-2.5 py-1.5 rounded-lg text-white"
+                        style={{ background: accent }}
+                      >
+                        {STEP_CTA_LABEL[nextStepKey]}
+                      </button>
+                      <button
+                        onClick={() => onToggleStep(nextStepKey)}
+                        className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                      >
+                        ✓ Done
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
+
             {/* Video Script */}
             {Array.isArray(conversation.videoScript) && conversation.videoScript.length > 0 && (
               <div
@@ -121,7 +227,7 @@ const ConversationModal = ({ conversation, onClose, navigate }) => {
 
             {/* Framework */}
             {framework && (
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+              <div ref={frameworkRef} className="rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
                 <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900/40 border-b border-slate-200 dark:border-slate-700">
                   <div className="text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400">Framework</div>
                   <div className="font-bold text-corporate-navy dark:text-white">{framework.name}</div>
