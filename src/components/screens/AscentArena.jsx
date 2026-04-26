@@ -20,6 +20,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import {
   Mountain, Compass, Activity, Flame, Users, Briefcase, Heart,
   Sparkles, ArrowRight, Lock, CheckCircle2, Bell, Calendar, ChevronRight,
+  Map as MapIcon, Telescope,
 } from 'lucide-react';
 
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -269,6 +270,7 @@ const AscentArena = ({ navigate }) => {
 
   const [openConvo, setOpenConvo] = useState(null);
   const [openSkill, setOpenSkill] = useState(null);
+  const [activeTab, setActiveTab] = useState('journey');
 
   const userId = user?.uid || user?.userId || null;
 
@@ -326,22 +328,52 @@ const AscentArena = ({ navigate }) => {
         onOpenSkill={(skill) => setOpenSkill(skill)}
       />
 
-      {/* Lead Work + Community side-by-side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div id="lead-work-card">
-          <LeadWorkCompressed navigate={navigate} />
+      {/* Tab toggle */}
+      <div className="flex items-center justify-center">
+        <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+          <button
+            onClick={() => setActiveTab('journey')}
+            className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+              activeTab === 'journey'
+                ? 'bg-white dark:bg-slate-700 text-corporate-navy dark:text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-300 hover:text-corporate-navy'
+            }`}
+          >
+            <MapIcon className="w-4 h-4" /> My Journey
+          </button>
+          <button
+            onClick={() => setActiveTab('explore')}
+            className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+              activeTab === 'explore'
+                ? 'bg-white dark:bg-slate-700 text-corporate-navy dark:text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-300 hover:text-corporate-navy'
+            }`}
+          >
+            <Telescope className="w-4 h-4" /> Explore
+          </button>
         </div>
-        <CommunityCard navigate={navigate} />
       </div>
 
-      {/* Lead Self teaser */}
-      <div id="lead-self-card">
-        <LeadSelfTeaser
-          db={db}
-          userId={userId}
-          userEmail={user?.email || null}
-        />
-      </div>
+      {activeTab === 'explore' && (
+        <>
+          {/* Lead Work + Community side-by-side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div id="lead-work-card">
+              <LeadWorkCompressed navigate={navigate} />
+            </div>
+            <CommunityCard navigate={navigate} />
+          </div>
+
+          {/* Lead Self teaser */}
+          <div id="lead-self-card">
+            <LeadSelfTeaser
+              db={db}
+              userId={userId}
+              userEmail={user?.email || null}
+            />
+          </div>
+        </>
+      )}
 
       {/* Conversation drill-down — content + 4-step journey progress in one card */}
       {openConvo && (
