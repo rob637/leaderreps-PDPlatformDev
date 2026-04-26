@@ -27,8 +27,6 @@ import {
   doc,
   getDoc,
   updateDoc,
-  orderBy,
-  query,
 } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
 
@@ -95,20 +93,24 @@ const AccountabilityInsights = () => {
   const [sortField, setSortField] = useState('createdAt');
   const [sortDir, setSortDir] = useState('desc');
   const [togglingId, setTogglingId] = useState(null);
+  const [loadError, setLoadError] = useState(null);
 
   // ── Load leads + global stats ──────────────────────────────────────────
+  // Note: sorting is done client-side to avoid needing a Firestore index.
   const load = useCallback(async () => {
     if (!db) return;
     setLoading(true);
+    setLoadError(null);
     try {
       const [snap, statsSnap] = await Promise.all([
-        getDocs(query(collection(db, 'accountability-leads'), orderBy('createdAt', 'desc'))),
+        getDocs(collection(db, 'accountability-leads')),
         getDoc(doc(db, 'accountability-stats', 'global')),
       ]);
       setLeads(snap.docs.map((d) => ({ _id: d.id, ...d.data() })));
       setGlobalStats(statsSnap.exists() ? statsSnap.data() : null);
     } catch (err) {
       console.error('AccountabilityInsights: failed to load leads', err);
+      setLoadError(err.message || 'Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -239,6 +241,19 @@ const AccountabilityInsights = () => {
     return (
       <div className="flex items-center justify-center p-16">
         <Loader className="w-7 h-7 animate-spin text-corporate-teal" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-center justify-center p-16 gap-3">
+        <XCircle className="w-8 h-8 text-red-400" />
+        <p className="text-sm font-semibold text-red-600">Failed to load assessment data</p>
+        <p className="text-xs text-slate-400">{loadError}</p>
+        <button onClick={load} className="mt-2 px-4 py-2 text-sm font-medium rounded-lg bg-corporate-teal text-white hover:bg-corporate-teal/90">
+          Retry
+        </button>
       </div>
     );
   }
