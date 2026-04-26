@@ -17630,7 +17630,8 @@ exports.labScheduledSms = onSchedule(
             } catch {
               return isAM; // fallback to server ET
             }
-          })();f (isWithinQuietHours(now, userProfile.timezone)) {
+          })();
+          if (isWithinQuietHours(now, userProfile.timezone)) {
             logger.info("Skipping send — outside recipient quiet hours", {
               memberId,
               tz: userProfile.timezone || "America/New_York",
