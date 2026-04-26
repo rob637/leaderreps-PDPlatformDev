@@ -348,7 +348,7 @@ const RepCoach = ({ mode, skillTitle, skillTagline }) => {
   const TimeIcon = timeOfDay === 'morning' ? Sun : timeOfDay === 'evening' ? Moon : Coffee;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
+    <div className="h-screen bg-slate-50 dark:bg-slate-900 flex flex-col overflow-hidden">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-center justify-between px-4 py-3">
@@ -374,7 +374,7 @@ const RepCoach = ({ mode, skillTitle, skillTagline }) => {
       </header>
 
       {/* Messages */}
-      <main className="flex-1 overflow-y-auto p-4 pb-24">
+      <main className="flex-1 overflow-y-auto p-4">
         <div className="max-w-2xl mx-auto">
           {/* System message */}
           <RepMessage 
@@ -463,7 +463,7 @@ const RepCoach = ({ mode, skillTitle, skillTagline }) => {
       </main>
 
       {/* Input */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 p-4">
+      <footer className="shrink-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 p-4">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center gap-2">
             <input
