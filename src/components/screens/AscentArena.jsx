@@ -28,9 +28,10 @@ import { useAnchors } from '../../hooks/useAnchors';
 import { useAscentJourney } from '../../hooks/useAscentJourney.js';
 import { getConversationById } from './ascent/conversationLibrary.js';
 import ConversationModal from './ascent/ConversationModal.jsx';
+import SkillModal from './ascent/SkillModal.jsx';
 import FocusPicker from './ascent/FocusPicker.jsx';
 import JourneyCard from './ascent/JourneyCard.jsx';
-import PathStrip from './ascent/PathStrip.jsx';
+import PillarPath from './ascent/PillarPath.jsx';
 import JourneyResumeBar from './ascent/JourneyResumeBar.jsx';
 import ExploreTab from './ascent/ExploreTab.jsx';
 
@@ -275,6 +276,7 @@ const AscentArena = ({ navigate }) => {
   const journey = useAscentJourney();
 
   const [openConvo, setOpenConvo] = useState(null);
+  const [openSkill, setOpenSkill] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
   const [activeTab, setActiveTab] = useState('journey'); // 'journey' | 'explore'
   const [cohortWaitlists, setCohortWaitlists] = useState({}); // { [cohortId]: true, busy: cohortId|null }
@@ -405,17 +407,19 @@ const AscentArena = ({ navigate }) => {
               Welcome back, {firstName}.
             </h1>
             <p className="text-sm sm:text-base opacity-90 mt-2 max-w-2xl">
-              You finished Lead Work. Lead Team is your next climb — mastering the conversations that actually define how you lead.
+              Three pillars. Your path through all of them. Lead Work builds the foundation. Lead Team builds the conversations. Lead Self builds the leader.
             </p>
           </div>
         </div>
       </motion.div>
 
-      {/* Path strip — visible journey */}
-      <PathStrip
+      {/* Your Path — three-pillar selector + workstream */}
+      <PillarPath
         focusId={journey.focusId}
         getJourney={journey.actions.getJourney}
         onPickConversation={handlePickFocus}
+        onOpenConvo={(convo) => setOpenConvo(convo)}
+        onOpenSkill={(skill) => setOpenSkill(skill)}
       />
 
       {/* Tab toggle — step in/out of the journey */}
@@ -523,11 +527,20 @@ const AscentArena = ({ navigate }) => {
         onPick={handlePickFocus}
       />
 
-      {/* Conversation drill-down (from library or "Prep" step) */}
+      {/* Conversation drill-down (Lead Team conversations) */}
       {openConvo && (
         <ConversationModal
           conversation={openConvo}
           onClose={() => setOpenConvo(null)}
+          navigate={navigate}
+        />
+      )}
+
+      {/* Skill drill-down (Lead Work / Lead Self skills) */}
+      {openSkill && (
+        <SkillModal
+          skill={openSkill}
+          onClose={() => setOpenSkill(null)}
           navigate={navigate}
         />
       )}
