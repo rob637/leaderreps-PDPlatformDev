@@ -186,7 +186,7 @@ const SkillNode = ({ skill, convo, state, isFocus, onClick, delay }) => {
       <button
         onClick={isLocked ? undefined : onClick}
         disabled={isLocked}
-        className={`group relative flex flex-col items-center justify-center rounded-2xl border-2 p-3 min-w-[96px] max-w-[112px] transition-all text-center ${
+        className={`group relative flex flex-col items-center justify-center rounded-2xl border-2 p-3 w-[120px] h-[114px] transition-all text-center ${
           isDone
             ? 'border-emerald-300 bg-emerald-50 dark:bg-emerald-900/20'
             : isFocus

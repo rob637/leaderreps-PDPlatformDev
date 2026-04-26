@@ -4,7 +4,7 @@
 // Shows: tagline, when/avoid, framework steps, prompt starters, CTAs.
 // "Wow but simple" — clean motion, no clutter, copy that earns trust.
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Target, MessageSquare, HelpCircle, Compass, Users,
@@ -17,6 +17,8 @@ const ICONS = { Target, MessageSquare, HelpCircle, Compass, Users, Zap, AlertTri
 
 const ConversationModal = ({ conversation, onClose, navigate }) => {
   const [copiedIdx, setCopiedIdx] = useState(null);
+  const bodyRef = useRef(null);
+  const scriptRef = useRef(null);
 
   if (!conversation) return null;
   const Icon = ICONS[conversation.icon] || MessageSquare;
@@ -75,10 +77,11 @@ const ConversationModal = ({ conversation, onClose, navigate }) => {
           </div>
 
           {/* Body */}
-          <div className="overflow-y-auto px-6 py-5 space-y-5">
+          <div ref={bodyRef} className="overflow-y-auto px-6 py-5 space-y-5">
             {/* Video Script */}
             {Array.isArray(conversation.videoScript) && conversation.videoScript.length > 0 && (
               <div
+                ref={scriptRef}
                 className="rounded-2xl border-2 p-4"
                 style={{ borderColor: `${accent}55`, background: `${accent}0d` }}
               >
@@ -182,9 +185,16 @@ const ConversationModal = ({ conversation, onClose, navigate }) => {
                   <PlayCircle className="w-4 h-4" /> Watch the {conversation.videoMinutes}-min video
                 </button>
               ) : (
-                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed">
-                  <Video className="w-4 h-4" /> Video coming soon
-                </span>
+                <button
+                  onClick={() => {
+                    if (scriptRef.current && bodyRef.current) {
+                      bodyRef.current.scrollTo({ top: scriptRef.current.offsetTop - 12, behavior: 'smooth' });
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border border-slate-300 dark:border-slate-600 text-corporate-navy dark:text-white hover:bg-white dark:hover:bg-slate-800"
+                >
+                  <Video className="w-4 h-4" /> Read the transcript
+                </button>
               )}
               <button
                 onClick={() => navigate?.('coaching-hub')}
@@ -193,7 +203,7 @@ const ConversationModal = ({ conversation, onClose, navigate }) => {
                 <Calendar className="w-4 h-4" /> Practice / Reps
               </button>
               <button
-                onClick={() => navigate?.('rep-coach')}
+                onClick={() => navigate?.('rep-coach', { mode: 'practice', skillTitle: conversation.title, skillTagline: conversation.tagline })}
                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border border-slate-300 dark:border-slate-600 text-corporate-navy dark:text-white hover:bg-white dark:hover:bg-slate-800"
               >
                 <Send className="w-4 h-4" /> Prep with Rep

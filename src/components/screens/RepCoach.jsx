@@ -26,7 +26,7 @@ import { useDailyPlan } from '../../hooks/useDailyPlan';
  * 
  * Rep does NOT duplicate dashboard widgets - it guides TO them.
  */
-const RepCoach = ({ mode }) => {
+const RepCoach = ({ mode, skillTitle, skillTagline }) => {
   const { user, navigate, dailyPracticeData } = useAppServices();
   
   // Help mode = simple "How can I help you?" experience
@@ -213,6 +213,19 @@ const RepCoach = ({ mode }) => {
       }, 500);
       return;
     }
+
+    // Practice mode: came from "Practice with Rep" on a specific skill or conversation
+    if (skillTitle) {
+      setTimeout(() => {
+        setMessages([{
+          sender: 'rep',
+          content: `Let's work on **${skillTitle}**! 🎯${skillTagline ? `\n\n_${skillTagline}_` : ''}\n\nTell me about a real situation where you need to use this skill — current, past, or coming up. I'll help you think through it.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }]);
+        setSessionState('questions');
+      }, 500);
+      return;
+    }
     
     // Standard check-in mode
     let contextMessage = "";
@@ -238,7 +251,7 @@ const RepCoach = ({ mode }) => {
       addRepMessage(nextStep.message, 1500, 'next-step', { cta: nextStep.cta, allDone: nextStep.allDone });
       setSessionState('guidance');
     }, 2500);
-  }, [dailyPlanLoading, firstName, greeting, phaseDisplay, isPrep, prepComplete, addRepMessage, getNextStepMessage, isHelpMode]);
+  }, [dailyPlanLoading, firstName, greeting, phaseDisplay, isPrep, prepComplete, addRepMessage, getNextStepMessage, isHelpMode, skillTitle, skillTagline]);
 
   // Handle cohort continue - show next step guidance
   const handleCohortContinue = useCallback(() => {
