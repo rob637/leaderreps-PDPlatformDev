@@ -26,7 +26,6 @@ const STEP_CTA_LABEL = {
 
 const ConversationModal = ({ conversation, journey, onToggleStep, onStepCta, onPickNext, onClose, navigate }) => {
   const [copiedIdx, setCopiedIdx] = useState(null);
-  const bodyRef = useRef(null);
   const scriptRef = useRef(null);
   const frameworkRef = useRef(null);
 
@@ -40,10 +39,10 @@ const ConversationModal = ({ conversation, journey, onToggleStep, onStepCta, onP
   const nextStepKey = complete ? null : (onToggleStep ? STEP_KEYS.find(k => !journey?.steps?.[k]?.done) : null);
 
   const handleInternalStepCta = (stepKey) => {
-    if (stepKey === 'learn' && scriptRef.current && bodyRef.current) {
-      bodyRef.current.scrollTo({ top: scriptRef.current.offsetTop - 12, behavior: 'smooth' });
-    } else if (stepKey === 'prep' && frameworkRef.current && bodyRef.current) {
-      bodyRef.current.scrollTo({ top: frameworkRef.current.offsetTop - 12, behavior: 'smooth' });
+    if (stepKey === 'learn' && scriptRef.current) {
+      scriptRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (stepKey === 'prep' && frameworkRef.current) {
+      frameworkRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
       onStepCta?.(stepKey);
     }
@@ -101,7 +100,7 @@ const ConversationModal = ({ conversation, journey, onToggleStep, onStepCta, onP
           </div>
 
           {/* Body */}
-          <div ref={bodyRef} className="overflow-y-auto px-6 py-5 space-y-5">
+          <div className="overflow-y-auto px-6 py-5 space-y-5">
 
             {/* Journey Progress — 4-step tracker */}
             {onToggleStep && (
@@ -292,11 +291,7 @@ const ConversationModal = ({ conversation, journey, onToggleStep, onStepCta, onP
                 </button>
               ) : (
                 <button
-                  onClick={() => {
-                    if (scriptRef.current && bodyRef.current) {
-                      bodyRef.current.scrollTo({ top: scriptRef.current.offsetTop - 12, behavior: 'smooth' });
-                    }
-                  }}
+                  onClick={() => scriptRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border border-slate-300 dark:border-slate-600 text-corporate-navy dark:text-white hover:bg-white dark:hover:bg-slate-800"
                 >
                   <Video className="w-4 h-4" /> Read the transcript
