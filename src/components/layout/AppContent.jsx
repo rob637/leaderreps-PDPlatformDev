@@ -97,8 +97,7 @@ const AppContent = ({
 
   const isFullWidthScreen = currentScreen.startsWith('admin-') || 
                            ['data-maintenance', 'debug-data', 'config-center', 'facilitator-center', 'system-center', 'marketing-center'].includes(currentScreen);
-  // Screens that manage their own internal scroll (e.g. chat interfaces)
-  const isFullHeightScreen = ['rep-coach'].includes(currentScreen);
+
 
   return (
     <NavigationProvider
@@ -154,7 +153,7 @@ const AppContent = ({
                 </div>
               )} */}
 
-              <div ref={mainContentRef} className={`flex-1 ${ isFullHeightScreen ? 'overflow-hidden flex flex-col' : 'overflow-y-auto pb-20 md:pb-0' }`}>
+              <div ref={mainContentRef} className="flex-1 overflow-y-auto pb-20 md:pb-0">
                 <Suspense
                   fallback={
                     <div className="min-h-full flex items-center justify-center gradient-corporate-hero">
@@ -168,8 +167,8 @@ const AppContent = ({
                   }
                 >
                   {/* Page Transition Animation */}
-                  <PageTransition pageKey={currentScreen} className="h-full">
-                    <div id="main-content" className="h-full">
+                  <PageTransition pageKey={currentScreen}>
+                    <div id="main-content">
                       <ScreenRouter
                         currentScreen={currentScreen}
                         navParams={navParams}
