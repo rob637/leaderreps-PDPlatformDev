@@ -102,12 +102,12 @@ const AccountabilityInsights = () => {
     setLoading(true);
     setLoadError(null);
     try {
-      const [snap, statsSnap] = await Promise.all([
+      const [snap, statsResult] = await Promise.all([
         getDocs(collection(db, 'accountability-leads')),
-        getDoc(doc(db, 'accountability-stats', 'global')),
+        getDoc(doc(db, 'accountability-stats', 'global')).catch(() => null),
       ]);
       setLeads(snap.docs.map((d) => ({ _id: d.id, ...d.data() })));
-      setGlobalStats(statsSnap.exists() ? statsSnap.data() : null);
+      setGlobalStats(statsResult?.exists?.() ? statsResult.data() : null);
     } catch (err) {
       console.error('AccountabilityInsights: failed to load leads', err);
       setLoadError(err.message || 'Failed to load data');
