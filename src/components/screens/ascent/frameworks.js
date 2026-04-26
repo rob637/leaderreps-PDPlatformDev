@@ -49,8 +49,6 @@ export const FRAMEWORKS = {
       { label: 'Tell who', prompt: 'How and when do you communicate the decision?' },
     ],
   },
-};
-
   sixHats: {
     id: 'sixHats',
     name: 'Six Thinking Hats',
