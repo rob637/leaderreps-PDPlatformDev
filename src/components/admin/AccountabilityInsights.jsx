@@ -25,6 +25,7 @@ import {
   collection,
   getDocs,
   doc,
+  getDoc,
   updateDoc,
   orderBy,
   query,
@@ -88,21 +89,24 @@ const StatCard = ({ icon: Icon, label, value, sub }) => (
 const AccountabilityInsights = () => {
   const { db } = useAppServices();
   const [leads, setLeads] = useState([]);
+  const [globalStats, setGlobalStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [sortField, setSortField] = useState('createdAt');
   const [sortDir, setSortDir] = useState('desc');
   const [togglingId, setTogglingId] = useState(null);
 
-  // ── Load leads ─────────────────────────────────────────────────────────
+  // ── Load leads + global stats ──────────────────────────────────────────
   const load = useCallback(async () => {
     if (!db) return;
     setLoading(true);
     try {
-      const snap = await getDocs(
-        query(collection(db, 'accountability-leads'), orderBy('createdAt', 'desc'))
-      );
+      const [snap, statsSnap] = await Promise.all([
+        getDocs(query(collection(db, 'accountability-leads'), orderBy('createdAt', 'desc'))),
+        getDoc(doc(db, 'accountability-stats', 'global')),
+      ]);
       setLeads(snap.docs.map((d) => ({ _id: d.id, ...d.data() })));
+      setGlobalStats(statsSnap.exists() ? statsSnap.data() : null);
     } catch (err) {
       console.error('AccountabilityInsights: failed to load leads', err);
     } finally {
@@ -140,21 +144,42 @@ const AccountabilityInsights = () => {
     return counts;
   }, [realLeads]);
 
+  // Check whether any leads have per-question data saved (new format)
+  const hasPerLeadQuestions = useMemo(
+    () => realLeads.some((l) => Array.isArray(l.results?.questionResults) && l.results.questionResults.length > 0),
+    [realLeads]
+  );
+
   const questionStats = useMemo(() => {
     const stats = {};
     QUESTION_IDS.forEach(({ id, label }) => {
       stats[id] = { label, yes: 0, notYet: 0 };
     });
-    realLeads.forEach((lead) => {
-      const qr = lead.results?.questionResults || [];
-      qr.forEach((item) => {
-        if (!item?.id || !stats[item.id]) return;
-        if (item.answer === 'yes') stats[item.id].yes++;
-        else stats[item.id].notYet++;
+
+    if (hasPerLeadQuestions) {
+      // New format — compute from individual lead docs (test-exclusion aware)
+      realLeads.forEach((lead) => {
+        const qr = lead.results?.questionResults || [];
+        qr.forEach((item) => {
+          if (!item?.id || !stats[item.id]) return;
+          if (item.answer === 'yes') stats[item.id].yes++;
+          else stats[item.id].notYet++;
+        });
       });
-    });
+    } else if (globalStats?.questions) {
+      // Legacy fallback — use global aggregate counters from accountability-stats/global
+      // Note: test entries are not excluded here (no per-lead breakdown available)
+      QUESTION_IDS.forEach(({ id }) => {
+        const q = globalStats.questions[id];
+        if (q) {
+          stats[id].yes = q.yes || 0;
+          stats[id].notYet = q.notYet || 0;
+        }
+      });
+    }
+
     return stats;
-  }, [realLeads]);
+  }, [realLeads, hasPerLeadQuestions, globalStats]);
 
   // ── Filtered + sorted table rows ───────────────────────────────────────
   const tableRows = useMemo(() => {
@@ -250,9 +275,16 @@ const AccountabilityInsights = () => {
 
       {/* ── Per-question breakdown ─────────────────────────────────────── */}
       <div className="bg-white rounded-xl border border-slate-200 p-6">
-        <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">
-          Question by Question — % answering "Not Yet"
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">
+            Question by Question — % answering "Not Yet"
+          </h3>
+          {!hasPerLeadQuestions && globalStats?.questions && (
+            <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full">
+              Using aggregate data · test entries not excluded
+            </span>
+          )}
+        </div>
         <div className="space-y-4">
           {QUESTION_IDS.map(({ id, label }) => {
             const s = questionStats[id];
