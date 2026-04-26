@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Target, MessageSquare, HelpCircle, Compass, Users,
   PlayCircle, Send, Calendar, Copy, Check,
-  Zap, AlertTriangle, RefreshCw, Star,
+  Zap, AlertTriangle, RefreshCw, Star, BookOpen, Video,
 } from 'lucide-react';
 import { getFrameworkById } from './frameworks.js';
 
@@ -76,6 +76,34 @@ const ConversationModal = ({ conversation, onClose, navigate }) => {
 
           {/* Body */}
           <div className="overflow-y-auto px-6 py-5 space-y-5">
+            {/* Video Script */}
+            {Array.isArray(conversation.videoScript) && conversation.videoScript.length > 0 && (
+              <div
+                className="rounded-2xl border-2 p-4"
+                style={{ borderColor: `${accent}55`, background: `${accent}0d` }}
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <BookOpen className="w-4 h-4" style={{ color: accent }} />
+                  <div className="text-[11px] uppercase tracking-wider font-bold" style={{ color: accent }}>
+                    Video Script · {conversation.videoMinutes} min
+                  </div>
+                </div>
+                <ol className="space-y-2">
+                  {conversation.videoScript.map((point, i) => (
+                    <li key={i} className="flex items-start gap-2.5">
+                      <span
+                        className="shrink-0 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold text-white"
+                        style={{ background: accent }}
+                      >
+                        {i + 1}
+                      </span>
+                      <p className="text-sm text-slate-700 dark:text-slate-200 leading-snug">{point}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
             {/* When / Avoid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-800 p-3">
@@ -145,18 +173,24 @@ const ConversationModal = ({ conversation, onClose, navigate }) => {
           {/* Footer CTAs */}
           <div className="border-t border-slate-200 dark:border-slate-700 px-6 py-4 bg-slate-50 dark:bg-slate-900/30">
             <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => navigate?.('leadership-videos')}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-white"
-                style={{ background: accent }}
-              >
-                <PlayCircle className="w-4 h-4" /> Watch the {conversation.videoMinutes}-min video
-              </button>
+              {conversation.videoUrl ? (
+                <button
+                  onClick={() => navigate?.('leadership-videos')}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-white"
+                  style={{ background: accent }}
+                >
+                  <PlayCircle className="w-4 h-4" /> Watch the {conversation.videoMinutes}-min video
+                </button>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed">
+                  <Video className="w-4 h-4" /> Video coming soon
+                </span>
+              )}
               <button
                 onClick={() => navigate?.('coaching-hub')}
                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border border-slate-300 dark:border-slate-600 text-corporate-navy dark:text-white hover:bg-white dark:hover:bg-slate-800"
               >
-                <Calendar className="w-4 h-4" /> Practice in Open Gym
+                <Calendar className="w-4 h-4" /> Practice / Reps
               </button>
               <button
                 onClick={() => navigate?.('rep-coach')}

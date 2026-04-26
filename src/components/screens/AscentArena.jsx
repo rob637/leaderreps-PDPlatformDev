@@ -326,7 +326,7 @@ const AscentArena = ({ navigate }) => {
   const handleStepCta = (stepKey) => {
     if (!focusConvo) return;
     if (stepKey === 'learn') {
-      setActiveTab('explore'); // step out into the Foundation content row
+      setOpenConvo(focusConvo); // opens modal with the script
     } else if (stepKey === 'prep') {
       setOpenConvo(focusConvo);
     } else if (stepKey === 'practice') {
@@ -395,7 +395,12 @@ const AscentArena = ({ navigate }) => {
             <Mountain className="w-7 h-7" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-xs uppercase tracking-wider opacity-80">{quarterLabel} · Ascent</div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="text-xs uppercase tracking-wider opacity-80">{quarterLabel} · Ascent</div>
+              <span className="text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-full bg-corporate-teal/30 text-white border border-corporate-teal/40">
+                Lead Team
+              </span>
+            </div>
             <h1 className="text-2xl sm:text-4xl font-extrabold mt-1 leading-tight">
               Welcome back, {firstName}.
             </h1>
