@@ -9,7 +9,7 @@
 // When all four are done, the card flips to a celebrate state and prompts
 // the user to pick the next conversation.
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   PlayCircle, Send, Calendar, Edit3, CheckCircle2, Circle,
@@ -102,6 +102,8 @@ const JourneyCard = ({
   onChangeFocus,
   onPickNext,
 }) => {
+  const [showSteps, setShowSteps] = useState(false);
+
   if (!conversation) return null;
 
   const Icon = ICONS[conversation.icon] || MessageSquare;
@@ -165,7 +167,7 @@ const JourneyCard = ({
 
       {/* Body */}
       <div className="p-5">
-        {complete ? (
+        {complete && !showSteps ? (
           <div className="text-center py-4">
             <Trophy className="w-10 h-10 mx-auto text-corporate-orange" />
             <h3 className="font-extrabold text-corporate-navy dark:text-white mt-2 text-lg">
@@ -174,15 +176,31 @@ const JourneyCard = ({
             <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-sm mx-auto">
               Don't stop the momentum. Pick the next conversation to work on.
             </p>
-            <button
-              onClick={onPickNext}
-              className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-semibold text-sm text-white bg-corporate-teal hover:bg-corporate-teal/90"
-            >
-              Pick my next focus <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
+              <button
+                onClick={onPickNext}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-semibold text-sm text-white bg-corporate-teal hover:bg-corporate-teal/90"
+              >
+                Pick my next focus <ArrowRight className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setShowSteps(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg font-semibold text-sm border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> Revisit
+              </button>
+            </div>
           </div>
         ) : (
           <div className="space-y-2">
+            {complete && showSteps && (
+              <button
+                onClick={() => setShowSteps(false)}
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 mb-1 rounded-lg text-sm font-semibold border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-corporate-navy dark:hover:text-white"
+              >
+                <Trophy className="w-3.5 h-3.5 text-corporate-orange" /> Back to completion view
+              </button>
+            )}
             {STEP_KEYS.map((k) => (
               <StepRow
                 key={k}
