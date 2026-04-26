@@ -1,4 +1,4 @@
-import { MessageCircle, Scan, FlaskConical, Users, BookOpen, LayoutDashboard, Calendar, Settings, ArrowLeftRight } from 'lucide-react';
+import { MessageCircle, Scan, FlaskConical, Users, BookOpen, LayoutDashboard, Calendar, Settings, ArrowLeftRight, Activity } from 'lucide-react';
 import { useNavigation } from '../../providers/NavigationProvider.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import { USER_NAV_ITEMS, FACILITATOR_NAV_ITEMS, SCREENS } from '../../config/navigation.js';
@@ -12,6 +12,7 @@ const ICON_MAP = {
   LayoutDashboard,
   Calendar,
   Settings,
+  Activity,
 };
 
 export default function BottomNav() {
@@ -27,7 +28,7 @@ export default function BottomNav() {
   function handleToggle() {
     const next = viewAs === 'facilitator' ? 'participant' : 'facilitator';
     setViewAs(next);
-    navigate(next === 'facilitator' ? SCREENS.ADMIN : SCREENS.FEED, {}, { replace: true });
+    navigate(next === 'facilitator' ? SCREENS.PULSE : SCREENS.FEED, {}, { replace: true });
   }
 
   return (

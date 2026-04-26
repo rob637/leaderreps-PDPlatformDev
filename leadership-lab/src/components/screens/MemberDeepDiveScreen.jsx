@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react';
 import {
   ArrowLeft, Send, Sliders, Loader2, User, Eye, Zap,
-  FlaskConical, Quote, MessageCircle, X, Check, ChevronDown, ChevronUp,
+  FlaskConical, Quote, MessageCircle, X, Check, ChevronDown, ChevronUp, Link as LinkIcon,
 } from 'lucide-react';
 import { useNavigation } from '../../providers/NavigationProvider.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
-import { getMemberDeepDive, sendText, getConversation } from '../../services/facilitatorService.js';
+import { getMemberDeepDive, sendText, getConversation, linkMemberLogin } from '../../services/facilitatorService.js';
+import { getWeekTheme, TRACKS } from '../../config/navigation.js';
 
 export default function MemberDeepDiveScreen() {
   const { goBack, screenParams } = useNavigation();
   const { userProfile } = useAuth();
   const memberId = screenParams?.memberId;
-  const cohortId = userProfile?.cohortId;
+  // Admin viewing: cohortId comes from navigation params. Participant
+  // viewing their own data: fall back to their enrolled cohortId.
+  const cohortId = screenParams?.cohortId || userProfile?.cohortId;
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -22,6 +25,12 @@ export default function MemberDeepDiveScreen() {
   const [expandedConvo, setExpandedConvo] = useState(null);
   const [convoMessages, setConvoMessages] = useState([]);
   const [loadingConvo, setLoadingConvo] = useState(false);
+  // "Link login" modal state
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [linkEmail, setLinkEmail] = useState('');
+  const [linking, setLinking] = useState(false);
+  const [linkError, setLinkError] = useState(null);
+  const [linkSuccess, setLinkSuccess] = useState(false);
 
   useEffect(() => {
     if (!memberId || !cohortId) {
@@ -114,9 +123,14 @@ export default function MemberDeepDiveScreen() {
         <div className="flex-1">
           <h1 className="text-xl font-bold text-lab-navy">{member.firstName}</h1>
           <p className="text-sm text-stone-500">
-            {(member.currentWeek || 1) > 5
-              ? `Ascent \u00b7 Week ${member.currentWeek}`
-              : `Milestone ${member.currentWeek || 1} of 5`}
+            {(() => {
+              const w = member.currentWeek || 1;
+              const t = getWeekTheme(w);
+              const tm = t ? TRACKS[t.track] : null;
+              const label = tm?.label || 'Foundation';
+              const sub = tm?.sublabel ? ` \u00b7 ${tm.sublabel}` : '';
+              return `${label}${sub} \u00b7 Week ${w}${t ? `: ${t.title}` : ''}`;
+            })()}
             {member.onboardingComplete ? '' : ' \u00b7 Not onboarded'}
           </p>
         </div>
@@ -396,16 +410,22 @@ export default function MemberDeepDiveScreen() {
           <Send size={16} />
           Send Personal Text
         </button>
-        <button className="py-3 px-4 bg-stone-100 text-stone-600 font-semibold rounded-2xl flex items-center justify-center gap-2 hover:bg-stone-200 transition-colors">
-          <Sliders size={16} />
-          Adjust AI
+        <button
+          type="button"
+          onClick={() => { setLinkEmail(member.email || ''); setLinkError(null); setLinkSuccess(false); setShowLinkModal(true); }}
+          title={member.firebaseAuthUid ? 'Already linked — click to relink' : 'Link this participant to a login email'}
+          aria-label="Link login"
+          className="py-3 px-4 bg-white border border-lab-teal text-lab-teal font-semibold rounded-2xl flex items-center justify-center gap-2 hover:bg-lab-teal/5 transition-colors"
+        >
+          <LinkIcon size={16} />
+          {member.firebaseAuthUid ? 'Relink' : 'Link login'}
         </button>
       </div>
 
       {/* Send Text Modal */}
       {showTextModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md p-5 shadow-elevated">
+        <div className="fixed inset-0 bg-black/40 z-[60] flex items-center sm:items-center justify-center p-4 pb-24 overflow-y-auto">
+          <div className="bg-white rounded-2xl w-full max-w-md p-5 shadow-elevated my-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-lab-navy">
                 Text {member.firstName}
@@ -447,6 +467,86 @@ export default function MemberDeepDiveScreen() {
                       <Send size={14} />
                     )}
                     Send
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Link Login Modal */}
+      {showLinkModal && (
+        <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center p-4 pb-24 overflow-y-auto">
+          <div className="bg-white rounded-2xl w-full max-w-md p-5 shadow-elevated my-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-lab-navy">
+                Link {member.firstName} to a login
+              </h3>
+              <button
+                onClick={() => { setShowLinkModal(false); setLinkError(null); setLinkSuccess(false); }}
+                className="text-stone-400 hover:text-stone-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            {linkSuccess ? (
+              <div className="text-center py-6">
+                <Check className="mx-auto text-lab-teal mb-2" size={32} />
+                <p className="text-sm text-stone-600">Linked!</p>
+                <p className="text-xs text-stone-400 mt-1">
+                  {linkEmail} can now sign in and see this member&apos;s dashboard.
+                </p>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-stone-600 mb-3">
+                  Enter the email of the Firebase Auth account they sign in with
+                  (Google, magic link, or email/password). The user must have signed
+                  in at least once.
+                </p>
+                <input
+                  type="email"
+                  value={linkEmail}
+                  onChange={(e) => setLinkEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  className="w-full border border-stone-200 rounded-xl p-3 text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-lab-teal/30"
+                />
+                {member.firebaseAuthUid && (
+                  <p className="text-xs text-amber-600 mt-2">
+                    Note: this member is already linked. Submitting will overwrite the existing link.
+                  </p>
+                )}
+                {linkError && (
+                  <p className="text-xs text-red-600 mt-2">{linkError}</p>
+                )}
+                <div className="flex items-center justify-between mt-3">
+                  <span className="text-xs text-stone-400">
+                    Admin only · audit-logged
+                  </span>
+                  <button
+                    onClick={async () => {
+                      if (!linkEmail.trim() || linking) return;
+                      setLinking(true); setLinkError(null);
+                      try {
+                        await linkMemberLogin(memberId, linkEmail.trim().toLowerCase(), !!member.firebaseAuthUid);
+                        setLinkSuccess(true);
+                        // Refresh deep-dive data so badges update
+                        try {
+                          const fresh = await getMemberDeepDive(cohortId, memberId);
+                          setData(fresh);
+                        } catch (_) { /* non-fatal */ }
+                      } catch (err) {
+                        setLinkError(err?.message || 'Failed to link account');
+                      } finally {
+                        setLinking(false);
+                      }
+                    }}
+                    disabled={!linkEmail.trim() || linking}
+                    className="px-4 py-2 bg-lab-teal text-white font-semibold rounded-xl text-sm disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {linking ? <Loader2 className="animate-spin" size={14} /> : <LinkIcon size={14} />}
+                    Link
                   </button>
                 </div>
               </>

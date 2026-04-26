@@ -30,6 +30,8 @@ import ConditioningWidget from '../widgets/ConditioningWidget';
 import NotificationsWidget from '../widgets/NotificationsWidget';
 import ConditioningTutorialWidget from '../widgets/ConditioningTutorialWidget';
 import PrepCompleteModal from '../modals/PrepCompleteModal';
+import AscentWelcomeModal from '../modals/AscentWelcomeModal';
+import { doc, updateDoc } from 'firebase/firestore';
 // NOTE: LeaderProfileWidget and BaselineAssessmentWidget removed - now handled as 
 // INTERACTIVE content items in ThisWeeksActionsWidget
 
@@ -295,6 +297,67 @@ const Dashboard = () => {
       updateDevelopmentPlanData({ 'uiState.modalsSeen.onboardingComplete': true });
     } else {
       updateDevelopmentPlanData({ 'uiState.modalsSeen.prepComplete': true });
+    }
+  };
+
+  // ============================================================================
+  // ASCENT WELCOME MODAL + DASHBOARD CLEANUP
+  // ============================================================================
+  // Triggered the first time a leader enters Ascent (post-Foundation sign-off).
+  // - Shows a welcome message pointing them to the Content section
+  // - Clears Foundation carry-over artifacts from the dashboard
+  // - Persists `ascentWelcomeShown: true` so it only fires once
+  const [showAscentWelcomeModal, setShowAscentWelcomeModal] = useState(false);
+  const hasHandledAscentWelcome = useRef(false);
+
+  useEffect(() => {
+    if (!user?.uid || !db) return;
+    if (currentPhase?.id !== 'post-start') return;
+    // Only auto-trigger when Foundation completion was the cause (not natural cohort end)
+    const foundationCompleted = user?.foundationCompleted === true || user?.graduated === true;
+    if (!foundationCompleted) return;
+    if (user?.ascentWelcomeShown === true) return;
+    if (hasHandledAscentWelcome.current) return;
+
+    hasHandledAscentWelcome.current = true;
+    setShowAscentWelcomeModal(true);
+
+    // Clear Foundation carry-over artifacts from the dashboard.
+    // We wipe the full items list (both incomplete and completed) so the
+    // dashboard is clean for the start of Ascent. Foundation history and
+    // certificates remain available elsewhere (Locker, Content).
+    const carryoverRef = doc(db, 'users', user.uid, 'action_progress', '_carryover');
+    updateDoc(carryoverRef, {
+      items: [],
+      ascentClearedAt: new Date()
+    }).catch(err => {
+      // Non-fatal — doc may not exist yet, which is fine.
+      console.warn('[Ascent] Could not clear carry-over items:', err?.message || err);
+    });
+  }, [currentPhase?.id, user?.uid, user?.foundationCompleted, user?.graduated, user?.ascentWelcomeShown, db]);
+
+  const handleAscentWelcomeClose = async () => {
+    setShowAscentWelcomeModal(false);
+    if (db && user?.uid) {
+      try {
+        await updateDoc(doc(db, 'users', user.uid), { ascentWelcomeShown: true });
+      } catch (err) {
+        console.warn('[Ascent] Could not persist ascentWelcomeShown:', err?.message || err);
+      }
+    }
+  };
+
+  const handleAscentGoToContent = async () => {
+    await handleAscentWelcomeClose();
+    if (typeof navigate === 'function') {
+      navigate('library');
+    }
+  };
+
+  const handleAscentGoToArena = async () => {
+    await handleAscentWelcomeClose();
+    if (typeof navigate === 'function') {
+      navigate('ascent-arena');
     }
   };
 
@@ -759,6 +822,14 @@ const Dashboard = () => {
         isOpen={showPrepCompleteModal}
         onClose={handlePrepCompleteModalClose}
         milestone={prepMilestone}
+      />
+
+      <AscentWelcomeModal
+        isOpen={showAscentWelcomeModal}
+        onClose={handleAscentWelcomeClose}
+        onGoToContent={handleAscentGoToContent}
+        onOpenAscentArena={handleAscentGoToArena}
+        userName={user?.displayName || user?.firstName}
       />
         </>
       </div>

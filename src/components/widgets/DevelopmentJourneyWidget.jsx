@@ -134,8 +134,8 @@ const MILESTONE_THEMES = {
   5: { 
     id: 5,
     name: 'Milestone 5', 
-    title: 'Graduation', 
-    description: 'Executive presence and organizational impact',
+    title: 'Foundation Complete', 
+    description: 'Foundation complete — you transition into Ascent',
     icon: Trophy, 
     color: 'from-corporate-navy to-corporate-teal', 
     bgColor: 'bg-corporate-navy/10 dark:bg-corporate-navy/20', 
@@ -932,7 +932,7 @@ const DevelopmentJourneyWidget = () => {
         2: 'Attend 1:1 Coaching',
         3: 'Attend Open Gym: Redirecting Feedback',
         4: 'Attend Open Gym: Handling Pushback',
-        5: 'Graduation'
+        5: 'Foundation Sign-Off'
       };
       
       if (milestone >= 2 && milestone <= 5) {

@@ -4,20 +4,23 @@ import {
   RotateCcw,
   ExternalLink,
   Mail,
-  MessageSquare,
 } from 'lucide-react';
 import {
   START_ASSESSMENT_URL,
   getLinkedInShareText,
 } from '../data/questions';
 
+const TEAL = '#277A68';
+const SIENNA = '#B84825';
+const NAVY = '#002E47';
+
 const scoreTheme = {
-  'execution-engine': {
+  'strong-system': {
     text: 'text-[#277A68]',
     bg: 'bg-[#277A68]/10',
     border: 'border-[#277A68]/30',
   },
-  'leaky-system': {
+  'room-to-strengthen': {
     text: 'text-[#B84825]',
     bg: 'bg-[#B84825]/10',
     border: 'border-[#B84825]/30',
@@ -31,7 +34,7 @@ const scoreTheme = {
 
 // Renders text with quoted portions in italics
 const PromptText = ({ text }) => {
-  const parts = text.split(/("[^"]+")/)
+  const parts = text.split(/("[^"]+")/);
   return (
     <>
       {parts.map((part, i) =>
@@ -39,16 +42,26 @@ const PromptText = ({ text }) => {
           <em key={i}>{part}</em>
         ) : (
           <Fragment key={i}>{part}</Fragment>
-        )
+        ),
       )}
     </>
   );
 };
 
+const YourAnswerPill = ({ isYes }) => (
+  <span
+    className="inline-flex items-center gap-1 ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+    style={{
+      backgroundColor: isYes ? `${TEAL}1A` : `${SIENNA}1A`,
+      color: isYes ? TEAL : SIENNA,
+    }}
+  >
+    Your Answer
+  </span>
+);
+
 const ResultCard = ({ item, index }) => {
   const yesSelected = item.answer === 'yes';
-  // Q4 (index=3): remove note from results display
-  const showNote = item.note && index !== 3;
 
   return (
     <motion.section
@@ -62,9 +75,6 @@ const ResultCard = ({ item, index }) => {
       </h3>
       <p className="mt-2 text-slate-700">
         <PromptText text={item.prompt} />
-        {showNote && (
-          <span className="block mt-1 text-slate-500 text-sm">{item.note}</span>
-        )}
       </p>
 
       <div className="mt-4 grid md:grid-cols-2 gap-4">
@@ -75,10 +85,15 @@ const ResultCard = ({ item, index }) => {
               : 'border-slate-200 bg-white'
           }`}
         >
-          <div className={`text-xs font-bold uppercase tracking-widest mb-2 ${yesSelected ? 'text-[#277A68]' : 'text-slate-500'}`}>
-            IF YES {yesSelected && '[YOUR ANSWER]'}
+          <div
+            className={`text-xs font-bold uppercase tracking-widest mb-2 flex items-center ${
+              yesSelected ? 'text-[#277A68]' : 'text-slate-500'
+            }`}
+          >
+            <span>Yes</span>
+            {yesSelected && <YourAnswerPill isYes={true} />}
           </div>
-          <p className={`text-sm leading-relaxed ${yesSelected ? 'text-slate-700' : 'text-slate-700'}`}>{item.ifYes}</p>
+          <p className="text-sm leading-relaxed text-slate-700">{item.ifYes}</p>
         </div>
 
         <div
@@ -88,10 +103,15 @@ const ResultCard = ({ item, index }) => {
               : 'border-slate-200 bg-white'
           }`}
         >
-          <div className={`text-xs font-bold uppercase tracking-widest mb-2 ${!yesSelected ? 'text-[#B84825]' : 'text-slate-500'}`}>
-            IF NOT YET {!yesSelected && '[YOUR ANSWER]'}
+          <div
+            className={`text-xs font-bold uppercase tracking-widest mb-2 flex items-center ${
+              !yesSelected ? 'text-[#B84825]' : 'text-slate-500'
+            }`}
+          >
+            <span>Not Yet</span>
+            {!yesSelected && <YourAnswerPill isYes={false} />}
           </div>
-          <p className={`text-sm leading-relaxed ${!yesSelected ? 'text-slate-700' : 'text-slate-700'}`}>{item.ifNotYet}</p>
+          <p className="text-sm leading-relaxed text-slate-700">{item.ifNotYet}</p>
         </div>
       </div>
     </motion.section>
@@ -102,15 +122,13 @@ const Results = ({
   results,
   onRestart,
   onEmailSubmit,
-  isSubmitting,
-  submitState,
+  isEmailSubmitting,
+  emailSubmitState,
 }) => {
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [smsConsent, setSmsConsent] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const theme = scoreTheme[results?.archetype] || scoreTheme['leaky-system'];
+  const theme = scoreTheme[results?.archetype] || scoreTheme['room-to-strengthen'];
 
   const linkedInShareUrl = useMemo(() => {
     const url = `${START_ASSESSMENT_URL}?utm_source=linkedin&utm_medium=organic-share`;
@@ -122,23 +140,7 @@ const Results = ({
   const handleEmailSubmit = (event) => {
     event.preventDefault();
     if (!email || !email.includes('@')) return;
-
-    // Only include phone if user explicitly checked the SMS consent box.
-    // This is the A2P 10DLC consent record.
-    const phoneTrimmed = phone.trim();
-    const includePhone = smsConsent && phoneTrimmed.length >= 10;
-    const optInPayload = includePhone
-      ? {
-          phone: phoneTrimmed,
-          smsConsent: true,
-          smsConsentText:
-            "By checking this box, I agree to receive recurring SMS messages from LeaderReps with leadership coaching prompts, session reminders, and program updates. Message frequency varies (typically 1\u20137 per week). Message and data rates may apply. Reply HELP for help, STOP to cancel. See Privacy Policy and Terms.",
-          smsConsentTimestamp: new Date().toISOString(),
-          smsConsentSource: 'accountability-assessment-results',
-        }
-      : {};
-
-    onEmailSubmit(email.trim(), '', optInPayload);
+    onEmailSubmit(email.trim(), '');
   };
 
   if (!results) return null;
@@ -208,10 +210,10 @@ const Results = ({
           </div>
         </section>
 
-        {/* Blueprint & PDF CTA */}
+        {/* Email — PDF & Blueprint */}
         <section className="rounded-[2.5rem] border border-slate-200 bg-white shadow-2xl overflow-hidden">
           <div className="p-8 md:p-10">
-            {submitState === 'success' ? (
+            {emailSubmitState === 'success' ? (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -242,19 +244,19 @@ const Results = ({
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 py-4 text-lg focus:outline-none focus:ring-4 focus:ring-[#B84825]/10 focus:border-[#B84825] transition-all"
-                      disabled={isSubmitting}
+                      disabled={isEmailSubmitting}
                     />
                   </div>
                   <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isEmailSubmitting}
                     className="bg-[#B84825] text-white px-8 py-4 rounded-2xl font-black text-lg hover:bg-[#C85530] transition-all shadow-xl shadow-orange-900/20 disabled:opacity-50 flex items-center justify-center gap-2 whitespace-nowrap active:scale-95"
                   >
-                    {isSubmitting ? 'Sending...' : 'Send me the Blueprint'}
+                    {isEmailSubmitting ? 'Sending...' : 'Send me the Blueprint'}
                   </button>
                 </div>
 
-                {submitState === 'error' && (
+                {emailSubmitState === 'error' && (
                   <p className="text-red-500 font-bold ml-2">Something went wrong. Please try again.</p>
                 )}
 
@@ -262,75 +264,6 @@ const Results = ({
                   You&apos;ll also be subscribed to One More Rep, our free weekly leadership newsletter.
                   Unsubscribe anytime.
                 </p>
-
-                {/* Optional SMS opt-in — A2P 10DLC compliant */}
-                <div className="mt-2 pt-5 border-t border-slate-100">
-                  <div className="flex items-start gap-2 mb-3">
-                    <MessageSquare className="w-5 h-5 text-[#349881] mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-black text-[#002E47]">
-                        Want a daily 1-line nudge by text? <span className="font-normal text-slate-500">(Optional)</span>
-                      </p>
-                      <p className="text-sm text-slate-600 mt-1">
-                        Get one short SMS coaching prompt per day from LeaderReps. Helps you actually <em>use</em> the Blueprint between Mondays.
-                      </p>
-                    </div>
-                  </div>
-
-                  <input
-                    type="tel"
-                    id="results-phone"
-                    name="phone"
-                    autoComplete="tel"
-                    placeholder="Mobile phone number (e.g. +1 555 123 4567)"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    disabled={isSubmitting}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-[#349881]/10 focus:border-[#349881] transition-all"
-                  />
-
-                  <label
-                    htmlFor="sms-consent"
-                    className="mt-3 flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors"
-                  >
-                    <input
-                      type="checkbox"
-                      id="sms-consent"
-                      name="smsConsent"
-                      checked={smsConsent}
-                      onChange={(e) => setSmsConsent(e.target.checked)}
-                      disabled={isSubmitting}
-                      className="mt-1 w-5 h-5 rounded border-slate-300 text-[#349881] focus:ring-[#349881] flex-shrink-0"
-                    />
-                    <span className="text-xs text-slate-600 leading-relaxed">
-                      By checking this box, I agree to receive recurring SMS messages from{' '}
-                      <strong className="text-[#002E47]">LeaderReps</strong> with leadership coaching prompts,
-                      session reminders, and program updates at the mobile number provided.
-                      Message frequency varies (typically 1&ndash;7 messages per week).
-                      <strong> Message and data rates may apply.</strong>{' '}
-                      Reply <strong>HELP</strong> for help, <strong>STOP</strong> to cancel at any time.
-                      See our{' '}
-                      <a
-                        href="https://www.leaderreps.com/privacy-policy"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[#349881] underline hover:no-underline"
-                      >
-                        Privacy Policy
-                      </a>{' '}
-                      and{' '}
-                      <a
-                        href="https://www.leaderreps.com/terms-conditions"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[#349881] underline hover:no-underline"
-                      >
-                        Terms &amp; Conditions
-                      </a>
-                      . Phone numbers and SMS opt-in consent are not sold or shared with third parties for marketing.
-                    </span>
-                  </label>
-                </div>
               </form>
             )}
           </div>
@@ -342,7 +275,7 @@ const Results = ({
             <strong className="text-[#002E47]">The assessment showed you where the gaps are. Foundation is where you close them.</strong>{' '}
             Foundation is a small cohort for managers who want to build their system through practice, not lectures.{' '}
             <a
-              href="https://www.leaderreps.com"
+              href="https://www.leaderreps.com/foundation"
               target="_blank"
               rel="noopener noreferrer"
               className="text-[#349881] font-bold hover:underline"

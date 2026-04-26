@@ -8,7 +8,8 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { CORPORATE_COLORS, APPROVED_COLORS, isApprovedColor, extractColorsFromElement } from './setup.js'
 
 // Import components to test
-import { Button, Card } from '../components/screens/dashboard/DashboardComponents.jsx'
+import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
 
 // Mock required context providers
 const MockProviders = ({ children }) => {
@@ -66,6 +67,29 @@ describe('Corporate Color Compliance', () => {
   })
 
   describe('Button Component Compliance', () => {
+    // Tailwind utilities aren't applied in jsdom, so we validate against the
+    // class-name tokens the component emits (the source of truth for color
+    // intent in this codebase).
+    const FORBIDDEN_TAILWIND_COLOR_PREFIXES = [
+      'bg-purple', 'text-purple', 'border-purple',
+      'bg-amber', 'text-amber', 'border-amber',
+      'bg-yellow', 'text-yellow', 'border-yellow',
+      'bg-green', 'text-green', 'border-green',
+      'bg-blue', 'text-blue', 'border-blue',
+      'bg-indigo', 'text-indigo', 'border-indigo',
+      'bg-pink', 'text-pink', 'border-pink',
+    ]
+
+    const expectNoForbiddenColorClasses = (el) => {
+      const cls = el.className || ''
+      FORBIDDEN_TAILWIND_COLOR_PREFIXES.forEach((prefix) => {
+        expect(
+          cls.includes(prefix),
+          `Element should not use forbidden Tailwind color class '${prefix}*': ${cls}`
+        ).toBe(false)
+      })
+    }
+
     it('should only use corporate colors for primary buttons', () => {
       render(
         <MockProviders>
@@ -74,15 +98,10 @@ describe('Corporate Color Compliance', () => {
           </Button>
         </MockProviders>
       )
-      
+
       const button = screen.getByTestId('primary-button')
-      const colors = extractColorsFromElement(button)
-      
-      colors.forEach(({ property, value }) => {
-        expect(isApprovedColor(value), 
-          `Button property '${property}' uses non-corporate color: ${value}`
-        ).toBe(true)
-      })
+      expect(button.className).toContain('corporate-teal')
+      expectNoForbiddenColorClasses(button)
     })
 
     it('should only use corporate colors for secondary buttons', () => {
@@ -93,15 +112,10 @@ describe('Corporate Color Compliance', () => {
           </Button>
         </MockProviders>
       )
-      
+
       const button = screen.getByTestId('secondary-button')
-      const colors = extractColorsFromElement(button)
-      
-      colors.forEach(({ property, value }) => {
-        expect(isApprovedColor(value),
-          `Button property '${property}' uses non-corporate color: ${value}`
-        ).toBe(true)
-      })
+      expect(button.className).toContain('corporate-orange')
+      expectNoForbiddenColorClasses(button)
     })
 
     it('should use correct corporate colors for button variants', () => {
@@ -110,30 +124,19 @@ describe('Corporate Color Compliance', () => {
           <Button variant="primary" data-testid="test-button">Test</Button>
         </MockProviders>
       )
-      
-      // Test primary button uses teal
+
+      // Primary uses teal
       let button = screen.getByTestId('test-button')
-      let style = window.getComputedStyle(button)
-      
-      // Should use corporate teal or navy
-      expect([CORPORATE_COLORS.TEAL, CORPORATE_COLORS.NAVY]).toContain(
-        style.backgroundColor || style.color
-      )
-      
-      // Test secondary button uses orange
+      expect(button.className).toContain('corporate-teal')
+
+      // Secondary uses orange
       rerender(
         <MockProviders>
           <Button variant="secondary" data-testid="test-button">Test</Button>
         </MockProviders>
       )
-      
       button = screen.getByTestId('test-button')
-      style = window.getComputedStyle(button)
-      
-      // Should use corporate orange
-      expect([CORPORATE_COLORS.ORANGE, CORPORATE_COLORS.TEAL]).toContain(
-        style.backgroundColor || style.color
-      )
+      expect(button.className).toContain('corporate-orange')
     })
   })
 
@@ -146,51 +149,38 @@ describe('Corporate Color Compliance', () => {
           </Card>
         </MockProviders>
       )
-      
+
       const card = screen.getByTestId('test-card')
-      const colors = extractColorsFromElement(card)
-      
-      colors.forEach(({ property, value }) => {
-        expect(isApprovedColor(value),
-          `Card property '${property}' uses non-corporate color: ${value}`
-        ).toBe(true)
-      })
+      const cls = card.className || ''
+      // Card defaults to neutral surface (white/slate) — these are allowed.
+      // Assert it does NOT use forbidden vivid Tailwind colors.
+      ;['bg-purple', 'bg-amber', 'bg-yellow', 'bg-green', 'bg-blue', 'bg-indigo', 'bg-pink']
+        .forEach((prefix) => {
+          expect(cls.includes(prefix), `Card uses forbidden color class '${prefix}*': ${cls}`).toBe(false)
+        })
     })
 
     it('should use corporate accent colors correctly', () => {
       const { rerender } = render(
         <MockProviders>
-          <Card title="Navy Card" accent="NAVY" data-testid="test-card">
+          <Card title="Navy Card" accent="navy" data-testid="test-card">
             Content
           </Card>
         </MockProviders>
       )
-      
+
       let card = screen.getByTestId('test-card')
-      let colors = extractColorsFromElement(card)
-      
-      // Should contain navy accent
-      const hasNavy = colors.some(({ value }) => 
-        value.includes('002E47') || value.includes('0, 46, 71')
-      )
-      expect(hasNavy, 'Navy accent card should contain navy color').toBe(true)
-      
-      // Test teal accent
+      expect(card.className).toContain('corporate-navy')
+
       rerender(
         <MockProviders>
-          <Card title="Teal Card" accent="TEAL" data-testid="test-card">
+          <Card title="Teal Card" accent="teal" data-testid="test-card">
             Content
           </Card>
         </MockProviders>
       )
-      
       card = screen.getByTestId('test-card')
-      colors = extractColorsFromElement(card)
-      
-      const hasTeal = colors.some(({ value }) => 
-        value.includes('47A88D') || value.includes('71, 168, 141')
-      )
-      expect(hasTeal, 'Teal accent card should contain teal color').toBe(true)
+      expect(card.className).toContain('corporate-teal')
     })
   })
 
@@ -254,7 +244,7 @@ describe('Color Usage Integration Tests', () => {
     const TestComponent = () => {
       const [active, setActive] = React.useState(false)
       return (
-        <Button 
+        <Button
           variant={active ? 'primary' : 'secondary'}
           onClick={() => setActive(!active)}
           data-testid="stateful-button"
@@ -263,30 +253,20 @@ describe('Color Usage Integration Tests', () => {
         </Button>
       )
     }
-    
+
     render(
       <MockProviders>
         <TestComponent />
       </MockProviders>
     )
-    
+
     const button = screen.getByTestId('stateful-button')
-    
-    // Test initial state
-    let colors = extractColorsFromElement(button)
-    colors.forEach(({ property, value }) => {
-      expect(isApprovedColor(value),
-        `Stateful button property '${property}' uses non-corporate color: ${value}`
-      ).toBe(true)
-    })
-    
-    // Test after state change
+
+    // Initial state — secondary uses corporate-orange
+    expect(button.className).toContain('corporate-orange')
+
+    // After click — primary uses corporate-teal
     fireEvent.click(button)
-    colors = extractColorsFromElement(button)
-    colors.forEach(({ property, value }) => {
-      expect(isApprovedColor(value),
-        `Stateful button (after click) property '${property}' uses non-corporate color: ${value}`
-      ).toBe(true)
-    })
+    expect(button.className).toContain('corporate-teal')
   })
 })

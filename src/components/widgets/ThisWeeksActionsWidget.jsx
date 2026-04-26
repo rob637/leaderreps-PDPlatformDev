@@ -730,35 +730,35 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         2: 'Attend 1:1 Coaching',
         3: 'Attend Open Gym: Redirecting Feedback',
         4: 'Attend Open Gym: Handling Pushback',
-        5: 'Graduation'
+        5: 'Foundation Complete'
       };
       
       // CHECK FOR UNVIEWED CERTIFICATES
-      // If graduated and milestone 5 certificate not viewed, show GRADUATION certificate
+      // If Foundation is complete and milestone 5 certificate not viewed, show the Foundation certificate
       if (isGraduated) {
         const milestone5Data = milestoneProgress['milestone_5'] || {};
         if (!milestone5Data.certificateViewed) {
           certificateActions.push({
-            id: 'view-certificate-graduation',
+            id: 'view-certificate-foundation-complete',
             type: 'certificate',
             displayType: 'certificate',
-            label: '🎓 View Your Graduation Certificate',
-            description: 'Congratulations! You have completed the Foundation Program!',
-            icon: '🎓',
+            label: '🏆 View Your Foundation Certificate',
+            description: 'Congratulations! You have completed the Foundation Program — welcome to Ascent.',
+            icon: '🏆',
             required: false,
             category: 'Certificate',
             fromDailyPlan: true,
-            dayId: 'graduation',
+            dayId: 'foundation-complete',
             handlerType: 'view-certificate',
             isViewCertificate: true,
             certificateMilestone: 5,
-            certificateMilestoneName: 'Foundation Program Graduation',
-            isGraduation: true
+            certificateMilestoneName: 'Foundation Program Completion',
+            isFoundationComplete: true
           });
         }
       }
       
-      // If graduated, don't show milestone content - just the graduation certificate
+      // If Foundation is complete, don't show milestone content — just the Foundation certificate
       if (isGraduated) {
         return [...certificateActions];
       }
@@ -788,7 +788,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         2: 'Attend 1:1 Coaching',
         3: 'Attend Open Gym: Redirecting Feedback',
         4: 'Attend Open Gym: Handling Pushback',
-        5: 'Graduation'
+        5: 'Foundation Sign-Off'
       };
       
       if (displayMilestone >= 2 && displayMilestone <= 5) {
@@ -967,7 +967,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     if (isGraduated) {
       return {
         number: 5,
-        name: 'Foundation Program Completed! 🎓',
+        name: 'Foundation Complete — Welcome to Ascent',
         isGraduated: true
       };
     }
@@ -977,7 +977,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       2: 'Attend 1:1 Coaching',
       3: 'Attend Open Gym: Redirecting Feedback',
       4: 'Attend Open Gym: Handling Pushback',
-      5: 'Graduation'
+      5: 'Foundation Complete'
     };
     
     return {

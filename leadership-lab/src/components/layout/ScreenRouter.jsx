@@ -3,23 +3,26 @@ import { SCREENS } from '../../config/navigation.js';
 import FeedScreen from '../screens/FeedScreen.jsx';
 import ConversationScreen from '../screens/ConversationScreen.jsx';
 import MirrorScreen from '../screens/MirrorScreen.jsx';
-import LabScreen from '../screens/LabScreen.jsx';
+import PracticeScreen from '../screens/PracticeScreen.jsx';
 import CohortScreen from '../screens/CohortScreen.jsx';
-import StoryScreen from '../screens/StoryScreen.jsx';
 import OnboardingScreen from '../screens/OnboardingScreen.jsx';
 import WarRoomScreen from '../screens/WarRoomScreen.jsx';
 import MemberDeepDiveScreen from '../screens/MemberDeepDiveScreen.jsx';
 import SessionPlannerScreen from '../screens/SessionPlannerScreen.jsx';
 import AdminScreen from '../screens/AdminScreen.jsx';
+import PulseScreen from '../screens/PulseScreen.jsx';
 
 const SCREEN_MAP = {
   [SCREENS.FEED]: FeedScreen,
   [SCREENS.CONVERSATION]: ConversationScreen,
   [SCREENS.MIRROR]: MirrorScreen,
-  [SCREENS.LAB]: LabScreen,
+  [SCREENS.PRACTICE]: PracticeScreen,
+  // Legacy aliases for backward compat with old nav keys
+  [SCREENS.LAB]: PracticeScreen,
+  [SCREENS.STORY]: MirrorScreen,
   [SCREENS.COHORT]: CohortScreen,
-  [SCREENS.STORY]: StoryScreen,
   [SCREENS.ONBOARDING]: OnboardingScreen,
+  [SCREENS.PULSE]: PulseScreen,
   [SCREENS.WAR_ROOM]: WarRoomScreen,
   [SCREENS.MEMBER_DEEP_DIVE]: MemberDeepDiveScreen,
   [SCREENS.SESSION_PLANNER]: SessionPlannerScreen,

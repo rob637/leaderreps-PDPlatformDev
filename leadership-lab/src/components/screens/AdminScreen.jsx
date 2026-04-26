@@ -2,14 +2,36 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Users, Plus, Rocket, Loader2, Check, AlertCircle,
   Phone, Mail, ChevronRight, UserPlus, RefreshCw, Smartphone,
-  FastForward, MessageCircle, ChevronDown, ChevronUp,
+  FastForward, MessageCircle, ChevronDown, ChevronUp, BookOpen,
 } from 'lucide-react';
 import { httpsCallable } from 'firebase/functions';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { functions, db, auth } from '../../config/firebase.js';
 import collections from '../../config/collections.js';
 import { useNavigation } from '../../providers/NavigationProvider.jsx';
-import { SCREENS } from '../../config/navigation.js';
+import { SCREENS, TOTAL_WEEKS, WEEKLY_THEMES, TRACKS } from '../../config/navigation.js';
+import { getSystemHealth } from '../../services/facilitatorService.js';
+
+// Returns YYYY-MM-DD for the next upcoming Monday (or today if today is Monday).
+// Aligns the program with the AI's Mon-Fri Adaptive Mastery cadence.
+function getNextMondayISO() {
+  const d = new Date();
+  const day = d.getDay(); // 0=Sun, 1=Mon, ... 6=Sat
+  const daysUntilMonday = day === 1 ? 0 : (8 - day) % 7 || 7;
+  d.setDate(d.getDate() + daysUntilMonday);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+// True if the given YYYY-MM-DD string parses to a Monday (local time).
+function isMondayISO(iso) {
+  if (!iso) return false;
+  // Parse as local date by appending T00:00 — avoids UTC drift.
+  const d = new Date(`${iso}T00:00:00`);
+  return d.getDay() === 1;
+}
 
 export default function AdminScreen() {
   const { navigate } = useNavigation();
@@ -17,11 +39,14 @@ export default function AdminScreen() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
   const [message, setMessage] = useState(null);
+  const [health, setHealth] = useState(null);
+  const [showHealthDetail, setShowHealthDetail] = useState(false);
+  const [showCurriculum, setShowCurriculum] = useState(false);
 
   // Forms
   const [showCreateCohort, setShowCreateCohort] = useState(false);
   const [showAddMember, setShowAddMember] = useState(null); // cohortId
-  const [cohortForm, setCohortForm] = useState({ name: '', startDate: '', weekCount: 6 });
+  const [cohortForm, setCohortForm] = useState({ name: '', startDate: getNextMondayISO(), weekCount: TOTAL_WEEKS });
   const [memberForm, setMemberForm] = useState({
     firstName: '', lastName: '', email: '', phone: '', engagementLevel: 2,
   });
@@ -53,6 +78,20 @@ export default function AdminScreen() {
     loadCohorts();
   }, [loadCohorts]);
 
+  // Poll system health every 60s
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const data = await getSystemHealth();
+        if (!cancelled) setHealth(data);
+      } catch { /* non-admins will 403 — silently ignore */ }
+    };
+    load();
+    const id = setInterval(load, 60000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, []);
+
   function showMessage(text, type = 'success') {
     setMessage({ text, type });
     setTimeout(() => setMessage(null), 5000);
@@ -67,11 +106,11 @@ export default function AdminScreen() {
       await fn({
         name: cohortForm.name,
         startDate: cohortForm.startDate,
-        weekCount: parseInt(cohortForm.weekCount) || 6,
+        weekCount: parseInt(cohortForm.weekCount) || TOTAL_WEEKS,
         facilitatorIds: auth.currentUser ? [auth.currentUser.uid] : [],
       });
       showMessage(`Cohort "${cohortForm.name}" created!`);
-      setCohortForm({ name: '', startDate: '', weekCount: 6 });
+      setCohortForm({ name: '', startDate: getNextMondayISO(), weekCount: TOTAL_WEEKS });
       setShowCreateCohort(false);
       await loadCohorts();
     } catch (err) {
@@ -189,14 +228,147 @@ export default function AdminScreen() {
     <div className="min-h-screen pb-20 px-4 pt-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-lab-navy">Manage</h1>
-        <button
-          onClick={() => setShowCreateCohort(true)}
-          className="flex items-center gap-1.5 px-3 py-2 bg-lab-teal text-white rounded-xl text-sm font-medium hover:bg-lab-teal/90 transition-colors"
-        >
-          <Plus size={16} />
-          New Cohort
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowCurriculum(!showCurriculum)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+              showCurriculum ? 'bg-lab-navy text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+            }`}
+          >
+            <BookOpen size={16} />
+            Topics
+          </button>
+          <button
+            onClick={() => setShowCreateCohort(true)}
+            className="flex items-center gap-1.5 px-3 py-2 bg-lab-teal text-white rounded-xl text-sm font-medium hover:bg-lab-teal/90 transition-colors"
+          >
+            <Plus size={16} />
+            New Cohort
+          </button>
+        </div>
       </div>
+
+      {/* Curriculum View */}
+      {showCurriculum && (
+        <div className="mb-8 space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="bg-lab-navy p-6 rounded-2xl text-white shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <BookOpen size={120} />
+            </div>
+            <h2 className="text-xl font-bold mb-1 relative z-10">LL Curriculum Spine</h2>
+            <p className="text-white/70 text-sm relative z-10 leading-relaxed max-w-md">
+              The 16-week foundation and ascent tracks. AI adapts delivery based on individual leadership profiles.
+            </p>
+          </div>
+
+          <div className="grid gap-6">
+            {Object.entries(TRACKS).map(([key, track]) => (
+              <div key={key} className="space-y-3">
+                <div className="flex items-center gap-3 px-1">
+                  <div className="h-px flex-1 bg-stone-200" />
+                  <div className="text-[10px] font-bold tracking-widest text-stone-400 uppercase">
+                    {track.label}: {track.sublabel}
+                  </div>
+                  <div className="h-px flex-1 bg-stone-200" />
+                </div>
+                
+                <div className="grid gap-3">
+                  {WEEKLY_THEMES.filter(t => t.track === key).map((theme) => (
+                    <div 
+                      key={theme.week} 
+                      className="glass-card p-4 flex gap-4 items-start hover:border-lab-teal/30 transition-colors group"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center flex-shrink-0 font-bold text-stone-500 group-hover:bg-lab-teal group-hover:text-white transition-colors">
+                        {theme.week}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-lab-navy truncate">
+                          {theme.title}
+                        </div>
+                        <div className="text-xs text-stone-500 mt-1 line-clamp-1">
+                          Anchor: {theme.shortTitle}
+                        </div>
+                      </div>
+                      <div className="text-[10px] font-medium text-stone-400 px-2 py-1 bg-stone-50 rounded-lg group-hover:bg-stone-100 uppercase tracking-tight">
+                        W{theme.week}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="px-1">
+            <button 
+              onClick={() => setShowCurriculum(false)}
+              className="w-full py-4 text-sm font-medium text-stone-500 hover:text-lab-teal transition-colors flex items-center justify-center gap-2 border-2 border-dashed border-stone-200 rounded-2xl hover:border-lab-teal/30"
+            >
+              <ChevronUp size={16} />
+              Close Curriculum View
+            </button>
+          </div>
+          
+          <div className="h-px bg-stone-100 mx-4 shadow-sm" />
+        </div>
+      )}
+
+      {/* System Health Traffic Light */}
+      {health?.health && (
+        <button
+          type="button"
+          onClick={() => setShowHealthDetail((v) => !v)}
+          className={`w-full mb-4 p-3 rounded-xl text-sm flex items-center gap-3 border transition-colors text-left ${
+            health.health.status === 'red'
+              ? 'bg-red-50 text-red-800 border-red-200 hover:bg-red-100'
+              : health.health.status === 'yellow'
+                ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+                : 'bg-green-50 text-green-800 border-green-200 hover:bg-green-100'
+          }`}
+        >
+          <span
+            className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+              health.health.status === 'red'
+                ? 'bg-red-500'
+                : health.health.status === 'yellow'
+                  ? 'bg-amber-500'
+                  : 'bg-green-500'
+            }`}
+          />
+          <div className="flex-1 min-w-0">
+            <div className="font-medium">
+              System {health.health.status === 'green' ? 'healthy' : health.health.status === 'yellow' ? 'degraded' : 'at risk'}
+              {health.health.sms?.totalSent > 0 && (
+                <span className="ml-2 font-normal opacity-80">
+                  · {(health.health.sms.deliveryRate * 100).toFixed(0)}% delivery ({health.health.sms.delivered}/{health.health.sms.totalSent})
+                </span>
+              )}
+              {health.health.openCrises > 0 && (
+                <span className="ml-2 font-semibold">· {health.health.openCrises} crisis signal{health.health.openCrises === 1 ? '' : 's'}</span>
+              )}
+            </div>
+            {showHealthDetail && (
+              <div className="mt-2 text-xs opacity-90 space-y-1">
+                {health.health.issues?.length ? (
+                  health.health.issues.map((iss, i) => <div key={i}>• {iss}</div>)
+                ) : (
+                  <div>• All metrics within range.</div>
+                )}
+                {health.recentFailures?.length > 0 && (
+                  <div className="mt-2">
+                    <div className="font-semibold">Recent failed sends:</div>
+                    {health.recentFailures.slice(0, 5).map((f) => (
+                      <div key={f.sid} className="truncate">
+                        {f.phoneMasked} · {f.carrierError?.title || f.carrierError?.code || 'unknown'} · {f.body}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </button>
+      )}
 
       {/* Status Message */}
       {message && (
@@ -235,6 +407,29 @@ export default function AdminScreen() {
                 className="w-full px-3 py-2 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-lab-teal"
                 required
               />
+              {cohortForm.startDate && !isMondayISO(cohortForm.startDate) && (
+                <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 flex items-start gap-2">
+                  <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-medium">Heads up: non-Monday start.</div>
+                    <div className="opacity-90">
+                      The AI&apos;s coaching cadence (Challenge → Adapt → Reflect) is tuned for a Mon–Fri rhythm. Mid-week starts can misalign the first week&apos;s prompts.{' '}
+                      <button
+                        type="button"
+                        onClick={() => setCohortForm((p) => ({ ...p, startDate: getNextMondayISO() }))}
+                        className="underline font-medium hover:text-amber-900"
+                      >
+                        Use next Monday ({getNextMondayISO()})
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {cohortForm.startDate && isMondayISO(cohortForm.startDate) && (
+                <p className="text-xs text-lab-teal mt-1">
+                  ✓ Aligned with Mon–Fri coaching cadence.
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-medium text-stone-500 mb-1">Duration (weeks)</label>
@@ -242,10 +437,13 @@ export default function AdminScreen() {
                 type="number"
                 value={cohortForm.weekCount}
                 onChange={(e) => setCohortForm((p) => ({ ...p, weekCount: e.target.value }))}
-                min="1"
-                max="12"
+                min="4"
+                max="16"
                 className="w-full px-3 py-2 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-lab-teal"
               />
+              <p className="text-xs text-stone-400 mt-1">
+                Full program is 16 weeks (Foundation 1-5 · Ascent Team 6-11 · Ascent Self 12-16). Use a shorter count for pilots.
+              </p>
             </div>
             <div className="flex gap-2 pt-1">
               <button

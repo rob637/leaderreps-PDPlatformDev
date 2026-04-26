@@ -4,7 +4,7 @@ import {
   Sparkles, Clock, UserCheck, RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
-import { WEEKLY_THEMES } from '../../config/navigation.js';
+import { WEEKLY_THEMES, TRACKS, getWeekTheme } from '../../config/navigation.js';
 import {
   getWarRoomData,
   generateSessionPlan,
@@ -66,8 +66,9 @@ export default function SessionPlannerScreen() {
   const cohort = warRoomData?.cohort;
   const summary = warRoomData?.summary;
   const weekNumber = cohort?.weekNumber || userProfile?.currentWeek || 1;
-  const isAscent = weekNumber > 5;
-  const theme = isAscent ? null : (WEEKLY_THEMES[Math.min(weekNumber - 1, 4)] || WEEKLY_THEMES[0]);
+  const theme = getWeekTheme(weekNumber) || WEEKLY_THEMES[0];
+  const trackMeta = TRACKS[theme.track];
+  const isAscent = theme.track !== 'foundation';
 
   const total = members.length;
   const activeMembers = members.filter((m) => m.engagement === 'active');
@@ -84,7 +85,9 @@ export default function SessionPlannerScreen() {
         <div>
           <h1 className="text-2xl font-bold text-lab-navy">Session Planner</h1>
           <p className="text-sm text-stone-500 mt-1">
-            {isAscent ? `Ascent · Week ${weekNumber}` : `Week ${weekNumber}: ${theme.title}`}
+            {trackMeta?.label || 'Foundation'}
+            {trackMeta?.sublabel ? ` · ${trackMeta.sublabel}` : ''}
+            {` · Week ${weekNumber}: ${theme.title}`}
           </p>
         </div>
         <div className="flex items-center gap-1 text-xs text-stone-400">

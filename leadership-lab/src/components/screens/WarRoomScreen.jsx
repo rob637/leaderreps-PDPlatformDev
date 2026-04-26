@@ -6,9 +6,11 @@ import { SCREENS, WEEKLY_THEMES } from '../../config/navigation.js';
 import { getWarRoomData } from '../../services/facilitatorService.js';
 
 export default function WarRoomScreen() {
-  const { navigate } = useNavigation();
+  const { navigate, screenParams } = useNavigation();
   const { userProfile } = useAuth();
-  const cohortId = userProfile?.cohortId;
+  // Admin path passes cohortId via navigation params; participant path falls
+  // back to their own enrollment cohortId.
+  const cohortId = screenParams?.cohortId || userProfile?.cohortId;
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -128,7 +130,7 @@ export default function WarRoomScreen() {
           {members.map((member) => (
             <button
               key={member.id}
-              onClick={() => navigate(SCREENS.MEMBER_DEEP_DIVE, { memberId: member.id })}
+              onClick={() => navigate(SCREENS.MEMBER_DEEP_DIVE, { memberId: member.id, cohortId })}
               className="glass-card p-4 text-left hover:shadow-card-hover transition-shadow"
               aria-label={`View details for ${member.firstName}`}
             >

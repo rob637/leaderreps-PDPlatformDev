@@ -59,7 +59,12 @@ describe('Critical Functionality - TimeService', () => {
     // Spy on console.log to verify output
     vi.spyOn(console, 'log')
     
+    // travelTo schedules window.location.reload via setTimeout — use fake
+    // timers so we can flush that pending callback synchronously.
+    vi.useFakeTimers()
     timeService.travelTo(targetDate)
+    vi.runAllTimers()
+    vi.useRealTimers()
     
     expect(window.localStorage.setItem).toHaveBeenCalledWith('time_travel_offset', expect.any(String))
     expect(window.location.reload).toHaveBeenCalled()
@@ -74,11 +79,15 @@ describe('Critical Functionality - TimeService', () => {
   it('should reset time travel correctly', () => {
     // First travel
     const targetDate = new Date('2025-12-25T12:00:00Z')
+    vi.useFakeTimers()
     timeService.travelTo(targetDate)
+    vi.runAllTimers()
     expect(timeService.isActive()).toBe(true)
     
     // Then reset
     timeService.reset()
+    vi.runAllTimers()
+    vi.useRealTimers()
     
     expect(window.localStorage.removeItem).toHaveBeenCalledWith('time_travel_offset')
     expect(window.location.reload).toHaveBeenCalled()

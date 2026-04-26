@@ -5,7 +5,7 @@ import { db } from '../../config/firebase.js';
 import collections from '../../config/collections.js';
 import { useNavigation } from '../../providers/NavigationProvider.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
-import { SCREENS, WEEKLY_THEMES } from '../../config/navigation.js';
+import { SCREENS, WEEKLY_THEMES, TRACKS, getWeekTheme } from '../../config/navigation.js';
 import {
   subscribeToConversations,
   getLastMessagePreview,
@@ -20,13 +20,14 @@ export default function FeedScreen() {
   const userId = userProfile?._docId || user?.uid;
   const isOnboarded = userProfile?.onboardingComplete === true;
   const currentWeek = isOnboarded ? (userProfile?.currentWeek || 1) : 0;
-  const theme = currentWeek > 0 ? (WEEKLY_THEMES[currentWeek - 1] || WEEKLY_THEMES[0]) : null;
+  const theme = currentWeek > 0 ? (getWeekTheme(currentWeek) || WEEKLY_THEMES[0]) : null;
 
   const [conversations, setConversations] = useState([]);
   const [conversationsLoading, setConversationsLoading] = useState(true);
   const [conversationsError, setConversationsError] = useState(null);
   const [experiment, setExperiment] = useState(null);
   const [quickInput, setQuickInput] = useState('');
+  const [showEngagement, setShowEngagement] = useState(false);
   const quickInputRef = useRef(null);
 
   // Subscribe to conversation list
@@ -122,8 +123,12 @@ export default function FeedScreen() {
     );
   }
 
-  const isAscent = userProfile?.phase === 'ascent' || currentWeek > 5;
-  const [showEngagement, setShowEngagement] = useState(false);
+  const track = theme?.track || 'foundation';
+  const isAscent = track !== 'foundation';
+  const trackMeta = TRACKS[track];
+  const trackWeeks = trackMeta?.weeks || [];
+  const milestoneIndex = trackWeeks.indexOf(currentWeek) + 1;
+  const milestoneTotal = trackWeeks.length;
   const engagementLevel = userProfile?.engagementLevel || 2;
   const engLabels = { 1: 'Light', 2: 'Medium', 3: 'Heavy' };
   const engDescs = { 1: '2-3 texts/wk', 2: '~5 texts/wk', 3: '~10 texts/wk' };
@@ -138,30 +143,45 @@ export default function FeedScreen() {
     }
   }
 
+  /**
+   * Resume the most recent open coach conversation if it was active in the
+   * last 24 hours. Otherwise start a fresh thread. Prevents the "I haven't
+   * said anything to you yet today" disconnect when typing into the Feed
+   * quick input shortly after an existing exchange.
+   */
+  function startCoachConversation(firstMessage) {
+    const recentCoach = conversations.find((c) => {
+      if (c.mode !== 'coach') return false;
+      if (c.status === 'completed' || c.status === 'closed') return false;
+      const updated = c.updatedAt?.toDate?.() || (c.updatedAt ? new Date(c.updatedAt) : null);
+      if (!updated) return false;
+      const hoursAgo = (Date.now() - updated.getTime()) / (1000 * 60 * 60);
+      return hoursAgo < 24;
+    });
+    if (recentCoach) {
+      navigate(SCREENS.CONVERSATION, {
+        conversationId: recentCoach.id,
+        mode: 'coach',
+        firstMessage,
+      });
+    } else {
+      navigate(SCREENS.CONVERSATION, { mode: 'coach', firstMessage });
+    }
+  }
+
   // ---------- NORMAL FEED VIEW ----------
   return (
     <div className="min-h-screen pb-20 px-4 pt-6">
       {/* Header */}
       <div className="mb-6">
-        {isAscent ? (
-          <>
-            <p className="text-sm text-stone-500 font-medium">
-              Ascent &middot; Week {currentWeek}
-            </p>
-            <h1 className="text-2xl font-bold text-lab-navy mt-1">
-              Your Ongoing Journey
-            </h1>
-          </>
-        ) : (
-          <>
-            <p className="text-sm text-stone-500 font-medium">
-              Milestone {currentWeek} of 5
-            </p>
-            <h1 className="text-2xl font-bold text-lab-navy mt-1">
-              {theme?.title || 'Leadership Lab'}
-            </h1>
-          </>
-        )}
+        <p className="text-sm text-stone-500 font-medium">
+          {trackMeta?.label || 'Foundation'}
+          {trackMeta?.sublabel ? ` · ${trackMeta.sublabel}` : ''}
+          {milestoneTotal > 0 ? ` · Week ${milestoneIndex} of ${milestoneTotal}` : ''}
+        </p>
+        <h1 className="text-2xl font-bold text-lab-navy mt-1">
+          {theme?.title || 'Leadership Lab'}
+        </h1>
         {/* Text Frequency Toggle */}
         <div className="mt-2 relative">
           <button
@@ -205,7 +225,7 @@ export default function FeedScreen() {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 if (quickInput.trim()) {
-                  navigate(SCREENS.CONVERSATION, { mode: 'coach', firstMessage: quickInput.trim() });
+                  startCoachConversation(quickInput.trim());
                 }
               }
             }}
@@ -217,7 +237,7 @@ export default function FeedScreen() {
           <button
             onClick={() => {
               if (quickInput.trim()) {
-                navigate(SCREENS.CONVERSATION, { mode: 'coach', firstMessage: quickInput.trim() });
+                startCoachConversation(quickInput.trim());
               }
             }}
             disabled={!quickInput.trim()}
@@ -352,12 +372,26 @@ function ConversationPreview({ title, preview, time, onClick }) {
 }
 
 function getExperimentPreview(week) {
+  // Fallback teaser only — used when the personalized challenge hasn't been
+  // generated yet. Real anchor experiments live in functions/labCurriculum.js
+  // and are personalized per user by Claude.
   const experiments = {
-    1: 'Write down what each person in your next meeting does better than anyone. Name ONE out loud, in front of the group. Watch the room.',
-    2: 'The 2-Minute Silence: Ask your most important 1:1 question. After they answer, say nothing for two minutes. The real answer comes second.',
-    3: 'The person you\'ve been avoiding giving feedback to — write it in one sentence and deliver it today. Not tomorrow.',
-    4: 'The Columbo Method: When someone pushes back, say "You might be right — help me see what I\'m missing." Then actually listen.',
-    5: 'What would the leader you\'re becoming do differently than 5 weeks ago? Walk into your biggest meeting and do exactly that.',
+    1: 'Send one specific recognition message per workday — name the behavior, name the impact. Track who you almost forgot.',
+    2: 'Run your next three 1:1s with no agenda from you. Open with "What\'s the most important thing for us to talk about today?" — then hold the silence.',
+    3: 'Choose one conversation you\'ve been avoiding. Deliver the message in 2-3 direct sentences. No softening. Then stop talking.',
+    4: 'Before your next decision, ask three people closest to the work: "What do I need to see that I\'m not seeing?" Listen without defending.',
+    5: 'Write the one-page version of what you\'ve actually built these five weeks. Read it to one person who knew you before.',
+    6: 'Audit your standing meetings. Cancel one, shorten one, redesign one — then tell your team why.',
+    7: 'Tell one person what you\'re actually worried about this week. Not the polished version. The real one.',
+    8: 'Surface the conflict you\'ve been managing around. Say it out loud in the next team meeting in one sentence.',
+    9: 'Take the most important thing on your team\'s plate and ask three of them to write the goal in their own words. Compare.',
+    10: 'Pick one commitment that slipped. Name it, own your part, and say what changes — to the person it affected.',
+    11: 'Identify the one practice that, if it became automatic, would change the next quarter. Schedule it now.',
+    12: 'Write the headline you want said about you in 12 months. Then list the three things this week that contradict it.',
+    13: 'Track your energy in 2-hour blocks for three days. Then move your hardest work into your highest-energy block.',
+    14: 'Say no to one thing this week that you would normally have absorbed. Notice what doesn\'t actually fall apart.',
+    15: 'In your next high-stakes meeting, say the thing only you can say. Don\'t edit it down to be palatable.',
+    16: 'Write the letter to the leader you\'ll be one year from now. What do you need to start, stop, and protect — starting Monday?',
   };
   return experiments[week] || experiments[1];
 }

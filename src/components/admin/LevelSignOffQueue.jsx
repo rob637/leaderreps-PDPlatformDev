@@ -13,7 +13,6 @@ import {
   Lock,
   Award,
   Users,
-  GraduationCap,
   FileCheck,
   Info,
   X,
@@ -166,7 +165,7 @@ const AccomplishmentChecklist = ({ levelNumber, repStats, sessionsAttended }) =>
           })
         ) : (
           <p className="text-sm text-slate-500 dark:text-slate-400 italic">
-            No specific rep requirements for graduation level
+            No specific rep requirements for the final Foundation level
           </p>
         )}
       </div>
@@ -180,7 +179,7 @@ const LEVELS = {
   2: { name: 'One-on-One', shortName: 'L2', emoji: '🎯', color: 'blue', description: 'Follow-up & Lead with Vulnerability' },
   3: { name: 'Redirecting', shortName: 'L3', emoji: '💡', color: 'amber', description: 'Redirecting Feedback & Close the Loop' },
   4: { name: 'Readiness', shortName: 'L4', emoji: '🚀', color: 'purple', description: 'Handle Pushback & Hold the Line' },
-  5: { name: 'Graduate', shortName: 'Grad', emoji: '🏆', color: 'rose', description: 'Program completion & ongoing development' }
+  5: { name: 'Foundation Complete', shortName: 'Done', emoji: '🏆', color: 'rose', description: 'Foundation complete — leader transitions to Ascent' }
 };
 
 // For backward compatibility
@@ -398,10 +397,16 @@ const LevelSignOffQueue = () => {
         updates[`milestoneProgress.milestone_${milestoneNumber + 1}.unlockedAt`] = serverTimestamp();
       }
       
-      // Mark as graduated if this is milestone 5
+      // Mark Foundation as complete if this is milestone 5
+      // (legacy `graduated` flag retained for backwards compatibility with
+      //  existing queries; new code should prefer `foundationCompleted`).
       if (milestoneNumber === 5) {
+        updates['foundationCompleted'] = true;
+        updates['foundationCompletedAt'] = serverTimestamp();
         updates['graduated'] = true;
         updates['graduatedAt'] = serverTimestamp();
+        // Reset the Ascent welcome flag so the welcome modal shows on next login
+        updates['ascentWelcomeShown'] = false;
       }
       
       await updateDoc(userRef, updates);
@@ -415,6 +420,8 @@ const LevelSignOffQueue = () => {
           userName: participant.displayName,
           milestone: milestoneNumber,
           milestoneName: MILESTONES[milestoneNumber]?.name,
+          isFoundationComplete: milestoneNumber === 5,
+          // Backwards-compat for the existing email handler
           isGraduation: milestoneNumber === 5
         });
       } catch (emailError) {
@@ -425,7 +432,7 @@ const LevelSignOffQueue = () => {
       setSignOffSuccess({
         userName: participant.displayName,
         milestone: milestoneNumber,
-        isGraduation: milestoneNumber === 5
+        isFoundationComplete: milestoneNumber === 5
       });
       
       // Refresh participants
@@ -556,7 +563,7 @@ const LevelSignOffQueue = () => {
           {selectedCohort && (
             <div className="flex items-center gap-3 ml-4">
               <span className="text-sm text-slate-500">
-                {activeCount} active • {graduatedCount} graduated
+                {activeCount} active • {graduatedCount} in Ascent
               </span>
             </div>
           )}
@@ -583,8 +590,8 @@ const LevelSignOffQueue = () => {
                 : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
             }`}
           >
-            <GraduationCap className="w-4 h-4 inline-block mr-2" />
-            Graduated ({graduatedCount})
+            <Award className="w-4 h-4 inline-block mr-2" />
+            In Ascent ({graduatedCount})
           </button>
         </div>
       </div>
@@ -636,19 +643,19 @@ const LevelSignOffQueue = () => {
           <div className="text-center py-16">
             <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
               {activeTab === 'graduated' ? (
-                <GraduationCap className="w-8 h-8 text-amber-500" />
+                <Award className="w-8 h-8 text-amber-500" />
               ) : (
                 <User className="w-8 h-8 text-slate-400" />
               )}
             </div>
             <p className="text-slate-500 dark:text-slate-400 text-lg font-medium">
-              {activeTab === 'graduated' 
-                ? 'No graduated participants yet' 
+              {activeTab === 'graduated'
+                ? 'No participants in Ascent yet'
                 : 'No active participants'}
             </p>
             <p className="text-slate-400 text-sm mt-1">
               {activeTab === 'graduated'
-                ? 'Participants who complete all 5 levels will appear here'
+                ? 'Participants who complete all 5 Foundation levels will appear here'
                 : 'No participants match your filters'}
             </p>
           </div>
@@ -694,8 +701,8 @@ const LevelSignOffQueue = () => {
                       <div className="flex items-center gap-4">
                         {participant.isGraduated ? (
                           <div className="flex items-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                            <GraduationCap className="w-5 h-5 text-amber-600" />
-                            <span className="font-semibold text-amber-700 dark:text-amber-300">Graduated</span>
+                            <Award className="w-5 h-5 text-amber-600" />
+                            <span className="font-semibold text-amber-700 dark:text-amber-300">In Ascent</span>
                           </div>
                         ) : (
                           <>
@@ -847,14 +854,14 @@ const LevelSignOffQueue = () => {
       {signOffSuccess && (
         <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4">
           <div className="bg-emerald-500 text-white px-6 py-4 rounded-xl shadow-lg flex items-center gap-3">
-            {signOffSuccess.isGraduation ? (
-              <GraduationCap className="w-6 h-6" />
+            {signOffSuccess.isFoundationComplete ? (
+              <Award className="w-6 h-6" />
             ) : (
               <CheckCircle2 className="w-6 h-6" />
             )}
             <div>
               <p className="font-semibold">
-                {signOffSuccess.isGraduation ? '🎉 Graduation!' : 'Level Signed Off!'}
+                {signOffSuccess.isFoundationComplete ? '🎉 Foundation Complete — Welcome to Ascent!' : 'Level Signed Off!'}
               </p>
               <p className="text-sm text-emerald-100">
                 {signOffSuccess.userName} — {MILESTONES[signOffSuccess.milestone]?.name}

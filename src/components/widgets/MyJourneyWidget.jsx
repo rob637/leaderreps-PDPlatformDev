@@ -16,7 +16,7 @@ const LEVEL_NAMES = {
   2: 'One-on-One (1:1)',
   3: 'Redirecting',
   4: 'Readiness',
-  5: 'Graduation'
+  5: 'Foundation Complete'
 };
 
 /**

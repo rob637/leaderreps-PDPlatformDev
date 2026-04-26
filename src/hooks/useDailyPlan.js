@@ -991,19 +991,33 @@ export const useDailyPlan = () => {
       });
     }
 
-    const phase = getPhaseFromDbDay(dbDay);
-    const phaseDay = getPhaseDayNumber(dbDay);
-    
+    let phase = getPhaseFromDbDay(dbDay);
+    let phaseDay = getPhaseDayNumber(dbDay);
+
+    // FOUNDATION COMPLETION OVERRIDE:
+    // When the trainer signs off Foundation (milestone 5), the user is moved
+    // into Ascent immediately, regardless of calendar position. The legacy
+    // `graduated` flag and the new `foundationCompleted` flag are both honored.
+    if (user?.foundationCompleted === true || user?.graduated === true) {
+      phase = PHASES.POST_START;
+      // Use day 71 (start of Ascent) as the effective dbDay so phase-day
+      // calculations still produce a sensible "Ascent Day 1+"
+      const effectiveDbDay = Math.max(dbDay, PHASES.POST_START.dbDayStart);
+      phaseDay = getPhaseDayNumber(effectiveDbDay);
+      dbDay = effectiveDbDay;
+    }
+
     console.log('[useDailyPlan] Phase Info:', {
       daysFromStart,
       dbDayNumber: dbDay,
       phase: phase.name,
       phaseDayNumber: phaseDay,
-      isVisitBased: daysFromStart < 0
+      isVisitBased: daysFromStart < 0,
+      foundationCompleted: !!(user?.foundationCompleted || user?.graduated)
     });
-    
+
     return { dbDayNumber: dbDay, currentPhase: phase, phaseDayNumber: phaseDay };
-  }, [daysFromStart, journeyDay]);
+  }, [daysFromStart, journeyDay, user?.foundationCompleted, user?.graduated]);
 
   // 5. Get Current Day Data, Missed Weeks & Unlocked Content
   const { currentDayData, missedDays, missedWeeks, unlockedContentIds, unlockedResources, prepPhaseInfo } = useMemo(() => {
