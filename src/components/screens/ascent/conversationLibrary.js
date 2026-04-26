@@ -1,13 +1,13 @@
 // src/components/screens/ascent/conversationLibrary.js
 //
-// Lead Team — Conversation Library v1
+// Lead Team — Conversation Library
 //
 // Data spine for the Ascent Lead Team experience. Each entry is the unit
-// of content for a "conversation a new manager actually has to have."
+// of content for one of the 10-15 crucial conversations a leader actually
+// has to have. Frameworks are referenced by id and resolved from
+// frameworks.js so the same framework can be reused across conversations.
 //
-// Keep this small and curated. Five to start. Frameworks are referenced
-// by id and resolved from frameworks.js so the same framework can be
-// reused across multiple conversations.
+// Keep entries curated. Accuracy > volume.
 
 export const CONVERSATIONS = [
   {
@@ -90,6 +90,71 @@ export const CONVERSATIONS = [
       'What\'s one thing I can do (or stop doing) to make your week easier?',
     ],
     videoMinutes: 4,
+  },
+  // ---------- Lead Team: healthy debate, conflict, feedback elicitation ----------
+  {
+    id: 'debate',
+    title: 'The Healthy Debate Conversation',
+    tagline: 'Get the disagreement out in the open — productively.',
+    icon: 'Zap',
+    accent: '#F59E0B',
+    when: 'Use when your team goes quiet in meetings or the same people always agree.',
+    avoid: 'Avoid "let\'s take this offline." That kills the debate before it starts.',
+    frameworkId: 'sixHats',
+    promptStarters: [
+      'I want to hear the strongest case against this idea before we move forward.',
+      'What are we not saying out loud? Let\'s put it on the table.',
+      'I\'m going to play devil\'s advocate here — not because I\'m against it, but because we need to stress-test it.',
+    ],
+    videoMinutes: 4,
+  },
+  {
+    id: 'conflict',
+    title: 'The Conflict Conversation',
+    tagline: 'Address the tension before it poisons the team.',
+    icon: 'AlertTriangle',
+    accent: '#EF4444',
+    when: 'Use as soon as you notice two people avoiding each other or sniping in meetings.',
+    avoid: 'Avoid solving it for them. Your job is to name it and create the space, not referee.',
+    frameworkId: 'radarCheck',
+    promptStarters: [
+      'I\'ve noticed some tension between you two, and I think we all feel it. Can we name it?',
+      'This isn\'t working, and it\'s affecting the team. Here\'s what I\'m observing…',
+      'I\'m not here to decide who\'s right. I\'m here to help you both move forward.',
+    ],
+    videoMinutes: 4,
+  },
+  {
+    id: 'feedback-elicit',
+    title: 'The "Help Me Get Better" Conversation',
+    tagline: 'Ask for candid feedback — and actually mean it.',
+    icon: 'RefreshCw',
+    accent: '#8B5CF6',
+    when: 'Use quarterly, especially with direct reports and skip-level leaders.',
+    avoid: 'Avoid asking "do you have any feedback for me?" — too easy to dodge. Use specific prompts.',
+    frameworkId: 'prep4',
+    promptStarters: [
+      'What\'s one thing I do that makes your job harder — even if I don\'t intend it?',
+      'If you could change one thing about how I run this team, what would it be?',
+      'What do you wish I understood better about your day-to-day?',
+    ],
+    videoMinutes: 3,
+  },
+  {
+    id: 'recognition',
+    title: 'The Recognition Conversation',
+    tagline: 'Specific praise lands. Generic praise disappears.',
+    icon: 'Star',
+    accent: '#10B981',
+    when: 'Use within 24 hours of the moment — and in the right setting (public vs. private).',
+    avoid: 'Avoid "great job." Name exactly what they did and why it mattered.',
+    frameworkId: 'sbi',
+    promptStarters: [
+      'I want to call out something specific you did on Tuesday…',
+      'I noticed what you did in that meeting — and I want to make sure you know I saw it.',
+      'Here\'s what you did, here\'s what it produced, and here\'s why it matters to me.',
+    ],
+    videoMinutes: 2,
   },
 ];
 

@@ -13,11 +13,12 @@ import { motion } from 'framer-motion';
 import {
   PlayCircle, BookOpen, Dumbbell, ArrowRight, Plus, ChevronRight,
   Calendar, Users, Sparkles, Layers, MessageSquare, Target, HelpCircle, Compass,
+  Activity, Zap, AlertTriangle, RefreshCw, Star,
 } from 'lucide-react';
 import { CONVERSATIONS, getConversationById } from './conversationLibrary.js';
 import { getFoundationContentForConversation } from './foundationContentMap.js';
 
-const ICONS = { Target, MessageSquare, HelpCircle, Compass, Users };
+const ICONS = { Target, MessageSquare, HelpCircle, Compass, Users, Zap, AlertTriangle, RefreshCw, Star };
 
 const KIND_ICON = {
   video: PlayCircle,
@@ -243,23 +244,23 @@ const ExploreTab = ({
               Community · Practice live
             </div>
             <h2 className="text-lg font-extrabold text-corporate-navy dark:text-white">
-              Register for an Open Gym or Leader Circle
+              Three ways to get reps with real people
             </h2>
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <button
             onClick={() => navigate?.('coaching-hub')}
             className="text-left rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-corporate-teal bg-white dark:bg-slate-800 p-4 transition-all"
           >
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-lg bg-corporate-teal/15 text-corporate-teal flex items-center justify-center">
-                <Calendar className="w-5 h-5" />
+                <Activity className="w-5 h-5" />
               </div>
               <div className="flex-1">
-                <div className="font-bold text-corporate-navy dark:text-white">Open Gyms</div>
+                <div className="font-bold text-corporate-navy dark:text-white">Practice / Reps</div>
                 <p className="text-sm text-slate-600 dark:text-slate-300 mt-0.5">
-                  60-minute facilitated sessions to work a real issue with peers.
+                  Bring a real scenario. Work it with coaching support.
                 </p>
                 <span className="text-xs font-semibold text-corporate-teal inline-flex items-center gap-1 mt-2">
                   See schedule <ChevronRight className="w-3 h-3" />
@@ -278,10 +279,29 @@ const ExploreTab = ({
               <div className="flex-1">
                 <div className="font-bold text-corporate-navy dark:text-white">Leader Circles</div>
                 <p className="text-sm text-slate-600 dark:text-slate-300 mt-0.5">
-                  Small recurring cohorts. Same group, sharper every week.
+                  Peer issue processing and mastermind-style accountability.
                 </p>
                 <span className="text-xs font-semibold text-corporate-orange inline-flex items-center gap-1 mt-2">
                   Join one <ChevronRight className="w-3 h-3" />
+                </span>
+              </div>
+            </div>
+          </button>
+          <button
+            onClick={() => navigate?.('coaching-hub')}
+            className="text-left rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-corporate-orange bg-white dark:bg-slate-800 p-4 transition-all"
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-lg bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 flex items-center justify-center">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <div className="font-bold text-corporate-navy dark:text-white">Coaching Clinics</div>
+                <p className="text-sm text-slate-600 dark:text-slate-300 mt-0.5">
+                  Facilitator-led — trainer owns the agenda.
+                </p>
+                <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-300 inline-flex items-center gap-1 mt-2">
+                  See schedule <ChevronRight className="w-3 h-3" />
                 </span>
               </div>
             </div>

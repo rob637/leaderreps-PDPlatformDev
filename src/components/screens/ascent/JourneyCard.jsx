@@ -14,11 +14,12 @@ import { motion } from 'framer-motion';
 import {
   PlayCircle, Send, Calendar, Edit3, CheckCircle2, Circle,
   ArrowRight, RefreshCw, Trophy, Target, MessageSquare, HelpCircle, Compass, Users,
+  Zap, AlertTriangle, Star,
 } from 'lucide-react';
 import { STEP_KEYS, STEP_META } from '../../../hooks/useAscentJourney.js';
 import { getFrameworkById } from './frameworks.js';
 
-const ICONS = { Target, MessageSquare, HelpCircle, Compass, Users };
+const ICONS = { Target, MessageSquare, HelpCircle, Compass, Users, Zap, AlertTriangle, RefreshCw, Star };
 
 const STEP_CTA = {
   learn:    { label: 'Watch the video',   icon: PlayCircle, target: 'leadership-videos' },

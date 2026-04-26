@@ -100,7 +100,7 @@ const LeadWorkCompressed = ({ navigate }) => {
   );
 };
 
-// ---------- Community (Open Gym + Leader Circle CTAs) ----------
+// ---------- Community (3 session types) ----------
 
 const CommunityCard = ({ navigate }) => (
   <motion.div
@@ -118,12 +118,12 @@ const CommunityCard = ({ navigate }) => (
           Lead Team · Community
         </div>
         <div className="font-extrabold text-corporate-navy dark:text-white">
-          Practice with peers
+          Three ways to practice live
         </div>
       </div>
     </div>
     <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
-      The work happens between sessions. The breakthroughs happen with people.
+      The reps you do solo build the vocabulary. The reps you do with people build the skill.
     </p>
     <div className="space-y-2">
       <button
@@ -131,11 +131,11 @@ const CommunityCard = ({ navigate }) => (
         className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-corporate-teal/60 hover:bg-corporate-teal/5 transition-all text-left"
       >
         <span className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-corporate-teal" />
+          <Activity className="w-4 h-4 text-corporate-teal" />
           <span className="text-sm font-semibold text-corporate-navy dark:text-white">
-            Open Gym
+            Practice / Reps
           </span>
-          <span className="text-xs text-slate-500">— work a real issue</span>
+          <span className="text-xs text-slate-500">— bring a real scenario</span>
         </span>
         <ChevronRight className="w-4 h-4 text-slate-400" />
       </button>
@@ -146,9 +146,22 @@ const CommunityCard = ({ navigate }) => (
         <span className="flex items-center gap-2">
           <Users className="w-4 h-4 text-corporate-teal" />
           <span className="text-sm font-semibold text-corporate-navy dark:text-white">
-            Leader Circle
+            Leader Circles
           </span>
-          <span className="text-xs text-slate-500">— small-group cohort</span>
+          <span className="text-xs text-slate-500">— peer mastermind cohort</span>
+        </span>
+        <ChevronRight className="w-4 h-4 text-slate-400" />
+      </button>
+      <button
+        onClick={() => navigate?.('coaching-hub')}
+        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-corporate-orange/60 hover:bg-corporate-orange/5 transition-all text-left"
+      >
+        <span className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-corporate-orange" />
+          <span className="text-sm font-semibold text-corporate-navy dark:text-white">
+            Coaching Clinics
+          </span>
+          <span className="text-xs text-slate-500">— facilitator-led, trainer owns agenda</span>
         </span>
         <ChevronRight className="w-4 h-4 text-slate-400" />
       </button>
@@ -387,7 +400,7 @@ const AscentArena = ({ navigate }) => {
               Welcome back, {firstName}.
             </h1>
             <p className="text-sm sm:text-base opacity-90 mt-2 max-w-2xl">
-              You finished Foundation. Lead Team is your next climb — one conversation at a time.
+              You finished Foundation. Lead Team is your next climb — mastering the conversations that actually define how you lead.
             </p>
           </div>
         </div>

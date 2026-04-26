@@ -10,11 +10,12 @@ import { motion } from 'framer-motion';
 import {
   CheckCircle2, Lock, Circle, ChevronRight, Briefcase, Heart,
   Target, MessageSquare, HelpCircle, Compass, Users,
+  Zap, AlertTriangle, RefreshCw, Star,
 } from 'lucide-react';
 import { CONVERSATIONS } from './conversationLibrary.js';
 import { STEP_KEYS } from '../../../hooks/useAscentJourney.js';
 
-const ICONS = { Target, MessageSquare, HelpCircle, Compass, Users };
+const ICONS = { Target, MessageSquare, HelpCircle, Compass, Users, Zap, AlertTriangle, RefreshCw, Star };
 
 const stateOf = (journey) => {
   if (!journey) return 'todo';

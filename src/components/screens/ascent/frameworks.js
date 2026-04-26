@@ -2,7 +2,7 @@
 //
 // Lead Team — Reusable frameworks v1
 //
-// Three frameworks. Same three reused across all conversations.
+// Five frameworks. Reused across conversations.
 // "Muscle memory beats library size."
 
 export const FRAMEWORKS = {
@@ -47,6 +47,31 @@ export const FRAMEWORKS = {
       { label: 'Decider', prompt: 'Who decides? Who inputs? Who is just informed?' },
       { label: 'By when', prompt: 'When is the call made? What is the cost of waiting?' },
       { label: 'Tell who', prompt: 'How and when do you communicate the decision?' },
+    ],
+  },
+};
+
+  sixHats: {
+    id: 'sixHats',
+    name: 'Six Thinking Hats',
+    summary: 'Structure a group discussion so every angle gets a voice — no one dominates, nothing gets missed.',
+    steps: [
+      { label: 'White Hat', prompt: 'What do we know for certain? What data do we have — and what are we missing?' },
+      { label: 'Red Hat', prompt: 'What does your gut say? What feelings or reactions are in the room right now?' },
+      { label: 'Black Hat', prompt: 'What could go wrong? What are the real risks and weaknesses here?' },
+      { label: 'Yellow Hat', prompt: 'What is the best case? Where is the genuine value and opportunity?' },
+      { label: 'Green Hat', prompt: 'What else could we try? What creative options or alternatives exist?' },
+      { label: 'Blue Hat', prompt: 'What process should we use? What is the agreed next step?' },
+    ],
+  },
+  radarCheck: {
+    id: 'radarCheck',
+    name: 'Conflict Radar Check',
+    summary: 'A quick three-question scan before a hard conversation heats up.',
+    steps: [
+      { label: 'Issue vs. person', prompt: 'Is this about a behavior/outcome — or am I reacting to the person?' },
+      { label: 'Shared stake', prompt: 'What does the other person care about that we actually agree on?' },
+      { label: 'One request', prompt: 'What is the single most important thing I need from them going forward?' },
     ],
   },
 };
