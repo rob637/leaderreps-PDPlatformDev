@@ -184,10 +184,11 @@ service cloud.firestore {
     }
 
     // Accountability Assessment leads
-    // Admin read-only, Cloud Functions write
+    // Admin read + isTest toggle, Cloud Functions write/create
     match /accountability-leads/{document} {
       allow read: if isAdmin();
-      allow write: if false; // Only Cloud Functions can write
+      allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isTest']);
+      allow create, delete: if false; // Only Cloud Functions can create/delete
     }
 
     // Accountability Assessment aggregate stats

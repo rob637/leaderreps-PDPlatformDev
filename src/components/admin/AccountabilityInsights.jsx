@@ -42,6 +42,20 @@ const QUESTION_IDS = [
   { id: 'pattern-recognition',          label: 'Pattern Recognition' },
 ];
 
+// Map from the assessment app's SCORE_LABELS_BY_KEY values → question id.
+// The assessment app stores per-question scores keyed by these label strings.
+const SCORE_LABEL_TO_ID = {
+  'Clear Expectations':        'clear-expectations',
+  'Clean Handoff':             'clean-handoff',
+  'Avoiding Rescue':           'avoiding-rescue',
+  'Follow-Up on the Work':     'follow-up',
+  'Follow-Up':                 'follow-up',
+  'Timely Redirecting Feedback': 'timely-redirecting-feedback',
+  'Timely Feedback':           'timely-redirecting-feedback',
+  'Reinforcing Feedback':      'reinforcing-feedback',
+  'Pattern Recognition':       'pattern-recognition',
+};
+
 const BAND_LABELS = {
   '6-7': 'Strong System',
   '3-5': 'Room to Strengthen',
@@ -93,6 +107,7 @@ const AccountabilityInsights = () => {
   const [sortField, setSortField] = useState('createdAt');
   const [sortDir, setSortDir] = useState('desc');
   const [togglingId, setTogglingId] = useState(null);
+  const [toggleError, setToggleError] = useState(null);
   const [loadError, setLoadError] = useState(null);
 
   // ── Load leads + global stats ──────────────────────────────────────────
@@ -121,6 +136,7 @@ const AccountabilityInsights = () => {
   // ── Toggle isTest flag ──────────────────────────────────────────────────
   const toggleTest = async (lead) => {
     setTogglingId(lead._id);
+    setToggleError(null);
     try {
       const newVal = !lead.isTest;
       await updateDoc(doc(db, 'accountability-leads', lead._id), { isTest: newVal });
@@ -129,6 +145,8 @@ const AccountabilityInsights = () => {
       );
     } catch (err) {
       console.error('Failed to toggle isTest', err);
+      setToggleError('Could not save — check Firestore permissions.');
+      setTimeout(() => setToggleError(null), 4000);
     } finally {
       setTogglingId(null);
     }
@@ -137,18 +155,35 @@ const AccountabilityInsights = () => {
   // ── Computed stats (exclude test entries) ───────────────────────────────
   const realLeads = useMemo(() => leads.filter((l) => !l.isTest), [leads]);
 
+  // Normalise scoreBand → one of '6-7' | '3-5' | '0-2'.
+  // Old 5-question submissions used '4-5', '2-3', '0-1' or archetype strings;
+  // fall back to computing from yesCount + totalQuestions.
+  const normalizeBand = useCallback((lead) => {
+    const band = lead.results?.scoreBand;
+    if (band === '6-7' || band === '3-5' || band === '0-2') return band;
+    const yes = lead.results?.yesCount ?? 0;
+    const total = lead.results?.totalQuestions ?? 7;
+    // Use proportional thresholds so 5-question and 7-question both map sensibly
+    const pctYes = total > 0 ? yes / total : 0;
+    if (pctYes >= 0.75) return '6-7';
+    if (pctYes >= 0.30) return '3-5';
+    return '0-2';
+  }, []);
+
   const bandCounts = useMemo(() => {
     const counts = { '6-7': 0, '3-5': 0, '0-2': 0 };
-    realLeads.forEach((l) => {
-      const band = l.results?.scoreBand;
-      if (band && counts[band] !== undefined) counts[band]++;
-    });
+    realLeads.forEach((l) => { counts[normalizeBand(l)]++; });
     return counts;
-  }, [realLeads]);
+  }, [realLeads, normalizeBand]);
 
-  // Check whether any leads have per-question data saved (new format)
+  // Check which per-question data format is available
   const hasPerLeadQuestions = useMemo(
     () => realLeads.some((l) => Array.isArray(l.results?.questionResults) && l.results.questionResults.length > 0),
+    [realLeads]
+  );
+
+  const hasScoresData = useMemo(
+    () => realLeads.some((l) => l.results?.scores && Object.keys(l.results.scores).length > 0),
     [realLeads]
   );
 
@@ -159,7 +194,7 @@ const AccountabilityInsights = () => {
     });
 
     if (hasPerLeadQuestions) {
-      // New format — compute from individual lead docs (test-exclusion aware)
+      // Best format — questionResults array per lead (test-exclusion aware)
       realLeads.forEach((lead) => {
         const qr = lead.results?.questionResults || [];
         qr.forEach((item) => {
@@ -168,9 +203,21 @@ const AccountabilityInsights = () => {
           else stats[item.id].notYet++;
         });
       });
+    } else if (hasScoresData) {
+      // Fallback — use the results.scores map (keyed by label string, value 100=yes / 0=not-yet)
+      // This exists on all submissions from the 7-question assessment app.
+      realLeads.forEach((lead) => {
+        const sc = lead.results?.scores || {};
+        Object.entries(sc).forEach(([label, val]) => {
+          const id = SCORE_LABEL_TO_ID[label];
+          if (!id || !stats[id]) return;
+          if (val === 100) stats[id].yes++;
+          else stats[id].notYet++;
+        });
+      });
     } else if (globalStats?.questions) {
-      // Legacy fallback — use global aggregate counters from accountability-stats/global
-      // Note: test entries are not excluded here (no per-lead breakdown available)
+      // Last-resort fallback — use global aggregate counters
+      // (test entries not excluded; shown with a warning badge)
       QUESTION_IDS.forEach(({ id }) => {
         const q = globalStats.questions[id];
         if (q) {
@@ -181,7 +228,7 @@ const AccountabilityInsights = () => {
     }
 
     return stats;
-  }, [realLeads, hasPerLeadQuestions, globalStats]);
+  }, [realLeads, hasPerLeadQuestions, hasScoresData, globalStats]);
 
   // ── Filtered + sorted table rows ───────────────────────────────────────
   const tableRows = useMemo(() => {
@@ -280,6 +327,14 @@ const AccountabilityInsights = () => {
         </button>
       </div>
 
+      {/* ── Toggle error toast ───────────────────────────────────────── */}
+      {toggleError && (
+        <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 font-medium">
+          <XCircle className="w-4 h-4 shrink-0" />
+          {toggleError}
+        </div>
+      )}
+
       {/* ── Top-line stats ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard icon={Users}     label="Total Submissions" value={total} sub={`${leads.filter(l => l.isTest).length} test excluded`} />
@@ -294,7 +349,12 @@ const AccountabilityInsights = () => {
           <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">
             Question by Question — % answering "Not Yet"
           </h3>
-          {!hasPerLeadQuestions && globalStats?.questions && (
+          {!hasPerLeadQuestions && hasScoresData && (
+            <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 border border-blue-200 px-2 py-1 rounded-full">
+              From scores map · test entries excluded
+            </span>
+          )}
+          {!hasPerLeadQuestions && !hasScoresData && globalStats?.questions && (
             <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full">
               Using aggregate data · test entries not excluded
             </span>
