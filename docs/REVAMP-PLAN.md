@@ -5,6 +5,8 @@
 **Environments:** Build & test in **dev** and **test** only. **Prod untouched until launch.**
 **Source of truth:** Discussion notes from Ryan + Conditioning Tool v1 spec (see end of doc).
 
+> ⚠ **READ FIRST:** [§8 Pre-Flight Audit Findings & Hardening](#8-pre-flight-audit-findings--hardening) and [§9 Top Risks Mitigation Matrix](#9-top-risks-mitigation-matrix). The audit surfaced coupling that changes how WS-1 through WS-7 must be sequenced.
+
 ---
 
 ## 1. Guiding Principles
@@ -245,3 +247,185 @@ Full Ryan/Christina spec preserved here verbatim for build reference:
 - [ ] Migration script dry-run on prod data export shows zero data loss.
 - [ ] Ryan + Christina sign-off on test environment.
 - [ ] Rollback plan documented (flip flag, redeploy previous build).
+
+---
+
+## 8. Pre-Flight Audit Findings & Hardening
+
+Audit run April 28 against the live `Revamp` branch. Each finding includes the concrete file/line evidence and the corresponding mitigation folded into the workstreams.
+
+### 8.1 Navigation — `navigate()` callsites are scattered
+**Finding.** At least 50+ screen keys are registered in `src/routing/ScreenRouter.jsx`. Hardcoded `navigate('xxx')` calls live in widget templates ([src/config/widgetTemplates.js](src/config/widgetTemplates.js)), modals ([src/components/modals/TwoMinuteChallengeModal.jsx](src/components/modals/TwoMinuteChallengeModal.jsx)), gates ([src/components/ui/PrepGate.jsx](src/components/ui/PrepGate.jsx)), and the auth flow ([src/App.jsx](src/App.jsx)). Renaming/removing any screen breaks these silently.
+
+**Mitigation (added to WS-1).**
+- **Step 1: build a screen-key alias map** in `src/routing/screenAliases.js` so old keys (`community-hub`, `coaching-hub`, `community-feed`, `conditioning`) redirect to new keys (`events`, `events`, `events`, `conditioning-light`). Aliases are evaluated inside `ScreenRouter` before the lookup.
+- **Step 2: do NOT delete old screen keys** in `ScreenRouter.jsx` during revamp — keep them registered, point them at the new components via the alias map, and only delete one cohort post-launch.
+- **Step 3: grep enforcement.** Add a check in `scripts/ui-architecture-check.sh` that fails CI if any `navigate('community...'|'coaching...'|'conditioning')` reference is added without going through the alias map.
+
+### 8.2 Mobile bottom nav only fits 5 items
+**Finding.** [src/components/layout/MobileBottomNav.jsx](src/components/layout/MobileBottomNav.jsx) hardcodes 5 slots and filters out the active screen (so 4 visible at a time). Six-item nav won't fit without a UX choice.
+
+**Decision required (default chosen).** Default = **5 in bottom bar + Locker accessed from header avatar** (Locker is settings-like, not a primary action). Bottom bar order: Dashboard, Events, Content, Conditioning, Ask a Coach. **Confirm with Ryan before WS-1 starts.**
+
+### 8.3 Coaching & Community are top-level Firestore collections (not user subcollections)
+**Finding.** Per [src/data/Constants.js](src/data/Constants.js) and the two services:
+- Top-level: `coaching_session_types`, `coaching_sessions`, `coaching_registrations`
+- Top-level: `community_session_types`, `community_sessions`, `community_registrations`
+- Indexes exist for `content_coaching` and `content_community` collection groups in [firestore.indexes.json](firestore.indexes.json).
+
+**Mitigation (rewrites WS-2 strategy).**
+- **Do NOT migrate data on day one.** Build `eventsService.js` as a **read-aggregator** over both `coaching_sessions` and `community_sessions` collections, normalizing on read into a single `Event` shape with a `sourceType` discriminator (`coaching`|`community`).
+- **Writes go to a new `events` top-level collection** with a `legacySourceType` field for compatibility.
+- **Migration is a separate, post-launch task** — not blocking May 11. We freeze writes to old collections at cutover; reads continue from both indefinitely.
+- **Indexes:** add a unified `events` composite index in `firestore.indexes.json` (cohort + startTime + status). Keep old indexes.
+
+### 8.4 `onCoachingRegistrationEvent` Cloud Function sends ICS calendar + email
+**Finding.** [functions/index.js#L639](functions/index.js) triggers on writes to `coaching_registrations` and produces calendar invites. Community has no equivalent today.
+
+**Mitigation (added to WS-2).**
+- Wrap the existing handler in `onEventRegistration` that listens to the new `events` collection's `registrations` subcollection. Reuse the ICS + email builders.
+- Keep `onCoachingRegistrationEvent` listener active so legacy `coaching_registrations` writes still send emails during the read-aggregation phase.
+
+### 8.5 Conditioning has a 9-state machine and rich Firestore schema
+**Finding.** [src/services/conditioningService.js](src/services/conditioningService.js) writes to `users/{uid}/conditioning_reps` and `users/{uid}/conditioning_weeks` with 9 states (COMMITTED → DEBRIEFED → LOOP_CLOSED, plus MISSED/CANCELED). Light has only Pass/Not Yet.
+
+**Mitigation (rewrites WS-3 strategy).**
+- **Light writes to a NEW collection:** `users/{uid}/reps_light` with the schema in §6 (rrType, conditionScores, result, validity, transcript, createdAt). **Do NOT touch `conditioning_reps`.**
+- Old `conditioning_reps` data stays read-only for historical reference; legacy widgets (`ConditioningHistoryWidget`) get hidden behind the `ascentRevamp` flag.
+- This means **zero data migration** for conditioning. Zero risk of corrupting old reps. Old data archived in place.
+- Pattern detection queries `reps_light` only — clean slate, no need to back-translate old states.
+
+### 8.6 `useDailyPlan` may auto-inject removed entities
+**Finding.** [src/hooks/useDailyPlan.js](src/hooks/useDailyPlan.js) generates the day-by-day roadmap. Audit didn't fully confirm whether it queries coaching/community/conditioning collections to populate the plan.
+
+**Mitigation (added to WS-7).**
+- **Block before WS-2 ships:** grep `useDailyPlan.js` and any `services/dailyLogService.js`, `dataUtils.js`, `unifiedContentService.js` for direct queries to `coaching_sessions`, `community_sessions`, `conditioning_reps`. If found, route through the new aggregator/light collections behind the feature flag.
+- **Smoke test:** a user on day 30 (Foundation) and day 60 (Ascent) of a seeded cohort must see the same daily plan zones before vs after revamp toggle.
+
+### 8.7 Phase model — "Ascent" is computed, not stored
+**Finding.** [src/hooks/useDailyPlan.js#L999](src/hooks/useDailyPlan.js) computes `currentPhase` from `programDay > 50`. There is no `user.ascentLabel` or cohort-level Ascent attribute. Community is gated to `currentPhase?.id === 'post-start'` ([ArenaSidebar.jsx#L53](src/components/layout/ArenaSidebar.jsx)).
+
+**Mitigation (clarifies WS-1 / WS-6).**
+- The "Ascent" badge on the dashboard simply renders when `currentPhase?.id === 'post-start'`. **No new user attribute needed.**
+- Events must be available to **Foundation phase users too** (they currently have coaching access). Drop the `isAscent` gate for Events; gate by `enableEvents` feature flag instead.
+
+### 8.8 Feature flag system is hybrid (Firestore + hardcoded)
+**Finding.** [src/providers/FeatureProvider.jsx](src/providers/FeatureProvider.jsx) reads `config/features` from Firestore. But sidebar feature gates ([ArenaSidebar.jsx#L39-54](src/components/layout/ArenaSidebar.jsx)) are **hardcoded JS variables**, not from Firestore. There is **no per-user or per-cohort flag**.
+
+**Mitigation (rewrites WS-1 flag strategy).**
+- Add `ascentRevamp` to `config/features` doc (Firestore-driven, environment-scoped via the env's project ID).
+- New flag: `ascentRevampCohorts: string[]` — array of cohort IDs that should see the revamp. Default `[]`. Add `'all'` to enable globally. **This gives us cohort-level rollout** that the existing system lacks.
+- Refactor sidebar's hardcoded `enableX` block to read these flags, falling back to current phase logic if flag missing.
+- **Cutover:** flip `ascentRevampCohorts: ['all']` in prod's `config/features`. Instant rollback by setting back to `[]`. No redeploy needed.
+
+### 8.9 No production SMS function exists; phone field missing on user
+**Finding.** [scripts/test-telnyx-sms.cjs](scripts/test-telnyx-sms.cjs) is script-only. No `sendSms` Cloud Function. `users/{uid}` has no `phoneNumber` field. The accountability-assessment sub-app has its own SMS opt-in flow targeting a different collection.
+
+**Mitigation (rewrites WS-5).**
+- Build a new `sendSms` callable Cloud Function in `functions/index.js` reading Telnyx secrets from Firebase Secret Manager (same pattern as the test script).
+- Add `users/{uid}/profile.phone` and `profile.phoneVerified` and `profile.notifications.sms` fields. Update `firestore.rules` to allow user self-write for these fields only.
+- **OTP verification required.** Send 6-digit code via `sendSms`, verify via callable `verifyPhone`. Store verification timestamp.
+- Wire SMS into `scheduledNotificationCheck` as an additional channel. **Verify what `scheduledNotificationCheck` currently sends** before extending — could already reference removed entities.
+- **Out of scope for v1:** unifying with accountability-assessment phone collection. Note in §10 follow-ups.
+
+### 8.10 Ask a Coach is fully greenfield
+**Finding.** Audit confirms zero existing message-board / threads / comments code in main app. CommunityFeed is mock data only.
+
+**Mitigation (clarifies WS-4).**
+- New top-level collection `coach_questions/{questionId}` and subcollection `coach_questions/{id}/responses/{responseId}`. Video files at `users/{askerId}/coach-questions/{id}/video.mp4` (Storage).
+- **Firestore rules additions:**
+  - Any authenticated Ascent participant can `create` a question.
+  - Only users in admin allowlist (existing `isAdmin()` rule) can write `responses`.
+  - All Ascent participants can read all questions/responses.
+- **Storage rules:** new path `coach-responses/{questionId}/` writable by admins only, readable by all authenticated users.
+- **Notification:** Cloud Function `onCoachQuestionCreated` notifies admin emails by email + (later) SMS.
+- **No moderation tools v1.** Admins can delete via Firestore console if needed. Add a moderation UI as fast-follow.
+
+### 8.11 Service worker won't auto-update users
+**Finding.** [vite.config.mjs#L27-29](vite.config.mjs) has `clientsClaim: false` and `skipWaiting: false`. Existing users see the old UI until they manually click an update prompt.
+
+**Mitigation (added to WS-1.5).**
+- The launch announcement modal **must** be backed by a hard version check (`version.json` network-only) so even users on stale SWs see the banner saying "New Ascent experience available — refresh to update."
+- For the May 11 cutover specifically: temporarily flip `skipWaiting: true` for that one build. Revert immediately after.
+
+### 8.12 Cloud Functions audit incomplete
+**Finding.** `functions/index.js` is large (4500+ lines). Confirmed: `scheduledDailyRollover`, `scheduledNotificationCheck`, `onCoachingRegistrationEvent`, `onCoachingCancellationEvent`, `geminiProxy`. Other functions touching coaching/community/conditioning may exist.
+
+**Mitigation (Action item before WS-2 starts).**
+- Run a complete audit of `functions/index.js`: list every export, what collection it reads/writes, whether it touches the three legacy domains. Document in `docs/CLOUD-FUNCTIONS-INVENTORY.md`. Estimated ~2 hours; blocking for migration design.
+
+### 8.13 RepUp & Reppy sub-apps may share collections
+**Finding.** [reppy/src/data/communityContent.js](reppy/src/data/communityContent.js) exists. RepUp uses the main app build via [scripts/deploy-repup.sh](scripts/deploy-repup.sh).
+
+**Mitigation.**
+- **Confirm with Ryan:** does RepUp deploy point at the same Firebase project as main? If yes, freezing legacy `coaching_sessions` writes affects RepUp.
+- Reppy is a separate PWA with its own Firebase config (per copilot instructions) — read its `firebaseConfig.js` to confirm. If it queries main project's data, we have a cross-app dependency to track.
+
+### 8.14 Test coverage gaps
+**Finding.** Existing E2E suites (`01-authentication` through `07-zones`) don't cover community, coaching, conditioning, or any of the new features.
+
+**Mitigation (rewrites WS-8).**
+- New suite: `e2e-tests/suites/08-revamp/` with subfiles:
+  - `nav-shell.spec.js` — six-item nav, alias redirects work for old keys.
+  - `events.spec.js` — list, register, see in own events, cancel.
+  - `conditioning-light.spec.js` — submit rep (text + voice mock), get verdict, fail path, pattern path.
+  - `ask-coach.spec.js` — post question, admin uploads video reply, asker sees it.
+  - `locker-sms.spec.js` — opt in, OTP flow, opt out.
+- Vitest unit tests for: `evaluateRep` engine (RR config, fail logic, scoring, pattern detection, template selection — at least 40 cases covering all spec edge cases).
+
+### 8.15 Cohort 262 cutover — single-day migration risk
+**Finding.** May 11 has a hard deadline; final 262 session ends that morning. No room to slip if migrations fail.
+
+**Mitigation.**
+- **Two staging passes minimum:** dev → test → "test-prod-mirror." Set up a third Firebase project (`leaderreps-prod-mirror`) populated from a fresh prod export and run the cutover dry-run there at least once before May 11.
+- **Cutover script.** A single bash script `scripts/cutover-revamp.sh` performs: prod export backup → flip `ascentRevampCohorts: ['all']` → flip `skipWaiting: true` → deploy → smoke test → done. Reversible by re-running with `--rollback`.
+
+---
+
+## 9. Top Risks Mitigation Matrix
+
+| # | Risk | Severity | Mitigation | Owned in WS |
+|---|---|---|---|---|
+| 1 | Renaming screens breaks `navigate()` calls | High | Screen alias map in router, no key deletion | WS-1 |
+| 2 | Cloud Functions break when collections change | High | No collection deletion v1; full functions inventory before WS-2 | WS-2, action item §8.12 |
+| 3 | `useDailyPlan` injects removed entities | High | Verify via grep before WS-2; route through aggregator | WS-7 |
+| 4 | Conditioning state machine migration | High | Skip migration; new `reps_light` collection only | WS-3 |
+| 5 | Cohort 262 cutover slippage | High | Dry-run on prod-mirror project; reversible cutover script | WS-7 |
+| 6 | Mobile nav can't fit 6 items | Medium | 5 in bar + Locker via header avatar (confirm with Ryan) | WS-1 |
+| 7 | No per-cohort feature flags | Medium | Add `ascentRevampCohorts` to `config/features` | WS-1 |
+| 8 | No production SMS function | Medium | Build `sendSms` + OTP `verifyPhone` callable | WS-5 |
+| 9 | Service worker doesn't auto-update | Medium | One-time `skipWaiting: true` for cutover build + version banner | WS-1.5 |
+| 10 | Admin/facilitator role split missing | Medium | Use existing `isAdmin()` for v1; defer facilitator role | WS-4 |
+| 11 | RepUp/Reppy data sharing unknown | Medium | Confirm Firebase project boundaries with Ryan | Action item §8.13 |
+| 12 | Test coverage gap on new features | Medium | New `08-revamp` E2E suite + Vitest engine tests | WS-8 |
+| 13 | Two phone-number sources (main app + accountability-assessment) | Low | Defer unification; document in §10 follow-ups | Post-launch |
+| 14 | Storage cache 50MB limit with videos | Low | Don't cache Ask-a-Coach videos in PWA | WS-4 |
+| 15 | Email templates hardcoded to `coaching_registrations` | Low | Reuse template builders for `events`; new templates for Ask a Coach | WS-2, WS-4 |
+
+---
+
+## 10. Action Items Before Coding Starts
+
+These must be done (or explicitly waived) before any WS begins. Estimated 1 day of work total.
+
+- [ ] **Confirm with Ryan:** mobile nav layout (5+avatar vs 6-item compact). [§8.2]
+- [ ] **Confirm with Ryan:** RepUp Firebase project boundary. [§8.13]
+- [ ] **Cloud Functions inventory:** complete list in `docs/CLOUD-FUNCTIONS-INVENTORY.md`. [§8.12]
+- [ ] **Daily-plan grep:** confirm `useDailyPlan` does not directly query the three legacy domains. [§8.6]
+- [ ] **Reppy firebaseConfig review:** confirm separate Firebase project. [§8.13]
+- [ ] **Spin up `leaderreps-prod-mirror`** Firebase project for cutover dry-runs. [§8.15]
+- [ ] **Lock the cohort 262 communication copy** (announcement modal text). [WS-1.5]
+
+## 11. Post-Launch Follow-Ups (Explicitly Deferred)
+
+Listed so they aren't forgotten but kept out of v1 scope:
+
+- Unify accountability-assessment phone collection with main app `users/{uid}.profile.phone`.
+- Migrate legacy `coaching_sessions` and `community_sessions` data into the new `events` collection (currently aggregated on read).
+- Delete `*.legacy.jsx.bak` files after one cohort runs successfully on revamp.
+- Build Ask a Coach moderation UI (delete, hide, flag responses).
+- Build "Video Library" view in Content surfacing tagged Ask a Coach answers.
+- Introduce true `facilitator` role distinct from `admin` in Firestore rules.
+- Conditioning analytics dashboard for Christina/Ryan (trend graphs over `reps_light`).
+- Service worker auto-update strategy (`skipWaiting: true` permanently with proper update UX).
+
