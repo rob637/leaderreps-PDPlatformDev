@@ -19,7 +19,7 @@ const MobileBottomNav = ({ currentScreen }) => {
   // Order: Dashboard, Events, Content, Conditioning, Ask a Coach
   const revampNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, screen: 'dashboard' },
-    { id: 'events', label: 'Events', icon: Calendar, screen: 'events', requiresFoundation: true },
+    { id: 'events', label: 'Events', icon: Calendar, screen: 'events' },
     { id: 'library', label: 'Content', icon: BookOpen, screen: 'library' },
     { id: 'conditioning-light', label: 'Conditioning', icon: Zap, screen: 'conditioning-light', requiresFoundation: true },
     { id: 'ask-coach', label: 'Ask a Coach', icon: MessageCircleQuestion, screen: 'ask-coach', requiresFoundation: true },
@@ -76,12 +76,13 @@ const MobileBottomNav = ({ currentScreen }) => {
     if (item.requiresFoundation && !isFoundationPhase) {
       return false;
     }
-    // Filter out the currently active screen
+    // Revamp nav: keep all 5 items (highlight active in render); legacy nav: hide active
+    if (revampEnabled) return true;
     return item.screen !== currentScreen;
   });
-  
-  // Ensure we only show 4 items max
-  if (visibleItems.length > 4) {
+
+  // Legacy nav cap: ensure we only show 4 items max. Revamp nav always shows all 5.
+  if (!revampEnabled && visibleItems.length > 4) {
     visibleItems = visibleItems.slice(0, 4);
   }
 

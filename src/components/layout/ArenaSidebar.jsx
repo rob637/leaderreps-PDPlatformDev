@@ -83,6 +83,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
     enableConditioning: isConditioningAvailable, // Conditioning only in Foundation
     enableCommunity: isAscent, // Community only available during Ascent phase
     enableCoaching: isCoachingAvailable, // Coaching only in Foundation
+    enableEvents: true, // Revamp: Events available in all phases (Prep + Foundation)
     enableAscentArena: false, // Ascent Arena not yet released — hidden in prod
     
     // FUTURE SCOPE FEATURES (DISABLED)
@@ -95,7 +96,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
     ? [
         // Ascent Revamp menu — six core components
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { id: 'events', label: 'Events', icon: Calendar, flag: 'enableCoaching' },
+        { id: 'events', label: 'Events', icon: Calendar, flag: 'enableEvents' },
         { id: 'library', label: 'Content', icon: BookOpen, flag: 'enableReadings' },
         { id: 'conditioning-light', label: 'Conditioning', icon: Zap, flag: 'enableConditioning' },
         { id: 'ask-coach', label: 'Ask a Coach', icon: MessageCircleQuestion, flag: 'enableCoaching' },

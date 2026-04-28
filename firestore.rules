@@ -97,6 +97,18 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Ascent Revamp WS-3: Conditioning Light reps (server-evaluated)
+    // Verdicts come from the trusted `evaluateRep` Cloud Function (Admin SDK).
+    // NOTE: The wildcard `users/{userId}/{subcollection}` rule above also grants
+    // owner write — Firestore unions allow rules. Lockdown of forged verdicts is
+    // enforced at the application layer (no client code calls setDoc on reps_light;
+    // only the `evaluateRep` callable writes here). If stricter enforcement is
+    // needed later, the wildcard must be narrowed to exclude `reps_light`.
+    match /users/{userId}/reps_light/{repId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow create, update, delete: if isAdmin();
+    }
+
     // User data collection (Leader Profile, Assessments, etc.)
     match /user_data/{userId}/{document=**} {
       allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());

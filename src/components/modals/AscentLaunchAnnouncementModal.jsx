@@ -24,7 +24,7 @@ const HIGHLIGHTS = [
 
 const AscentLaunchAnnouncementModal = () => {
   const { db, user } = useAppServices();
-  const { enabled: revampEnabled } = useRevampFlag();
+  const revampEnabled = useRevampFlag();
   const [seen, setSeen] = useState(null); // null = unknown
   const [dismissing, setDismissing] = useState(false);
 

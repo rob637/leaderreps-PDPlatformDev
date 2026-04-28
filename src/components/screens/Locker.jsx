@@ -27,7 +27,7 @@ const Locker = () => {
   const { isFeatureEnabled, getFeatureOrder, getWidgetHelpText } = useFeatures();
   const { currentDayData, prepRequirementsComplete, dailyPlan } = useDailyPlan();
   const { currentWeek: _devPlanCurrentWeek } = useDevPlan();
-  const { enabled: revampEnabled } = useRevampFlag();
+  const revampEnabled = useRevampFlag();
 
   // Get explore-config for widget visibility after prep completion (matches Dashboard)
   const exploreConfig = useMemo(() => {
