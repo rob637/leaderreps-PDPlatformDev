@@ -16,6 +16,7 @@ import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 import { UnifiedAnchorEditorModal, CalendarSyncModal } from './dashboard/DashboardComponents.jsx';
 import { MissedDaysModal } from './dashboard/MissedDaysModal';
 import { useFeatures } from '../../providers/FeatureProvider';
+import { useRevampFlag } from '../../hooks/useRevampFlag';
 import WidgetRenderer from '../admin/WidgetRenderer';
 import { createWidgetSDK } from '../../services/WidgetSDK';
 import { Card } from '../ui';
@@ -69,6 +70,7 @@ const Dashboard = () => {
   } = useAppServices();
 
   const { isFeatureEnabled, getFeatureOrder, getWidgetHelpText } = useFeatures();
+  const revampEnabled = useRevampFlag();
   
   // Day-based Access Control hook - useAccessControlContext() available if needed
 
@@ -773,6 +775,13 @@ const Dashboard = () => {
 
       <header className="mb-8 text-center">
         <FadeIn delay={0.1}>
+          {revampEnabled && (
+            <div className="flex justify-center mb-3">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-corporate-teal/10 text-corporate-teal text-xs font-semibold uppercase tracking-widest">
+                Ascent
+              </span>
+            </div>
+          )}
           <div className="flex items-center justify-center gap-4 mb-3">
             <LayoutDashboard className="w-7 h-7 text-corporate-teal" />
             <h1 className="text-2xl sm:text-3xl font-semibold text-corporate-navy dark:text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>

@@ -31,6 +31,22 @@ export const BREADCRUMB_MAP = {
     { label: 'Home', path: 'dashboard' },
     { label: 'Conditioning', path: null }
   ],
+
+  // ============================================
+  // ASCENT REVAMP (WS-1)
+  // ============================================
+  'events': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Events', path: null }
+  ],
+  'ask-coach': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Ask a Coach', path: null }
+  ],
+  'conditioning-light': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Conditioning', path: null }
+  ],
   
   // ============================================
   // CONTENT - Main Hub
@@ -285,6 +301,11 @@ export const BREADCRUMB_MAP = {
   'admin-hub': [
     { label: 'Home', path: 'dashboard' },
     { label: 'Admin', path: null }
+  ],
+  'ascent-2': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Admin', path: 'admin-hub' },
+    { label: 'Ascent 2', path: null }
   ],
   'config-center': [
     { label: 'Home', path: 'dashboard' },

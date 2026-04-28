@@ -16,18 +16,22 @@ import {
   AlertTriangle,
   Sparkles,
   Megaphone,
-  Mountain
+  Mountain,
+  Calendar,
+  MessageCircleQuestion
 } from 'lucide-react';
 import { CommunityIcon, LockerIcon } from '../icons';
 import PWAInstall from '../ui/PWAInstall.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { useDayBasedAccessControl } from '../../hooks/useDayBasedAccessControl';
+import { useRevampFlag } from '../../hooks/useRevampFlag';
 
 const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) => {
   const { identityStatement, habitAnchor, whyStatement, isAdmin, user, developmentPlanData } = useAppServices();
   const { prepRequirementsComplete, cohortData, currentPhase } = useDailyPlan();
   const { zoneVisibility } = useDayBasedAccessControl();
+  const revampEnabled = useRevampFlag();
   const [showAnchors, setShowAnchors] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   
@@ -87,22 +91,35 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
     enableRoiReport: false,
   };
 
-  const menuItems = [
-    // Rep Coach removed from sidebar - access via floating AI Coach button (password protected)
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'ascent-arena', label: 'Ascent Arena', icon: Mountain, flag: 'enableAscentArena', highlight: true },
-    { id: 'conditioning', label: 'Conditioning', icon: Zap, flag: 'enableConditioning' },
-    // Conditioning accessed via both Dashboard and sidebar - only during Foundation
-    { id: 'development-plan', label: 'Dev Plan', icon: Target, flag: 'enableDevPlan' },
-    
-    { type: 'section', label: 'Resources' },
-    { id: 'community', label: 'Community', icon: CommunityIcon, flag: 'enableCommunity' },
-    { id: 'library', label: 'Content', icon: BookOpen, flag: 'enableReadings' }, // Using enableReadings as proxy for Content
-    { id: 'coaching-hub', label: 'Coaching', icon: Megaphone, flag: 'enableCoaching' },
-    
-    { type: 'section', label: 'Personal' },
-    { id: 'locker', label: 'Your Locker', icon: LockerIcon },
-  ];
+  const menuItems = revampEnabled
+    ? [
+        // Ascent Revamp menu — six core components
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'events', label: 'Events', icon: Calendar, flag: 'enableCoaching' },
+        { id: 'library', label: 'Content', icon: BookOpen, flag: 'enableReadings' },
+        { id: 'conditioning-light', label: 'Conditioning', icon: Zap, flag: 'enableConditioning' },
+        { id: 'ask-coach', label: 'Ask a Coach', icon: MessageCircleQuestion, flag: 'enableCoaching' },
+        { type: 'section', label: 'Personal' },
+        { id: 'locker', label: 'Your Locker', icon: LockerIcon },
+      ]
+    : [
+        // Legacy menu
+        // Rep Coach removed from sidebar - access via floating AI Coach button (password protected)
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'ascent-arena', label: 'Ascent 1', icon: Mountain, flag: 'enableAscentArena', highlight: true },
+        { id: 'ascent-2', label: 'Ascent 2', icon: Mountain, adminOnly: true },
+        { id: 'conditioning', label: 'Conditioning', icon: Zap, flag: 'enableConditioning' },
+        // Conditioning accessed via both Dashboard and sidebar - only during Foundation
+        { id: 'development-plan', label: 'Dev Plan', icon: Target, flag: 'enableDevPlan' },
+
+        { type: 'section', label: 'Resources' },
+        { id: 'community', label: 'Community', icon: CommunityIcon, flag: 'enableCommunity' },
+        { id: 'library', label: 'Content', icon: BookOpen, flag: 'enableReadings' }, // Using enableReadings as proxy for Content
+        { id: 'coaching-hub', label: 'Coaching', icon: Megaphone, flag: 'enableCoaching' },
+
+        { type: 'section', label: 'Personal' },
+        { id: 'locker', label: 'Your Locker', icon: LockerIcon },
+      ];
 
   // Filter Menu Items
   const filteredMenuItems = menuItems.filter(item => {
@@ -117,7 +134,12 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
 
     // 2. EXCLUDE: Filter out items explicitly marked for Dev Mode
     if (item.devModeOnly) {
-      return false; 
+      return false;
+    }
+
+    // EXCLUDE: Filter out admin-only items for non-admins
+    if (item.adminOnly && !isAdmin) {
+      return false;
     }
 
     // 3. COHORT CHECK: Filter out items that require a cohort if user doesn't have one
@@ -265,7 +287,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
 
           {/* Admin Link - Only visible to admins */}
           {isAdmin && (
-            <li className="mt-8 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <li className="mt-8 pt-4 border-t border-slate-200 dark:border-slate-700 space-y-1">
               <button
                 onClick={() => navigate('admin-hub')}
                 className={`

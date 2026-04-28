@@ -1,6 +1,8 @@
 // src/routing/ScreenRouter.jsx
 
 import React, { lazy, Suspense } from 'react';
+import { resolveScreenKey } from './screenAliases';
+import { useRevampFlag } from '../hooks/useRevampFlag';
 
 const ScreenMap = {
   // AI Coach Screens
@@ -15,6 +17,10 @@ const ScreenMap = {
   dashboard: lazy(() => import('../components/screens/Dashboard.jsx')),
   'ascent-arena': lazy(() => import('../components/screens/AscentArena.jsx')),
   'conditioning': lazy(() => import('../components/screens/Conditioning.jsx')),
+  // Ascent Revamp screens (WS-1)
+  'events': lazy(() => import('../components/screens/Events.jsx')),
+  'ask-coach': lazy(() => import('../components/screens/AskCoach.jsx')),
+  'conditioning-light': lazy(() => import('../components/screens/ConditioningLight.jsx')),
   'development-plan': lazy(() =>
     import('../components/screens/DevelopmentPlan.jsx')
   ),
@@ -139,6 +145,9 @@ const ScreenMap = {
   'admin-hub': lazy(() =>
     import('../components/admin/AdminHub.jsx')
   ),
+  'ascent-2': lazy(() =>
+    import('../components/admin/Ascent2Center.jsx')
+  ),
   'config-center': lazy(() =>
     import('../components/admin/AppConfigCenter.jsx')
   ),
@@ -241,13 +250,18 @@ const ScreenLoadingSkeleton = () => (
 );
 
 const ScreenRouter = ({ currentScreen, navParams, navigate, isDeveloperMode }) => {
-  console.log('🗺️ [ScreenRouter] Routing to screen:', { 
-    currentScreen, 
+  const revampEnabled = useRevampFlag();
+  const effectiveScreen = resolveScreenKey(currentScreen, revampEnabled);
+
+  console.log('🗺️ [ScreenRouter] Routing to screen:', {
+    currentScreen,
+    effectiveScreen,
+    revampEnabled,
     isDeveloperMode,
-    hasComponent: !!ScreenMap[currentScreen]
+    hasComponent: !!ScreenMap[effectiveScreen]
   });
-  
-  const Component = ScreenMap[currentScreen] || NotFoundScreen;
+
+  const Component = ScreenMap[effectiveScreen] || NotFoundScreen;
 
   return (
     <Suspense fallback={<ScreenLoadingSkeleton />}>
