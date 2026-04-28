@@ -408,13 +408,15 @@ Audit run April 28 against the live `Revamp` branch. Each finding includes the c
 
 These must be done (or explicitly waived) before any WS begins. Estimated 1 day of work total.
 
-- [ ] **Confirm with Ryan:** mobile nav layout (5+avatar vs 6-item compact). [§8.2]
-- [ ] **Confirm with Ryan:** RepUp Firebase project boundary. [§8.13]
-- [ ] **Cloud Functions inventory:** complete list in `docs/CLOUD-FUNCTIONS-INVENTORY.md`. [§8.12]
-- [ ] **Daily-plan grep:** confirm `useDailyPlan` does not directly query the three legacy domains. [§8.6]
-- [ ] **Reppy firebaseConfig review:** confirm separate Firebase project. [§8.13]
-- [ ] **Spin up `leaderreps-prod-mirror`** Firebase project for cutover dry-runs. [§8.15]
-- [ ] **Lock the cohort 262 communication copy** (announcement modal text). [WS-1.5]
+- [ ] **Confirm with Ryan:** mobile nav layout (5+avatar vs 6-item compact). [§8.2] — *Code currently ships 5-bar layout; awaiting Ryan sign-off before launch.*
+- [x] ~~**Confirm with Ryan:** RepUp Firebase project boundary. [§8.13]~~ — **Resolved 2026-04-28.** Reppy uses `leaderreps-pd-platform` (shared) but isolates writes under `reppy_*` prefixed collections (`reppy_users`, `reppy_invitations`, `reppy_config`) with dedicated rules in [firestore.rules](../firestore.rules) lines 107–120. **No collision with revamp.**
+- [x] ~~**Cloud Functions inventory:** complete list in `docs/CLOUD-FUNCTIONS-INVENTORY.md`. [§8.12]~~ — **Updated 2026-04-28** with post-WS-5 truth: 109 exports total, 7 touched by revamp, 6 adjacent (must not regress), 96 out of scope.
+- [x] ~~**Daily-plan grep:** confirm `useDailyPlan` does not directly query the three legacy domains. [§8.6]~~ — **Verified 2026-04-28.** [src/hooks/useDailyPlan.js](../src/hooks/useDailyPlan.js) imports `collection`/`getDocs` only for `daily_plan_v1`. References to `coaching` / `community` are static onboarding copy strings (line 171–172), not Firestore queries.
+- [x] ~~**Reppy firebaseConfig review:** confirm separate Firebase project. [§8.13]~~ — **Verified 2026-04-28.** Same project as main app; safe via collection prefixing (see §8.13 entry above).
+- [ ] **Spin up `leaderreps-prod-mirror`** Firebase project for cutover dry-runs. [§8.15] — *Infra task; pending.*
+- [ ] **Lock the cohort 262 communication copy** (announcement modal text). [WS-1.5] — *Awaiting Ryan/Christina sign-off on modal copy.*
+- [x] ~~**CI guardrail:** screen-key registry check.~~ — **Added 2026-04-28.** `npm run check:screens` runs [scripts/check-screen-keys.cjs](../scripts/check-screen-keys.cjs); also wired into `precommit`. Verifies every value in `REVAMP_SCREEN_ALIASES` resolves to a registered key in `ScreenRouter.jsx`.
+- [x] ~~**Vitest engine suite** for Conditioning Light.~~ — **Added 2026-04-28.** [src/test/conditioning-engine.test.js](../src/test/conditioning-engine.test.js) — 38 cases covering validity, fail logic per RR, pass thresholds, strong-rep eligibility, Quick Read labels, pattern detection (short-window, escalation, RED-Request, reset, suppression), and pattern-skip-on-fail.
 
 ## 11. Post-Launch Follow-Ups (Explicitly Deferred)
 
