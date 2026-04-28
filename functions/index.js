@@ -1927,6 +1927,127 @@ exports.sendMilestoneCompletionEmail = onCall(async (request) => {
 });
 
 /**
+ * ============================================================
+ * CONDITIONING LIGHT — evaluateRep callable (WS-3)
+ * ============================================================
+ * Universal evaluation engine for the simplified Conditioning Tool.
+ * See REVAMP-PLAN.md §6 for the full v1 spec.
+ *
+ * Input:  { rrType: 'DRF'|'RED'|'FUW'|'SCE', transcript: string }
+ * Output: { result, quickRead, observation, question, ... }
+ *
+ * Side effects:
+ *   - Persists rep to /users/{uid}/reps_light/{repId}
+ *   - Reads up to 8 most recent reps for pattern detection
+ *
+ * Strict execution order enforced inside the engine module:
+ *   1. Validate -> 2. Score (AI) -> 3. Fail logic -> 4. Result
+ *   5. Pattern detection -> 6. Output generation
+ */
+const conditioningEngine = require('./conditioning/engine');
+const conditioningScorer = require('./conditioning/scorer');
+const { isValidRrType } = require('./conditioning/rrConfig');
+
+const RECENT_REPS_LIMIT = 8;
+const RECENT_TEMPLATES_LIMIT = 6;
+
+exports.evaluateRep = onCall(
+  { cors: true },
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) {
+      throw new HttpsError('unauthenticated', 'Sign in required.');
+    }
+
+    const { rrType, transcript } = request.data || {};
+    if (!isValidRrType(rrType)) {
+      throw new HttpsError('invalid-argument', `Unknown rrType: ${rrType}`);
+    }
+    if (typeof transcript !== 'string' || transcript.trim().length < 5) {
+      throw new HttpsError(
+        'invalid-argument',
+        'Transcript missing or too short.'
+      );
+    }
+
+    const db = admin.firestore();
+
+    // Pull recent reps for pattern detection + template freshness
+    const recentSnap = await db
+      .collection('users')
+      .doc(uid)
+      .collection('reps_light')
+      .orderBy('createdAt', 'desc')
+      .limit(RECENT_REPS_LIMIT)
+      .get();
+    const recentReps = recentSnap.docs.map((d) => d.data());
+    const recentlyUsedTemplates = recentReps
+      .slice(0, RECENT_TEMPLATES_LIMIT)
+      .flatMap((r) => [r.observation, r.question])
+      .filter(Boolean);
+
+    // Score the transcript via Gemini
+    const apiKey = process.env.GEMINI_API_KEY;
+    let scorerResult;
+    try {
+      scorerResult = await conditioningScorer.scoreTranscript({
+        rrType,
+        transcript,
+        apiKey,
+      });
+    } catch (err) {
+      logger.error('evaluateRep: scorer failed', err);
+      throw new HttpsError('internal', 'Scoring failed. Try again.');
+    }
+
+    // Run the engine
+    const evaluation = conditioningEngine.evaluateRep({
+      rrType,
+      transcript,
+      scores: scorerResult.scores,
+      lowConfidence: scorerResult.lowConfidence,
+      recentReps,
+      recentlyUsedTemplates,
+    });
+
+    // Persist
+    const repDoc = {
+      rrType,
+      transcript,
+      conditionScores: evaluation.conditionScores,
+      totalScore: evaluation.totalScore,
+      result: evaluation.result,
+      validity: evaluation.validity,
+      case: evaluation.case,
+      observation: evaluation.observation,
+      question: evaluation.question,
+      patternKey: evaluation.patternKey || null,
+      coachingTarget: evaluation.coachingTarget || null,
+      failReason: evaluation.failReason || null,
+      evidenceNotes: scorerResult.evidenceNotes || {},
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+    const ref = await db
+      .collection('users')
+      .doc(uid)
+      .collection('reps_light')
+      .add(repDoc);
+
+    // Return UI-facing payload (omit internal fields user shouldn't see)
+    return {
+      repId: ref.id,
+      result: evaluation.result,
+      validity: evaluation.validity,
+      case: evaluation.case,
+      quickRead: evaluation.quickRead,
+      observation: evaluation.observation,
+      question: evaluation.question,
+      patternTriggered: !!evaluation.patternKey,
+    };
+  }
+);
+
+/**
  * GEMINI AI PROXY
  * Secure endpoint for making Gemini API calls from the frontend
  * Keeps the API key secure on the server side
@@ -23358,5 +23479,138 @@ exports.seedDailyRepPrompts = onCall(
       await batch.commit();
     }
     return { ok: true, written, total: dailyRep.PROMPTS.length };
+  }
+);
+
+/**
+ * ============================================================
+ * ASCENT REVAMP WS-5 — Phone verification + SMS callable
+ * ============================================================
+ * Two callables:
+ *   - sendPhoneVerification({ phone })  → generates 6-digit code,
+ *     stores hash + expiry in users/{uid}/profile.phoneVerification,
+ *     SMS-delivers the code via Telnyx.
+ *   - verifyPhoneCode({ phone, code })  → if hash matches and not expired,
+ *     sets profile.phone + profile.phoneVerified = true, clears the code.
+ *
+ * Notes:
+ *   - We never store the plaintext code; only sha256 + expiresAt.
+ *   - 6-digit numeric code, 10-minute TTL, max 5 verify attempts.
+ *   - Phone normalized to E.164-ish (must start with `+`).
+ */
+const crypto = require("crypto");
+
+const _normalizePhone = (raw) => {
+  if (!raw || typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!/^\+\d{8,15}$/.test(trimmed)) return null;
+  return trimmed;
+};
+
+const _hashCode = (code, salt) =>
+  crypto.createHash('sha256').update(`${salt}:${code}`).digest('hex');
+
+exports.sendPhoneVerification = onCall(
+  {
+    region: "us-central1",
+    cors: true,
+    secrets: ["TELNYX_API_KEY", "TELNYX_MESSAGING_PROFILE_ID", "TELNYX_PHONE_NUMBER"],
+  },
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', 'Sign in required.');
+    const phone = _normalizePhone(request.data?.phone);
+    if (!phone) {
+      throw new HttpsError(
+        'invalid-argument',
+        'Phone must be in E.164 format (e.g. +14155551212).'
+      );
+    }
+
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const salt = crypto.randomBytes(16).toString('hex');
+    const codeHash = _hashCode(code, salt);
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 min
+
+    const userRef = admin.firestore().collection('users').doc(uid);
+    await userRef.set(
+      {
+        profile: {
+          phoneVerification: {
+            phone,
+            codeHash,
+            salt,
+            expiresAt,
+            attempts: 0,
+            sentAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+        },
+      },
+      { merge: true }
+    );
+
+    try {
+      await sendSmsNotification(
+        phone,
+        `Your LeaderReps verification code is ${code}. It expires in 10 minutes.`
+      );
+    } catch (err) {
+      logger.error('sendPhoneVerification: SMS send failed', err);
+      throw new HttpsError('internal', 'Could not send verification SMS.');
+    }
+    return { ok: true };
+  }
+);
+
+exports.verifyPhoneCode = onCall(
+  { region: "us-central1", cors: true },
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', 'Sign in required.');
+    const phone = _normalizePhone(request.data?.phone);
+    const code = (request.data?.code || '').toString().trim();
+    if (!phone || !/^\d{6}$/.test(code)) {
+      throw new HttpsError('invalid-argument', 'Phone or code missing/invalid.');
+    }
+
+    const userRef = admin.firestore().collection('users').doc(uid);
+    const snap = await userRef.get();
+    const v = snap.data()?.profile?.phoneVerification;
+    if (!v || v.phone !== phone) {
+      throw new HttpsError('failed-precondition', 'No verification in progress for this phone.');
+    }
+    if ((v.attempts || 0) >= 5) {
+      throw new HttpsError('resource-exhausted', 'Too many attempts. Request a new code.');
+    }
+    if (Date.now() > (v.expiresAt || 0)) {
+      throw new HttpsError('deadline-exceeded', 'Code expired. Request a new one.');
+    }
+
+    const expected = _hashCode(code, v.salt);
+    if (expected !== v.codeHash) {
+      await userRef.set(
+        {
+          profile: {
+            phoneVerification: { attempts: (v.attempts || 0) + 1 },
+          },
+        },
+        { merge: true }
+      );
+      throw new HttpsError('invalid-argument', 'Code did not match.');
+    }
+
+    // Success — set phone, clear pending verification.
+    await userRef.set(
+      {
+        profile: {
+          phone,
+          phoneVerified: true,
+          phoneVerifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+          phoneVerification: admin.firestore.FieldValue.delete(),
+        },
+      },
+      { merge: true }
+    );
+    return { ok: true };
   }
 );

@@ -10,8 +10,10 @@ import { Settings, Clock, User, Bell, AlertTriangle } from 'lucide-react';
 import MyJourneyWidget from '../widgets/MyJourneyWidget';
 import MySettingsWidget from '../widgets/MySettingsWidget';
 import ConditioningHistoryWidget from '../widgets/ConditioningHistoryWidget';
+import AscentSmsPrefsWidget from '../widgets/AscentSmsPrefsWidget';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { useDevPlan } from '../../hooks/useDevPlan';
+import { useRevampFlag } from '../../hooks/useRevampFlag';
 
 const LOCKER_FEATURES = [
   'locker-wins-history',
@@ -25,6 +27,7 @@ const Locker = () => {
   const { isFeatureEnabled, getFeatureOrder, getWidgetHelpText } = useFeatures();
   const { currentDayData, prepRequirementsComplete, dailyPlan } = useDailyPlan();
   const { currentWeek: _devPlanCurrentWeek } = useDevPlan();
+  const { enabled: revampEnabled } = useRevampFlag();
 
   // Get explore-config for widget visibility after prep completion (matches Dashboard)
   const exploreConfig = useMemo(() => {
@@ -202,7 +205,13 @@ const Locker = () => {
       <div className="mb-6">
         <MySettingsWidget />
       </div>
-      
+
+      {revampEnabled && (
+        <div className="mb-6">
+          <AscentSmsPrefsWidget />
+        </div>
+      )}
+
       {/* My Journey Widget - shows cohort and journey info, hide prep progress (shown on Dashboard) */}
       <div className="mb-6">
         <MyJourneyWidget showPrepProgress={false} />

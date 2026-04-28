@@ -16,6 +16,7 @@ import SkipLinks from '../accessibility/SkipLinks';
 import MobilePWABanner from '../ui/MobilePWABanner.jsx';
 import RepFloatingButton from '../rep/RepFloatingButton.jsx';
 import BugReportModal from '../modals/BugReportModal.jsx';
+import AscentLaunchAnnouncementModal from '../modals/AscentLaunchAnnouncementModal.jsx';
 
 const AppContent = ({
   currentScreen,
@@ -251,6 +252,9 @@ const AppContent = ({
               onClose={() => setIsBugReportModalOpen(false)}
               currentScreen={currentScreen}
             />
+
+            {/* Ascent Revamp launch announcement (one-time per user) */}
+            <AscentLaunchAnnouncementModal />
           </main>
         </div>
       </div>

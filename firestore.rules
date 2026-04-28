@@ -376,6 +376,26 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
     }
 
+    // Ascent Revamp WS-4: Ask a Coach
+    // Users create questions and read their own; admins/coaches read all
+    // and write the response payload (text + optional video URL).
+    match /coach_questions/{document} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.userId
+        && request.resource.data.status == 'open'
+        && request.resource.data.responseText == null
+        && request.resource.data.responseVideoUrl == null;
+      // Users may cancel their own open question; admins may answer/update.
+      allow update: if isAdmin()
+        || (request.auth != null
+            && request.auth.uid == resource.data.userId
+            && resource.data.status == 'open'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'cancelledAt'])
+            && request.resource.data.status == 'cancelled');
+      allow delete: if isAdmin();
+    }
+
     // System Alerts & Logs
     match /system_alerts/{document=**} {
       allow read: if isAdmin();
