@@ -5335,8 +5335,19 @@ exports.scheduledNotificationCheck = onSchedule(
     // 4. Send Notifications with Smart Escalation
     for (const item of notificationsToSend) {
       const { user, userId, rule, localDateId, strategy } = item;
-      const settings = user.notificationSettings;
-      
+      const settings = user.notificationSettings || {};
+
+      // WS-5 (Ascent Revamp): Locker SMS toggle lives on profile, not notificationSettings.
+      // When the user has opted in via the Locker (`profile.notifications.sms`) and verified
+      // their phone (`profile.phoneVerified` + `profile.phone`), treat SMS as enabled and
+      // fall back to the profile phone number if no legacy notificationSettings.phoneNumber.
+      const profile = user.profile || {};
+      const ws5SmsOptIn = profile?.notifications?.sms === true
+        && profile?.phoneVerified === true
+        && !!profile?.phone;
+      const resolvedPhone = settings.phoneNumber || (ws5SmsOptIn ? profile.phone : null);
+      const smsChannelEnabled = ws5SmsOptIn || settings.channels?.sms !== false;
+
       // Handle test users - redirect notifications to override email
       const isTestUser = user.isTestUser === true;
       const overrideEmail = user.testNotificationRecipient;
@@ -5363,7 +5374,7 @@ exports.scheduledNotificationCheck = onSchedule(
           // Level 2 (Day 3+): Push + Email + SMS
           sendPush = settings.channels?.push !== false;
           sendEmail = missedDays >= 1 && settings.channels?.email !== false;
-          sendSms = missedDays >= 2 && settings.channels?.sms !== false && !!settings.phoneNumber;
+          sendSms = missedDays >= 2 && smsChannelEnabled && !!resolvedPhone;
           logger.info(`Smart escalation for ${user.email}: missedDays=${missedDays}, push=${sendPush}, email=${sendEmail}, sms=${sendSms}`);
           break;
 
@@ -5378,13 +5389,13 @@ exports.scheduledNotificationCheck = onSchedule(
         case 'full_accountability':
           sendPush = settings.channels?.push !== false;
           sendEmail = settings.channels?.email !== false;
-          sendSms = settings.channels?.sms !== false && !!settings.phoneNumber;
+          sendSms = smsChannelEnabled && !!resolvedPhone;
           break;
 
         default:
           // Fallback to old behavior using channel settings directly
           sendEmail = settings.channels?.email === true;
-          sendSms = settings.channels?.sms === true;
+          sendSms = (settings.channels?.sms === true || ws5SmsOptIn) && !!resolvedPhone;
       }
 
       // Send Push Notification (if supported and enabled)
@@ -5427,8 +5438,9 @@ exports.scheduledNotificationCheck = onSchedule(
 
       // SMS via Telnyx — Skip for test users (don't send test SMS)
       // SMS includes the app link at the end and STOP opt-out language.
-      if (sendSms && settings.phoneNumber && !isTestUser) {
-        await sendSmsNotification(settings.phoneNumber, rule.message, linkOptions);
+      // Phone source: legacy notificationSettings.phoneNumber OR WS-5 verified profile.phone.
+      if (sendSms && resolvedPhone && !isTestUser) {
+        await sendSmsNotification(resolvedPhone, rule.message, linkOptions);
       } else if (sendSms && isTestUser) {
         logger.info(`🧪 SMS skipped for test user ${user.email}`);
       }
@@ -9342,6 +9354,77 @@ exports.onBugReportCreated = require("firebase-functions/v2/firestore").onDocume
     logger.error("Failed to send bug report email:", err);
   }
 });
+
+// ============================================================
+// ASCENT REVAMP WS-4: Ask a Coach — notify responders on new question
+// ============================================================
+// When a leader submits a question to /coach_questions, email the configured
+// responders (Christina + Ryan by default; overridable via metadata/config
+// `askCoachResponders` array) so they can record a video reply.
+// ============================================================
+exports.onCoachQuestionCreated = require("firebase-functions/v2/firestore").onDocumentCreated(
+  "coach_questions/{questionId}",
+  async (event) => {
+    const snapshot = event.data;
+    if (!snapshot) {
+      logger.warn("onCoachQuestionCreated: no snapshot");
+      return;
+    }
+    const q = snapshot.data();
+    const questionId = event.params.questionId;
+
+    // Resolve responders: hardcoded + dynamic allowlist.
+    const HARDCODED_RESPONDERS = [
+      "christina@leaderreps.com",
+      "ryan@leaderreps.com",
+    ];
+    let responders = [...HARDCODED_RESPONDERS];
+    try {
+      const cfg = await db.collection("metadata").doc("config").get();
+      if (cfg.exists) {
+        const list = cfg.data()?.askCoachResponders;
+        if (Array.isArray(list)) {
+          for (const e of list) {
+            if (typeof e === "string" && e.includes("@")) {
+              responders.push(e.toLowerCase());
+            }
+          }
+        }
+      }
+    } catch (err) {
+      logger.warn("onCoachQuestionCreated: could not load askCoachResponders", err.message);
+    }
+    // Dedupe
+    responders = Array.from(new Set(responders.map((e) => e.toLowerCase())));
+
+    const RR_LABELS = {
+      DRF: "Reinforcing Feedback",
+      RED: "Redirecting Feedback",
+      FUW: "Follow-Up on Work",
+      SCE: "Set Clear Expectations",
+    };
+    const rrLabel = q.rrTag && RR_LABELS[q.rrTag] ? RR_LABELS[q.rrTag] : null;
+    const subject = `Ask a Coach: ${q.title || "New question"}`;
+    const fromLine = `From: ${q.userName || q.userEmail || q.userId || "Unknown"}${q.userEmail ? ` <${q.userEmail}>` : ""}`;
+    const rrLine = rrLabel ? `Related Rep: ${rrLabel}` : null;
+    const titleLine = `Title: ${q.title || "(no title)"}`;
+    const questionBlock = `Question:\n${q.question || ""}`;
+    const contextBlock = q.context ? `\n\nContext:\n${q.context}` : "";
+    const idLine = `\n\nQuestion ID: ${questionId}`;
+    const body = [fromLine, rrLine, titleLine, "", questionBlock + contextBlock + idLine]
+      .filter(Boolean)
+      .join("\n");
+
+    for (const email of responders) {
+      try {
+        await sendEmailNotification(email, subject, body);
+        logger.info(`Ask-a-Coach: notified ${email} for question ${questionId}`);
+      } catch (err) {
+        logger.error(`Ask-a-Coach: failed to notify ${email}`, err.message);
+      }
+    }
+  }
+);
 
 // ============================================================
 // SCHEDULED FIRESTORE BACKUP

@@ -23,36 +23,38 @@ import {
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
 // ---------------------------------------------------------------------------
-// RR catalog — keep in sync with functions/conditioning/rrConfig.js
+// RR catalog — names + condition keys MUST match functions/conditioning/rrConfig.js
+// exactly (case-sensitive). Quick Read pills render whatever the engine returns,
+// so the keys here are only used for the input-step prompt copy.
 // ---------------------------------------------------------------------------
 const RR_TYPES = [
   {
     key: 'DRF',
-    name: 'Direct Request with Follow-Through',
-    blurb: 'Make a clear, specific ask and confirm next steps.',
+    name: 'Reinforcing Feedback',
+    blurb: 'Catch a specific behavior, name the impact, reinforce it so it repeats.',
     promptHint:
-      'Describe the request you made. Who, what, by when — and how you confirmed they got it.',
+      'Describe the feedback you gave: the specific behavior, the impact it had, and how you reinforced it.',
   },
   {
     key: 'RED',
-    name: 'Request with Empathy and Direction',
-    blurb: 'Lead with empathy, then make a clear, specific request.',
+    name: 'Redirecting Feedback',
+    blurb: 'Name the behavior, the impact, and make a clear request — directly.',
     promptHint:
-      'Describe what you said: how you acknowledged the person, what you asked for, what direction you set.',
+      'Describe the redirecting feedback: the behavior, the impact, what you asked them to do differently, and how you delivered it.',
   },
   {
     key: 'FUW',
-    name: 'Follow-Up Without Nagging',
-    blurb: 'Re-engage with structure, no pressure or repetition.',
+    name: 'Follow-Up on Work',
+    blurb: 'Anchor follow-up to specific work, surface progress, hold ownership.',
     promptHint:
-      'Describe the follow-up: how you referenced the original ask and what new angle you brought.',
+      'Describe the follow-up: which piece of work it was anchored to, how you checked progress, and who owned next steps.',
   },
   {
     key: 'SCE',
-    name: 'Simplify a Complex Explanation',
-    blurb: 'Strip jargon, lead with the takeaway, make it land.',
+    name: 'Set Clear Expectations',
+    blurb: 'Name the expectation, define what success looks like, confirm ownership.',
     promptHint:
-      'What were you explaining? Write it the way you would actually say it to a non-expert.',
+      'Describe how you set the expectation: what you asked for, how you defined success, and who owns delivering it.',
   },
 ];
 

@@ -25,6 +25,23 @@ service cloud.firestore {
       );
     }
 
+    // Ascent Revamp WS-4: Ask a Coach responders.
+    // Allowlisted via hardcoded list (Christina + Ryan) plus dynamic
+    // `metadata/config.askCoachResponders` array. Email comparison is
+    // case-insensitive. Admins are always responders.
+    function isAskCoachResponder() {
+      let isEmailAuth = request.auth != null && request.auth.token != null && 'email' in request.auth.token && request.auth.token.email != null;
+      let userEmail = isEmailAuth ? request.auth.token.email.lower() : '';
+      let hardcodedResponders = ['christina@leaderreps.com', 'ryan@leaderreps.com'];
+      return isAdmin() || (isEmailAuth && (
+        userEmail in hardcodedResponders ||
+        (exists(/databases/$(database)/documents/metadata/config) &&
+         'askCoachResponders' in get(/databases/$(database)/documents/metadata/config).data &&
+         get(/databases/$(database)/documents/metadata/config).data.askCoachResponders is list &&
+         get(/databases/$(database)/documents/metadata/config).data.askCoachResponders.hasAny([userEmail]))
+      ));
+    }
+
     // Global metadata
     match /global/{document} {
       allow read: if request.auth != null;
@@ -377,17 +394,17 @@ service cloud.firestore {
     }
 
     // Ascent Revamp WS-4: Ask a Coach
-    // Users create questions and read their own; admins/coaches read all
+    // Users create + read their own; only Christina/Ryan (or admins) read all
     // and write the response payload (text + optional video URL).
     match /coach_questions/{document} {
-      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAskCoachResponder());
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.userId
         && request.resource.data.status == 'open'
         && request.resource.data.responseText == null
         && request.resource.data.responseVideoUrl == null;
-      // Users may cancel their own open question; admins may answer/update.
-      allow update: if isAdmin()
+      // Users may cancel their own open question; responders may answer/update.
+      allow update: if isAskCoachResponder()
         || (request.auth != null
             && request.auth.uid == resource.data.userId
             && resource.data.status == 'open'

@@ -1,13 +1,14 @@
 // src/services/coachQuestionsService.js
 //
 // Ascent Revamp WS-4 — Ask a Coach service.
-// Lets a leader submit a question (optional video URL) and surfaces the
-// coach's response (text + optional video). One collection, no migration.
+// Lets a leader submit a question (with title + optional RR tag) and surfaces
+// the coach's video reply. One collection, no migration.
 //
 // Doc shape `/coach_questions/{id}`:
 //   {
 //     id, userId, userName, userEmail,
-//     question (text, required), context (text, optional),
+//     title (text, required), question (text, required), context (text, optional),
+//     rrTag: 'DRF' | 'RED' | 'FUW' | 'SCE' | null,
 //     videoUrl (optional, user attachment),
 //     status: 'open' | 'answered' | 'cancelled',
 //     responseText, responseVideoUrl, respondedBy, respondedAt,
@@ -27,6 +28,7 @@ import {
 } from 'firebase/firestore';
 
 const COLLECTION = 'coach_questions';
+const VALID_RR_TAGS = ['DRF', 'RED', 'FUW', 'SCE'];
 
 export const subscribeUserQuestions = (db, userId, callback) => {
   if (!db || !userId) throw new Error('db + userId required');
@@ -50,16 +52,27 @@ export const subscribeUserQuestions = (db, userId, callback) => {
 
 export const submitQuestion = async (db, user, payload) => {
   if (!db || !user?.uid) throw new Error('db + user required');
+  if (!payload?.title || payload.title.trim().length < 3) {
+    throw new Error('Please add a short title (at least 3 characters).');
+  }
+  if (payload.title.trim().length > 80) {
+    throw new Error('Title is too long (max 80 characters).');
+  }
   if (!payload?.question || payload.question.trim().length < 10) {
     throw new Error('Please write a longer question (at least 10 characters).');
   }
+  const rrTag = payload?.rrTag && VALID_RR_TAGS.includes(payload.rrTag)
+    ? payload.rrTag
+    : null;
 
   const docRef = await addDoc(collection(db, COLLECTION), {
     userId: user.uid,
     userName: user.displayName || '',
     userEmail: user.email || '',
+    title: payload.title.trim(),
     question: payload.question.trim(),
     context: (payload.context || '').trim() || null,
+    rrTag,
     videoUrl: payload.videoUrl || null,
     status: 'open',
     responseText: null,

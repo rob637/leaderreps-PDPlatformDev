@@ -1,13 +1,15 @@
 // src/components/screens/AskCoach.jsx
 //
 // Ascent Revamp WS-4 — Ask a Coach.
-// Submit a question, see the coach's text + (optional) video reply.
-// One open question at a time encouraged but not enforced.
+// Submit a question (title + question + optional RR tag), see the coach's
+// short video reply. One open question at a time encouraged but not enforced.
+//
+// Per spec: response area is video-only — we do not render a text reply.
 
 import React, { useEffect, useState } from 'react';
 import {
   MessageCircleQuestion, Send, Loader2, CheckCircle2,
-  Clock, Video, X, AlertCircle,
+  Clock, Video, X, AlertCircle, Tag,
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import {
@@ -15,6 +17,18 @@ import {
   submitQuestion,
   cancelQuestion,
 } from '../../services/coachQuestionsService';
+
+const RR_TAG_OPTIONS = [
+  { value: '',    label: 'None / not sure' },
+  { value: 'DRF', label: 'Reinforcing Feedback' },
+  { value: 'RED', label: 'Redirecting Feedback' },
+  { value: 'FUW', label: 'Follow-Up on Work' },
+  { value: 'SCE', label: 'Set Clear Expectations' },
+];
+const RR_TAG_LABEL = RR_TAG_OPTIONS.reduce((acc, o) => {
+  if (o.value) acc[o.value] = o.label;
+  return acc;
+}, {});
 
 const formatTimestamp = (ts) => {
   if (!ts) return '';
@@ -47,8 +61,10 @@ const AskCoach = () => {
 
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [titleText, setTitleText] = useState('');
   const [questionText, setQuestionText] = useState('');
   const [contextText, setContextText] = useState('');
+  const [rrTag, setRrTag] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -71,11 +87,15 @@ const AskCoach = () => {
     setSubmitting(true);
     try {
       await submitQuestion(db, user, {
+        title: titleText,
         question: questionText,
         context: contextText,
+        rrTag: rrTag || null,
       });
+      setTitleText('');
       setQuestionText('');
       setContextText('');
+      setRrTag('');
       setSuccess(true);
     } catch (err) {
       setError(err?.message || 'Could not submit your question. Try again.');
@@ -109,8 +129,8 @@ const AskCoach = () => {
           </h1>
         </div>
         <p className="text-slate-600 dark:text-slate-400">
-          Stuck on something? Send a question. A coach will reply with text
-          and (when helpful) a short video.
+          Stuck on something? Send a question. A coach will reply with a
+          short video.
         </p>
       </header>
 
@@ -119,6 +139,23 @@ const AskCoach = () => {
         onSubmit={onSubmit}
         className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 mb-8"
       >
+        <label
+          htmlFor="ask-title"
+          className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1"
+        >
+          Title
+        </label>
+        <input
+          id="ask-title"
+          type="text"
+          maxLength={80}
+          value={titleText}
+          onChange={(e) => setTitleText(e.target.value)}
+          disabled={submitting}
+          placeholder="A short summary (e.g. “Tough RED with my peer”)"
+          className="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-corporate-teal focus:outline-none focus:ring-1 focus:ring-corporate-teal mb-3"
+        />
+
         <label
           htmlFor="ask-question"
           className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1"
@@ -151,6 +188,24 @@ const AskCoach = () => {
           className="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-corporate-teal focus:outline-none focus:ring-1 focus:ring-corporate-teal mb-3"
         />
 
+        <label
+          htmlFor="ask-rrtag"
+          className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1"
+        >
+          Related Rep <span className="font-normal text-slate-400">(optional)</span>
+        </label>
+        <select
+          id="ask-rrtag"
+          value={rrTag}
+          onChange={(e) => setRrTag(e.target.value)}
+          disabled={submitting}
+          className="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-corporate-teal focus:outline-none focus:ring-1 focus:ring-corporate-teal mb-3"
+        >
+          {RR_TAG_OPTIONS.map((o) => (
+            <option key={o.value || 'none'} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+
         {error && (
           <div className="mb-3 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-sm text-rose-700 flex items-start gap-2">
             <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
@@ -167,7 +222,11 @@ const AskCoach = () => {
         <div className="flex justify-end">
           <button
             type="submit"
-            disabled={submitting || questionText.trim().length < 10}
+            disabled={
+              submitting
+              || titleText.trim().length < 3
+              || questionText.trim().length < 10
+            }
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-corporate-teal text-white hover:bg-corporate-teal/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
@@ -206,6 +265,18 @@ const AskCoach = () => {
               </span>
             </div>
 
+            {q.title && (
+              <h3 className="text-base font-semibold text-corporate-navy dark:text-white mb-1">
+                {q.title}
+              </h3>
+            )}
+            {q.rrTag && RR_TAG_LABEL[q.rrTag] && (
+              <div className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-corporate-teal bg-corporate-teal/10 border border-corporate-teal/30 rounded-full px-2 py-0.5 mb-2">
+                <Tag className="w-3 h-3" />
+                {RR_TAG_LABEL[q.rrTag]}
+              </div>
+            )}
+
             <p className="text-slate-900 dark:text-slate-100 whitespace-pre-wrap mb-2">
               {q.question}
             </p>
@@ -238,12 +309,7 @@ const AskCoach = () => {
                     </span>
                   )}
                 </div>
-                {q.responseText && (
-                  <p className="text-slate-900 dark:text-slate-100 whitespace-pre-wrap mb-3">
-                    {q.responseText}
-                  </p>
-                )}
-                {q.responseVideoUrl && (
+                {q.responseVideoUrl ? (
                   <a
                     href={q.responseVideoUrl}
                     target="_blank"
@@ -253,6 +319,10 @@ const AskCoach = () => {
                     <Video className="w-4 h-4" />
                     Watch video reply
                   </a>
+                ) : (
+                  <p className="text-sm text-slate-500 italic">
+                    Video reply not available.
+                  </p>
                 )}
               </div>
             )}
