@@ -154,6 +154,31 @@ export const deleteMediaAsset = async ({ storage, db }, asset) => {
 };
 
 /**
+ * Create a media asset record from an external URL (Loom, YouTube, Vimeo,
+ * Drive, etc.) without uploading any bytes. Used by Ask-a-Trainer's
+ * "Publish to Library" flow.
+ */
+export const createMediaAssetFromUrl = async (db, { url, title, type = MEDIA_TYPES.VIDEO, tags = [], description = '', source = 'external', sourceMeta = {}, createdBy = null }) => {
+  if (!db) throw new Error('db required');
+  if (!url || typeof url !== 'string') throw new Error('url required');
+  if (!title || typeof title !== 'string') throw new Error('title required');
+  const assetData = {
+    title: title.trim(),
+    description: (description || '').trim(),
+    url: url.trim(),
+    type,
+    source, // 'external' | 'upload'
+    sourceMeta, // free-form: { kind: 'ask-a-trainer', questionId, ... }
+    tags: Array.isArray(tags) ? tags.filter(Boolean) : [],
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    createdBy: createdBy || null,
+  };
+  const docRef = await addDoc(collection(db, MEDIA_COLLECTION), assetData);
+  return { id: docRef.id, ...assetData };
+};
+
+/**
  * Update a media asset
  */
 export const updateMediaAsset = async (db, assetId, updates) => {

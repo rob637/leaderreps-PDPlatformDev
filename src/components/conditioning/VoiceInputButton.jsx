@@ -29,6 +29,7 @@ const isSafari = typeof navigator !== 'undefined' &&
 const VoiceInputButton = ({ 
   onTranscription, 
   onPartialTranscription,
+  onError,
   disabled = false,
   size = 'default',
   continuous = true, // Changed: Default to continuous for longer recordings
@@ -50,12 +51,14 @@ const VoiceInputButton = ({
   // Store callbacks in refs to avoid re-creating recognition on every render
   const onTranscriptionRef = useRef(onTranscription);
   const onPartialTranscriptionRef = useRef(onPartialTranscription);
+  const onErrorRef = useRef(onError);
   
   // Update callback refs when props change
   useEffect(() => {
     onTranscriptionRef.current = onTranscription;
     onPartialTranscriptionRef.current = onPartialTranscription;
-  }, [onTranscription, onPartialTranscription]);
+    onErrorRef.current = onError;
+  }, [onTranscription, onPartialTranscription, onError]);
   
   // iOS and Android don't support continuous mode well - disable it
   // Android in particular has issues where results repeat many times
@@ -197,10 +200,13 @@ const VoiceInputButton = ({
           setError('No speech detected. Try again.');
           break;
         case 'audio-capture':
-          setError('No microphone found.');
+          setError('No microphone found. Check that a mic is connected and that this site has microphone permission.');
           break;
         case 'not-allowed':
-          setError('Microphone access denied. Tap the lock icon in your browser\'s address bar to allow microphone access, then try again.');
+          setError('Microphone access is blocked. Tap the lock/info icon in your browser\u2019s address bar, allow microphone access for this site, then refresh and try again.');
+          break;
+        case 'service-not-allowed':
+          setError('Microphone access is blocked at the device level. Open your device settings and allow microphone access for this browser.');
           break;
         case 'network':
           setError('Network error. Check your connection.');
@@ -210,6 +216,17 @@ const VoiceInputButton = ({
           break;
         default:
           setError('Speech recognition error. Please try again.');
+      }
+      // Surface error to parent (e.g., VoiceTextarea) so it can render an
+      // always-visible banner. The floating tooltip can be clipped by
+      // overflow-hidden ancestors, which has been a recurring \"mic doesn't
+      // work\" complaint.
+      if (event.error !== 'aborted') {
+        try {
+          onErrorRef.current?.(event.error);
+        } catch (_) {
+          // ignore
+        }
       }
     };
     
@@ -310,7 +327,13 @@ const VoiceInputButton = ({
         type="button"
         disabled
         className={`${sizeClasses[size]} rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed`}
-        title="Voice input not supported in this browser"
+        title="Voice input not supported in this browser. Try Chrome or Safari."
+        aria-label="Voice input not supported in this browser"
+        onClick={() => {
+          try {
+            onErrorRef.current?.('not-supported');
+          } catch (_) { /* ignore */ }
+        }}
       >
         <MicOff className={iconSizes[size]} />
       </button>

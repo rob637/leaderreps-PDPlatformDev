@@ -277,35 +277,130 @@ export const subscribeUpcomingEvents = (db, userId, callback) => {
  * coachingService.js read it (markParticipantAttended, certifyParticipant).
  */
 const registerForCoachingSession = async (db, userId, event) => {
-  const { setDoc, doc: docFn, serverTimestamp } = await import(
+  const { runTransaction, doc: docFn, serverTimestamp } = await import(
     'firebase/firestore'
   );
+  const { getAuth } = await import('firebase/auth');
+
   const registrationId = `${event.sourceId}_${userId}`;
-  const ref = docFn(db, COACHING_REGISTRATIONS_COLLECTION, registrationId);
-  await setDoc(ref, {
-    id: registrationId,
-    userId,
-    sessionId: event.sourceId,
-    sessionTitle: event.title,
-    sessionDate: event.date,
-    sessionTime: event.time,
-    sessionType: event.sessionType,
-    status: REGISTRATION_STATUS.REGISTERED,
-    registeredAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
+  const regRef = docFn(db, COACHING_REGISTRATIONS_COLLECTION, registrationId);
+  const sessionRef = docFn(db, COACHING_SESSIONS_COLLECTION, event.sourceId);
+  const userRef = docFn(db, 'users', userId);
+
+  // Read user profile up front (outside the txn). Email/name don't change
+  // mid-flight in a way that affects capacity correctness.
+  const userSnap = await getDoc(userRef);
+  const userData = userSnap.exists() ? userSnap.data() : {};
+  const authUser = getAuth().currentUser;
+  const userEmail =
+    userData.email || userData.primaryEmail || authUser?.email || null;
+  const userName =
+    userData.displayName ||
+    userData.name ||
+    userData.fullName ||
+    authUser?.displayName ||
+    null;
+
+  await runTransaction(db, async (tx) => {
+    const sessionSnap = await tx.get(sessionRef);
+    if (!sessionSnap.exists()) {
+      throw new Error('SESSION_NOT_FOUND');
+    }
+    const sessionData = sessionSnap.data();
+
+    const regSnap = await tx.get(regRef);
+    const existing = regSnap.exists() ? regSnap.data() : null;
+    const alreadyActive =
+      existing && existing.status === REGISTRATION_STATUS.REGISTERED;
+
+    // Capacity check (only when both fields are defined).
+    const maxAttendees =
+      typeof sessionData.maxAttendees === 'number'
+        ? sessionData.maxAttendees
+        : null;
+    const currentSpots =
+      typeof sessionData.spotsLeft === 'number'
+        ? sessionData.spotsLeft
+        : maxAttendees;
+
+    if (!alreadyActive && maxAttendees !== null && currentSpots <= 0) {
+      throw new Error('SESSION_FULL');
+    }
+
+    tx.set(regRef, {
+      id: registrationId,
+      userId,
+      userEmail,
+      userName,
+      sessionId: event.sourceId,
+      sessionTitle: event.title,
+      sessionDate: event.date,
+      sessionTime: event.time,
+      sessionType: event.sessionType,
+      coach: sessionData.coach || event.hostName || null,
+      coachEmail: sessionData.coachEmail || event.coachEmail || null,
+      zoomLink: sessionData.zoomLink || event.link || null,
+      status: REGISTRATION_STATUS.REGISTERED,
+      registeredAt: existing?.registeredAt || serverTimestamp(),
+      attendedAt: existing?.attendedAt || null,
+      watchedReplay: existing?.watchedReplay || false,
+      updatedAt: serverTimestamp(),
+    });
+
+    // Only mutate the counter when transitioning into REGISTERED.
+    if (!alreadyActive && maxAttendees !== null) {
+      tx.update(sessionRef, {
+        spotsLeft: Math.max(0, currentSpots - 1),
+        updatedAt: serverTimestamp(),
+      });
+    }
   });
 };
 
 const cancelCoachingRegistration = async (db, userId, event) => {
-  const { updateDoc, doc: docFn, serverTimestamp } = await import(
+  const { runTransaction, doc: docFn, serverTimestamp } = await import(
     'firebase/firestore'
   );
   const registrationId = `${event.sourceId}_${userId}`;
-  const ref = docFn(db, COACHING_REGISTRATIONS_COLLECTION, registrationId);
-  await updateDoc(ref, {
-    status: REGISTRATION_STATUS.CANCELLED,
-    cancelledAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
+  const regRef = docFn(db, COACHING_REGISTRATIONS_COLLECTION, registrationId);
+  const sessionRef = docFn(db, COACHING_SESSIONS_COLLECTION, event.sourceId);
+
+  await runTransaction(db, async (tx) => {
+    // 1) ALL READS FIRST (Firestore requires reads before writes in a tx)
+    const regSnap = await tx.get(regRef);
+    if (!regSnap.exists()) return;
+    const regData = regSnap.data();
+    const wasActive = regData.status === REGISTRATION_STATUS.REGISTERED;
+
+    let sessionSnap = null;
+    if (wasActive) {
+      sessionSnap = await tx.get(sessionRef);
+    }
+
+    // 2) THEN ALL WRITES
+    tx.update(regRef, {
+      status: REGISTRATION_STATUS.CANCELLED,
+      cancelledAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    if (wasActive && sessionSnap && sessionSnap.exists()) {
+      const sessionData = sessionSnap.data();
+      const maxAttendees =
+        typeof sessionData.maxAttendees === 'number'
+          ? sessionData.maxAttendees
+          : null;
+      const currentSpots =
+        typeof sessionData.spotsLeft === 'number' ? sessionData.spotsLeft : 0;
+      const nextSpots =
+        maxAttendees !== null
+          ? Math.min(maxAttendees, currentSpots + 1)
+          : currentSpots + 1;
+      tx.update(sessionRef, {
+        spotsLeft: nextSpots,
+        updatedAt: serverTimestamp(),
+      });
+    }
   });
 };
 

@@ -3,8 +3,8 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Settings, ArrowLeft, Users, Calendar, FileText, Database,
-  PlaySquare, Zap, BrainCircuit, List, Bell, Mail, Megaphone,
+  Settings, Users, Calendar, FileText, Database,
+  PlaySquare, Zap, List, Bell, Mail, Megaphone,
   ShieldAlert, Wrench, Dumbbell,
 } from 'lucide-react';
 import UserManagement from './UserManagement';
@@ -14,13 +14,14 @@ import MediaLibrary from './MediaLibrary';
 import VideoSeriesManager from './VideoSeriesManager';
 import DailyRepsLibrary from './DailyRepsLibrary';
 import ConditioningConfig from './ConditioningConfig';
-import CommunityManager from './CommunityManager';
-import CoachingManager from './CoachingManager';
+import EventsManager from './EventsManager';
 import LOVManager from './LOVManager';
 import NotificationManager from './NotificationManager';
 import AnnouncementsManager from './AnnouncementsManager';
 import CommunicationsManager from './CommunicationsManager';
 import MaintenanceToggle from './MaintenanceToggle';
+import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
+import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
 import { useAppServices } from '../../services/useAppServices';
 import { useNavigation } from '../../providers/NavigationProvider';
 
@@ -44,8 +45,7 @@ const TAB_GROUPS = [
     label: 'Program',
     tabs: [
       { id: 'conditioning-config', label: 'Conditioning Config', icon: Zap },
-      { id: 'community', label: 'Community', icon: Users },
-      { id: 'coaching', label: 'Coaching', icon: BrainCircuit },
+      { id: 'events', label: 'Events', icon: Calendar },
     ],
   },
   {
@@ -98,8 +98,10 @@ const AppConfigCenter = () => {
       case 'video-series': return <VideoSeriesManager />;
       case 'daily-reps': return <DailyRepsLibrary />;
       case 'conditioning-config': return <ConditioningConfig />;
-      case 'community': return <CommunityManager />;
-      case 'coaching': return <CoachingManager />;
+      case 'events': return <EventsManager />;
+      // Legacy aliases — preserve any deep links to the old separate tabs
+      case 'community': return <EventsManager />;
+      case 'coaching': return <EventsManager />;
       case 'lov': return <LOVManager />;
       case 'notifications': return <NotificationManager />;
       case 'announcements': return <AnnouncementsManager />;
@@ -111,16 +113,16 @@ const AppConfigCenter = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
+      <div className="px-6 pt-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+        <BreadcrumbNav
+          items={getBreadcrumbs('config-center')}
+          navigate={navigate}
+        />
+      </div>
+
       {/* Header */}
       <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('admin-hub')}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-            title="Back to Admin Hub"
-          >
-            <ArrowLeft className="w-5 h-5 text-slate-500" />
-          </button>
           <div className="p-2 bg-corporate-teal/10 rounded-lg">
             <Settings className="w-5 h-5 text-corporate-teal" />
           </div>

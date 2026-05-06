@@ -6,7 +6,6 @@ import {
   Trash2, 
   Save, 
   X, 
-  ArrowLeft,
   List,
   Loader,
   Lock,
@@ -14,6 +13,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
+import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
 import { 
   getAllContentAdmin, 
   addContent, 
@@ -21,6 +21,7 @@ import {
   deleteContent, 
   CONTENT_COLLECTIONS 
 } from '../../services/contentService';
+import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
 
 // Content group LOVs use object items instead of string items
 const CONTENT_GROUP_LOVS = ['content_programs', 'content_workouts', 'content_skills'];
@@ -204,16 +205,13 @@ const LOVManager = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto bg-slate-50 dark:bg-slate-800 min-h-screen">
+      <BreadcrumbNav
+        items={getBreadcrumbs('admin-lov-manager')}
+        navigate={navigate}
+      />
+
       {/* Header */}
       <div className="mb-6">
-        <button
-          onClick={() => navigate('admin-content-home')}
-          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 text-slate-500 dark:text-slate-400"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Admin
-        </button>
-        
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <List className="w-8 h-8 text-corporate-teal" />

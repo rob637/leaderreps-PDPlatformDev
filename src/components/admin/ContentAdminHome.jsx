@@ -2,9 +2,11 @@
 // Admin dashboard for content management
 
 import React from 'react';
-import { BookOpen, Film, GraduationCap, ArrowLeft, Settings, Users, BrainCircuit, List, ClipboardEdit, Wrench } from 'lucide-react';
+import { BookOpen, Film, GraduationCap, Settings, Users, BrainCircuit, List, ClipboardEdit, Wrench } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
+import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
+import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
 
 const COLORS = {
   NAVY: '#002e47',
@@ -483,16 +485,13 @@ const ContentAdminHome = () => {
 
   return (
     <div className="p-6 w-full min-h-screen bg-slate-50 dark:bg-slate-800">
+      <BreadcrumbNav
+        items={getBreadcrumbs('admin-content-home')}
+        navigate={navigate}
+      />
+
       {/* Header */}
       <div className="mb-8">
-        <button
-          onClick={() => navigate('dashboard')}
-          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 text-slate-500 dark:text-slate-400"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Dashboard
-        </button>
-        
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Settings className="w-8 h-8 text-corporate-teal" />

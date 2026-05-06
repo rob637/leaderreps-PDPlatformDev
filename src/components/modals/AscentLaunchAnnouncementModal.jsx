@@ -18,7 +18,7 @@ import { useRevampFlag } from '../../hooks/useRevampFlag';
 const HIGHLIGHTS = [
   { Icon: Calendar, title: 'Events', body: 'All your live coaching and community sessions in one calendar.' },
   { Icon: Zap, title: 'Conditioning', body: 'One field, one rep at a time. Get a verdict — pass or not yet.' },
-  { Icon: MessageCircleQuestion, title: 'Ask a Coach', body: 'Send a question, get a thoughtful written or video reply.' },
+  { Icon: MessageCircleQuestion, title: 'Ask a Trainer', body: 'Send a question, get a thoughtful written or video reply.' },
   { Icon: Library, title: 'Content', body: 'Explore the full library on your own schedule.' },
 ];
 

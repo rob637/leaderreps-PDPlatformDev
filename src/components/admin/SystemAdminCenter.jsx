@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Wrench, ArrowLeft, LayoutDashboard, Activity, FlaskConical, Settings,
+  Wrench, LayoutDashboard, Activity, FlaskConical, Settings,
   TestTube2, Eye, BookOpen, ShieldAlert,
 } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
@@ -13,6 +13,8 @@ import SystemWidgets from './SystemWidgets';
 import TestCenter from './TestCenter';
 import UxAuditPanel from './UxAuditPanel';
 import DocumentationCenter from './DocumentationCenter';
+import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
+import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
 import { useAppServices } from '../../services/useAppServices';
 import { useNavigation } from '../../providers/NavigationProvider';
 
@@ -59,16 +61,16 @@ const SystemAdminCenter = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
+      <div className="px-6 pt-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+        <BreadcrumbNav
+          items={getBreadcrumbs('system-center')}
+          navigate={navigate}
+        />
+      </div>
+
       {/* Header */}
       <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('admin-hub')}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-            title="Back to Admin Hub"
-          >
-            <ArrowLeft className="w-5 h-5 text-slate-500" />
-          </button>
           <div className="p-2 bg-corporate-navy/10 rounded-lg">
             <Wrench className="w-5 h-5 text-corporate-navy" />
           </div>

@@ -16,7 +16,6 @@ import {
   AlertTriangle,
   Sparkles,
   Megaphone,
-  Mountain,
   Calendar,
   MessageCircleQuestion
 } from 'lucide-react';
@@ -99,16 +98,15 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
         { id: 'events', label: 'Events', icon: Calendar, flag: 'enableEvents' },
         { id: 'library', label: 'Content', icon: BookOpen, flag: 'enableReadings' },
         { id: 'conditioning-light', label: 'Conditioning', icon: Zap, flag: 'enableConditioning' },
-        { id: 'ask-coach', label: 'Ask a Coach', icon: MessageCircleQuestion, flag: 'enableCoaching' },
+        { id: 'ask-coach', label: 'Ask a Trainer', icon: Megaphone, flag: 'enableCoaching' },
         { type: 'section', label: 'Personal' },
         { id: 'locker', label: 'Your Locker', icon: LockerIcon },
       ]
     : [
         // Legacy menu
         // Rep Coach removed from sidebar - access via floating AI Coach button (password protected)
+        // Ascent 1 + Ascent 2 moved to LeaderReps Lab (admin-only) — Nov 2026
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { id: 'ascent-arena', label: 'Ascent 1', icon: Mountain, flag: 'enableAscentArena', highlight: true },
-        { id: 'ascent-2', label: 'Ascent 2', icon: Mountain, adminOnly: true },
         { id: 'conditioning', label: 'Conditioning', icon: Zap, flag: 'enableConditioning' },
         // Conditioning accessed via both Dashboard and sidebar - only during Foundation
         { id: 'development-plan', label: 'Dev Plan', icon: Target, flag: 'enableDevPlan' },

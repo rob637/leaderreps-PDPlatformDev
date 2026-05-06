@@ -3,8 +3,9 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Users, ArrowLeft, Zap, BookOpen, CheckCircle, Award, FileText,
+  Users, Zap, BookOpen, CheckCircle, Award, FileText,
   ShieldAlert, ClipboardList, Calendar, MessageSquare, BarChart3,
+  Megaphone,
 } from 'lucide-react';
 import ConditioningDashboard from './ConditioningDashboard';
 import SessionAttendanceQueue from './SessionAttendanceQueue';
@@ -15,11 +16,15 @@ import LeaderActivityReport from './LeaderActivityReport';
 import TrainerSessionsPanel from './TrainerSessionsPanel';
 import RedAnalyticsPanel from './RedAnalyticsPanel';
 import AccountabilityInsights from './AccountabilityInsights';
+import AskTrainerInbox from './AskTrainerInbox';
+import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
+import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
 import { useAppServices } from '../../services/useAppServices';
 import { useNavigation } from '../../providers/NavigationProvider';
 
 const TABS = [
   { id: 'trainer-sessions', label: 'My Sessions', icon: Calendar },
+  { id: 'ask-trainer-inbox', label: 'Ask a Trainer', icon: Megaphone },
   { id: 'activity-report', label: 'Leader Activity', icon: ClipboardList },
   { id: 'leader-profiles', label: 'Leader Profiles', icon: FileText },
   { id: 'conditioning', label: 'Conditioning', icon: Zap },
@@ -59,22 +64,23 @@ const FacilitatorCenter = () => {
       case 'leader-profiles': return <LeaderProfileReports />;
       case 'activity-report': return <LeaderActivityReport />;
       case 'trainer-sessions': return <TrainerSessionsPanel />;
+      case 'ask-trainer-inbox': return <AskTrainerInbox />;
       default: return <LeaderActivityReport />;
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
+      <div className="px-6 pt-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+        <BreadcrumbNav
+          items={getBreadcrumbs('facilitator-center')}
+          navigate={navigate}
+        />
+      </div>
+
       {/* Header */}
       <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('admin-hub')}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-            title="Back to Admin Hub"
-          >
-            <ArrowLeft className="w-5 h-5 text-slate-500" />
-          </button>
           <div className="p-2 bg-corporate-orange/10 rounded-lg">
             <Users className="w-5 h-5 text-corporate-orange" />
           </div>

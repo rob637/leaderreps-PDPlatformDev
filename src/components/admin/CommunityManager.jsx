@@ -9,7 +9,6 @@ import {
   EyeOff, 
   Save, 
   X, 
-  ArrowLeft,
   Users,
   MessageSquare,
   Heart,
@@ -18,6 +17,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
+import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
 import { 
   getAllContentAdmin, 
   addContent, 
@@ -25,6 +25,7 @@ import {
   deleteContent, 
   CONTENT_COLLECTIONS 
 } from '../../services/contentService';
+import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
 import CommunitySessionManager from './CommunitySessionManager';
 
 const CommunityManager = () => {
@@ -155,16 +156,13 @@ const CommunityManager = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto bg-slate-50 dark:bg-slate-800 min-h-screen">
+      <BreadcrumbNav
+        items={getBreadcrumbs('admin-community-manager')}
+        navigate={navigate}
+      />
+
       {/* Header */}
       <div className="mb-6">
-        <button
-          onClick={() => navigate('admin-content-home')}
-          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 text-slate-500 dark:text-slate-400"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Admin
-        </button>
-        
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <Users className="w-8 h-8 text-corporate-teal" />

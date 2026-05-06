@@ -2,8 +2,10 @@
 
 import React, { useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
+import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
 import { RefreshCw, Code, ArrowLeft, Loader, Globe, Clock, Briefcase } from 'lucide-react';
 import { Button, Card } from '../ui';
+import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
 
 const DebugDataViewer = () => {
     const {
@@ -35,9 +37,12 @@ const DebugDataViewer = () => {
 
     return (
         <div className="p-6 md:p-10 min-h-screen bg-slate-50 dark:bg-slate-800 animate-fade-in">
-            <Button onClick={() => navigate('app-settings')} variant="nav-back" size="sm" className="mb-6">
-                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Settings
-            </Button>
+            <div className="mb-6">
+                <BreadcrumbNav
+                    items={getBreadcrumbs('debug-data')}
+                    navigate={navigate}
+                />
+            </div>
             
             <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-slate-200 dark:border-slate-700 pb-4 mb-6">
                 <h1 className="text-3xl md:text-4xl font-extrabold flex items-center gap-3 text-corporate-navy">

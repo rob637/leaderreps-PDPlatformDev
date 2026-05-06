@@ -1,6 +1,14 @@
 {
   "indexes": [
     {
+      "collectionGroup": "conditioning_situations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "repTypeId", "order": "ASCENDING" },
+        { "fieldPath": "order", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "coach_questions",
       "queryScope": "COLLECTION",
       "fields": [

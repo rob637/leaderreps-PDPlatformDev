@@ -1842,39 +1842,13 @@ exports.sendMilestoneCompletionEmail = onCall(async (request) => {
   let subject, bodyHtml;
   
   if (isGraduation) {
-    if (graduationTemplate) {
-      subject = applyTemplateVariables(graduationTemplate.subject, templateVars);
-      bodyHtml = generateEmailHtml(graduationTemplate, templateVars, appUrl);
-    } else {
-      subject = `� Congratulations! You've Completed the LeaderReps Foundation Program!`;
-      bodyHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 30px; border-radius: 8px 8px 0 0; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">🎉 Foundation Complete!</h1>
-            <p style="color: #9CE0C8; margin: 10px 0 0 0; font-size: 18px;">Welcome to Ascent</p>
-          </div>
-          <div style="background: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; border-top: none;">
-            <p style="margin-top: 0; font-size: 18px;">Hi ${userName || 'there'},</p>
-            <p style="font-size: 16px;">You've successfully completed all 5 milestones of the <strong>LeaderReps Foundation Program</strong> and earned your <strong>Foundation Leader Certification</strong>.</p>
-            <div style="background: linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #D4AF37 100%); padding: 4px; border-radius: 12px; margin: 24px 0;">
-              <div style="background: white; padding: 24px; border-radius: 10px; text-align: center;">
-                <p style="margin: 0 0 8px 0; font-size: 14px; color: #666;">FOUNDATION LEADER CERTIFICATION</p>
-                <p style="margin: 0; font-size: 24px; font-weight: bold; color: #002E47;">LeaderReps Foundation Program</p>
-                <p style="margin: 8px 0 0 0; font-size: 16px; color: #47A88D;">All 5 Milestones Complete</p>
-              </div>
-            </div>
-            <p style="text-align: center; margin-top: 24px;">
-              <a href="${appUrl}?screen=certificates" style="background: #47A88D; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">View Your Foundation Certificate</a>
-            </p>
-            <p style="margin-top: 24px; color: #666; font-size: 14px;">You can print or share your certificate from the app. Thank you for your dedication to becoming a better leader — your Ascent begins now.</p>
-          </div>
-          <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
-            <p style="margin: 0; color: #64748b; font-size: 12px;">Congratulations from the LeaderReps Team!</p>
-          </div>
-        </div>
-      `;
-    }
-  } else {
+    // Foundation completion does NOT trigger a certificate email — we are not
+    // issuing a Foundation certificate. Skip sending entirely.
+    logger.info(`Skipping Foundation graduation email for ${userEmail} — certificates are not issued for Foundation completion.`);
+    return { success: true, skipped: true, reason: 'no-foundation-certificate' };
+  }
+
+  {
     if (milestoneTemplate) {
       subject = applyTemplateVariables(milestoneTemplate.subject, templateVars);
       bodyHtml = generateEmailHtml(milestoneTemplate, templateVars, appUrl);
@@ -1952,7 +1926,7 @@ const RECENT_REPS_LIMIT = 8;
 const RECENT_TEMPLATES_LIMIT = 6;
 
 exports.evaluateRep = onCall(
-  { cors: true },
+  { cors: true, secrets: ["GEMINI_API_KEY", "ANTHROPIC_API_KEY"] },
   async (request) => {
     const uid = request.auth?.uid;
     if (!uid) {
@@ -1986,17 +1960,25 @@ exports.evaluateRep = onCall(
       .flatMap((r) => [r.observation, r.question])
       .filter(Boolean);
 
-    // Score the transcript via Gemini
+    // Score the transcript via Gemini, with Anthropic Claude as fallback.
     const apiKey = process.env.GEMINI_API_KEY;
+    const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
     let scorerResult;
     try {
       scorerResult = await conditioningScorer.scoreTranscript({
         rrType,
         transcript,
         apiKey,
+        anthropicApiKey,
       });
     } catch (err) {
       logger.error('evaluateRep: scorer failed', err);
+      if (err && err.status === 429) {
+        throw new HttpsError(
+          'resource-exhausted',
+          'AI review is temporarily busy. Try again in a minute.'
+        );
+      }
       throw new HttpsError('internal', 'Scoring failed. Try again.');
     }
 
@@ -5475,15 +5457,28 @@ async function sendSmsNotification(phoneNumber, message, options = {}) {
   const apiKey = process.env.TELNYX_API_KEY;
   const messagingProfileId = process.env.TELNYX_MESSAGING_PROFILE_ID;
   const telnyxFrom = process.env.TELNYX_PHONE_NUMBER;
+  const purpose = options.purpose || 'notification';
+  const isCritical = purpose === 'verification';
 
   if (!apiKey || (!messagingProfileId && !telnyxFrom)) {
-    logger.warn("Telnyx credentials not configured. SMS not sent.");
+    logger.warn("Telnyx credentials not configured. SMS not sent.", { purpose });
+    if (isCritical) {
+      const e = new Error('SMS provider is not configured for this environment.');
+      e.code = 'sms-not-configured';
+      throw e;
+    }
     return;
   }
 
-  // Mutual exclusion: Lab enrollment supersedes Daily Rep SMS.
+  // Mutual exclusion: Lab enrollment supersedes the recurring Daily Rep SMS.
   // If this phone is in Leadership Lab, suppress the Daily Rep send.
-  if (await isPhoneEnrolledInLab(phoneNumber)) {
+  // EXCEPTIONS that always go through:
+  //   - verification codes (isCritical)
+  //   - admin-initiated, one-off sends with an explicit purpose (e.g.
+  //     team-pulse-invite, test). Only the default 'notification' purpose
+  //     (Daily Rep) is subject to the Lab guard.
+  const isDailyRep = purpose === 'notification';
+  if (isDailyRep && !isCritical && await isPhoneEnrolledInLab(phoneNumber)) {
     logger.info("Daily Rep SMS suppressed — phone enrolled in Leadership Lab", {
       phone: maskPhone(phoneNumber),
     });
@@ -5523,6 +5518,12 @@ async function sendSmsNotification(phoneNumber, message, options = {}) {
     logger.info(`SMS sent to ${phoneNumber}: ${result.data?.id}`);
   } catch (e) {
     logger.error(`Failed to send SMS to ${phoneNumber}`, e);
+    if (isCritical) {
+      const err = new Error(e?.message || 'SMS provider rejected the message.');
+      err.code = 'sms-send-failed';
+      err.cause = e;
+      throw err;
+    }
   }
 }
 
@@ -5610,7 +5611,7 @@ exports.apolloSearchProxy = onCall({ cors: true, region: "us-central1", invoker:
 
   // Check if user is admin
   const userEmail = request.auth.token.email?.toLowerCase();
-  const hardcodedAdmins = ['rob@sagecg.com', 'admin@leaderreps.com', 'ryan@leaderreps.com'];
+  const hardcodedAdmins = ['rob@sagecg.com', 'admin@leaderreps.com', 'ryan@leaderreps.com', 'cristina@leaderreps.com'];
   
   let isAdmin = hardcodedAdmins.includes(userEmail);
   
@@ -9359,7 +9360,7 @@ exports.onBugReportCreated = require("firebase-functions/v2/firestore").onDocume
 // ASCENT REVAMP WS-4: Ask a Coach — notify responders on new question
 // ============================================================
 // When a leader submits a question to /coach_questions, email the configured
-// responders (Christina + Ryan by default; overridable via metadata/config
+// responders (Cristina + Ryan by default; overridable via metadata/config
 // `askCoachResponders` array) so they can record a video reply.
 // ============================================================
 exports.onCoachQuestionCreated = require("firebase-functions/v2/firestore").onDocumentCreated(
@@ -9375,7 +9376,7 @@ exports.onCoachQuestionCreated = require("firebase-functions/v2/firestore").onDo
 
     // Resolve responders: hardcoded + dynamic allowlist.
     const HARDCODED_RESPONDERS = [
-      "christina@leaderreps.com",
+      "cristina@leaderreps.com",
       "ryan@leaderreps.com",
     ];
     let responders = [...HARDCODED_RESPONDERS];
@@ -11379,146 +11380,13 @@ const generateResultsPdf = (firstName, results) => {
 };
 
 /**
- * Generate the static Accountability System Blueprint PDF (one-pager).
+ * Return the static Accountability System Blueprint PDF as a Buffer.
+ * The PDF lives at functions/assets/accountability-system-blueprint.pdf
+ * and is bundled with the function deploy.
  */
-const generateBlueprintPdf = () => {
-  return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ margin: 50, size: 'A4', info: { Title: 'The Accountability System Blueprint', Author: 'LeaderReps' } });
-    const chunks = [];
-    doc.on('data', (c) => chunks.push(c));
-    doc.on('end', () => resolve(Buffer.concat(chunks)));
-    doc.on('error', reject);
-
-    const NAVY = '#002E47';
-    const TEAL = '#277A68';
-    const ORANGE = '#B84825';
-    const PAGE_W = doc.page.width - 100;
-
-    // ── Header ───────────────────────────────────────────────────────
-    doc.rect(0, 0, doc.page.width, 85).fill(NAVY);
-    doc.fontSize(24).fillColor('#FFFFFF').font('Helvetica-Bold')
-      .text('The Accountability System Blueprint', 50, 18, { width: PAGE_W });
-    doc.fontSize(10).fillColor('rgba(255,255,255,0.65)').font('Helvetica')
-      .text('What a fully functioning accountability system looks like in practice  ·  LeaderReps', 50, 52, { width: PAGE_W });
-
-    doc.y = 105;
-
-    const components = [
-      {
-        num: '1',
-        title: 'Clear Expectations',
-        color: TEAL,
-        practice: 'Before work starts, define success explicitly. Ask: "What does done look like?" Get alignment — not just acknowledgment.',
-        signal: 'Your direct report can describe their top priority\'s success criteria as clearly as you can.',
-      },
-      {
-        num: '2',
-        title: 'Clean Handoff',
-        color: TEAL,
-        practice: 'Require a specific commitment for every assignment.\n"I\'ll have X done by Friday" — not "I\'m on it" or "I\'ll try."',
-        signal: 'Vague language triggers a follow-up question, not acceptance.',
-      },
-      {
-        num: '3',
-        title: 'Avoiding Rescue',
-        color: TEAL,
-        practice: 'When it\'s faster to step in — don\'t. Return the work. Stay the coach. Every time you take work back, you signal you don\'t trust the handoff.',
-        signal: 'Your team solves problems without bringing them back to you.',
-      },
-      {
-        num: '4',
-        title: 'Follow-Up on the Work',
-        color: TEAL,
-        practice: 'Each week, check in on work in progress. Stay connected without taking it over. A short "where are we on this?" keeps standards visible.',
-        signal: 'You stay informed and your team stays accountable — without surprise problems.',
-      },
-      {
-        num: '5',
-        title: 'Timely Redirecting Feedback',
-        color: ORANGE,
-        practice: 'Address issues within 24 hours of noticing them. Short, direct, no softening. Delayed feedback teaches your team that standards are flexible.',
-        signal: 'Standards feel real. Small problems don\'t accumulate into patterns.',
-      },
-      {
-        num: '6',
-        title: 'Reinforcing Feedback',
-        color: ORANGE,
-        practice: 'Catch someone doing something right and tell them specifically what they did well. Name the behavior so it can be repeated deliberately.',
-        signal: 'Your team knows what good looks like — and reaches for it on their own.',
-      },
-      {
-        num: '7',
-        title: 'Pattern Recognition',
-        color: ORANGE,
-        practice: 'When the same issue appears more than once, name the behavior pattern — not just the task. The pattern is what needs to change.',
-        signal: 'You\'re having the same conversation less often.',
-      },
-    ];
-
-    components.forEach((c, i) => {
-      if (doc.y > 720) doc.addPage();
-
-      const rowTop = doc.y;
-
-      // Number badge
-      doc.circle(68, rowTop + 12, 11).fill(c.color);
-      doc.fontSize(10).fillColor('#fff').font('Helvetica-Bold')
-        .text(c.num, 63, rowTop + 7, { width: 12, align: 'center' });
-
-      // Title
-      doc.fontSize(12).fillColor(NAVY).font('Helvetica-Bold')
-        .text(c.title, 88, rowTop, { width: PAGE_W - 38 });
-      doc.moveDown(0.15);
-
-      // Practice block
-      doc.fontSize(9).fillColor('#374151').font('Helvetica')
-        .text(c.practice, 88, doc.y, { width: PAGE_W - 38, lineGap: 2 });
-      doc.moveDown(0.25);
-
-      // Signal line
-      doc.fontSize(8.5).fillColor(c.color).font('Helvetica-Bold')
-        .text('✓  Signal it\'s working: ', 88, doc.y, { continued: true, width: PAGE_W - 38 });
-      doc.fillColor('#374151').font('Helvetica')
-        .text(c.signal, { width: PAGE_W - 38, lineGap: 2 });
-      doc.moveDown(0.7);
-
-      if (i < components.length - 1) {
-        doc.moveTo(88, doc.y).lineTo(50 + PAGE_W, doc.y).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
-        doc.moveDown(0.5);
-      }
-    });
-
-    // ── Bottom CTA ────────────────────────────────────────────────────
-    // Use a real white-tinted RGB (PDFKit ignores hex alpha suffixes, which
-    // was previously rendering this band as solid navy with unreadable text).
-    const tintCta = (hex, mix) => {
-      const h = hex.replace('#', '');
-      const r = parseInt(h.slice(0, 2), 16);
-      const g = parseInt(h.slice(2, 4), 16);
-      const b = parseInt(h.slice(4, 6), 16);
-      const m = Math.max(0, Math.min(1, mix));
-      return [
-        Math.round(255 + (r - 255) * m),
-        Math.round(255 + (g - 255) * m),
-        Math.round(255 + (b - 255) * m),
-      ];
-    };
-    doc.moveDown(1);
-    const ctaY = doc.y;
-    doc.roundedRect(50, ctaY, PAGE_W, 48, 4).fillAndStroke(tintCta(NAVY, 0.08), '#e2e8f0');
-    doc.fontSize(10).fillColor(NAVY).font('Helvetica-Bold')
-      .text('Foundation — Build this system through practice, not lectures.', 60, ctaY + 10, { width: PAGE_W - 20 });
-    doc.fontSize(9).fillColor(TEAL).font('Helvetica')
-      .text('leaderreps.com', 60, ctaY + 28, { width: PAGE_W - 20 });
-    doc.y = ctaY + 62;
-
-    // ── Footer — pinned to page bottom ────────────────────────────────
-    const footerY = doc.page.height - doc.page.margins.bottom - 12;
-    doc.fontSize(8).fillColor('#94a3b8').font('Helvetica')
-      .text('© LeaderReps  ·  leaderreps.com  ·  Building accountable leaders', 50, footerY, { width: PAGE_W, align: 'center' });
-
-    doc.end();
-  });
+const generateBlueprintPdf = async () => {
+  const pdfPath = path.join(__dirname, 'assets', 'accountability-system-blueprint.pdf');
+  return fs.promises.readFile(pdfPath);
 };
 
 /**
@@ -23635,11 +23503,15 @@ exports.sendPhoneVerification = onCall(
     try {
       await sendSmsNotification(
         phone,
-        `Your LeaderReps verification code is ${code}. It expires in 10 minutes.`
+        `Your LeaderReps verification code is ${code}. It expires in 10 minutes.`,
+        { purpose: 'verification' }
       );
     } catch (err) {
       logger.error('sendPhoneVerification: SMS send failed', err);
-      throw new HttpsError('internal', 'Could not send verification SMS.');
+      const userMsg = err?.code === 'sms-not-configured'
+        ? 'SMS is not enabled in this environment yet. Please contact support.'
+        : 'Could not send the verification SMS. Check the number and try again.';
+      throw new HttpsError('internal', userMsg);
     }
     return { ok: true };
   }
@@ -23695,5 +23567,965 @@ exports.verifyPhoneCode = onCall(
       { merge: true }
     );
     return { ok: true };
+  }
+);
+
+/**
+ * LeaderReps Lab — Anonymous Team Pulse
+ * Invite sender for a campaign. Admin-only callable.
+ *
+ * Dispatches each recipient through their stored channel:
+ *   - channel === 'sms'   → `sendSmsNotification` (Telnyx)
+ *   - channel === 'email' → `sendEmailNotification` (nodemailer)
+ * The response link points at the env-appropriate app domain with
+ * `?pulse={campaignId}`.
+ *
+ * Updates each recipient document with lastInvitedAt + inviteCount, and
+ * returns per-channel send counts so the admin UI can show "X SMS · Y email".
+ */
+exports.sendTeamPulseInvites = onCall(
+  {
+    cors: true,
+    region: "us-central1",
+    invoker: "public",
+    secrets: [
+      "TELNYX_API_KEY",
+      "TELNYX_MESSAGING_PROFILE_ID",
+      "TELNYX_PHONE_NUMBER",
+    ],
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Must be authenticated.');
+    }
+    const userEmail = request.auth.token.email?.toLowerCase();
+    const hardcodedAdmins = ['rob@sagecg.com', 'admin@leaderreps.com', 'ryan@leaderreps.com', 'cristina@leaderreps.com'];
+    let isAdmin = hardcodedAdmins.includes(userEmail);
+    if (!isAdmin) {
+      try {
+        const configDoc = await db.collection('metadata').doc('config').get();
+        if (configDoc.exists) {
+          const adminEmails = configDoc.data().adminemails || [];
+          isAdmin = adminEmails.map((e) => e.toLowerCase()).includes(userEmail);
+        }
+      } catch (err) {
+        logger.error('[sendTeamPulseInvites] admin check failed', err);
+      }
+    }
+    if (!isAdmin) {
+      throw new HttpsError('permission-denied', 'Admin only.');
+    }
+
+    const { campaignId, customMessage } = request.data || {};
+    if (!campaignId || typeof campaignId !== 'string') {
+      throw new HttpsError('invalid-argument', 'campaignId required.');
+    }
+
+    const campRef = db.collection('team_pulse_campaigns').doc(campaignId);
+    const campSnap = await campRef.get();
+    if (!campSnap.exists) {
+      throw new HttpsError('not-found', 'Campaign not found.');
+    }
+    const camp = campSnap.data();
+
+    // Resolve recipients (admin-managed sub-collection)
+    const recipientsSnap = await campRef.collection('recipients').get();
+    if (recipientsSnap.empty) {
+      throw new HttpsError('failed-precondition', 'No recipients in campaign.');
+    }
+
+    // Build response link based on the running project
+    const projectId = process.env.GCLOUD_PROJECT
+      || (process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId);
+    const appDomain = projectId === 'leaderreps-prod'
+      ? 'arena.leaderreps.com'
+      : projectId === 'leaderreps-test'
+        ? 'leaderreps-test.web.app'
+        : 'leaderreps-pd-platform.web.app';
+    const responseUrl = `https://${appDomain}/?pulse=${encodeURIComponent(campaignId)}`;
+
+    const baseMessage = customMessage && typeof customMessage === 'string'
+      ? customMessage.slice(0, 140)
+      : `Anonymous 90-sec team check-in for ${camp.name || 'your team'}.`;
+
+    let sentSms = 0;
+    let sentEmail = 0;
+    let failed = 0;
+    const errors = [];
+
+    for (const docSnap of recipientsSnap.docs) {
+      const r = docSnap.data();
+      const channel = r.channel || (r.phone ? 'sms' : r.email ? 'email' : null);
+      if (!channel) continue;
+
+      try {
+        if (channel === 'sms') {
+          if (!r.phone) {
+            failed += 1;
+            errors.push({ id: docSnap.id, error: 'missing-phone' });
+            continue;
+          }
+          await sendSmsNotification(
+            r.phone,
+            baseMessage,
+            { linkUrl: responseUrl, purpose: 'team-pulse-invite' }
+          );
+          sentSms += 1;
+        } else if (channel === 'email') {
+          if (!r.email) {
+            failed += 1;
+            errors.push({ id: docSnap.id, error: 'missing-email' });
+            continue;
+          }
+          const subject = `${camp.name || 'Team'} — anonymous 90-sec check-in`;
+          const linkText = 'Take the 90-sec check-in';
+          const message = `${baseMessage}\n\n${linkText}: ${responseUrl}\n\n` +
+            `Your responses are anonymous — only aggregate trends are shared with the leader.`;
+          await sendEmailNotification(
+            r.email,
+            subject,
+            message,
+            { linkText, linkUrl: responseUrl }
+          );
+          sentEmail += 1;
+        } else {
+          continue;
+        }
+
+        await docSnap.ref.set({
+          lastInvitedAt: admin.firestore.FieldValue.serverTimestamp(),
+          inviteCount: (r.inviteCount || 0) + 1,
+        }, { merge: true });
+      } catch (e) {
+        failed += 1;
+        const masked = channel === 'sms' && r.phone
+          ? r.phone.slice(0, 4) + '****'
+          : channel === 'email' && r.email
+            ? r.email.replace(/(^.).*(@.*$)/, '$1***$2')
+            : docSnap.id;
+        errors.push({ recipient: masked, channel, error: e.message });
+        logger.warn('[sendTeamPulseInvites] recipient failed', {
+          channel, error: e.message,
+        });
+      }
+    }
+
+    const sent = sentSms + sentEmail;
+    return {
+      sent,
+      sentSms,
+      sentEmail,
+      failed,
+      total: recipientsSnap.size,
+      errors,
+    };
+  }
+);
+
+// ============================================================================
+// LeaderReps Lab — Anonymous Team Pulse: PUBLIC LEAD-MAGNET CLOUD FUNCTIONS
+// ============================================================================
+// All functions below accept anonymous authentication (Firebase anon-auth) and
+// validate either a leaderToken (bearer credential) or admin email.
+//
+// Data model:
+//   pulse_leads/{leaderToken}
+//     {token, campaignId, firstName, email?, emailCapturedAt?, createdAt,
+//      lastActivityAt, referredBy?, ipHash?, source: 'self-serve' | 'admin'}
+//
+// Security model:
+//   - leaderToken = 32 chars cryptographically random, generated server-side.
+//   - Firestore rules deny direct client access to pulse_leads (admin-only).
+//   - Tokens are validated by callable functions before returning data.
+//   - We never reveal individual responses to the leader, only aggregate.
+
+// `crypto` is already required at the top of this file.
+
+function _newLeaderToken() {
+  return crypto.randomBytes(24).toString('base64url');
+}
+
+function _normalizePhonePulse(raw) {
+  if (!raw) return '';
+  const trimmed = String(raw).trim();
+  const plus = trimmed.startsWith('+') ? '+' : '';
+  const digits = trimmed.replace(/\D/g, '');
+  if (!digits) return '';
+  if (!plus && digits.length === 10) return `+1${digits}`;
+  if (!plus && digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
+  return `${plus}${digits}`;
+}
+
+function _normalizeEmailPulse(raw) {
+  if (!raw) return '';
+  const e = String(raw).trim().toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) ? e : '';
+}
+
+function _isoWeekKeyPulse(date = new Date()) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+}
+
+function _appDomainPulse() {
+  const projectId =
+    process.env.GCLOUD_PROJECT ||
+    (process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId);
+  return projectId === 'leaderreps-prod'
+    ? 'arena.leaderreps.com'
+    : projectId === 'leaderreps-test'
+      ? 'leaderreps-test.web.app'
+      : 'leaderreps-pd-platform.web.app';
+}
+
+function _responseUrlPulse(campaignId) {
+  return `https://${_appDomainPulse()}/?pulse=${encodeURIComponent(campaignId)}`;
+}
+
+async function _sendPulseInvitesToContacts({ campaignId, leaderFirstName, emails, phones }) {
+  const url = _responseUrlPulse(campaignId);
+  const who = leaderFirstName ? leaderFirstName : 'Your colleague';
+  const subject = `${who} wants your honest, anonymous feedback (60 sec)`;
+  const messageHtml =
+    `${who} is using an anonymous team pulse to learn how to lead better and ` +
+    `would value your honest answer to three quick questions this week. ` +
+    `It takes about 60 seconds and your name is never linked to your responses. ` +
+    `Anonymous link: ${url}`;
+  const sms = `${who} would value your anonymous 60-sec team check-in: ${url}`;
+
+  let sent = 0;
+  let failed = 0;
+  for (const email of (emails || [])) {
+    try {
+      await sendEmailNotification(email, subject, messageHtml, {
+        linkText: 'Anonymous link',
+        linkUrl: url,
+      });
+      sent += 1;
+    } catch (e) {
+      failed += 1;
+      logger.warn('[pulse] email invite failed', { email: email.slice(0, 4) + '***', err: e.message });
+    }
+  }
+  for (const phone of (phones || [])) {
+    try {
+      await sendSmsNotification(phone, sms, { linkUrl: url, purpose: 'pulse-invite' });
+      sent += 1;
+    } catch (e) {
+      failed += 1;
+      logger.warn('[pulse] sms invite failed', { err: e.message });
+    }
+  }
+  return { sent, failed };
+}
+
+/**
+ * createPulseLead — public callable, anonymous-auth permitted.
+ * Creates a campaign + lead doc + (optionally) sends invites.
+ * Returns { leaderToken, campaignId, dashboardUrl }.
+ */
+exports.createPulseLead = onCall(
+  { cors: true, region: "us-central1", invoker: "public" },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Session required.');
+    }
+    const {
+      firstName,
+      emails: rawEmails,
+      phones: rawPhones,
+      sendInvites,
+      referredBy,
+    } = request.data || {};
+
+    const fname = String(firstName || '').trim().slice(0, 80);
+    if (!fname) {
+      throw new HttpsError('invalid-argument', 'First name required.');
+    }
+
+    const emails = Array.from(new Set((rawEmails || []).map(_normalizeEmailPulse).filter(Boolean))).slice(0, 100);
+    const phones = Array.from(new Set((rawPhones || []).map(_normalizePhonePulse).filter(Boolean))).slice(0, 100);
+
+    const leaderToken = _newLeaderToken();
+    const campaignId = `pulse-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
+    const now = admin.firestore.FieldValue.serverTimestamp();
+
+    // Create campaign
+    const programStart = admin.firestore.FieldValue.serverTimestamp();
+    await db.collection('team_pulse_campaigns').doc(campaignId).set({
+      id: campaignId,
+      name: `${fname}'s team pulse`,
+      leaderName: fname,
+      teamSize: emails.length + phones.length,
+      minInvited: 5,
+      minResponsesToUnlock: 4,
+      cadence: 'weekly',
+      status: 'active',
+      ownerType: 'self-serve',
+      leaderToken,
+      programWeeks: 4,
+      programWeek: 1,
+      programStartedAt: programStart,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: null,
+    });
+
+    // Create lead doc (token is the doc ID for O(1) lookup)
+    await db.collection('pulse_leads').doc(leaderToken).set({
+      token: leaderToken,
+      campaignId,
+      firstName: fname,
+      email: null,
+      emailCapturedAt: null,
+      createdAt: now,
+      lastActivityAt: now,
+      referredBy: referredBy && typeof referredBy === 'string' ? referredBy.slice(0, 100) : null,
+      source: 'self-serve',
+      inviteCount: 0,
+    });
+
+    // Add contacts to recipients sub-collection (for tracking + reminders)
+    const recipientsRef = db.collection('team_pulse_campaigns').doc(campaignId).collection('recipients');
+    const writes = [];
+    for (const email of emails) {
+      const id = `e-${crypto.createHash('sha1').update(email).digest('hex').slice(0, 16)}`;
+      writes.push(recipientsRef.doc(id).set({
+        id, email, type: 'email', addedAt: now, lastInvitedAt: null, inviteCount: 0,
+      }));
+    }
+    for (const phone of phones) {
+      const id = `p-${phone.replace(/\D/g, '')}`;
+      writes.push(recipientsRef.doc(id).set({
+        id, phone, type: 'phone', addedAt: now, lastInvitedAt: null, inviteCount: 0,
+      }));
+    }
+    await Promise.all(writes);
+
+    let inviteResult = { sent: 0, failed: 0 };
+    if (sendInvites && (emails.length + phones.length) > 0) {
+      inviteResult = await _sendPulseInvitesToContacts({
+        campaignId,
+        leaderFirstName: fname,
+        emails,
+        phones,
+      });
+      if (inviteResult.sent > 0) {
+        await db.collection('pulse_leads').doc(leaderToken).update({
+          inviteCount: inviteResult.sent,
+          lastActivityAt: now,
+        });
+      }
+    }
+
+    return {
+      leaderToken,
+      campaignId,
+      dashboardUrl: `https://${_appDomainPulse()}/?leader=${leaderToken}`,
+      invitesSent: inviteResult.sent,
+      invitesFailed: inviteResult.failed,
+    };
+  }
+);
+
+/**
+ * Validate a leaderToken; return the lead doc data (server-side only).
+ */
+async function _loadLeadByToken(token) {
+  if (!token || typeof token !== 'string' || token.length < 16 || token.length > 64) {
+    throw new HttpsError('invalid-argument', 'Invalid token.');
+  }
+  const snap = await db.collection('pulse_leads').doc(token).get();
+  if (!snap.exists) {
+    throw new HttpsError('not-found', 'Pulse not found.');
+  }
+  return { id: snap.id, ...snap.data() };
+}
+
+/**
+ * attachLeadEmail — public callable. Adds an email to an existing lead.
+ */
+exports.attachLeadEmail = onCall(
+  { cors: true, region: "us-central1", invoker: "public" },
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Session required.');
+    const { token, email } = request.data || {};
+    const lead = await _loadLeadByToken(token);
+    const cleaned = _normalizeEmailPulse(email);
+    if (!cleaned) throw new HttpsError('invalid-argument', 'Valid email required.');
+    await db.collection('pulse_leads').doc(lead.id).update({
+      email: cleaned,
+      emailCapturedAt: admin.firestore.FieldValue.serverTimestamp(),
+      lastActivityAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    return { ok: true };
+  }
+);
+
+/**
+ * addPulseTeamContacts — public callable. Adds emails/phones to a leader's
+ * campaign and (optionally) sends the invite immediately.
+ */
+exports.addPulseTeamContacts = onCall(
+  { cors: true, region: "us-central1", invoker: "public" },
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Session required.');
+    const { token, emails: rawEmails, phones: rawPhones, sendInvites } = request.data || {};
+    const lead = await _loadLeadByToken(token);
+    const emails = Array.from(new Set((rawEmails || []).map(_normalizeEmailPulse).filter(Boolean))).slice(0, 50);
+    const phones = Array.from(new Set((rawPhones || []).map(_normalizePhonePulse).filter(Boolean))).slice(0, 50);
+    if (!emails.length && !phones.length) {
+      throw new HttpsError('invalid-argument', 'No valid contacts provided.');
+    }
+    const now = admin.firestore.FieldValue.serverTimestamp();
+    const recipientsRef = db.collection('team_pulse_campaigns').doc(lead.campaignId).collection('recipients');
+    const writes = [];
+    for (const email of emails) {
+      const id = `e-${crypto.createHash('sha1').update(email).digest('hex').slice(0, 16)}`;
+      writes.push(recipientsRef.doc(id).set({ id, email, type: 'email', addedAt: now, lastInvitedAt: null, inviteCount: 0 }, { merge: true }));
+    }
+    for (const phone of phones) {
+      const id = `p-${phone.replace(/\D/g, '')}`;
+      writes.push(recipientsRef.doc(id).set({ id, phone, type: 'phone', addedAt: now, lastInvitedAt: null, inviteCount: 0 }, { merge: true }));
+    }
+    await Promise.all(writes);
+
+    let inviteResult = { sent: 0, failed: 0 };
+    if (sendInvites !== false) {
+      inviteResult = await _sendPulseInvitesToContacts({
+        campaignId: lead.campaignId,
+        leaderFirstName: lead.firstName,
+        emails,
+        phones,
+      });
+      await db.collection('pulse_leads').doc(lead.id).update({
+        inviteCount: (lead.inviteCount || 0) + inviteResult.sent,
+        lastActivityAt: now,
+      });
+    }
+    return { added: emails.length + phones.length, ...inviteResult };
+  }
+);
+
+/**
+ * getLeaderPulseSnapshot — public callable. Returns sanitized aggregate
+ * for the leader dashboard. NEVER returns individual responses or PII of
+ * respondents.
+ */
+exports.getLeaderPulseSnapshot = onCall(
+  { cors: true, region: "us-central1", invoker: "public" },
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Session required.');
+    const { token } = request.data || {};
+    const lead = await _loadLeadByToken(token);
+
+    const campRef = db.collection('team_pulse_campaigns').doc(lead.campaignId);
+    const campSnap = await campRef.get();
+    if (!campSnap.exists) throw new HttpsError('not-found', 'Campaign missing.');
+    const camp = campSnap.data();
+
+    const weekKey = _isoWeekKeyPulse();
+
+    // Question rotation (mirrors client bank — keep in sync)
+    const QUESTIONS = [
+      { id: 'clarity', theme: 'Clarity', quant: 'How clear were priorities this week?' },
+      { id: 'support', theme: 'Support', quant: 'When you were blocked this week, did you feel supported?' },
+      { id: 'safety', theme: 'Trust & Safety', quant: 'Could you speak up honestly this week?' },
+      { id: 'signal', theme: 'Leadership Signal', quant: 'Overall, how did leadership feel this week?' },
+    ];
+    const m = String(weekKey).match(/W(\d+)$/);
+    const wn = m ? parseInt(m[1], 10) : 0;
+    const question = QUESTIONS[wn % QUESTIONS.length];
+
+    // Pull all responses to build trend (newest 8 weeks max)
+    const allRespSnap = await campRef.collection('responses').get();
+    const byWeek = new Map();
+    let currentWeekCount = 0;
+    for (const d of allRespSnap.docs) {
+      const r = d.data();
+      const k = r.weekKey || 'unknown';
+      if (k === weekKey) currentWeekCount += 1;
+      if (!byWeek.has(k)) byWeek.set(k, { energy: [], trust: [] });
+      const bucket = byWeek.get(k);
+      if (Number.isFinite(r.scoreEnergy)) bucket.energy.push(Number(r.scoreEnergy));
+      if (Number.isFinite(r.scoreTrust)) bucket.trust.push(Number(r.scoreTrust));
+    }
+    const sortedWeeks = [...byWeek.keys()].sort();
+    const trim = sortedWeeks.slice(-8);
+    const avg = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+    const trend = {
+      energy: trim.map((wk) => ({ weekKey: wk, avg: avg(byWeek.get(wk).energy) })),
+      trust: trim.map((wk) => ({ weekKey: wk, avg: avg(byWeek.get(wk).trust) })),
+    };
+
+    const responseCount = currentWeekCount;
+    const threshold = camp.minResponsesToUnlock || 4;
+    const unlocked = responseCount >= threshold;
+
+    let insight = null;
+    if (unlocked) {
+      const insSnap = await campRef.collection('insights').doc(weekKey).get();
+      if (insSnap.exists) insight = insSnap.data();
+    }
+
+    const recipientsSnap = await campRef.collection('recipients').count().get();
+    const teamSize = recipientsSnap.data().count;
+
+    // Program window
+    const programWeeks = camp.programWeeks || 4;
+    const startedAt = camp.programStartedAt && camp.programStartedAt.toDate
+      ? camp.programStartedAt.toDate()
+      : (camp.createdAt && camp.createdAt.toDate ? camp.createdAt.toDate() : new Date());
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    const weeksElapsed = Math.floor((Date.now() - startedAt.getTime()) / msPerWeek);
+    const weekIndex = Math.min(programWeeks, weeksElapsed + 1);
+    const weeksRemaining = Math.max(0, programWeeks - weekIndex);
+
+    return {
+      firstName: lead.firstName,
+      campaignName: camp.name,
+      campaignId: lead.campaignId,
+      weekKey,
+      question,
+      responseCount,
+      threshold,
+      unlocked,
+      insight,
+      hasEmail: !!lead.email,
+      inviteCount: lead.inviteCount || 0,
+      teamSize,
+      trend,
+      weekIndex,
+      weeksRemaining,
+      status: camp.status || 'active',
+    };
+  }
+);
+
+/**
+ * notifyInsightReady — Firestore trigger. When a weekly insight is written,
+ * email the lead (if they captured an email).
+ */
+exports.notifyInsightReady = functionsV1
+  .firestore
+  .document('team_pulse_campaigns/{campaignId}/insights/{weekKey}')
+  .onCreate(async (snap, context) => {
+    try {
+      const weekKey = context.params.weekKey;
+      // Skip monthly synthesis docs (they use 'month-YYYY-MM' keys)
+      if (String(weekKey).startsWith('month-')) return null;
+
+      const campaignId = context.params.campaignId;
+      const campSnap = await db.collection('team_pulse_campaigns').doc(campaignId).get();
+      if (!campSnap.exists) return null;
+      const camp = campSnap.data();
+      if (!camp.leaderToken) return null; // Admin-created campaign — skip
+
+      const leadSnap = await db.collection('pulse_leads').doc(camp.leaderToken).get();
+      if (!leadSnap.exists) return null;
+      const lead = leadSnap.data();
+      if (!lead.email) return null;
+
+      const insight = snap.data();
+      const dashUrl = `https://${_appDomainPulse()}/?leader=${camp.leaderToken}`;
+      const body =
+        `Hi ${lead.firstName || 'there'},\n\n` +
+        `Your weekly anonymous team pulse insight is ready:\n\n` +
+        `"${(insight.insight || '').slice(0, 400)}"\n\n` +
+        `Open your dashboard for the full coaching insight, the suggested behavior shift, and one experiment to try this week.\n\n` +
+        `View dashboard: ${dashUrl}`;
+      await sendEmailNotification(
+        lead.email,
+        `Your team pulse insight is ready`,
+        body,
+        { linkText: 'View dashboard', linkUrl: dashUrl }
+      );
+      logger.info('[pulse] insight email sent', { campaignId, weekKey });
+    } catch (e) {
+      logger.error('[pulse] notifyInsightReady failed', e);
+    }
+    return null;
+  });
+
+/**
+ * renewPulseCampaign — public callable. Resets the program window for another
+ * 4 weeks. Triggered from the leader dashboard one-click "Run another 4 weeks"
+ * button after a campaign has completed.
+ */
+exports.renewPulseCampaign = onCall(
+  { cors: true, region: "us-central1", invoker: "public" },
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Session required.');
+    const { token } = request.data || {};
+    const lead = await _loadLeadByToken(token);
+    const campRef = db.collection('team_pulse_campaigns').doc(lead.campaignId);
+    const now = admin.firestore.FieldValue.serverTimestamp();
+    await campRef.update({
+      status: 'active',
+      programStartedAt: now,
+      programWeek: 1,
+      programWeeks: 4,
+      renewedAt: now,
+      updatedAt: now,
+    });
+    await db.collection('pulse_leads').doc(lead.id).update({ lastActivityAt: now });
+    return { ok: true };
+  }
+);
+
+/**
+ * weeklyPulseRemind — scheduled, Mondays 9:00 AM ET.
+ * For every active self-serve pulse, re-sends the anonymous link to all
+ * recipients. Also auto-completes campaigns that have exhausted their
+ * 4-week program window and emails the leader the wrap-up summary.
+ *
+ * Anonymity is preserved: we send to every recipient because we cannot tell
+ * (and never store) who responded last week.
+ */
+exports.weeklyPulseRemind = onSchedule(
+  { schedule: '0 9 * * MON', timeZone: 'America/New_York', region: 'us-central1' },
+  async () => {
+    const snap = await db.collection('team_pulse_campaigns')
+      .where('status', '==', 'active')
+      .where('ownerType', '==', 'self-serve')
+      .get();
+
+    if (snap.empty) {
+      logger.info('[pulse] weeklyPulseRemind: no active self-serve campaigns');
+      return;
+    }
+
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    let reminded = 0;
+    let completed = 0;
+
+    for (const docSnap of snap.docs) {
+      const camp = docSnap.data();
+      const programWeeks = camp.programWeeks || 4;
+      const startedAt = camp.programStartedAt && camp.programStartedAt.toDate
+        ? camp.programStartedAt.toDate()
+        : (camp.createdAt && camp.createdAt.toDate ? camp.createdAt.toDate() : new Date());
+      const weeksElapsed = Math.floor((Date.now() - startedAt.getTime()) / msPerWeek);
+
+      // Auto-complete if past program window
+      if (weeksElapsed >= programWeeks) {
+        await docSnap.ref.update({
+          status: 'completed',
+          completedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        completed += 1;
+
+        // Email leader wrap-up + one-click renew
+        if (camp.leaderToken) {
+          try {
+            const leadSnap = await db.collection('pulse_leads').doc(camp.leaderToken).get();
+            if (leadSnap.exists && leadSnap.data().email) {
+              const lead = leadSnap.data();
+              const dashUrl = `https://${_appDomainPulse()}/?leader=${camp.leaderToken}`;
+              const body =
+                `Hi ${lead.firstName || 'there'},\n\n` +
+                `Your 4-week anonymous team pulse is complete. Open your dashboard to see the trend lines for Energy and Trust, plus your final coaching insight.\n\n` +
+                `If you'd like to keep the conversation going, you can run another 4 weeks with one click from your dashboard.\n\n` +
+                `View dashboard: ${dashUrl}`;
+              await sendEmailNotification(
+                lead.email,
+                `Your team pulse 4-week summary is ready`,
+                body,
+                { linkText: 'View dashboard', linkUrl: dashUrl }
+              );
+            }
+          } catch (e) {
+            logger.warn('[pulse] wrap-up email failed', { err: e.message, campaignId: docSnap.id });
+          }
+        }
+        continue;
+      }
+
+      // Normal weekly reminder
+      const recipientsSnap = await docSnap.ref.collection('recipients').get();
+      if (recipientsSnap.empty) continue;
+      const emails = [];
+      const phones = [];
+      for (const r of recipientsSnap.docs) {
+        const d = r.data();
+        if (d.email) emails.push(d.email);
+        if (d.phone) phones.push(d.phone);
+      }
+      try {
+        await _sendPulseInvitesToContacts({
+          campaignId: docSnap.id,
+          leaderFirstName: camp.leaderName,
+          emails,
+          phones,
+        });
+        reminded += emails.length + phones.length;
+        await docSnap.ref.update({
+          programWeek: Math.min(programWeeks, weeksElapsed + 1),
+          lastReminderAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      } catch (e) {
+        logger.warn('[pulse] reminder failed', { campaignId: docSnap.id, err: e.message });
+      }
+    }
+    logger.info(`[pulse] weeklyPulseRemind: reminded ${reminded} contacts, completed ${completed} campaigns`);
+  }
+);
+
+/* ============================================================================
+ * LeaderReps Lab — Leadership Identity Statement Builder
+ * Public, anonymous-auth permitted. Two functions:
+ *   - generateIdentityStatement: synthesizes 3 statement variations via Gemini
+ *   - saveIdentityLead: captures email + statement, emails printable card
+ * ========================================================================== */
+
+function _normalizeEmailIdentity(raw) {
+  if (!raw) return '';
+  const e = String(raw).trim().toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) ? e : '';
+}
+
+function _appDomainIdentity() {
+  const projectId =
+    process.env.GCLOUD_PROJECT ||
+    (process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId);
+  return projectId === 'leaderreps-prod'
+    ? 'arena.leaderreps.com'
+    : projectId === 'leaderreps-test'
+      ? 'leaderreps-test.web.app'
+      : 'leaderreps-pd-platform.web.app';
+}
+
+/**
+ * generateIdentityStatement — public callable, anonymous-auth permitted.
+ * Input: { answers: { word, best, known, gap } }
+ * Output: { variations: { bold, grounded, aspirational } }
+ */
+exports.generateIdentityStatement = onCall(
+  { cors: true, region: 'us-central1', invoker: 'public', secrets: ['GEMINI_API_KEY'] },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Session required.');
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      logger.error('[identity] GEMINI_API_KEY not configured');
+      throw new HttpsError('internal', 'AI service not configured.');
+    }
+
+    const a = (request.data && request.data.answers) || {};
+    const word = String(a.word || '').trim().slice(0, 80);
+    const best = String(a.best || '').trim().slice(0, 400);
+    const known = String(a.known || '').trim().slice(0, 400);
+    const gap = String(a.gap || '').trim().slice(0, 400);
+    // Deep Dive answers (optional — present when user took the longer path)
+    const values = String(a.values || '').trim().slice(0, 400);
+    const purpose = String(a.purpose || '').trim().slice(0, 400);
+    const shadow = String(a.shadow || '').trim().slice(0, 400);
+    const isDeep = !!(values || purpose || shadow);
+
+    // We allow some answers to be skipped, but require at least one signal.
+    const haveAny = word || best || known || gap || values || purpose || shadow;
+    if (!haveAny) {
+      throw new HttpsError(
+        'invalid-argument',
+        'Please answer at least one prompt.'
+      );
+    }
+
+    const systemInstruction =
+      `You are an executive leadership coach helping a working leader articulate their Leadership Identity. ` +
+      `A Leadership Identity is NOT a slogan — it is a living artifact with three parts:\n` +
+      `  • ANCHOR: who they are at their best (one word + one short first-person sentence).\n` +
+      `  • EVIDENCE: 3 observable behaviors that prove the anchor is alive ("you'll know I'm living this when I…").\n` +
+      `  • EDGE: the trigger that pulls them off their anchor + a one-line recovery move.\n\n` +
+      `You write in clear, modern, plain English — no jargon, no clichés, no buzzwords ` +
+      `("authentic", "empower", "drive results", "passionate", "synergy", etc.). ` +
+      `Use specific language drawn from the leader's own answers — do not invent details. ` +
+      `Statements feel like something the leader could actually say out loud.\n` +
+      `Output JSON only — no prose, no markdown fences.`;
+
+    const deepBlock = isDeep
+      ? `\n5. Their non-negotiables (will not compromise on): "${values || '(skipped)'}"\n` +
+        `6. Who they are leading FOR and why it matters: "${purpose || '(skipped)'}"\n` +
+        `7. How they show up under stress that they are NOT proud of: "${shadow || '(skipped)'}"\n`
+      : '';
+
+    const edgeGuidance = shadow
+      ? `\n- "edgeTrigger": Use the leader's OWN answer to #7 (their shadow under stress) — rephrase as a first-person sentence (8-20 words) naming the moment/feeling that pulls them off their anchor. Do NOT invent a different trigger; ground it in what they actually said.\n` +
+        `- "edgeRecovery": ONE first-person sentence (8-20 words) — a small, do-it-now behavior that gets them back to their anchor and counters the specific shadow in #7.\n`
+      : `\n- "edgeTrigger": ONE first-person sentence (8-20 words) naming the moment/feeling that pulls them off their anchor. Drawn from answer #4 or #2. Plain language.\n` +
+        `- "edgeRecovery": ONE first-person sentence (8-20 words) — a small, do-it-now move that gets them back to their anchor. A behavior, not a feeling.\n`;
+
+    const anchorGuidance = (values || purpose)
+      ? `- "anchorStatement": ONE first-person, present-tense sentence (12-22 words) that names who they are at their best. Use the anchorWord verbatim. Reflect their non-negotiables (#5) or who they serve (#6) implicitly — make it specific to THIS leader. No buzzwords.\n`
+      : `- "anchorStatement": ONE first-person, present-tense sentence (12-22 words) that names who they are at their best. Use the anchorWord verbatim. No buzzwords.\n`;
+
+    const prompt =
+      `A leader answered ${isDeep ? 'seven' : 'four'} short prompts about how they lead.\n\n` +
+      `1. One word for how they lead: "${word || '(skipped)'}"\n` +
+      `2. When they are at their best: "${best || '(skipped)'}"\n` +
+      `3. What they want to be known for: "${known || '(skipped)'}"\n` +
+      `4. What their team needs more of from them: "${gap || '(skipped)'}"` +
+      deepBlock + `\n` +
+      `Build the structured Leadership Identity artifact:\n\n` +
+      `ANCHOR\n` +
+      `- "anchorWord": one short, concrete word (lowercase, no punctuation) that best names how they lead at their best. Prefer the leader's own word from #1 if it's strong; otherwise pick a plain-English alternative grounded in their answers.\n` +
+      anchorGuidance + `\n` +
+      `EVIDENCE\n` +
+      `- "evidence": EXACTLY 3 short, observable behaviors a teammate could literally see. Each begins with "I " and a verb (e.g. "I name the hard thing in the first 5 minutes."). 8-18 words each. Concrete, not abstract.${isDeep ? ' Where possible, ground the evidence in the leader\'s purpose (#6) and non-negotiables (#5).' : ''}\n\n` +
+      `EDGE` + edgeGuidance + `\n` +
+      `ALTERNATES\n` +
+      `- "alternates": TWO additional candidate anchorStatement options (different tone — one more "bold", one more "aspirational"). Same constraints.\n\n` +
+      `Hard constraints:\n` +
+      `- First-person, present-tense throughout.\n` +
+      `- No corporate jargon. No "I am authentic" / "I empower" / "I drive" — replace with concrete behavior.\n` +
+      `- Use specific language from the answers above.\n` +
+      `- Never reference the prompt numbers.\n\n` +
+      `Return ONLY raw JSON in this exact shape:\n` +
+      `{\n` +
+      `  "anchorWord": "...",\n` +
+      `  "anchorStatement": "...",\n` +
+      `  "evidence": ["...", "...", "..."],\n` +
+      `  "edgeTrigger": "...",\n` +
+      `  "edgeRecovery": "...",\n` +
+      `  "alternates": ["...", "..."]\n` +
+      `}`;
+
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-2.0-flash',
+        systemInstruction,
+        generationConfig: {
+          temperature: 0.8,
+          responseMimeType: 'application/json',
+        },
+      });
+      const result = await model.generateContent(prompt);
+      const text = (await result.response).text();
+
+      let parsed;
+      try {
+        parsed = JSON.parse(text);
+      } catch (e) {
+        const m = text.match(/\{[\s\S]*\}/);
+        if (!m) throw e;
+        parsed = JSON.parse(m[0]);
+      }
+
+      const trim = (v, n) => String(v || '').trim().slice(0, n);
+      const evidenceArr = Array.isArray(parsed.evidence) ? parsed.evidence : [];
+      const alternatesArr = Array.isArray(parsed.alternates) ? parsed.alternates : [];
+
+      const artifact = {
+        anchorWord: trim(parsed.anchorWord, 40),
+        anchorStatement: trim(parsed.anchorStatement, 280),
+        evidence: evidenceArr
+          .map((e) => trim(e, 200))
+          .filter(Boolean)
+          .slice(0, 3),
+        edgeTrigger: trim(parsed.edgeTrigger, 240),
+        edgeRecovery: trim(parsed.edgeRecovery, 240),
+        alternates: alternatesArr
+          .map((e) => trim(e, 280))
+          .filter(Boolean)
+          .slice(0, 3),
+      };
+
+      if (!artifact.anchorStatement) {
+        throw new Error('Empty model output (anchorStatement missing)');
+      }
+
+      // Backward-compat: also return the legacy `variations` shape so older
+      // clients (e.g. the marketing-lab landing page) keep working.
+      const variations = {
+        grounded: artifact.anchorStatement,
+      };
+      if (artifact.alternates[0]) variations.bold = artifact.alternates[0];
+      if (artifact.alternates[1]) variations.aspirational = artifact.alternates[1];
+
+      logger.info('[identity] generated structured', {
+        anchorWord: artifact.anchorWord,
+        evidenceCount: artifact.evidence.length,
+        path: isDeep ? 'deep' : 'quick',
+      });
+
+      return { artifact, variations };
+    } catch (e) {
+      logger.error('[identity] generation failed', { err: e.message });
+      throw new HttpsError('internal', 'Could not draft your statement.');
+    }
+  }
+);
+
+/**
+ * saveIdentityLead — public callable, anonymous-auth permitted.
+ * Input: { email, statement, answers, chosenKey }
+ * Output: { token }
+ * Side-effect: writes identity_leads/{token}; emails printable card.
+ */
+exports.saveIdentityLead = onCall(
+  { cors: true, region: 'us-central1', invoker: 'public' },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Session required.');
+    }
+    const { email, statement, answers, chosenKey } = request.data || {};
+    const cleaned = _normalizeEmailIdentity(email);
+    if (!cleaned) {
+      throw new HttpsError('invalid-argument', 'Valid email required.');
+    }
+    const stmt = String(statement || '').trim().slice(0, 500);
+    if (!stmt) {
+      throw new HttpsError('invalid-argument', 'Statement required.');
+    }
+
+    const token = crypto.randomBytes(16).toString('hex');
+    const now = admin.firestore.FieldValue.serverTimestamp();
+
+    const safeAnswers = {
+      word: String((answers && answers.word) || '').slice(0, 80),
+      best: String((answers && answers.best) || '').slice(0, 400),
+      known: String((answers && answers.known) || '').slice(0, 400),
+      gap: String((answers && answers.gap) || '').slice(0, 400),
+    };
+
+    await db.collection('identity_leads').doc(token).set({
+      token,
+      email: cleaned,
+      statement: stmt,
+      chosenKey: String(chosenKey || '').slice(0, 32),
+      answers: safeAnswers,
+      createdAt: now,
+      source: 'lab-identity-builder',
+    });
+
+    // Fire-and-forget email — never block the user on email delivery.
+    (async () => {
+      try {
+        const url = `https://${_appDomainIdentity()}/?identity-start`;
+        const body =
+          `Here's the Leadership Identity Statement you crafted:\n\n` +
+          `"${stmt}"\n\n` +
+          `Tape it to your monitor. Read it before your next 1:1.\n\n` +
+          `Want to revisit or rebuild? Open the tool again: ${url}\n\n` +
+          `— LeaderReps Lab`;
+        await sendEmailNotification(
+          cleaned,
+          'Your Leadership Identity Statement',
+          body,
+          { linkText: 'Open the tool again', linkUrl: url }
+        );
+      } catch (e) {
+        logger.warn('[identity] email failed', { err: e.message });
+      }
+    })();
+
+    return { token };
   }
 );

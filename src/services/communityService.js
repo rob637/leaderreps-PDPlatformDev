@@ -15,6 +15,7 @@ import {
   query,
   where,
   getDocs,
+  runTransaction,
   serverTimestamp,
   Timestamp
 } from 'firebase/firestore';
@@ -261,72 +262,111 @@ export const cancelCommunitySession = async (db, sessionId, reason = '') => {
 
 /**
  * Register a user for a community session
+ * Transactional: hard-caps at maxAttendees and decrements spotsLeft atomically.
  */
 export const registerForCommunitySession = async (db, userId, sessionId, sessionData = {}) => {
   if (!db) throw new Error('Database not initialized');
   if (!userId || !sessionId) throw new Error('userId and sessionId required');
-  
+
   const registrationId = `${userId}_${sessionId}`;
-  const docRef = doc(db, COMMUNITY_COLLECTIONS.REGISTRATIONS, registrationId);
-  
-  const registration = {
-    id: registrationId,
-    userId,
-    sessionId,
-    sessionTitle: sessionData.title || '',
-    sessionDate: sessionData.date || '',
-    sessionTime: sessionData.time || '',
-    sessionType: sessionData.sessionType || '',
-    status: REGISTRATION_STATUS.REGISTERED,
-    registeredAt: serverTimestamp(),
-    updatedAt: serverTimestamp()
-  };
-  
-  await setDoc(docRef, registration);
-  
-  // Update spots left on session
-  if (sessionData.spotsLeft > 0) {
-    const sessionRef = doc(db, COMMUNITY_COLLECTIONS.SESSIONS, sessionId);
-    await updateDoc(sessionRef, {
-      spotsLeft: sessionData.spotsLeft - 1,
-      updatedAt: serverTimestamp()
+  const regRef = doc(db, COMMUNITY_COLLECTIONS.REGISTRATIONS, registrationId);
+  const sessionRef = doc(db, COMMUNITY_COLLECTIONS.SESSIONS, sessionId);
+
+  await runTransaction(db, async (tx) => {
+    const sessionSnap = await tx.get(sessionRef);
+    if (!sessionSnap.exists()) {
+      throw new Error('SESSION_NOT_FOUND');
+    }
+    const session = sessionSnap.data();
+
+    const regSnap = await tx.get(regRef);
+    const existing = regSnap.exists() ? regSnap.data() : null;
+    const alreadyActive =
+      existing && existing.status === REGISTRATION_STATUS.REGISTERED;
+
+    const maxAttendees =
+      typeof session.maxAttendees === 'number' ? session.maxAttendees : null;
+    const currentSpots =
+      typeof session.spotsLeft === 'number' ? session.spotsLeft : maxAttendees;
+
+    if (!alreadyActive && maxAttendees !== null && currentSpots <= 0) {
+      throw new Error('SESSION_FULL');
+    }
+
+    tx.set(regRef, {
+      id: registrationId,
+      userId,
+      sessionId,
+      sessionTitle: sessionData.title || session.title || '',
+      sessionDate: sessionData.date || session.date || '',
+      sessionTime: sessionData.time || session.time || '',
+      sessionType: sessionData.sessionType || session.sessionType || '',
+      status: REGISTRATION_STATUS.REGISTERED,
+      registeredAt: existing?.registeredAt || serverTimestamp(),
+      updatedAt: serverTimestamp(),
     });
-  }
-  
+
+    if (!alreadyActive && maxAttendees !== null) {
+      tx.update(sessionRef, {
+        spotsLeft: Math.max(0, currentSpots - 1),
+        updatedAt: serverTimestamp(),
+      });
+    }
+  });
+
   console.log('[communityService] User registered:', registrationId);
   return registrationId;
 };
 
 /**
  * Cancel a user's registration
+ * Transactional: only restores a spot if the registration was active.
  */
 export const cancelCommunityRegistration = async (db, userId, sessionId) => {
   if (!db) throw new Error('Database not initialized');
-  
+
   const registrationId = `${userId}_${sessionId}`;
-  const docRef = doc(db, COMMUNITY_COLLECTIONS.REGISTRATIONS, registrationId);
-  
-  await updateDoc(docRef, {
-    status: REGISTRATION_STATUS.CANCELLED,
-    cancelledAt: serverTimestamp(),
-    updatedAt: serverTimestamp()
-  });
-  
-  // Update spots left on session (add back the spot)
+  const regRef = doc(db, COMMUNITY_COLLECTIONS.REGISTRATIONS, registrationId);
   const sessionRef = doc(db, COMMUNITY_COLLECTIONS.SESSIONS, sessionId);
-  const sessionSnap = await getDocs(query(
-    collection(db, COMMUNITY_COLLECTIONS.SESSIONS),
-    where('__name__', '==', sessionId)
-  ));
-  
-  if (!sessionSnap.empty) {
-    const session = sessionSnap.docs[0].data();
-    await updateDoc(sessionRef, {
-      spotsLeft: (session.spotsLeft || 0) + 1,
-      updatedAt: serverTimestamp()
+
+  await runTransaction(db, async (tx) => {
+    // 1) ALL READS FIRST (Firestore requires reads before writes in a tx)
+    const regSnap = await tx.get(regRef);
+    if (!regSnap.exists()) return;
+    const regData = regSnap.data();
+    const wasActive = regData.status === REGISTRATION_STATUS.REGISTERED;
+
+    let sessionSnap = null;
+    if (wasActive) {
+      sessionSnap = await tx.get(sessionRef);
+    }
+
+    // 2) THEN ALL WRITES
+    tx.update(regRef, {
+      status: REGISTRATION_STATUS.CANCELLED,
+      cancelledAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     });
-  }
-  
+
+    if (wasActive && sessionSnap && sessionSnap.exists()) {
+      const session = sessionSnap.data();
+      const maxAttendees =
+        typeof session.maxAttendees === 'number'
+          ? session.maxAttendees
+          : null;
+      const currentSpots =
+        typeof session.spotsLeft === 'number' ? session.spotsLeft : 0;
+      const nextSpots =
+        maxAttendees !== null
+          ? Math.min(maxAttendees, currentSpots + 1)
+          : currentSpots + 1;
+      tx.update(sessionRef, {
+        spotsLeft: nextSpots,
+        updatedAt: serverTimestamp(),
+      });
+    }
+  });
+
   console.log('[communityService] Registration cancelled:', registrationId);
 };
 

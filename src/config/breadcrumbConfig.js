@@ -11,6 +11,11 @@ export const BREADCRUMB_MAP = {
     { label: 'Home', path: 'dashboard' },
     { label: 'Development Plan', path: null }
   ],
+  'identity-statement': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Locker', path: 'locker' },
+    { label: 'Leadership Identity', path: null }
+  ],
   'daily-practice': [
     { label: 'Home', path: 'dashboard' },
     { label: 'Daily Practice', path: null }
@@ -40,12 +45,32 @@ export const BREADCRUMB_MAP = {
     { label: 'Events', path: null }
   ],
   'ask-coach': [
+    // Note: screen key kept as 'ask-coach' for backward compatibility;
+    // user-facing label uses 'Ask a Trainer'.
     { label: 'Home', path: 'dashboard' },
-    { label: 'Ask a Coach', path: null }
+    { label: 'Ask a Trainer', path: null }
+  ],
+  'ai-coach': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Choose Your AI Coach', path: null }
+  ],
+  'rep': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Coaching Sessions', path: 'coaching-hub' },
+    { label: 'Rep', path: null }
+  ],
+  'rep-coach': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Coaching Sessions', path: 'coaching-hub' },
+    { label: 'Rep', path: null }
   ],
   'conditioning-light': [
     { label: 'Home', path: 'dashboard' },
     { label: 'Conditioning', path: null }
+  ],
+  'community-feed': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Community Feed', path: null }
   ],
   
   // ============================================
@@ -322,6 +347,22 @@ export const BREADCRUMB_MAP = {
     { label: 'Admin', path: 'admin-hub' },
     { label: 'System Admin', path: null }
   ],
+  'marketing-center': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Admin', path: 'admin-hub' },
+    { label: 'Sales & Marketing', path: null }
+  ],
+  'leaderreps-lab': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Admin', path: 'admin-hub' },
+    { label: 'LeaderReps Lab', path: null }
+  ],
+  'team-pulse': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Admin', path: 'admin-hub' },
+    { label: 'LeaderReps Lab', path: 'leaderreps-lab' },
+    { label: 'Anonymous Team Pulse', path: null }
+  ],
   'admin-content-home': [
     { label: 'Home', path: 'dashboard' },
     { label: 'Admin', path: 'admin-portal' },
@@ -347,6 +388,11 @@ export const BREADCRUMB_MAP = {
     { label: 'Admin', path: 'admin-portal' },
     { label: 'Coaching Manager', path: null }
   ],
+  'admin-events-manager': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Admin', path: 'admin-portal' },
+    { label: 'Events Manager', path: null }
+  ],
   'admin-lov-manager': [
     { label: 'Home', path: 'dashboard' },
     { label: 'Admin', path: 'admin-portal' },
@@ -364,8 +410,8 @@ export const BREADCRUMB_MAP = {
   ],
   'debug-data': [
     { label: 'Home', path: 'dashboard' },
-    { label: 'Admin', path: 'admin-portal' },
-    { label: 'Debug Data', path: null }
+    { label: 'Settings', path: 'app-settings' },
+    { label: 'Debug Data Viewer', path: null }
   ]
 };
 

@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { User, Lock, Code, Cpu, Settings, Shield, ArrowLeft, LogOut, Key, Mail, Bell, BellOff, CheckCircle } from 'lucide-react';
+import { User, Lock, Code, Cpu, Settings, Shield, LogOut, Key, Mail, Bell, BellOff, CheckCircle } from 'lucide-react';
 import { sendPasswordResetEmail, doc, getDoc } from '../../services/firebaseUtils';
+import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
 import { Button, Card } from '../ui';
+import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
 import { notificationService } from '../../services/notificationService';
 
 const AppSettingsScreen = () => {
@@ -84,6 +86,10 @@ const AppSettingsScreen = () => {
   return (
     <div className="min-h-screen bg-[#FAFBFC] dark:bg-slate-900 p-5 sm:p-8 lg:p-10" style={{ fontFamily: 'var(--font-body)' }}>
       <div className="max-w-5xl mx-auto space-y-8">
+                <BreadcrumbNav
+                    items={getBreadcrumbs('app-settings')}
+                    navigate={navigate}
+                />
         
         {/* Header */}
         <header className="flex items-center gap-4 mb-10">

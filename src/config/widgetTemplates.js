@@ -123,36 +123,36 @@ export const WIDGET_TEMPLATES = {
 })()
     `,
     'lis-maker': `
-<Card title="LIS Maker" icon={PenTool} accent="NAVY" helpText={widgetHelpText}>
-  <div className="space-y-2">
+<Card title="Leadership Identity" icon={Compass} accent="NAVY" helpText={widgetHelpText}>
+  <div className="space-y-3">
     <div className="bg-teal-50 p-3 rounded-xl border border-teal-100">
-      <h4 className="font-bold text-teal-900 mb-1">Build Your Identity</h4>
-      <p className="text-sm text-teal-800 mb-2">
-        Your Leadership Identity Statement (LIS) anchors you in who you want to be.
-      </p>
-      <p className="text-xs text-teal-600 italic mb-1">
-        Try this format: "I am a [Core Value] leader who [Action] to create [Impact]."
+      <h4 className="font-bold text-teal-900 mb-1">Build your Leadership Identity</h4>
+      <p className="text-sm text-teal-800">
+        A coach AI drafts your <b>Anchor</b>, three pieces of <b>Evidence</b>, and your <b>Edge</b> from four short prompts.
       </p>
     </div>
 
-    <div>
-      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-        Your Statement
-      </label>
-      <textarea 
-        value={identityStatement}
-        onChange={(e) => setIdentityStatement(e.target.value)}
-        className="w-full p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all text-sm min-h-[80px]"
-        placeholder="I am a..."
-      />
-    </div>
+    {identityStatement && identityStatement.trim().length > 0 ? (
+      <div className="p-3 rounded-xl bg-white border border-slate-200">
+        <p className="text-sm font-serif italic text-slate-800">
+          "{identityStatement}"
+        </p>
+        <p className="mt-1 text-[11px] text-slate-500">
+          Open the builder to upgrade to the structured 3-card version.
+        </p>
+      </div>
+    ) : (
+      <p className="text-xs text-slate-500">
+        4 short prompts &middot; about 4 minutes &middot; you can edit anything before saving.
+      </p>
+    )}
 
-    <button 
-      onClick={() => handleSaveIdentity(identityStatement)}
+    <button
+      onClick={() => navigate && navigate('identity-statement')}
       className="w-full py-2 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors flex items-center justify-center gap-2"
     >
-      <Save className="w-4 h-4" />
-      Save Identity
+      <Compass className="w-4 h-4" />
+      {identityStatement && identityStatement.trim().length > 0 ? 'Open my Identity' : 'Build my Identity'}
     </button>
   </div>
 </Card>

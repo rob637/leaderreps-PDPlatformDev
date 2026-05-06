@@ -29,8 +29,28 @@ const VoiceTextarea = ({
 }) => {
   const [partialTranscript, setPartialTranscript] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const [micError, setMicError] = useState(null);
+
+  const MIC_ERROR_MESSAGES = {
+    'not-allowed':
+      'Microphone access is blocked. Tap the lock/info icon in your browser\u2019s address bar, allow microphone access for this site, then refresh.',
+    'service-not-allowed':
+      'Microphone access is blocked at the device level. Open device settings and allow microphone for this browser.',
+    'audio-capture':
+      'No microphone detected. Check that one is connected and not in use by another app.',
+    network: 'Network error reaching the speech service. Check your connection.',
+    'no-speech': 'We didn\u2019t hear anything. Try moving closer to the mic.',
+    'not-supported':
+      'Voice input isn\u2019t supported in this browser. Try Chrome on desktop or Safari on iOS.',
+  };
+
+  const handleMicError = (code) => {
+    setMicError(MIC_ERROR_MESSAGES[code] || 'Voice input failed. Please try again.');
+    setIsRecording(false);
+  };
 
   const handleTranscription = (text) => {
+    setMicError(null);
     const newValue = value ? `${value} ${text}` : text;
     onChange(newValue);
     setPartialTranscript('');
@@ -38,6 +58,7 @@ const VoiceTextarea = ({
   };
 
   const handlePartialTranscription = (text) => {
+    setMicError(null);
     setPartialTranscript(text);
     setIsRecording(true);
   };
@@ -104,6 +125,7 @@ const VoiceTextarea = ({
           <VoiceInputButton
             onTranscription={handleTranscription}
             onPartialTranscription={handlePartialTranscription}
+            onError={handleMicError}
             disabled={disabled}
             size="small"
           />
@@ -120,6 +142,23 @@ const VoiceTextarea = ({
           </div>
         )}
       </div>
+
+      {/* Inline mic error banner (visible even if the floating tooltip
+          inside VoiceInputButton is clipped by an overflow-hidden parent) */}
+      {micError && (
+        <div className="mt-2 flex items-start gap-2 p-2.5 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-xs dark:bg-rose-900/30 dark:border-rose-800 dark:text-rose-200">
+          <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">{micError}</div>
+          <button
+            type="button"
+            onClick={() => setMicError(null)}
+            className="text-rose-500 hover:text-rose-700 font-bold leading-none"
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Footer row: char count + min warning + error */}
       {showFooter && (

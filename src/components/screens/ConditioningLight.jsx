@@ -15,12 +15,16 @@
 //   - NO planned-vs-logged distinction.
 //   - Reps stored in `users/{uid}/reps_light` (new collection).
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  Zap, Mic, MicOff, Loader2, ArrowLeft, RotateCcw,
+  Zap, Loader2, ArrowLeft, RotateCcw,
   CheckCircle2, AlertCircle,
 } from 'lucide-react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
+import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
+import { useAppServices } from '../../services/useAppServices';
+import VoiceTextarea from '../conditioning/VoiceTextarea';
 
 // ---------------------------------------------------------------------------
 // RR catalog — names + condition keys MUST match functions/conditioning/rrConfig.js
@@ -79,56 +83,6 @@ const conditionLabel = (k) =>
     .trim();
 
 // ---------------------------------------------------------------------------
-// Web Speech API hook
-// ---------------------------------------------------------------------------
-const useSpeechRecognition = (onResult) => {
-  const [supported, setSupported] = useState(false);
-  const [listening, setListening] = useState(false);
-  const recogRef = useRef(null);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return;
-    setSupported(true);
-    const r = new SR();
-    r.continuous = true;
-    r.interimResults = false;
-    r.lang = 'en-US';
-    r.onresult = (event) => {
-      let chunk = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        if (event.results[i].isFinal) {
-          chunk += event.results[i][0].transcript + ' ';
-        }
-      }
-      if (chunk) onResult(chunk.trim());
-    };
-    r.onend = () => setListening(false);
-    r.onerror = () => setListening(false);
-    recogRef.current = r;
-    return () => {
-      try { r.stop(); } catch { /* noop */ }
-    };
-  }, [onResult]);
-
-  const start = () => {
-    if (!recogRef.current) return;
-    try {
-      recogRef.current.start();
-      setListening(true);
-    } catch { /* already started */ }
-  };
-  const stop = () => {
-    if (!recogRef.current) return;
-    try { recogRef.current.stop(); } catch { /* noop */ }
-    setListening(false);
-  };
-
-  return { supported, listening, start, stop };
-};
-
-// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 const ConditioningLight = () => {
@@ -138,11 +92,10 @@ const ConditioningLight = () => {
   const [error, setError] = useState(null);
   const [verdict, setVerdict] = useState(null);
 
-  const rr = useMemo(() => RR_TYPES.find((r) => r.key === rrType), [rrType]);
+  const { navigate } = useAppServices();
 
-  const appendSpeech = (chunk) =>
-    setTranscript((t) => (t ? `${t} ${chunk}` : chunk));
-  const speech = useSpeechRecognition(appendSpeech);
+  const rr = useMemo(() => RR_TYPES.find((r) => r.key === rrType), [rrType]);
+  const isPass = verdict?.result === 'pass';
 
   const reset = () => {
     setStep('select');
@@ -150,7 +103,6 @@ const ConditioningLight = () => {
     setTranscript('');
     setError(null);
     setVerdict(null);
-    speech.stop();
   };
 
   const startNew = () => {
@@ -163,7 +115,6 @@ const ConditioningLight = () => {
 
   const submit = async () => {
     if (!rrType || !transcript.trim()) return;
-    speech.stop();
     setStep('submitting');
     setError(null);
     try {
@@ -186,6 +137,7 @@ const ConditioningLight = () => {
   if (step === 'select') {
     return (
       <div className="max-w-[860px] mx-auto p-4 sm:p-6 lg:p-8">
+        <BreadcrumbNav items={getBreadcrumbs('conditioning-light')} navigate={navigate} />
         <header className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-2">
             <Zap className="w-8 h-8 text-corporate-teal" />
@@ -256,35 +208,14 @@ const ConditioningLight = () => {
         </header>
 
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 sm:p-5">
-          <textarea
+          <VoiceTextarea
             value={transcript}
-            onChange={(e) => setTranscript(e.target.value)}
+            onChange={setTranscript}
             disabled={submitting}
             rows={8}
-            placeholder="Type or speak your rep here…"
-            className="w-full resize-none border-0 bg-transparent focus:ring-0 focus:outline-none text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+            placeholder="Type or tap the mic to speak your rep…"
           />
-          <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700">
-            {speech.supported ? (
-              <button
-                type="button"
-                onClick={speech.listening ? speech.stop : speech.start}
-                disabled={submitting}
-                className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border ${
-                  speech.listening
-                    ? 'bg-rose-50 text-rose-700 border-rose-200'
-                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                {speech.listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                {speech.listening ? 'Stop' : 'Speak'}
-              </button>
-            ) : (
-              <span className="text-xs text-slate-400">
-                Voice input not available in this browser
-              </span>
-            )}
-
+          <div className="flex items-center justify-end pt-3 mt-3 border-t border-slate-100 dark:border-slate-700">
             <button
               type="button"
               onClick={submit}
@@ -303,6 +234,14 @@ const ConditioningLight = () => {
             <span>{error}</span>
           </div>
         )}
+
+        {verdict && !isPass && (verdict.observation || verdict.question) && (
+          <div className="mt-4 p-4 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800">
+            <p className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400 mb-2">Coach feedback from your last attempt</p>
+            {verdict.observation && <p className="text-sm text-slate-800 dark:text-slate-200 mb-1">{verdict.observation}</p>}
+            {verdict.question && <p className="text-sm text-slate-600 dark:text-slate-400 italic">{verdict.question}</p>}
+          </div>
+        )}
       </div>
     );
   }
@@ -310,7 +249,6 @@ const ConditioningLight = () => {
   // -------------------------------------------------------------------------
   // Step: verdict
   // -------------------------------------------------------------------------
-  const isPass = verdict?.result === 'pass';
   const isInvalid = verdict?.validity === 'invalid';
   const quickRead = verdict?.quickRead || {};
 
@@ -380,6 +318,16 @@ const ConditioningLight = () => {
       )}
 
       <div className="flex items-center justify-end gap-2 mt-6">
+        {!isPass && (
+          <button
+            type="button"
+            onClick={() => { setStep('input'); setError(null); }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border border-corporate-teal text-corporate-teal bg-white dark:bg-slate-900 hover:bg-corporate-teal/10"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Revise &amp; Resubmit
+          </button>
+        )}
         <button
           type="button"
           onClick={startNew}

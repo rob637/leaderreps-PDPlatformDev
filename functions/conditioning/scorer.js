@@ -11,9 +11,22 @@
 'use strict';
 
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const Anthropic = require('@anthropic-ai/sdk');
 const { getRrConfig } = require('./rrConfig');
 
-const SCORER_MODEL = 'gemini-2.0-flash';
+// Try Gemini models in order; if one is quota-exhausted (429), fall back to
+// the next. If all Gemini models fail, fall back to Anthropic Claude.
+const SCORER_MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+const ANTHROPIC_MODEL = 'claude-haiku-4-5';
+const MAX_SCORER_ATTEMPTS = 2;
+const BASE_RETRY_DELAY_MS = 700;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const isRetryableGeminiError = (error) => {
+  const status = error && typeof error.status === 'number' ? error.status : null;
+  return status === 429 || status === 500 || status === 503;
+};
 
 const buildSystemInstruction = () => `
 You are a STRICT scorer for a leadership behavior conditioning system. Your
@@ -105,25 +118,79 @@ const normalizeScorerOutput = (rrType, raw) => {
 };
 
 /**
- * Score a transcript for a given RR type using Gemini.
+ * Score a transcript for a given RR type using Gemini, falling back to
+ * Anthropic Claude if all Gemini models fail (e.g. quota exhausted).
  * Returns { scores, evidenceNotes, lowConfidence, rawText }.
  */
-const scoreTranscript = async ({ rrType, transcript, apiKey }) => {
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY not configured');
+const scoreTranscript = async ({ rrType, transcript, apiKey, anthropicApiKey }) => {
+  if (!apiKey && !anthropicApiKey) {
+    throw new Error('No AI API key configured (need GEMINI_API_KEY or ANTHROPIC_API_KEY)');
   }
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({
-    model: SCORER_MODEL,
-    systemInstruction: buildSystemInstruction(),
-    generationConfig: {
-      temperature: 0.2, // strict / deterministic
-      responseMimeType: 'application/json',
-    },
-  });
-  const result = await model.generateContent(buildUserPrompt(rrType, transcript));
-  const response = await result.response;
-  const text = response.text();
+  const systemInstruction = buildSystemInstruction();
+  const userPrompt = buildUserPrompt(rrType, transcript);
+  let text = '';
+  let lastError = null;
+
+  if (apiKey) {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    outer: for (const modelName of SCORER_MODELS) {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        systemInstruction,
+        generationConfig: {
+          temperature: 0.2, // strict / deterministic
+          responseMimeType: 'application/json',
+        },
+      });
+
+      for (let attempt = 1; attempt <= MAX_SCORER_ATTEMPTS; attempt += 1) {
+        try {
+          const result = await model.generateContent(userPrompt);
+          const response = await result.response;
+          text = response.text();
+          lastError = null;
+          break outer;
+        } catch (error) {
+          lastError = error;
+          // On 429, immediately try the next model (don't burn retries on the same exhausted quota).
+          if (error && error.status === 429) {
+            break;
+          }
+          if (!isRetryableGeminiError(error) || attempt === MAX_SCORER_ATTEMPTS) {
+            // Non-retryable or out of attempts on this model — try next model.
+            break;
+          }
+          await sleep(BASE_RETRY_DELAY_MS * attempt);
+        }
+      }
+    }
+  }
+
+  // If Gemini didn't produce text, try Anthropic Claude as ultimate fallback.
+  if (!text && anthropicApiKey) {
+    try {
+      const anthropic = new Anthropic({ apiKey: anthropicApiKey });
+      const response = await anthropic.messages.create({
+        model: ANTHROPIC_MODEL,
+        max_tokens: 1024,
+        temperature: 0.2,
+        system: systemInstruction,
+        messages: [{ role: 'user', content: userPrompt }],
+      });
+      const block = response && response.content && response.content[0];
+      text = block && block.type === 'text' ? block.text : '';
+      if (text) {
+        lastError = null;
+      }
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (!text && lastError) {
+    throw lastError;
+  }
+
   const parsed = safeJsonParse(text);
   // If JSON parsing failed, treat as low-confidence so the engine returns
   // an Invalid result rather than scoring 0s as if they were extracted.

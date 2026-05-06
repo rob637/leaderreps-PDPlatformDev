@@ -8,10 +8,12 @@
 
 import React, { useEffect, useState } from 'react';
 import {
-  MessageCircleQuestion, Send, Loader2, CheckCircle2,
+  Megaphone, Send, Loader2, CheckCircle2,
   Clock, Video, X, AlertCircle, Tag,
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
+import { PageLayout } from '../ui/PageLayout';
+import VoiceTextarea from '../conditioning/VoiceTextarea';
 import {
   subscribeUserQuestions,
   submitQuestion,
@@ -56,19 +58,27 @@ const StatusPill = ({ status }) => {
 };
 
 const AskCoach = () => {
-  const { db, user } = useAppServices();
+  const { db, user, navigate } = useAppServices();
   const userId = user?.uid;
 
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [titleText, setTitleText] = useState('');
   const [questionText, setQuestionText] = useState('');
-  const [contextText, setContextText] = useState('');
-  const [rrTag, setRrTag] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [busyId, setBusyId] = useState(null);
+
+  // Derive a short title from the first sentence (or first ~60 chars) of the
+  // question. Trainers use the title in the inbox to scan submissions.
+  const deriveTitle = (text) => {
+    const clean = (text || '').trim().replace(/\s+/g, ' ');
+    if (!clean) return '';
+    // Prefer the first sentence if it's a reasonable length.
+    const firstSentence = clean.split(/(?<=[.?!])\s/)[0] || clean;
+    const candidate = firstSentence.length <= 80 ? firstSentence : clean;
+    return candidate.length <= 80 ? candidate : `${candidate.slice(0, 77).trimEnd()}…`;
+  };
 
   useEffect(() => {
     if (!db || !userId) return undefined;
@@ -87,15 +97,12 @@ const AskCoach = () => {
     setSubmitting(true);
     try {
       await submitQuestion(db, user, {
-        title: titleText,
+        title: deriveTitle(questionText) || 'Question for trainer',
         question: questionText,
-        context: contextText,
-        rrTag: rrTag || null,
+        context: '',
+        rrTag: null,
       });
-      setTitleText('');
       setQuestionText('');
-      setContextText('');
-      setRrTag('');
       setSuccess(true);
     } catch (err) {
       setError(err?.message || 'Could not submit your question. Try again.');
@@ -117,22 +124,16 @@ const AskCoach = () => {
   };
 
   return (
-    <div className="max-w-[860px] mx-auto p-4 sm:p-6 lg:p-8">
-      <header className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <MessageCircleQuestion className="w-7 h-7 text-corporate-teal" />
-          <h1
-            className="text-3xl font-bold text-corporate-navy dark:text-white"
-            style={{ fontFamily: 'var(--font-heading)' }}
-          >
-            Ask a Coach
-          </h1>
-        </div>
-        <p className="text-slate-600 dark:text-slate-400">
-          Stuck on something? Send a question. A coach will reply with a
-          short video.
-        </p>
-      </header>
+    <PageLayout
+      title="Ask a Trainer"
+      icon={Megaphone}
+      subtitle="Stuck on something? Send a question. A trainer will reply with a short video or written response."
+      navigate={navigate}
+      breadcrumbs={[
+        { label: 'Home', path: 'dashboard' },
+        { label: 'Ask a Trainer', path: null },
+      ]}
+    >
 
       {/* Submit form */}
       <form
@@ -140,71 +141,23 @@ const AskCoach = () => {
         className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 mb-8"
       >
         <label
-          htmlFor="ask-title"
-          className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1"
-        >
-          Title
-        </label>
-        <input
-          id="ask-title"
-          type="text"
-          maxLength={80}
-          value={titleText}
-          onChange={(e) => setTitleText(e.target.value)}
-          disabled={submitting}
-          placeholder="A short summary (e.g. “Tough RED with my peer”)"
-          className="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-corporate-teal focus:outline-none focus:ring-1 focus:ring-corporate-teal mb-3"
-        />
-
-        <label
           htmlFor="ask-question"
           className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1"
         >
-          Your question
+          What do you want to ask?
         </label>
-        <textarea
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+          Type or tap the mic. Include any context that helps a trainer answer well.
+        </p>
+        <VoiceTextarea
           id="ask-question"
-          rows={4}
+          rows={6}
           value={questionText}
-          onChange={(e) => setQuestionText(e.target.value)}
+          onChange={setQuestionText}
           disabled={submitting}
-          placeholder="What do you want a coach's perspective on?"
-          className="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-corporate-teal focus:outline-none focus:ring-1 focus:ring-corporate-teal mb-3"
+          placeholder="e.g. I'm about to give a tough RED to a peer who outranks me. How do I open it without putting them on the defensive?"
+          className="mb-3"
         />
-
-        <label
-          htmlFor="ask-context"
-          className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1"
-        >
-          Context <span className="font-normal text-slate-400">(optional)</span>
-        </label>
-        <textarea
-          id="ask-context"
-          rows={3}
-          value={contextText}
-          onChange={(e) => setContextText(e.target.value)}
-          disabled={submitting}
-          placeholder="Any background that helps the coach answer well."
-          className="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-corporate-teal focus:outline-none focus:ring-1 focus:ring-corporate-teal mb-3"
-        />
-
-        <label
-          htmlFor="ask-rrtag"
-          className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1"
-        >
-          Related Rep <span className="font-normal text-slate-400">(optional)</span>
-        </label>
-        <select
-          id="ask-rrtag"
-          value={rrTag}
-          onChange={(e) => setRrTag(e.target.value)}
-          disabled={submitting}
-          className="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-corporate-teal focus:outline-none focus:ring-1 focus:ring-corporate-teal mb-3"
-        >
-          {RR_TAG_OPTIONS.map((o) => (
-            <option key={o.value || 'none'} value={o.value}>{o.label}</option>
-          ))}
-        </select>
 
         {error && (
           <div className="mb-3 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-sm text-rose-700 flex items-start gap-2">
@@ -215,22 +168,18 @@ const AskCoach = () => {
         {success && (
           <div className="mb-3 p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-700 flex items-start gap-2">
             <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
-            <span>Sent. A coach will reply shortly.</span>
+            <span>Sent. A trainer will reply shortly.</span>
           </div>
         )}
 
         <div className="flex justify-end">
           <button
             type="submit"
-            disabled={
-              submitting
-              || titleText.trim().length < 3
-              || questionText.trim().length < 10
-            }
+            disabled={submitting || questionText.trim().length < 10}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-corporate-teal text-white hover:bg-corporate-teal/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            {submitting ? 'Sending…' : 'Send to Coach'}
+            {submitting ? 'Sending…' : 'Send to Trainer'}
           </button>
         </div>
       </form>
@@ -302,13 +251,18 @@ const AskCoach = () => {
             {q.status === 'answered' && (
               <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                 <div className="text-xs font-semibold uppercase tracking-wider text-corporate-teal mb-2">
-                  Coach&apos;s reply
+                  Trainer&apos;s reply
                   {q.respondedAt && (
                     <span className="ml-2 font-normal text-slate-500">
                       · {formatTimestamp(q.respondedAt)}
                     </span>
                   )}
                 </div>
+                {q.responseText && (
+                  <p className="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap mb-2">
+                    {q.responseText}
+                  </p>
+                )}
                 {q.responseVideoUrl ? (
                   <a
                     href={q.responseVideoUrl}
@@ -320,16 +274,18 @@ const AskCoach = () => {
                     Watch video reply
                   </a>
                 ) : (
-                  <p className="text-sm text-slate-500 italic">
-                    Video reply not available.
-                  </p>
+                  !q.responseText && (
+                    <p className="text-sm text-slate-500 italic">
+                      Reply not available.
+                    </p>
+                  )
                 )}
               </div>
             )}
           </article>
         ))}
       </div>
-    </div>
+    </PageLayout>
   );
 };
 

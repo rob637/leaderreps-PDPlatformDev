@@ -19,7 +19,25 @@ import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAppServices } from '../../services/useAppServices';
 
-const phoneIsValid = (p) => /^\+\d{8,15}$/.test((p || '').trim());
+// Normalize to E.164. Accepts:
+//   "+14155551212"        → "+14155551212"
+//   "14155551212"         → "+14155551212"
+//   "415-555-1212"        → "+14155551212"  (assumes US/CA if 10 digits)
+//   "(415) 555 1212"      → "+14155551212"
+const normalizeToE164 = (raw) => {
+  if (!raw || typeof raw !== 'string') return '';
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+  const hasPlus = trimmed.startsWith('+');
+  const digits = trimmed.replace(/\D/g, '');
+  if (!digits) return '';
+  if (hasPlus) return `+${digits}`;
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
+  return `+${digits}`;
+};
+
+const phoneIsValid = (p) => /^\+\d{8,15}$/.test(normalizeToE164(p));
 
 const AscentSmsPrefsWidget = () => {
   const { db, user } = useAppServices();
@@ -47,14 +65,16 @@ const AscentSmsPrefsWidget = () => {
 
   const onSendCode = async () => {
     setError(null);
+    const e164 = normalizeToE164(phone);
     if (!phoneIsValid(phone)) {
-      setError('Use international format, e.g. +14155551212');
+      setError('Enter a valid mobile number (10 digits for US/CA, or full international with +).');
       return;
     }
     setStage('sending');
     try {
       const fn = httpsCallable(getFunctions(), 'sendPhoneVerification');
-      await fn({ phone: phone.trim() });
+      await fn({ phone: e164 });
+      setPhone(e164);
       setStage('sent');
     } catch (err) {
       // eslint-disable-next-line no-console
@@ -73,7 +93,7 @@ const AscentSmsPrefsWidget = () => {
     setStage('verifying');
     try {
       const fn = httpsCallable(getFunctions(), 'verifyPhoneCode');
-      await fn({ phone: phone.trim(), code: code.trim() });
+      await fn({ phone: normalizeToE164(phone), code: code.trim() });
       setCode('');
       setStage('idle');
     } catch (err) {
@@ -122,7 +142,7 @@ const AscentSmsPrefsWidget = () => {
           type="tel"
           inputMode="tel"
           autoComplete="tel"
-          placeholder="+14155551212"
+          placeholder="(415) 555-1212"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           disabled={stage === 'sending' || stage === 'verifying'}

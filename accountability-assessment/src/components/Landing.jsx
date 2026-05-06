@@ -17,7 +17,7 @@ const Landing = ({ onStart }) => {
             <img 
               src="/logo-full.png" 
               alt="LeaderReps" 
-              className="h-8 md:h-10"
+              className="h-16 md:h-20"
             />
           </div>
           <a 

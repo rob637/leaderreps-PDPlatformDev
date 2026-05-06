@@ -7,9 +7,11 @@ import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 import { useNotifications } from '../../providers/NotificationProvider';
 import { Settings, Clock, User, Bell, AlertTriangle } from 'lucide-react';
+import { Compass, ArrowRight } from 'lucide-react';
 import MyJourneyWidget from '../widgets/MyJourneyWidget';
 import MySettingsWidget from '../widgets/MySettingsWidget';
 import ConditioningHistoryWidget from '../widgets/ConditioningHistoryWidget';
+import PracticeRepsHistoryWidget from '../widgets/PracticeRepsHistoryWidget';
 import AscentSmsPrefsWidget from '../widgets/AscentSmsPrefsWidget';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { useDevPlan } from '../../hooks/useDevPlan';
@@ -19,7 +21,8 @@ const LOCKER_FEATURES = [
   'locker-wins-history',
   'locker-scorecard-history',
   'locker-latest-reflection',
-  'locker-conditioning-history'  // Replaced locker-reps-history with weekly conditioning history
+  'locker-conditioning-history',  // Replaced locker-reps-history with weekly conditioning history
+  'locker-practice-reps'  // Practice a Rep (Conditioning Light) history
 ];
 
 const Locker = () => {
@@ -155,6 +158,9 @@ const Locker = () => {
   const sortedFeatures = useMemo(() => {
     return LOCKER_FEATURES
       .filter(id => {
+        // Always show the Practice Reps widget — no feature flag, always-on.
+        if (id === 'locker-practice-reps') return true;
+
         // First check feature flag
         if (!isFeatureEnabled(id)) return false;
         
@@ -186,6 +192,9 @@ const Locker = () => {
     if (featureId === 'locker-conditioning-history') {
       return <ConditioningHistoryWidget key={featureId} helpText={getWidgetHelpText(featureId)} />;
     }
+    if (featureId === 'locker-practice-reps') {
+      return <PracticeRepsHistoryWidget key={featureId} helpText={getWidgetHelpText(featureId)} />;
+    }
     return <WidgetRenderer key={featureId} widgetId={featureId} scope={scope} />;
   };
 
@@ -216,6 +225,13 @@ const Locker = () => {
       <div className="mb-6">
         <MyJourneyWidget showPrepProgress={false} />
       </div>
+
+      {/* Leadership Identity reference card — links to the LIS builder */}
+      <LeadershipIdentityCard
+        leadershipIdentity={dailyPracticeData?.leadershipIdentity}
+        legacyAnchor={dailyPracticeData?.identityAnchor}
+        onOpen={() => navigate && navigate('identity-statement')}
+      />
       
       <WidgetRenderer widgetId="locker-controller" scope={scope} />
       
@@ -229,6 +245,71 @@ const Locker = () => {
         )
       )}
     </PageLayout>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Leadership Identity reference card
+// ---------------------------------------------------------------------------
+const LeadershipIdentityCard = ({ leadershipIdentity, legacyAnchor, onOpen }) => {
+  const li = leadershipIdentity || null;
+  const anchorWord = li?.anchor?.word || '';
+  const anchorStatement = (li?.anchor?.statement || '').trim();
+  const evidence = Array.isArray(li?.evidence) ? li.evidence.filter(Boolean) : [];
+  const hasStructured = !!anchorStatement;
+  const hasLegacy = !hasStructured && typeof legacyAnchor === 'string' && legacyAnchor.trim().length > 0;
+  const empty = !hasStructured && !hasLegacy;
+
+  return (
+    <div className="mb-6">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="w-full text-left p-5 rounded-2xl border-2 border-corporate-navy/15 bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 dark:border-slate-700 hover:border-corporate-teal hover:shadow-md transition group"
+      >
+        <div className="flex items-center gap-2 mb-2">
+          <div className="p-1.5 bg-corporate-navy/10 dark:bg-corporate-teal/20 rounded-lg">
+            <Compass className="w-4 h-4 text-corporate-navy dark:text-corporate-teal" />
+          </div>
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-corporate-navy dark:text-corporate-teal">
+            Leadership Identity
+          </span>
+          {anchorWord && (
+            <span className="ml-2 text-[11px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-corporate-navy/10 dark:bg-corporate-teal/20 text-corporate-navy dark:text-corporate-teal">
+              {anchorWord}
+            </span>
+          )}
+          <ArrowRight className="ml-auto w-4 h-4 text-slate-400 group-hover:text-corporate-teal group-hover:translate-x-0.5 transition" />
+        </div>
+
+        {empty ? (
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            You haven&rsquo;t built your Leadership Identity yet. Tap to start &mdash; 4 short prompts.
+          </p>
+        ) : (
+          <>
+            <p className="text-base md:text-lg font-serif italic leading-snug text-slate-900 dark:text-slate-100">
+              &ldquo;{hasStructured ? anchorStatement : legacyAnchor}&rdquo;
+            </p>
+            {evidence.length > 0 && (
+              <ul className="mt-3 space-y-1">
+                {evidence.slice(0, 3).map((e, i) => (
+                  <li key={i} className="text-xs text-slate-600 dark:text-slate-400 flex items-start gap-1.5">
+                    <span className="text-emerald-600 mt-0.5">&#10003;</span>
+                    <span>{e}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {hasLegacy && (
+              <p className="mt-2 text-[11px] text-amber-700 dark:text-amber-400">
+                Tap to upgrade to a structured Leadership Identity (Anchor &middot; Evidence &middot; Edge).
+              </p>
+            )}
+          </>
+        )}
+      </button>
+    </div>
   );
 };
 

@@ -28,6 +28,12 @@ import { Loader } from 'lucide-react';
 import useNavigationHistory from './hooks/useNavigationHistory.js';
 import useMaintenanceMode from './hooks/useMaintenanceMode.js';
 
+// --- LeaderReps Lab — public anonymous pulse responder + lead-magnet flow ---
+import PulseRespond from './components/lab/PulseRespond.jsx';
+import LeaderStart from './components/lab/LeaderStart.jsx';
+import LeaderDashboard from './components/lab/LeaderDashboard.jsx';
+import IdentityBuilder from './components/lab/IdentityBuilder.jsx';
+
 // --- New Structure ---
 import AuthPanel from './components/auth/AuthPanel.jsx';
 import AppContent from './components/layout/AppContent.jsx';
@@ -63,6 +69,39 @@ const ADMIN_ONLY_SCREENS = [
 ];
 
 function App() {
+  // LeaderReps Lab — Anonymous Team Pulse public responder route.
+  // Detected via ?pulse=campaignId. Renders standalone (no app shell, no auth panel).
+  // Must run BEFORE any state hooks that depend on Firebase/auth so unauth users
+  // are never bounced to the AuthPanel.
+  const params =
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search)
+      : new URLSearchParams();
+  const pulseCampaignId = params.get('pulse');
+  const leaderToken = params.get('leader');
+  const referredBy = params.get('ref');
+  // Tolerate both ?pulse-start (no value) and ?pulse-start=1
+  const isPulseStart =
+    params.has('pulse-start') || params.has('pulse_start');
+  const isIdentityStart =
+    params.has('identity-start') || params.has('identity_start');
+
+  if (pulseCampaignId) {
+    return <PulseRespond campaignId={pulseCampaignId} />;
+  }
+  if (leaderToken) {
+    return <LeaderDashboard token={leaderToken} />;
+  }
+  if (isPulseStart) {
+    return <LeaderStart referredBy={referredBy} />;
+  }
+  if (isIdentityStart) {
+    return <IdentityBuilder />;
+  }
+  return <MainApp />;
+}
+
+function MainApp() {
   const [firebaseConfig, setFirebaseConfig] = useState(null);
   const [firebaseServices, setFirebaseServices] = useState(null);
   const [user, setUser] = useState(null);

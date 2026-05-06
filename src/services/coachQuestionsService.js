@@ -93,8 +93,77 @@ export const cancelQuestion = async (db, questionId) => {
   });
 };
 
+// ---------------------------------------------------------------------------
+// Admin / responder (trainer) helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Subscribe to ALL questions (admin / Ask-a-Trainer responder view).
+ * Optionally filter by status. Caller is responsible for permissions —
+ * Firestore rules enforce that only `isAskCoachResponder()` (admins +
+ * `metadata/config.askCoachResponders` array) can read across users.
+ */
+export const subscribeAllQuestions = (db, callback, opts = {}) => {
+  if (!db) throw new Error('db required');
+  let q = query(collection(db, COLLECTION), orderBy('createdAt', 'desc'));
+  if (opts.status) {
+    q = query(
+      collection(db, COLLECTION),
+      where('status', '==', opts.status),
+      orderBy('createdAt', 'desc')
+    );
+  }
+  return onSnapshot(
+    q,
+    (snap) => {
+      const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      callback(items);
+    },
+    (err) => {
+      // eslint-disable-next-line no-console
+      console.warn('[coachQuestions] admin subscribe error', err);
+    }
+  );
+};
+
+/**
+ * Trainer/admin posts a written + optional video reply.
+ * Marks the question 'answered' and stamps respondedBy / respondedAt.
+ */
+export const respondToQuestion = async (db, user, questionId, payload) => {
+  if (!db || !questionId) throw new Error('db + questionId required');
+  if (!user?.uid) throw new Error('user required');
+  const responseText = (payload?.responseText || '').trim();
+  const responseVideoUrl = (payload?.responseVideoUrl || '').trim() || null;
+  if (!responseText && !responseVideoUrl) {
+    throw new Error('Add a written reply or a video URL before sending.');
+  }
+  await updateDoc(doc(db, COLLECTION, questionId), {
+    status: 'answered',
+    responseText: responseText || null,
+    responseVideoUrl,
+    respondedBy: user.email || user.uid,
+    respondedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+};
+
+/**
+ * Reopen an answered question (e.g. follow-up needed).
+ */
+export const reopenQuestion = async (db, questionId) => {
+  if (!db || !questionId) throw new Error('db + questionId required');
+  await updateDoc(doc(db, COLLECTION, questionId), {
+    status: 'open',
+    updatedAt: serverTimestamp(),
+  });
+};
+
 export default {
   subscribeUserQuestions,
   submitQuestion,
   cancelQuestion,
+  subscribeAllQuestions,
+  respondToQuestion,
+  reopenQuestion,
 };

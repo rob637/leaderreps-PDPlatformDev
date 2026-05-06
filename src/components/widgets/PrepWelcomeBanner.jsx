@@ -122,33 +122,37 @@ const PrepWelcomeBanner = () => {
     
     return { currentMilestone: current, completedMilestones: completed };
   }, [currentPhase?.id, user?.milestoneProgress]);
-  
+
+  // Get trainers array - support both new format (facilitators array) and legacy (single facilitator)
+  // Defensive: filter out null/undefined or malformed entries before render.
+  // NOTE: Must be called BEFORE the early return below to satisfy Rules of Hooks.
+  const trainers = useMemo(() => {
+    const info = prepPhaseInfo || {};
+    const facilitators = info.facilitators;
+    const facilitator = info.facilitator;
+    const isValidTrainer = (t) => t && typeof t === 'object' && (t.name || t.email || t.id);
+    if (facilitators && Array.isArray(facilitators) && facilitators.length > 0) {
+      return facilitators.filter(isValidTrainer);
+    }
+    if (facilitator && isValidTrainer(facilitator)) {
+      return [facilitator];
+    }
+    return [];
+  }, [prepPhaseInfo]);
+
   // Only show in Prep Phase or Foundation (start) Phase
   if (currentPhase?.id !== 'pre-start' && currentPhase?.id !== 'start') {
     return null;
   }
-  
+
   const isFoundationPhase = currentPhase?.id === 'start';
-  
+
   const info = prepPhaseInfo || {};
-  const { 
-    daysUntilStart = 0, 
+  const {
+    daysUntilStart = 0,
     cohortName = null,
     cohortStartDate = null,
-    facilitator = null,
-    facilitators = null
   } = info;
-
-  // Get trainers array - support both new format (facilitators array) and legacy (single facilitator)
-  const trainers = useMemo(() => {
-    if (facilitators && Array.isArray(facilitators) && facilitators.length > 0) {
-      return facilitators;
-    }
-    if (facilitator) {
-      return [facilitator];
-    }
-    return [];
-  }, [facilitators, facilitator]);
 
   const handleTrainerClick = (trainer) => {
     setSelectedTrainer(trainer);

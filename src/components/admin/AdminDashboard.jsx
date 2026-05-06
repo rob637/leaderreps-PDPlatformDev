@@ -214,7 +214,7 @@ const AdminDashboard = () => {
         try {
           const metadataRef = doc(db, 'metadata', 'config');
           const metadataSnap = await getDoc(metadataRef);
-          const DEFAULT_ADMINS = ['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com'];
+          const DEFAULT_ADMINS = ['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com', 'cristina@leaderreps.com'];
 
           if (metadataSnap.exists()) {
             const data = metadataSnap.data();
@@ -228,7 +228,7 @@ const AdminDashboard = () => {
           }
         } catch (e) {
           console.error("Error fetching admins:", e);
-          setAdmins(['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com']);
+          setAdmins(['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com', 'cristina@leaderreps.com']);
         }
 
         setStats({

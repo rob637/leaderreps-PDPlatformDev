@@ -138,7 +138,7 @@ const UserManagement = () => {
     console.log('[UserManagement] Starting fetchData...', { activeTab, userEmail: user?.email });
     try {
       // Fetch admin emails first
-      let admins = ['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com'];
+      let admins = ['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com', 'cristina@leaderreps.com'];
       try {
         const metadataRef = doc(db, 'metadata', 'config');
         const metadataSnap = await getDoc(metadataRef);

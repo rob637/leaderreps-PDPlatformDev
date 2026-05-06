@@ -20,6 +20,7 @@ const ScreenMap = {
   // Ascent Revamp screens (WS-1)
   'events': lazy(() => import('../components/screens/Events.jsx')),
   'ask-coach': lazy(() => import('../components/screens/AskCoach.jsx')),
+  'identity-statement': lazy(() => import('../components/screens/IdentityStatement.jsx')),
   'conditioning-light': lazy(() => import('../components/screens/ConditioningLight.jsx')),
   'development-plan': lazy(() =>
     import('../components/screens/DevelopmentPlan.jsx')
@@ -159,6 +160,12 @@ const ScreenMap = {
   ),
   'marketing-center': lazy(() =>
     import('../components/admin/SalesMarketingCenter.jsx')
+  ),
+  'leaderreps-lab': lazy(() =>
+    import('../components/admin/LeaderRepsLab.jsx')
+  ),
+  'team-pulse': lazy(() =>
+    import('../components/admin/TeamPulse.jsx')
   ),
   'book-builder': lazy(() =>
     import('../components/admin/BookBuilder.jsx')

@@ -1,6 +1,6 @@
 // src/components/layout/MobileBottomNav.jsx
 import React from 'react';
-import { LayoutDashboard, BookOpen, Megaphone, Zap, Calendar, MessageCircleQuestion } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Megaphone, Zap, Calendar } from 'lucide-react';
 import { LockerIcon } from '../icons';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
@@ -16,13 +16,14 @@ const MobileBottomNav = ({ currentScreen }) => {
   const isFoundationPhase = currentPhase?.id === 'start' || currentPhase?.id === 'post-start';
 
   // Revamp nav: 5 items in bottom bar (Locker accessed via header avatar)
-  // Order: Dashboard, Events, Content, Conditioning, Ask a Coach
+  // Order: Dashboard, Events, Content, Conditioning, Ask a Trainer
+  // (screen key 'ask-coach' is kept for backward compatibility; label is 'Ask a Trainer'.)
   const revampNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, screen: 'dashboard' },
     { id: 'events', label: 'Events', icon: Calendar, screen: 'events' },
     { id: 'library', label: 'Content', icon: BookOpen, screen: 'library' },
     { id: 'conditioning-light', label: 'Conditioning', icon: Zap, screen: 'conditioning-light', requiresFoundation: true },
-    { id: 'ask-coach', label: 'Ask a Coach', icon: MessageCircleQuestion, screen: 'ask-coach', requiresFoundation: true },
+    { id: 'ask-coach', label: 'Ask a Trainer', icon: Megaphone, screen: 'ask-coach', requiresFoundation: true },
   ];
 
   // Legacy nav: 5 core mobile buttons - some are phase-gated

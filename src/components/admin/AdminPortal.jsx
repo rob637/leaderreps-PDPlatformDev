@@ -13,7 +13,6 @@ import {
   BookOpen,
   TestTube2,
   ArrowLeftRight,
-  BrainCircuit,
   List,
   Zap,
   Bell,
@@ -34,8 +33,7 @@ import MediaLibrary from './MediaLibrary'; // New component
 import SystemWidgets from './SystemWidgets';
 import DocumentationCenter from './DocumentationCenter';
 import TestCenter from './TestCenter';
-import CommunityManager from './CommunityManager';
-import CoachingManager from './CoachingManager';
+import EventsManager from './EventsManager';
 import LOVManager from './LOVManager';
 import DailyRepsLibrary from './DailyRepsLibrary';
 import ContentManager from './DailyPlanManager';
@@ -53,17 +51,19 @@ import AccountabilityInsights from './AccountabilityInsights';
 import ConditioningConfig from './ConditioningConfig';
 import UxAuditPanel from './UxAuditPanel';
 import VideoSeriesManager from './VideoSeriesManager';
+import AskTrainerInbox from './AskTrainerInbox';
 import { BreadcrumbNav } from '../ui/BreadcrumbNav';
 import { useAppServices } from '../../services/useAppServices';
 import { useNavigation } from '../../providers/NavigationProvider';
 import { doc, getDoc } from 'firebase/firestore';
+import { FlaskConical as LabIcon } from 'lucide-react';
 
 // Define version locally if not available globally
 // eslint-disable-next-line no-undef
 const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';
 
 const AdminPortal = () => {
-  const { user, db, isAuthReady } = useAppServices();
+  const { user, db, isAuthReady, navigate } = useAppServices();
   const { navParams } = useNavigation();
   const [activeTab, setActiveTab] = useState(navParams?.tab || 'dashboard');
   const [isAdmin, setIsAdmin] = useState(false);
@@ -87,7 +87,7 @@ const AdminPortal = () => {
       }
 
       // Default fallback admins
-      const DEFAULT_ADMINS = ['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com'];
+      const DEFAULT_ADMINS = ['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com', 'cristina@leaderreps.com'];
       
       try {
         // Try to fetch from Firestore config
@@ -159,6 +159,7 @@ const AdminPortal = () => {
     {
       title: 'Trainer',
       items: [
+        { id: 'ask-trainer-inbox', label: 'Ask a Trainer', icon: Megaphone },
         { id: 'session-attendance', label: 'Session Attendance', icon: BookOpen },
         { id: 'sign-off-queue', label: 'Level Sign-Off', icon: CheckCircle },
         { id: 'coaching-cert', label: 'Leader Certification', icon: Award },
@@ -172,8 +173,7 @@ const AdminPortal = () => {
       items: [
         { id: 'conditioning-config', label: 'Conditioning Config', icon: Zap },
         { id: 'daily-reps', label: 'Daily Reps', icon: Zap },
-        { id: 'community', label: 'Community', icon: Users },
-        { id: 'coaching', label: 'Coaching', icon: BrainCircuit },
+        { id: 'events', label: 'Events', icon: Calendar },
         { id: 'lov', label: 'System Values', icon: List }
       ]
     },
@@ -185,7 +185,8 @@ const AdminPortal = () => {
         { id: 'system', label: 'System', icon: Settings },
         // { id: 'migration', label: 'Migration', icon: ArrowLeftRight },
         { id: 'tests', label: 'Test Center', icon: TestTube2 },
-        { id: 'ux-audit', label: 'UX Audit Lab', icon: Eye }
+        { id: 'ux-audit', label: 'UX Audit Lab', icon: Eye },
+        { id: 'leaderreps-lab', label: 'LeaderReps Lab', icon: LabIcon, screen: 'leaderreps-lab' }
       ]
     },
     {
@@ -210,6 +211,8 @@ const AdminPortal = () => {
         return <ContentManager />;
       case 'sign-off-queue':
         return <LevelSignOffQueue />;
+      case 'ask-trainer-inbox':
+        return <AskTrainerInbox />;
       case 'session-attendance':
         return <SessionAttendanceQueue />;
       case 'assessment-insights':
@@ -229,10 +232,13 @@ const AdminPortal = () => {
         return <SystemDiagnostics />;
       case 'content':
         return <ContentAdminHome />;
+      case 'events':
+        return <EventsManager />;
+      // Legacy aliases for any deep links to the old separate admin tabs
       case 'community':
-        return <CommunityManager />;
+        return <EventsManager />;
       case 'coaching':
-        return <CoachingManager />;
+        return <EventsManager />;
       case 'lov':
         return <LOVManager />;
       case 'daily-reps':
@@ -303,6 +309,10 @@ const AdminPortal = () => {
                       <button
                         key={item.id}
                         onClick={() => {
+                          if (item.screen) {
+                            navigate(item.screen);
+                            return;
+                          }
                           setActiveTab(item.id);
                           // Scroll content area to top when switching tabs
                           document.getElementById('admin-content-area')?.scrollTo(0, 0);
