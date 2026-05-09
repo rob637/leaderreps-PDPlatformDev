@@ -902,7 +902,7 @@ const UserManagement = () => {
           onClick={() => setActiveTab('users')}
           className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
             activeTab === 'users'
-              ? 'border-corporate-teal text-corporate-teal'
+              ? 'border-corporate-teal text-corporate-teal-ink'
               : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
           }`}
         >
@@ -912,7 +912,7 @@ const UserManagement = () => {
           onClick={() => setActiveTab('cohorts')}
           className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
             activeTab === 'cohorts'
-              ? 'border-corporate-teal text-corporate-teal'
+              ? 'border-corporate-teal text-corporate-teal-ink'
               : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
           }`}
         >
@@ -922,7 +922,7 @@ const UserManagement = () => {
           onClick={() => setActiveTab('facilitators')}
           className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
             activeTab === 'facilitators'
-              ? 'border-corporate-teal text-corporate-teal'
+              ? 'border-corporate-teal text-corporate-teal-ink'
               : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
           }`}
         >
@@ -935,7 +935,7 @@ const UserManagement = () => {
           onClick={() => setActiveTab('invites')}
           className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
             activeTab === 'invites'
-              ? 'border-corporate-teal text-corporate-teal'
+              ? 'border-corporate-teal text-corporate-teal-ink'
               : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
           }`}
         >
@@ -945,7 +945,7 @@ const UserManagement = () => {
           onClick={() => setActiveTab('templates')}
           className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
             activeTab === 'templates'
-              ? 'border-corporate-teal text-corporate-teal'
+              ? 'border-corporate-teal text-corporate-teal-ink'
               : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
           }`}
         >
@@ -1199,7 +1199,7 @@ const UserManagement = () => {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => handleEditCohort(cohort)}
-                            className="p-1 text-slate-400 hover:text-corporate-teal transition-colors"
+                            className="p-1 text-slate-400 hover:text-corporate-teal-ink transition-colors"
                             title="Edit Cohort"
                           >
                             <Edit className="w-4 h-4" />
@@ -1256,7 +1256,7 @@ const UserManagement = () => {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => handleOpenFacilitatorModal(facilitator)}
-                            className="p-1 text-slate-400 hover:text-corporate-teal transition-colors"
+                            className="p-1 text-slate-400 hover:text-corporate-teal-ink transition-colors"
                             title="Edit Trainer"
                           >
                             <Edit className="w-4 h-4" />
@@ -1335,7 +1335,7 @@ const UserManagement = () => {
                               navigator.clipboard.writeText(`${window.location.origin}/register?token=${invite.token}`);
                               alert("Invite link copied to clipboard!");
                             }}
-                            className="p-1 text-slate-400 hover:text-corporate-teal transition-colors"
+                            className="p-1 text-slate-400 hover:text-corporate-teal-ink transition-colors"
                             title="Copy Invite Link"
                           >
                             <Copy className="w-4 h-4" />
@@ -1603,7 +1603,7 @@ const UserManagement = () => {
                     id="isTest"
                     checked={inviteForm.isTest || false}
                     onChange={e => setInviteForm({...inviteForm, isTest: e.target.checked})}
-                    className="rounded border-slate-300 dark:border-slate-600 text-corporate-teal focus:ring-corporate-teal"
+                    className="rounded border-slate-300 dark:border-slate-600 text-corporate-teal-ink focus:ring-corporate-teal"
                   />
                   <label htmlFor="isTest" className="text-sm font-medium text-slate-700 dark:text-slate-200">Send as Test Invite</label>
                 </div>

@@ -75,7 +75,7 @@ const AICoachSelector = ({ onClose, onSelectRep }) => {
         <div className="px-6 pb-6 border-t border-gray-100 pt-4">
           <button
             onClick={handleOpenReppy}
-            className="w-full flex items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-corporate-teal transition-colors"
+            className="w-full flex items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-corporate-teal-ink transition-colors"
           >
             <span>Looking for Reppy? Open standalone app</span>
             <ExternalLink className="w-4 h-4" />

@@ -483,7 +483,7 @@ const VideoSeriesManager = () => {
                 <p className="text-slate-500 dark:text-slate-400">No videos yet</p>
                 <button
                   onClick={handleAddVideo}
-                  className="mt-3 text-corporate-teal hover:underline text-sm"
+                  className="mt-3 text-corporate-teal-ink hover:underline text-sm"
                 >
                   Add your first video
                 </button>
@@ -547,7 +547,7 @@ const VideoSeriesManager = () => {
                                 <span className="truncate text-green-700 dark:text-green-400">Video selected</span>
                                 <button
                                   onClick={() => handleOpenMediaPicker(video.id)}
-                                  className="ml-auto text-xs text-corporate-teal hover:underline"
+                                  className="ml-auto text-xs text-corporate-teal-ink hover:underline"
                                 >
                                   Change
                                 </button>
@@ -555,7 +555,7 @@ const VideoSeriesManager = () => {
                             ) : (
                               <button
                                 onClick={() => handleOpenMediaPicker(video.id)}
-                                className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 text-sm border-2 border-dashed border-corporate-teal/50 text-corporate-teal rounded-lg hover:bg-corporate-teal/5 transition-colors"
+                                className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 text-sm border-2 border-dashed border-corporate-teal/50 text-corporate-teal-ink rounded-lg hover:bg-corporate-teal/5 transition-colors"
                               >
                                 <FolderOpen className="w-4 h-4" />
                                 Browse Media Library

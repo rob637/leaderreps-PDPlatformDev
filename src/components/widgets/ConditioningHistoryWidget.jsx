@@ -306,7 +306,7 @@ const ConditioningHistoryWidget = ({ helpText }) => {
                             {hasScore && (
                               <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-semibold flex-shrink-0 ${
                                 passed 
-                                  ? 'bg-corporate-teal/10 text-corporate-teal' 
+                                  ? 'bg-corporate-teal/10 text-corporate-teal-ink' 
                                   : 'bg-corporate-orange/10 text-corporate-orange'
                               }`}>
                                 {passed ? (

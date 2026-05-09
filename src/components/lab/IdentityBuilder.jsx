@@ -328,13 +328,13 @@ const IdentityBuilder = () => {
             {/* ============================ WELCOME =========================== */}
             {isWelcome && (
               <motion.div key="welcome" {...fade} className="text-center">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-corporate-teal/10 text-corporate-teal text-xs font-semibold tracking-wide uppercase mb-6">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-corporate-teal/10 text-corporate-teal-ink text-xs font-semibold tracking-wide uppercase mb-6">
                   <Sparkles className="w-3.5 h-3.5" />
                   LeaderReps Lab
                 </div>
                 <h1 className="text-4xl sm:text-5xl font-bold text-corporate-navy dark:text-white tracking-tight leading-[1.1] mb-5">
                   Build your<br />
-                  <span className="text-corporate-teal">Leadership Identity</span><br />
+                  <span className="text-corporate-teal-ink">Leadership Identity</span><br />
                   in 90 seconds.
                 </h1>
                 <p className="text-lg text-slate-600 dark:text-slate-300 max-w-lg mx-auto mb-10 leading-relaxed">
@@ -369,7 +369,7 @@ const IdentityBuilder = () => {
             {/* ============================ QUESTION =========================== */}
             {currentQuestion && (
               <motion.div key={currentQuestion.id} {...fade}>
-                <div className="text-xs font-semibold uppercase tracking-wider text-corporate-teal mb-3">
+                <div className="text-xs font-semibold uppercase tracking-wider text-corporate-teal-ink mb-3">
                   {currentQuestion.label}
                 </div>
                 <h2 className="text-3xl sm:text-4xl font-bold text-corporate-navy dark:text-white tracking-tight leading-tight mb-3">
@@ -522,7 +522,7 @@ const ResultView = ({
 
   return (
     <div>
-      <div className="text-xs font-semibold uppercase tracking-wider text-corporate-teal mb-3">
+      <div className="text-xs font-semibold uppercase tracking-wider text-corporate-teal-ink mb-3">
         Your draft
       </div>
       <h2 className="text-3xl sm:text-4xl font-bold text-corporate-navy dark:text-white tracking-tight leading-tight mb-2">

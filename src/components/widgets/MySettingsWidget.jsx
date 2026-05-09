@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Settings, User, Bell, CheckCircle, Edit2, Zap, Mail, Smartphone, VolumeX, Shield,
   Download, LogOut, AlertTriangle, Sun, Moon, Monitor, ChevronRight, KeyRound,
-  ClipboardList, ArrowRight
+  ClipboardList, ArrowRight, Compass
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
@@ -17,7 +17,7 @@ import { doc, getDoc } from 'firebase/firestore';
 
 // Strategy display names and icons
 const STRATEGY_DISPLAY = {
-  smart_escalation: { name: 'Smart Escalation', icon: Zap, color: 'text-corporate-teal' },
+  smart_escalation: { name: 'Smart Escalation', icon: Zap, color: 'text-corporate-teal-ink' },
   push_only: { name: 'Push Only', icon: Smartphone, color: 'text-blue-500' },
   email_only: { name: 'Email Only', icon: Mail, color: 'text-amber-500' },
   full_accountability: { name: 'Full Accountability', icon: Shield, color: 'text-green-500' },
@@ -48,7 +48,7 @@ const MySettingsWidget = () => {
   const isProfileComplete = profileComplete;
   
   // Notification settings and baseline data
-  const { user, db, logout, navigate, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
+  const { user, db, logout, navigate, developmentPlanData, updateDevelopmentPlanData, dailyPracticeData } = useAppServices();
   
   // Leadership Skills Baseline status
   const assessmentHistory = developmentPlanData?.assessmentHistory || [];
@@ -59,6 +59,19 @@ const MySettingsWidget = () => {
         year: 'numeric', 
         month: 'short', 
         day: 'numeric' 
+      })
+    : null;
+
+  // Leadership Identity Statement status
+  const lisData = dailyPracticeData?.leadershipIdentity || null;
+  const lisStatement = (lisData?.statement || lisData?.anchor?.statement || '').trim();
+  const lisQualities = Array.isArray(lisData?.qualities) ? lisData.qualities.filter(Boolean) : [];
+  const hasLIS = !!lisStatement && lisQualities.length >= 3;
+  const lisDate = lisData?.updatedAt
+    ? new Date(lisData.updatedAt).toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
       })
     : null;
   const [notifLoading, setNotifLoading] = useState(true);
@@ -165,7 +178,7 @@ const MySettingsWidget = () => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-1 text-corporate-teal">
+            <div className="flex items-center gap-1 text-corporate-teal-ink">
               <span className="text-xs font-medium">{isProfileComplete ? 'Edit' : 'Start'}</span>
               <Edit2 className="w-3.5 h-3.5" />
             </div>
@@ -193,8 +206,36 @@ const MySettingsWidget = () => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-1 text-corporate-teal">
+            <div className="flex items-center gap-1 text-corporate-teal-ink">
               <span className="text-xs font-medium">{hasCompletedBaseline ? 'Edit' : 'Start'}</span>
+              <Edit2 className="w-3.5 h-3.5" />
+            </div>
+          </button>
+
+          {/* Leadership Identity Statement Row */}
+          <button
+            onClick={() => navigate && navigate('identity-statement')}
+            className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-corporate-teal/30 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${hasLIS ? 'bg-green-100 dark:bg-green-900/40' : 'bg-corporate-orange/10 dark:bg-corporate-orange/20'}`}>
+                {hasLIS ? (
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                ) : (
+                  <Compass className="w-4 h-4 text-corporate-orange" />
+                )}
+              </div>
+              <div className="text-left">
+                <h4 className="font-medium text-corporate-navy dark:text-white text-sm">Leadership Identity Statement</h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {hasLIS
+                    ? `Updated ${lisDate}`
+                    : 'Three exercises: qualities, statement, intentions'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 text-corporate-teal-ink">
+              <span className="text-xs font-medium">{hasLIS ? 'Edit' : 'Start'}</span>
               <Edit2 className="w-3.5 h-3.5" />
             </div>
           </button>
@@ -219,7 +260,7 @@ const MySettingsWidget = () => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-1 text-corporate-teal">
+            <div className="flex items-center gap-1 text-corporate-teal-ink">
               <span className="text-xs font-medium">Edit</span>
               <Edit2 className="w-3.5 h-3.5" />
             </div>

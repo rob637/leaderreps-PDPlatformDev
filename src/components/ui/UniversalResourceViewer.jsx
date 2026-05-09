@@ -211,7 +211,7 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
               </div>
               {onVideoComplete && markedComplete && (
                 <div className="flex justify-center">
-                  <span className="flex items-center gap-2 text-sm text-corporate-teal font-medium px-4 py-2">
+                  <span className="flex items-center gap-2 text-sm text-corporate-teal-ink font-medium px-4 py-2">
                     <CheckCircle className="w-4 h-4" />
                     Marked as Watched
                   </span>
@@ -235,7 +235,7 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
               </div>
               {onVideoComplete && markedComplete && (
                 <div className="flex justify-center">
-                  <span className="flex items-center gap-2 text-sm text-corporate-teal font-medium px-4 py-2">
+                  <span className="flex items-center gap-2 text-sm text-corporate-teal-ink font-medium px-4 py-2">
                     <CheckCircle className="w-4 h-4" />
                     Marked as Watched
                   </span>
@@ -259,7 +259,7 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
               </div>
               {onVideoComplete && markedComplete && (
                 <div className="flex justify-center">
-                  <span className="flex items-center gap-2 text-sm text-corporate-teal font-medium px-4 py-2">
+                  <span className="flex items-center gap-2 text-sm text-corporate-teal-ink font-medium px-4 py-2">
                     <CheckCircle className="w-4 h-4" />
                     Marked as Watched
                   </span>
@@ -291,7 +291,7 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
               
               <div className="flex flex-col items-center gap-3">
                 {onVideoComplete && markedComplete && (
-                  <span className="flex items-center gap-2 text-sm text-corporate-teal font-medium px-4 py-2">
+                  <span className="flex items-center gap-2 text-sm text-corporate-teal-ink font-medium px-4 py-2">
                     <CheckCircle className="w-4 h-4" />
                     Marked as Watched
                   </span>
@@ -322,7 +322,7 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
               </div>
               {resource.synopsis || resource.details?.synopsis ? (
                 <div 
-                  className="text-slate-700 dark:text-slate-200 text-sm leading-relaxed prose-sm prose-blue max-w-none [&>h3]:text-corporate-navy [&>h3]:font-bold [&>h3]:mt-4 [&>h3]:mb-2 [&>h4]:text-corporate-teal [&>h4]:font-bold [&>h4]:mt-3 [&>h4]:mb-1 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>p]:mb-3 [&>blockquote]:border-l-4 [&>blockquote]:border-corporate-teal [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4"
+                  className="text-slate-700 dark:text-slate-200 text-sm leading-relaxed prose-sm prose-blue max-w-none [&>h3]:text-corporate-navy [&>h3]:font-bold [&>h3]:mt-4 [&>h3]:mb-2 [&>h4]:text-corporate-teal-ink [&>h4]:font-bold [&>h4]:mt-3 [&>h4]:mb-1 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>p]:mb-3 [&>blockquote]:border-l-4 [&>blockquote]:border-corporate-teal [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4"
                   dangerouslySetInnerHTML={{ __html: resource.synopsis || resource.details?.synopsis }}
                 />
               ) : (

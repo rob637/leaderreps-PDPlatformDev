@@ -225,7 +225,7 @@ Keep responses concise (3-5 sentences), actionable, and directly answer the ques
               onClick={() => setActiveTab('brief')}
               className={`flex-1 py-4 text-sm font-medium text-center border-b-2 transition-colors ${
                 activeTab === 'brief' 
-                  ? 'border-corporate-teal text-corporate-teal bg-teal-50/30 dark:bg-teal-900/20/30' 
+                  ? 'border-corporate-teal text-corporate-teal-ink bg-teal-50/30 dark:bg-teal-900/20/30' 
                   : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
               }`}
             >
@@ -240,7 +240,7 @@ Keep responses concise (3-5 sentences), actionable, and directly answer the ques
                 onClick={() => setActiveTab('flyer')}
                 className={`flex-1 py-4 text-sm font-medium text-center border-b-2 transition-colors ${
                   activeTab === 'flyer' 
-                    ? 'border-corporate-teal text-corporate-teal bg-teal-50/30 dark:bg-teal-900/20/30' 
+                    ? 'border-corporate-teal text-corporate-teal-ink bg-teal-50/30 dark:bg-teal-900/20/30' 
                     : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
                 }`}
               >
@@ -254,7 +254,7 @@ Keep responses concise (3-5 sentences), actionable, and directly answer the ques
               onClick={() => setActiveTab('action')}
               className={`flex-1 py-4 text-sm font-medium text-center border-b-2 transition-colors ${
                 activeTab === 'action' 
-                  ? 'border-corporate-teal text-corporate-teal bg-teal-50/30 dark:bg-teal-900/20/30' 
+                  ? 'border-corporate-teal text-corporate-teal-ink bg-teal-50/30 dark:bg-teal-900/20/30' 
                   : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
               }`}
             >

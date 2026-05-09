@@ -663,7 +663,7 @@ const CommunitySessionManager = () => {
                   <>
                     <div className={`text-sm font-bold mb-1 ${
                       dayData.dateStr === new Date().toISOString().split('T')[0]
-                        ? 'text-corporate-teal'
+                        ? 'text-corporate-teal-ink'
                         : 'text-slate-600 dark:text-slate-300'
                     }`}>
                       {dayData.day}
@@ -1045,7 +1045,7 @@ const SessionRow = ({ session, registrations, onEdit, onDelete, onDuplicate, onV
         <div className="text-sm text-slate-700 dark:text-slate-200">{formatDate(session.date)}</div>
         <div className="text-xs text-slate-500 dark:text-slate-400">{session.time} ({session.durationMinutes}m)</div>
         {session.recurrence && session.recurrence !== 'none' && (
-          <div className="text-xs text-corporate-teal flex items-center gap-1 mt-0.5">
+          <div className="text-xs text-corporate-teal-ink flex items-center gap-1 mt-0.5">
             <Repeat className="w-3 h-3" />
             {session.recurrence}
           </div>
@@ -1095,7 +1095,7 @@ const SessionRow = ({ session, registrations, onEdit, onDelete, onDuplicate, onV
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button 
             onClick={onEdit}
-            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-corporate-teal hover:bg-teal-50 rounded-lg transition-colors"
+            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-corporate-teal-ink hover:bg-teal-50 rounded-lg transition-colors"
             title="Edit"
           >
             <Edit className="w-4 h-4" />

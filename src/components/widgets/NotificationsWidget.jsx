@@ -206,7 +206,7 @@ const NotificationsWidget = () => {
                           href={announcement.link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-corporate-teal hover:underline mt-2"
+                          className="inline-flex items-center gap-1 text-xs text-corporate-teal-ink hover:underline mt-2"
                         >
                           Learn more <ExternalLink size={12} />
                         </a>

@@ -284,7 +284,7 @@ const NotificationSettingsModal = ({ isOpen, onClose, userId, userName }) => {
                   </div>
                 </div>
                 {labEnrolled && (
-                  <p className="text-xs text-corporate-teal italic px-1">
+                  <p className="text-xs text-corporate-teal-ink italic px-1">
                     User is enrolled in Leadership Lab — coaching texts come from there. PD platform SMS is suppressed to avoid duplicates.
                   </p>
                 )}

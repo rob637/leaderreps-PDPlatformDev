@@ -227,7 +227,7 @@ const LeaderStart = ({ referredBy = null }) => {
 };
 
 const Bullet = ({ icon, label }) => (
-  <div className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-full bg-corporate-teal/10 text-corporate-teal font-semibold">
+  <div className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-full bg-corporate-teal/10 text-corporate-teal-ink font-semibold">
     {icon}
     <span>{label}</span>
   </div>
@@ -236,7 +236,7 @@ const Bullet = ({ icon, label }) => (
 const Wrap = ({ children }) => (
   <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-start sm:items-center justify-center p-4">
     <div className="w-full max-w-md bg-white rounded-2xl shadow-card p-6 mt-6 sm:mt-0">
-      <div className="flex items-center gap-2 mb-1 text-corporate-teal">
+      <div className="flex items-center gap-2 mb-1 text-corporate-teal-ink">
         <ShieldCheck className="w-4 h-4" />
         <span className="text-xs font-bold uppercase tracking-wider">
           LeaderReps · Anonymous Team Pulse

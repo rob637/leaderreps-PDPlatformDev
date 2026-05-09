@@ -23,7 +23,7 @@ const STATUS_CONFIG = {
   committed: { label: 'Committed', color: 'text-blue-600', bg: 'bg-blue-100 dark:bg-blue-900/30', icon: Clock },
   prepared: { label: 'Prepared', color: 'text-corporate-navy', bg: 'bg-slate-100 dark:bg-slate-700', icon: FileText },
   executed: { label: 'Executed', color: 'text-amber-600', bg: 'bg-amber-100 dark:bg-amber-900/30', icon: CheckCircle },
-  debriefed: { label: 'Assessed', color: 'text-corporate-teal', bg: 'bg-corporate-teal/10', icon: Award },
+  debriefed: { label: 'Assessed', color: 'text-corporate-teal-ink', bg: 'bg-corporate-teal/10', icon: Award },
   loop_closed: { label: 'Completed', color: 'text-emerald-600', bg: 'bg-emerald-100 dark:bg-emerald-900/30', icon: CheckCircle },
   missed: { label: 'Missed', color: 'text-corporate-orange', bg: 'bg-corporate-orange/10', icon: XCircle },
   canceled: { label: 'Canceled', color: 'text-slate-400', bg: 'bg-slate-100 dark:bg-slate-700', icon: XCircle },
@@ -34,7 +34,7 @@ const TimelineStep = ({ label, completed, active, timestamp }) => (
   <div className="flex items-center gap-2">
     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
       completed ? 'bg-corporate-teal text-white' :
-      active ? 'bg-corporate-teal/20 text-corporate-teal border-2 border-corporate-teal' :
+      active ? 'bg-corporate-teal/20 text-corporate-teal-ink border-2 border-corporate-teal' :
       'bg-slate-200 dark:bg-slate-700 text-slate-400'
     }`}>
       {completed ? <CheckCircle className="w-4 h-4" /> : null}
@@ -272,7 +272,7 @@ const RepDetailModal = ({ isOpen, onClose, rep, ownerUserId, children }) => {
             badge={{
               label: qualityAssessment.repPassed ? 'Passed' : 'Not Passed',
               bg: qualityAssessment.repPassed ? 'bg-corporate-teal/10' : 'bg-corporate-orange/10',
-              color: qualityAssessment.repPassed ? 'text-corporate-teal' : 'text-corporate-orange'
+              color: qualityAssessment.repPassed ? 'text-corporate-teal-ink' : 'text-corporate-orange'
             }}
           >
             <QualityAssessmentCard 
@@ -292,7 +292,7 @@ const RepDetailModal = ({ isOpen, onClose, rep, ownerUserId, children }) => {
             badge={{
               label: loopClosure.outcome?.replace(/_/g, ' ') || 'Completed',
               bg: loopClosure.outcome === 'achieved' ? 'bg-corporate-teal/10' : 'bg-slate-100 dark:bg-slate-700',
-              color: loopClosure.outcome === 'achieved' ? 'text-corporate-teal' : 'text-slate-600'
+              color: loopClosure.outcome === 'achieved' ? 'text-corporate-teal-ink' : 'text-slate-600'
             }}
           >
             <div className="space-y-3">

@@ -345,7 +345,7 @@ const registerForCoachingSession = async (db, userId, event) => {
       attendedAt: existing?.attendedAt || null,
       watchedReplay: existing?.watchedReplay || false,
       updatedAt: serverTimestamp(),
-    });
+    }, { merge: true });
 
     // Only mutate the counter when transitioning into REGISTERED.
     if (!alreadyActive && maxAttendees !== null) {

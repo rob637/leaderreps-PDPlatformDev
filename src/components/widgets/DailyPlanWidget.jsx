@@ -66,7 +66,7 @@ const DailyPlanWidget = ({ helpText }) => {
         <div className="space-y-3">
           {!hasItems && (
             <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 text-center">
-              <p className="text-sm text-slate-500 dark:text-slate-400">No specific items scheduled for today.</p>
+              <p className="text-sm text-slate-600 dark:text-slate-300">No specific items scheduled for today.</p>
             </div>
           )}
           
@@ -82,7 +82,7 @@ const DailyPlanWidget = ({ helpText }) => {
                     <div className="text-sm font-medium text-slate-700 dark:text-slate-200">{action.label}</div>
                     {/* Optional Badge for Read & Reps */}
                     {isReadRep && (
-                      <span className="text-[10px] bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded font-medium uppercase tracking-wide">
+                      <span className="text-[10px] bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded font-medium uppercase tracking-wide">
                         Optional
                       </span>
                     )}
@@ -128,7 +128,7 @@ const DailyPlanWidget = ({ helpText }) => {
         {loadingResource ? (
           <div className="flex flex-col items-center justify-center p-12 space-y-3">
             <Loader className="w-8 h-8 text-corporate-teal animate-spin" />
-            <p className="text-sm text-slate-400 dark:text-slate-500">Loading content...</p>
+            <p className="text-sm text-slate-600 dark:text-slate-300">Loading content...</p>
           </div>
         ) : selectedResource ? (
           <div className="min-h-[60vh]">
@@ -140,7 +140,7 @@ const DailyPlanWidget = ({ helpText }) => {
           </div>
         ) : (
           <div className="text-center p-8">
-            <p className="text-slate-500 dark:text-slate-400">Content not found.</p>
+            <p className="text-slate-600 dark:text-slate-300">Content not found.</p>
           </div>
         )}
       </Modal>

@@ -6,7 +6,7 @@ import React, { useState, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices';
 import { useDashboard } from './dashboard/DashboardHooks';
 import { useFeatures } from '../../providers/FeatureProvider';
-import WidgetRenderer from '../admin/WidgetRenderer';
+import WidgetRenderer from '../shared/WidgetRenderer';
 import { 
   UnifiedAnchorEditorModal, CalendarSyncModal 
 } from './dashboard/DashboardComponents';
@@ -253,7 +253,7 @@ const Dashboard = () => {
             "{dailyQuote.split('|')[0]}"
           </p>
           {dailyQuote.split('|')[1] && (
-            <p className="text-xs text-corporate-teal font-bold uppercase tracking-wider mt-2">
+            <p className="text-xs text-corporate-teal-ink font-bold uppercase tracking-wider mt-2">
               — {dailyQuote.split('|')[1]}
             </p>
           )}
@@ -429,7 +429,7 @@ const Dashboard = () => {
               onClick={handleSaveScorecard}
               disabled={isSavingScorecard}
               variant="link"
-              className="text-corporate-teal hover:text-teal-300"
+              className="text-corporate-teal-ink hover:text-teal-300"
             >
               {isSavingScorecard ? <Loader className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
               <span className="ml-1 text-xs">Save to Locker</span>

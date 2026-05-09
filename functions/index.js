@@ -1041,7 +1041,7 @@ exports.onCoachingCancellationEvent = require("firebase-functions/v2/firestore")
 
   // 2. Send cancellation confirmation to the participant
   if (afterData.userEmail) {
-    const userSubject = `❌ Session Cancelled: ${afterData.sessionTitle || 'Coaching Session'}`;
+    const userSubject = `❌ Session Cancelled: ${afterData.sessionTitle || 'Session'}`;
     const userHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #991b1b 0%, #b91c1c 100%); padding: 20px; border-radius: 8px 8px 0 0;">
@@ -1049,10 +1049,10 @@ exports.onCoachingCancellationEvent = require("firebase-functions/v2/firestore")
         </div>
         <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
           <p style="margin-top: 0;">Hi ${afterData.userName || 'there'},</p>
-          <p>Your coaching session has been cancelled.</p>
+          <p>Your session has been cancelled.</p>
           <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #fecaca; margin: 16px 0;">
             <h3 style="margin-top: 0; color: #991b1b;">Cancelled Session</h3>
-            <p style="margin: 8px 0;"><strong>Session:</strong> ${afterData.sessionTitle || 'Coaching Session'}</p>
+            <p style="margin: 8px 0;"><strong>Session:</strong> ${afterData.sessionTitle || 'Session'}</p>
             <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
             <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
             ${afterData.coach ? `<p style="margin: 8px 0;"><strong>Trainer:</strong> ${afterData.coach}</p>` : ''}
@@ -1060,13 +1060,13 @@ exports.onCoachingCancellationEvent = require("firebase-functions/v2/firestore")
           <p style="text-align: center; margin: 16px 0;">
             <span style="background: #fef2f2; color: #991b1b; padding: 8px 16px; border-radius: 6px; font-size: 14px;">📅 Please remove this from your calendar</span>
           </p>
-          <p>You can schedule a new session anytime from the Coaching Hub.</p>
+          <p>You can register for other upcoming sessions from the Events tab.</p>
           <p style="text-align: center; margin-top: 24px;">
-            <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Browse Sessions</a>
+            <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
           </p>
         </div>
         <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
-          <p style="margin: 0; color: #64748b; font-size: 12px;">Questions? Reply to this email or contact your trainer directly.</p>
+          <p style="margin: 0; color: #64748b; font-size: 12px;">Questions? Reply to this email.</p>
         </div>
       </div>
     `;
@@ -1271,18 +1271,40 @@ exports.onCommunityRegistrationEvent = require("firebase-functions/v2/firestore"
 
   // 2. Send confirmation + ICS to participant
   if (registration.userEmail) {
-    const userSubject = `✅ You're registered: ${registration.sessionTitle || 'Community Session'}`;
-    const userHtml = `
+    // Use the SAME template as coaching so registration emails look identical
+    // regardless of source. Map host -> coach.
+    const userTemplate = await getTemplate('coaching_registration_user');
+    const templateVars = {
+      userName: registration.userName || 'there',
+      userEmail: registration.userEmail || 'Not provided',
+      sessionTitle: registration.sessionTitle || 'Session',
+      sessionType: registration.sessionType || '',
+      sessionDate,
+      sessionTime,
+      coach: registration.host || '',
+      coachingItemId: '',
+      meetLink: meetLink || '',
+      googleCalendarUrl: googleCalendarUrl || '',
+    };
+
+    let userSubject;
+    let userHtml;
+    if (userTemplate) {
+      userSubject = applyTemplateVariables(userTemplate.subject, templateVars);
+      userHtml = generateEmailHtml(userTemplate, templateVars, appUrl);
+    } else {
+      userSubject = `✅ Registration Confirmed: ${registration.sessionTitle || 'Session'}`;
+      userHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 20px; border-radius: 8px 8px 0 0;">
-          <h2 style="color: white; margin: 0;">You're In!</h2>
+          <h2 style="color: white; margin: 0;">Registration Confirmed!</h2>
         </div>
         <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
           <p style="margin-top: 0;">Hi ${registration.userName || 'there'},</p>
-          <p>You're registered for the upcoming community session!</p>
+          <p>Your session has been successfully scheduled!</p>
           <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 16px 0;">
             <h3 style="margin-top: 0; color: #002E47;">Session Details</h3>
-            <p style="margin: 8px 0;"><strong>Session:</strong> ${registration.sessionTitle || 'Community Session'}</p>
+            <p style="margin: 8px 0;"><strong>Session:</strong> ${registration.sessionTitle || 'Session'}</p>
             <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
             <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
             ${registration.host ? `<p style="margin: 8px 0;"><strong>Host:</strong> ${registration.host}</p>` : ''}
@@ -1294,19 +1316,21 @@ exports.onCommunityRegistrationEvent = require("firebase-functions/v2/firestore"
           </p>
           <p><strong>Next Steps:</strong></p>
           <ul>
-            ${googleCalendarUrl ? '<li>Click "Add to Google Calendar" above, or open the attached .ics file for other calendar apps</li>' : '<li>Open the attached calendar invite to save this session to your calendar</li>'}
-            ${meetLink ? `<li>Use the Google Meet link above to join at the scheduled time</li>` : '<li>Join details will be provided before the session</li>'}
-            <li>Come ready to connect and grow with your peer leaders</li>
+            ${googleCalendarUrl ? '<li>Click "Add to Google Calendar" above, or open the attached .ics file for other calendar apps</li>' : '<li>Open the attached calendar invite to add this session</li>'}
+            <li>Prepare any questions or topics you’d like to discuss</li>
+            <li>Join the session at the scheduled time</li>
           </ul>
           <p style="text-align: center; margin-top: 24px;">
             <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
           </p>
         </div>
         <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
-          <p style="margin: 0; color: #64748b; font-size: 12px;">Questions? Reply to this email or contact your session host.</p>
+          <p style="margin: 0; color: #64748b; font-size: 12px;">Questions? Reply to this email.</p>
         </div>
       </div>
-    `;
+      `;
+    }
+
     try {
       await transporter.sendMail({
         from: `"${emailFromName}" <${emailUser}>`,
@@ -1314,7 +1338,7 @@ exports.onCommunityRegistrationEvent = require("firebase-functions/v2/firestore"
         to: registration.userEmail,
         subject: userSubject,
         attachments: [{
-          filename: 'community-session.ics',
+          filename: 'session.ics',
           content: icsContent,
           contentType: 'text/calendar; charset=utf-8; method=REQUEST',
         }],
@@ -1435,18 +1459,18 @@ exports.onCommunityCancellationEvent = require("firebase-functions/v2/firestore"
 
   // 2. Confirm cancellation to participant
   if (afterData.userEmail) {
-    const userSubject = `❌ Registration Cancelled: ${afterData.sessionTitle || 'Community Session'}`;
+    const userSubject = `❌ Session Cancelled: ${afterData.sessionTitle || 'Session'}`;
     const userHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #991b1b 0%, #b91c1c 100%); padding: 20px; border-radius: 8px 8px 0 0;">
-          <h2 style="color: white; margin: 0;">Registration Cancelled</h2>
+          <h2 style="color: white; margin: 0;">Session Cancelled</h2>
         </div>
         <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
           <p style="margin-top: 0;">Hi ${afterData.userName || 'there'},</p>
-          <p>Your registration for the following session has been cancelled.</p>
+          <p>Your session has been cancelled.</p>
           <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #fecaca; margin: 16px 0;">
             <h3 style="margin-top: 0; color: #991b1b;">Cancelled Session</h3>
-            <p style="margin: 8px 0;"><strong>Session:</strong> ${afterData.sessionTitle || 'Community Session'}</p>
+            <p style="margin: 8px 0;"><strong>Session:</strong> ${afterData.sessionTitle || 'Session'}</p>
             <p style="margin: 8px 0;"><strong>Date:</strong> ${sessionDate}</p>
             <p style="margin: 8px 0;"><strong>Time:</strong> ${sessionTime}</p>
             ${afterData.host ? `<p style="margin: 8px 0;"><strong>Host:</strong> ${afterData.host}</p>` : ''}
@@ -1454,9 +1478,9 @@ exports.onCommunityCancellationEvent = require("firebase-functions/v2/firestore"
           <p style="text-align: center; margin: 16px 0;">
             <span style="background: #fef2f2; color: #991b1b; padding: 8px 16px; border-radius: 6px; font-size: 14px;">📅 Please remove this from your calendar</span>
           </p>
-          <p>You can register for other upcoming sessions from the Community Hub.</p>
+          <p>You can register for other upcoming sessions from the Events tab.</p>
           <p style="text-align: center; margin-top: 24px;">
-            <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Browse Sessions</a>
+            <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
           </p>
         </div>
         <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
@@ -24459,6 +24483,143 @@ exports.generateIdentityStatement = onCall(
     } catch (e) {
       logger.error('[identity] generation failed', { err: e.message });
       throw new HttpsError('internal', 'Could not draft your statement.');
+    }
+  }
+);
+
+/**
+ * suggestLisFromReps — authenticated callable.
+ *
+ * Reads recent leader activity (wins, reflections, conditioning notes —
+ * passed from the client to keep this function pure) and returns:
+ *   - 3 anchor candidates (word + one-line statement + why this fits)
+ *   - 3-5 evidence suggestions drawn from the leader's actual language
+ *   - 1 trigger + 1 recovery suggestion grounded in their stress moments
+ *
+ * Input: { reps: { wins?: string[], reflections?: string[], conditioning?: string[] }, currentAnchorWord?: string }
+ * Output: { anchors: [{word, statement, why}], evidence: string[], edge: { trigger, recovery } }
+ */
+exports.suggestLisFromReps = onCall(
+  { cors: true, region: 'us-central1', invoker: 'public', secrets: ['GEMINI_API_KEY'] },
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Session required.');
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      logger.error('[lis-suggest] GEMINI_API_KEY not configured');
+      throw new HttpsError('internal', 'AI service not configured.');
+    }
+
+    const reps = (request.data && request.data.reps) || {};
+    const wins = (Array.isArray(reps.wins) ? reps.wins : []).map((s) => String(s || '').trim()).filter(Boolean).slice(0, 25);
+    const reflections = (Array.isArray(reps.reflections) ? reps.reflections : []).map((s) => String(s || '').trim()).filter(Boolean).slice(0, 25);
+    const conditioning = (Array.isArray(reps.conditioning) ? reps.conditioning : []).map((s) => String(s || '').trim()).filter(Boolean).slice(0, 15);
+    const currentAnchorWord = String((request.data && request.data.currentAnchorWord) || '').trim().slice(0, 40);
+
+    if (wins.length + reflections.length + conditioning.length === 0) {
+      throw new HttpsError('failed-precondition', 'No reps to learn from yet — log a few wins or reflections first.');
+    }
+
+    // Compact corpus — cap each entry, cap the total chars to keep token budget tight.
+    const cap = (arr, perItem, total) => {
+      const out = [];
+      let used = 0;
+      for (const item of arr) {
+        const t = item.slice(0, perItem);
+        if (used + t.length > total) break;
+        out.push(t);
+        used += t.length;
+      }
+      return out;
+    };
+    const winsBlock = cap(wins, 240, 2400).map((w, i) => `W${i + 1}. ${w}`).join('\n') || '(none)';
+    const reflectionsBlock = cap(reflections, 320, 3200).map((r, i) => `R${i + 1}. ${r}`).join('\n') || '(none)';
+    const conditioningBlock = cap(conditioning, 280, 1400).map((c, i) => `C${i + 1}. ${c}`).join('\n') || '(none)';
+
+    const systemInstruction =
+      `You are an executive leadership coach. You are reading a leader\'s OWN words ` +
+      `from the last several weeks: their daily wins, their reflections, and notes ` +
+      `from their leadership conditioning practice. Your job is to surface PATTERNS ` +
+      `they may not see in themselves and turn those patterns into a structured ` +
+      `Leadership Identity artifact.\n\n` +
+      `Rules:\n` +
+      `- Use ONLY language and themes that appear in their entries. Do not invent details.\n` +
+      `- Plain modern English. No corporate jargon (no "authentic", "empower", "drive results", "passionate", "synergy").\n` +
+      `- Evidence must be observable behaviors a teammate could literally see.\n` +
+      `- First-person, present-tense throughout.\n` +
+      `Output JSON only — no prose, no markdown.`;
+
+    const prompt =
+      `RECENT WINS (what went well — leader\'s own words):\n${winsBlock}\n\n` +
+      `RECENT REFLECTIONS (end-of-day, what I did/learned/struggled with):\n${reflectionsBlock}\n\n` +
+      `CONDITIONING NOTES (practice reps and stress moments):\n${conditioningBlock}\n\n` +
+      (currentAnchorWord ? `CURRENT ANCHOR WORD: "${currentAnchorWord}" — try to honor this if the data supports it; otherwise propose a sharper word.\n\n` : '') +
+      `Produce three things:\n\n` +
+      `1) anchors: THREE distinct anchor candidates. Each has:\n` +
+      `   - word: one short, lowercase, concrete word that names how they lead AT THEIR BEST\n` +
+      `   - statement: ONE first-person, present-tense sentence (12-22 words) using that word verbatim\n` +
+      `   - why: ONE plain sentence (≤ 22 words) citing what in the entries supports this anchor (reference content, not entry numbers)\n\n` +
+      `2) evidence: THREE to FIVE evidence sentences. Each:\n` +
+      `   - Begins with "I " + a verb (observable behavior)\n` +
+      `   - 8-18 words\n` +
+      `   - Drawn DIRECTLY from a recurring behavior in the entries above\n\n` +
+      `3) edge: ONE trigger + ONE recovery move\n` +
+      `   - trigger: 8-20 word first-person sentence naming the moment/feeling that pulls them off (drawn from a stress/struggle pattern in reflections or conditioning notes)\n` +
+      `   - recovery: 8-20 word first-person sentence naming a SMALL do-it-now behavior that gets them back\n\n` +
+      `Return ONLY raw JSON in this exact shape:\n` +
+      `{\n` +
+      `  "anchors": [\n` +
+      `    {"word": "...", "statement": "...", "why": "..."},\n` +
+      `    {"word": "...", "statement": "...", "why": "..."},\n` +
+      `    {"word": "...", "statement": "...", "why": "..."}\n` +
+      `  ],\n` +
+      `  "evidence": ["...", "...", "..."],\n` +
+      `  "edge": { "trigger": "...", "recovery": "..." }\n` +
+      `}`;
+
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-2.0-flash',
+        systemInstruction,
+        generationConfig: { temperature: 0.7, responseMimeType: 'application/json' },
+      });
+      const result = await model.generateContent(prompt);
+      const text = (await result.response).text();
+
+      let parsed;
+      try { parsed = JSON.parse(text); }
+      catch (e) {
+        const m = text.match(/\{[\s\S]*\}/);
+        if (!m) throw e;
+        parsed = JSON.parse(m[0]);
+      }
+
+      const trim = (v, n) => String(v || '').trim().slice(0, n);
+      const anchors = (Array.isArray(parsed.anchors) ? parsed.anchors : [])
+        .slice(0, 3)
+        .map((a) => ({
+          word: trim(a.word, 40),
+          statement: trim(a.statement, 280),
+          why: trim(a.why, 200),
+        }))
+        .filter((a) => a.word && a.statement);
+      const evidence = (Array.isArray(parsed.evidence) ? parsed.evidence : [])
+        .map((e) => trim(e, 200)).filter(Boolean).slice(0, 5);
+      const edge = {
+        trigger: trim(parsed.edge && parsed.edge.trigger, 240),
+        recovery: trim(parsed.edge && parsed.edge.recovery, 240),
+      };
+
+      logger.info('[lis-suggest] ok', {
+        wins: wins.length, reflections: reflections.length, conditioning: conditioning.length,
+        anchors: anchors.length, evidence: evidence.length,
+      });
+
+      return { anchors, evidence, edge };
+    } catch (e) {
+      logger.error('[lis-suggest] failed', { err: e.message });
+      throw new HttpsError('internal', 'Could not analyze your reps right now.');
     }
   }
 );

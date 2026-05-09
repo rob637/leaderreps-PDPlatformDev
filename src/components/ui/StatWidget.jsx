@@ -73,7 +73,7 @@ const StatWidget = React.forwardRef(({
     },
     teal: {
       border: 'border-t-corporate-teal',
-      icon: 'text-corporate-teal',
+      icon: 'text-corporate-teal-ink',
       bg: 'bg-corporate-teal/10',
       bgVar: 'var(--corporate-teal-10)',
     },

@@ -155,11 +155,11 @@ const AppConfigCenter = () => {
                         className={`
                           w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors
                           ${isActive
-                            ? 'bg-corporate-teal/10 text-corporate-teal'
+                            ? 'bg-corporate-teal/10 text-corporate-teal-ink'
                             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'}
                         `}
                       >
-                        <Icon className={`w-4 h-4 ${isActive ? 'text-corporate-teal' : 'text-slate-400'}`} />
+                        <Icon className={`w-4 h-4 ${isActive ? 'text-corporate-teal-ink' : 'text-slate-400'}`} />
                         {tab.label}
                       </button>
                     );

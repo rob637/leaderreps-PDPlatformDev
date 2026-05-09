@@ -167,7 +167,7 @@ export const patterns = {
   // Button base
   buttonPrimary: 'bg-corporate-teal text-white hover:bg-corporate-teal-dark',
   buttonSecondary: 'bg-slate-100 text-slate-700 hover:bg-slate-200',
-  buttonOutline: 'border-2 border-corporate-teal text-corporate-teal hover:bg-teal-50',
+  buttonOutline: 'border-2 border-corporate-teal text-corporate-teal-ink hover:bg-teal-50',
   
   // Input base
   input: 'w-full rounded-xl border border-slate-200 px-3 py-2 focus:ring-2 focus:ring-corporate-teal',

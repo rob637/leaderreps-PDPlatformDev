@@ -113,7 +113,7 @@ const FacilitatorFeedbackPanel = ({ repId, repOwnerId, onFeedbackSaved }) => {
                 setNextRepSuggestion(feedback.nextRepSuggestion || '');
                 setShowForm(true);
               }}
-              className="text-xs text-corporate-teal hover:underline"
+              className="text-xs text-corporate-teal-ink hover:underline"
             >
               Edit
             </button>
@@ -142,7 +142,7 @@ const FacilitatorFeedbackPanel = ({ repId, repOwnerId, onFeedbackSaved }) => {
             <div>
               <div className="flex items-center gap-1.5 mb-1">
                 <Target className="w-3.5 h-3.5 text-corporate-teal" />
-                <span className="text-xs font-medium text-corporate-teal">Next Rep Focus</span>
+                <span className="text-xs font-medium text-corporate-teal-ink">Next Rep Focus</span>
               </div>
               <p className="text-sm text-slate-700 dark:text-slate-300">{feedback.nextRepSuggestion}</p>
             </div>
@@ -185,7 +185,7 @@ const FacilitatorFeedbackPanel = ({ repId, repOwnerId, onFeedbackSaved }) => {
         <div className="p-4">
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 text-sm text-corporate-teal hover:text-corporate-teal/80 transition-colors"
+            className="flex items-center gap-2 text-sm text-corporate-teal-ink hover:text-corporate-teal/80 transition-colors"
           >
             <Send className="w-4 h-4" />
             Provide feedback on this rep
@@ -220,7 +220,7 @@ const FacilitatorFeedbackPanel = ({ repId, repOwnerId, onFeedbackSaved }) => {
             />
           </div>
           <div>
-            <label className="flex items-center gap-1.5 text-xs font-medium text-corporate-teal mb-1">
+            <label className="flex items-center gap-1.5 text-xs font-medium text-corporate-teal-ink mb-1">
               <Target className="w-3.5 h-3.5" />
               Suggested next rep focus
             </label>

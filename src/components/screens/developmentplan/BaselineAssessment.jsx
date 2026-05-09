@@ -131,7 +131,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false, initialData = null,
               <span className="p-1 bg-teal-100 dark:bg-teal-900/30 rounded text-teal-700"><CheckCircle className="w-5 h-5" /></span>
               Leadership Skills Baseline Completed
             </h3>
-            <p className="text-sm text-corporate-teal mt-1">
+            <p className="text-sm text-corporate-teal-ink mt-1">
               Your leadership profile and goals are set.
             </p>
           </div>

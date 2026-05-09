@@ -45,7 +45,7 @@ const MODULE_GROUPS = {
   development_plan: {
     name: "Development Plan",
     icon: Target,
-    color: "text-corporate-teal",
+    color: "text-corporate-teal-ink",
     accentColor: "bg-corporate-teal",
     description: "12-week leadership development plans and assessments",
     tables: {

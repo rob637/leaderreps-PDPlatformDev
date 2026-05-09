@@ -21,7 +21,7 @@ const StrategicTemplates = () => {
           <Card key={i}>
             <div className="p-6 flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-corporate-teal/10 text-corporate-teal rounded-lg">
+                <div className="p-3 bg-corporate-teal/10 text-corporate-teal-ink rounded-lg">
                   <FileText className="w-6 h-6" />
                 </div>
                 <div>
@@ -29,7 +29,7 @@ const StrategicTemplates = () => {
                   <Text variant="small">PDF & Excel Formats</Text>
                 </div>
               </div>
-              <button className="p-2 text-slate-400 hover:text-corporate-teal transition-colors">
+              <button className="p-2 text-slate-400 hover:text-corporate-teal-ink transition-colors">
                 <Download className="w-5 h-5" />
               </button>
             </div>

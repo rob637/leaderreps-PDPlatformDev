@@ -227,7 +227,7 @@ const RedAnalyticsPanel = ({ cohortId = null }) => {
           <p>{error}</p>
           <button 
             onClick={loadAnalytics}
-            className="mt-3 text-sm text-corporate-teal hover:underline"
+            className="mt-3 text-sm text-corporate-teal-ink hover:underline"
           >
             Try again
           </button>
@@ -266,7 +266,7 @@ const RedAnalyticsPanel = ({ cohortId = null }) => {
             onClick={() => setSelectedTab(tab.id)}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
               selectedTab === tab.id
-                ? 'border-corporate-teal text-corporate-teal'
+                ? 'border-corporate-teal text-corporate-teal-ink'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
@@ -323,7 +323,7 @@ const RedAnalyticsPanel = ({ cohortId = null }) => {
                     <span className="text-sm text-gray-600 dark:text-gray-300 capitalize">
                       {(redPatternService.SCENARIO_TYPE_LABELS[scenario] || scenario).replace(/_/g, ' ')}
                     </span>
-                    <span className="text-sm font-medium text-corporate-teal">{count}</span>
+                    <span className="text-sm font-medium text-corporate-teal-ink">{count}</span>
                   </div>
                 ))}
             </div>
@@ -506,7 +506,7 @@ const RedAnalyticsPanel = ({ cohortId = null }) => {
  */
 const MetricCard = ({ label, value, subValue, icon, color }) => {
   const colorClasses = {
-    teal: 'bg-corporate-teal/10 text-corporate-teal',
+    teal: 'bg-corporate-teal/10 text-corporate-teal-ink',
     blue: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600',
     green: 'bg-green-100 dark:bg-green-900/30 text-green-600',
     amber: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600',

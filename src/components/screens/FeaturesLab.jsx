@@ -200,7 +200,7 @@ const FeaturesLab = () => {
           </div>
           <button 
             onClick={() => toggleFeature(feature.id)}
-            className={`transition-colors ${isEnabled ? 'text-corporate-teal' : 'text-slate-400'}`}
+            className={`transition-colors ${isEnabled ? 'text-corporate-teal-ink' : 'text-slate-400'}`}
           >
             {isEnabled ? <ToggleRight className="w-8 h-8" /> : <ToggleLeft className="w-8 h-8" />}
           </button>
@@ -218,7 +218,7 @@ const FeaturesLab = () => {
             {feature.status}
           </span>
           {isEnabled && (
-            <span className="text-xs font-bold text-corporate-teal flex items-center gap-1">
+            <span className="text-xs font-bold text-corporate-teal-ink flex items-center gap-1">
               <Zap className="w-3 h-3" /> Active
             </span>
           )}

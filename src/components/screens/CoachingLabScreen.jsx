@@ -22,7 +22,7 @@ import { Button, Card, Tooltip, PageLayout, NoWidgetsEnabled, LoadingSpinner } f
 const mdToHtml = async (markdown) => {
   let html = markdown;
   
-  html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-extrabold text-corporate-teal mt-4 mb-2">$1</h3>');
+  html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-extrabold text-corporate-teal-ink mt-4 mb-2">$1</h3>');
   html = html.replace(/^## (.*$)/gim, '<h2 class="text-2xl font-bold text-corporate-navy border-b pb-1 mb-3 mt-6">$1</h2>');
   html = html.replace(/^# (.*$)/gim, '<h1 class="text-2xl sm:text-3xl font-extrabold text-corporate-orange mb-4">$1</h1>');
 
@@ -378,7 +378,7 @@ const RolePlayCritique = ({ history, scenario, difficultyLevel, setView }) => {
             <Card title="Generating Session Critique..." icon={Zap} className="mt-8 bg-corporate-teal/10 border-2 border-corporate-teal">
                 <div className="flex flex-col items-center justify-center h-40">
                     <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-corporate-teal mb-4"></div>
-                    <p className="text-corporate-teal font-medium">Analyzing dialogue history and scoring performance...</p>
+                    <p className="text-corporate-teal-ink font-medium">Analyzing dialogue history and scoring performance...</p>
                 </div>
             </Card>
         );
@@ -414,7 +414,7 @@ const RolePlayCritique = ({ history, scenario, difficultyLevel, setView }) => {
                     </div>
                     <div className='mt-4 pt-4 border-t border-gray-200 dark:border-gray-700'>
                         <p className='text-sm font-semibold text-corporate-navy'>Difficulty Grade:</p>
-                        <span className='text-xl font-extrabold text-corporate-teal'>
+                        <span className='text-xl font-extrabold text-corporate-teal-ink'>
                             {difficultyLevel < 25 ? 'C - Standard' : difficultyLevel < 75 ? 'B - Challenging' : 'A - Executive Level'}
                         </span>
                     </div>
@@ -447,7 +447,7 @@ const RolePlayCritique = ({ history, scenario, difficultyLevel, setView }) => {
             
             {/* Full Critique and Accountability Actions */}
             <Card title="AI Coach Full Audit" icon={CheckCircle} className="bg-[#FCFCFA] border-4 border-corporate-teal">
-                <div className="prose max-w-none prose-h2:text-4xl prose-h2:text-corporate-orange prose-h2:font-extrabold prose-h3:text-corporate-teal prose-p:text-gray-700 prose-ul:space-y-2">
+                <div className="prose max-w-none prose-h2:text-4xl prose-h2:text-corporate-orange prose-h2:font-extrabold prose-h3:text-corporate-teal-ink prose-p:text-gray-700 prose-ul:space-y-2">
                     <div dangerouslySetInnerHTML={{ __html: critiqueHtml }} />
                 </div>
                 
@@ -466,7 +466,7 @@ const RolePlayCritique = ({ history, scenario, difficultyLevel, setView }) => {
                     
                     {auditResult && (
                         <Card title="Your Reflection Audit" icon={Eye} className='bg-white dark:bg-slate-800 shadow-lg border-l-4 border-dashed border-corporate-teal'>
-                            <div className="prose max-w-none prose-h2:text-corporate-navy prose-h3:text-corporate-teal">
+                            <div className="prose max-w-none prose-h2:text-corporate-navy prose-h3:text-corporate-teal-ink">
                                 <div dangerouslySetInnerHTML={{ __html: auditResult }} />
                             </div>
                         </Card>
@@ -868,7 +868,7 @@ const RolePlayView = ({ scenario, setCoachingLabView, difficultyLevel, preparedS
                         
                         {preparedSBI && (
                              <div className='mt-4 pt-2 border-t border-gray-300 dark:border-gray-600'>
-                                <h4 className='font-bold text-corporate-teal mb-2 flex items-center'><ShieldCheck className='w-4 h-4 mr-1'/> Prepared SBI Focus:</h4>
+                                <h4 className='font-bold text-corporate-teal-ink mb-2 flex items-center'><ShieldCheck className='w-4 h-4 mr-1'/> Prepared SBI Focus:</h4>
                                 <p className='text-xs text-gray-700 dark:text-gray-200 italic border border-corporate-teal/20 p-2 rounded-lg bg-white dark:bg-slate-800'>{preparedSBI}</p>
                             </div>
                         )}
@@ -971,19 +971,19 @@ const ProgressAnalyticsView = ({ setCoachingLabView }) => {
                     {/* Overview Stats */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3 sm:p-4 lg:p-6">
                         <Card title="Total Sessions" icon={Target} accent="TEAL">
-                            <div className="text-4xl font-extrabold text-corporate-teal">{totalSessions}</div>
+                            <div className="text-4xl font-extrabold text-corporate-teal-ink">{totalSessions}</div>
                         </Card>
                         <Card title="Average Score" icon={Star} accent="ORANGE">
                             <div className="text-4xl font-extrabold text-corporate-orange">{averageScore}/100</div>
                         </Card>
                         <Card title="Score Trend" icon={TrendingUp} accent={scoreTrend >= 0 ? 'TEAL' : 'ORANGE'}>
-                            <div className={`text-4xl font-extrabold ${scoreTrend >= 0 ? 'text-corporate-teal' : 'text-corporate-orange'}`}>
+                            <div className={`text-4xl font-extrabold ${scoreTrend >= 0 ? 'text-corporate-teal-ink' : 'text-corporate-orange'}`}>
                                 {scoreTrend > 0 ? '+' : ''}{scoreTrend}
                             </div>
                             <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">Last 10 sessions</p>
                         </Card>
                         <Card title="Improvement Velocity" icon={Zap} accent={velocityChange >= 0 ? 'TEAL' : 'ORANGE'}>
-                            <div className={`text-4xl font-extrabold ${velocityChange >= 0 ? 'text-corporate-teal' : 'text-corporate-orange'}`}>
+                            <div className={`text-4xl font-extrabold ${velocityChange >= 0 ? 'text-corporate-teal-ink' : 'text-corporate-orange'}`}>
                                 {velocityChange > 0 ? '+' : ''}{Math.round(velocityChange)}
                             </div>
                             <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">Recent 5 vs prior 5</p>
@@ -1046,7 +1046,7 @@ const ProgressAnalyticsView = ({ setCoachingLabView }) => {
                                     </div>
                                     <div className={`text-2xl font-extrabold ${
                                         session.score >= 80 ? 'text-green-600' : 
-                                        session.score >= 60 ? 'text-corporate-teal' : 'text-orange-600'
+                                        session.score >= 60 ? 'text-corporate-teal-ink' : 'text-orange-600'
                                     }`}>
                                         {session.score}
                                     </div>
@@ -1383,7 +1383,7 @@ Return only valid JSON, no additional text.`;
                                                     : 'border-gray-300 dark:border-gray-600 hover:border-corporate-teal/50'
                                             }`}
                                         >
-                                            <Icon className={`w-5 h-5 mb-2 ${personaType === option.value ? 'text-corporate-teal' : 'text-gray-500 dark:text-gray-400'}`} />
+                                            <Icon className={`w-5 h-5 mb-2 ${personaType === option.value ? 'text-corporate-teal-ink' : 'text-gray-500 dark:text-gray-400'}`} />
                                             <p className="text-sm font-semibold text-corporate-navy">{option.label}</p>
                                         </button>
                                     );
@@ -1515,7 +1515,7 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario, setMicro
           <Card key={scenario.id} title={scenario.title} className="border-l-4 border-corporate-teal rounded-3xl" onClick={() => handleScenarioClick(scenario)}>
             <p className="text-sm text-gray-700 dark:text-gray-200 mb-3">{scenario.description}</p>
             <div className="text-xs font-semibold text-corporate-navy bg-corporate-navy/10 px-3 py-1 rounded-full inline-block">Persona: {scenario.persona}</div>
-            <div className="mt-4 text-corporate-teal font-semibold flex items-center">
+            <div className="mt-4 text-corporate-teal-ink font-semibold flex items-center">
               Start Preparation &rarr;
             </div>
           </Card>

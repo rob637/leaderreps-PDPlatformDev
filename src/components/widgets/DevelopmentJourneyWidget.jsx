@@ -63,7 +63,7 @@ const PHASE_THEMES = {
     color: 'from-corporate-teal to-emerald-600',
     bgColor: 'bg-corporate-teal/5 dark:bg-corporate-teal/20',
     borderColor: 'border-corporate-teal/20 dark:border-corporate-teal/40',
-    textColor: 'text-corporate-teal',
+    textColor: 'text-corporate-teal-ink',
     iconBg: 'bg-corporate-teal/10 dark:bg-corporate-teal/30',
     accentColor: 'teal'
   },
@@ -92,7 +92,7 @@ const MILESTONE_THEMES = {
     color: 'from-corporate-teal to-emerald-600', 
     bgColor: 'bg-corporate-teal/10 dark:bg-corporate-teal/20', 
     borderColor: 'border-corporate-teal/30 dark:border-corporate-teal/40', 
-    textColor: 'text-corporate-teal dark:text-corporate-teal',
+    textColor: 'text-corporate-teal-ink dark:text-corporate-teal-ink',
     iconBg: 'bg-corporate-teal/20 dark:bg-corporate-teal/30'
   },
   2: { 
@@ -128,7 +128,7 @@ const MILESTONE_THEMES = {
     color: 'from-corporate-teal to-teal-600', 
     bgColor: 'bg-corporate-teal/10 dark:bg-corporate-teal/20', 
     borderColor: 'border-corporate-teal/30 dark:border-corporate-teal/40', 
-    textColor: 'text-corporate-teal dark:text-corporate-teal',
+    textColor: 'text-corporate-teal-ink dark:text-corporate-teal-ink',
     iconBg: 'bg-corporate-teal/20 dark:bg-corporate-teal/30'
   },
   5: { 
@@ -147,18 +147,18 @@ const MILESTONE_THEMES = {
 
 // Legacy week themes - kept for Ascent phase if needed
 const WEEK_THEME_CYCLE = [
-  { icon: Target, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal', iconBg: 'bg-corporate-teal/10' },
-  { icon: MessageSquare, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal', iconBg: 'bg-corporate-teal/10' },
-  { icon: Users, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal', iconBg: 'bg-corporate-teal/10' },
-  { icon: Zap, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal', iconBg: 'bg-corporate-teal/10' },
-  { icon: TrendingUp, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal', iconBg: 'bg-corporate-teal/10' },
-  { icon: Award, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal', iconBg: 'bg-corporate-teal/10' },
-  { icon: Sparkles, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal', iconBg: 'bg-corporate-teal/10' },
-  { icon: Trophy, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal', iconBg: 'bg-corporate-teal/10' },
-  { icon: Lightbulb, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal', iconBg: 'bg-corporate-teal/10' },
-  { icon: Shield, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal', iconBg: 'bg-corporate-teal/10' },
-  { icon: Heart, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal', iconBg: 'bg-corporate-teal/10' },
-  { icon: Compass, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal', iconBg: 'bg-corporate-teal/10' },
+  { icon: Target, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal-ink', iconBg: 'bg-corporate-teal/10' },
+  { icon: MessageSquare, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal-ink', iconBg: 'bg-corporate-teal/10' },
+  { icon: Users, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal-ink', iconBg: 'bg-corporate-teal/10' },
+  { icon: Zap, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal-ink', iconBg: 'bg-corporate-teal/10' },
+  { icon: TrendingUp, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal-ink', iconBg: 'bg-corporate-teal/10' },
+  { icon: Award, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal-ink', iconBg: 'bg-corporate-teal/10' },
+  { icon: Sparkles, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal-ink', iconBg: 'bg-corporate-teal/10' },
+  { icon: Trophy, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal-ink', iconBg: 'bg-corporate-teal/10' },
+  { icon: Lightbulb, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal-ink', iconBg: 'bg-corporate-teal/10' },
+  { icon: Shield, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal-ink', iconBg: 'bg-corporate-teal/10' },
+  { icon: Heart, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal-ink', iconBg: 'bg-corporate-teal/10' },
+  { icon: Compass, color: 'from-corporate-teal to-emerald-600', bgColor: 'bg-corporate-teal/5', borderColor: 'border-corporate-teal/20', textColor: 'text-corporate-teal-ink', iconBg: 'bg-corporate-teal/10' },
 ];
 
 // Helper to get theme for a week (cycles through colors) - available if needed
@@ -1235,7 +1235,7 @@ const DevelopmentJourneyWidget = () => {
         <div className="flex items-center gap-2">
           <div className="text-right">
             <div className="text-xs text-slate-500 dark:text-slate-400">Overall Progress</div>
-            <div className="text-lg font-bold text-corporate-teal">{overallProgress}%</div>
+            <div className="text-lg font-bold text-corporate-teal-ink">{overallProgress}%</div>
           </div>
           <div className="w-10 h-10 relative">
             <ProgressRing progress={overallProgress} size={40} strokeWidth={4} />
@@ -1411,7 +1411,7 @@ const DevelopmentJourneyWidget = () => {
         </div>
         {/* Actions Done */}
         <div className="text-center p-4 bg-corporate-teal/10 rounded-xl">
-          <div className="text-2xl font-bold text-corporate-teal">
+          <div className="text-2xl font-bold text-corporate-teal-ink">
             {journeyData.segments.reduce((sum, s) => sum + s.completedActions, 0)}
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Actions Done</div>

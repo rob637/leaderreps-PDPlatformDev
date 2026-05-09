@@ -49,7 +49,7 @@ const LoadingState = React.forwardRef(({
         )}
         {...props}
       >
-        <Loader className={cn('text-corporate-teal animate-spin', sizes.spinner)} />
+        <Loader className={cn('text-corporate-teal-ink animate-spin', sizes.spinner)} />
         {message && (
           <p className={cn('text-slate-500 dark:text-slate-400 mt-4', sizes.text)}>{message}</p>
         )}
@@ -67,7 +67,7 @@ const LoadingState = React.forwardRef(({
       )}
       {...props}
     >
-      <Loader className={cn('text-corporate-teal animate-spin', sizes.spinner)} />
+      <Loader className={cn('text-corporate-teal-ink animate-spin', sizes.spinner)} />
       {message && (
         <p className={cn('text-slate-500 dark:text-slate-400 mt-3', sizes.text)}>{message}</p>
       )}

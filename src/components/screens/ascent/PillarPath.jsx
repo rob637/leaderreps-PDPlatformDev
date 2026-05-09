@@ -102,7 +102,7 @@ const PillarCard = ({ pillar, isOpen, progress, onClick }) => {
 
   const badgeColors = {
     emerald: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-    teal:    'bg-corporate-teal/15 text-corporate-teal',
+    teal:    'bg-corporate-teal/15 text-corporate-teal-ink',
     indigo:  'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
   };
 

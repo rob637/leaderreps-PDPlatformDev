@@ -162,7 +162,7 @@ const CoachingActionItem = ({
             
             {/* Registered Badge */}
             {registrationStatus === 'registered' && !isCompleted && (
-              <span className="text-[10px] font-bold text-corporate-teal bg-teal-50 dark:bg-teal-900/20 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
+              <span className="text-[10px] font-bold text-corporate-teal-ink bg-teal-50 dark:bg-teal-900/20 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
                 <Calendar className="w-2.5 h-2.5" />
                 {formatSessionDate(sessionDate)}
               </span>
@@ -182,7 +182,7 @@ const CoachingActionItem = ({
             {skillArray.length > 0 && (
               <>
                 <span>•</span>
-                <span className="text-corporate-teal">{skillArray.join(', ')}</span>
+                <span className="text-corporate-teal-ink">{skillArray.join(', ')}</span>
               </>
             )}
           </div>
@@ -191,7 +191,7 @@ const CoachingActionItem = ({
         {/* Action Button */}
         {!isCompleted && (
           <div className="flex items-center">
-            <div className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-corporate-teal bg-teal-50 dark:bg-teal-900/20 rounded-lg group-hover:bg-teal-100 transition-colors">
+            <div className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-corporate-teal-ink bg-teal-50 dark:bg-teal-900/20 rounded-lg group-hover:bg-teal-100 transition-colors">
               {registrationStatus === 'registered' ? (
                 <div className="flex flex-col items-end">
                   <span className="font-bold">{formatSessionDate(sessionDate)}</span>

@@ -170,7 +170,7 @@ function RepUpApp() {
                     onClick={() => setActiveTab('coach')}
                     className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
                       activeTab === 'coach'
-                        ? 'text-corporate-teal border-b-2 border-corporate-teal bg-corporate-teal/5'
+                        ? 'text-corporate-teal-ink border-b-2 border-corporate-teal bg-corporate-teal/5'
                         : 'text-slate-500 hover:bg-slate-50'
                     }`}
                   >
@@ -181,7 +181,7 @@ function RepUpApp() {
                     onClick={() => setActiveTab('reps')}
                     className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
                       activeTab === 'reps'
-                        ? 'text-corporate-teal border-b-2 border-corporate-teal bg-corporate-teal/5'
+                        ? 'text-corporate-teal-ink border-b-2 border-corporate-teal bg-corporate-teal/5'
                         : 'text-slate-500 hover:bg-slate-50'
                     }`}
                   >

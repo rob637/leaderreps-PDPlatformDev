@@ -17,7 +17,7 @@ import { UnifiedAnchorEditorModal, CalendarSyncModal } from './dashboard/Dashboa
 import { MissedDaysModal } from './dashboard/MissedDaysModal';
 import { useFeatures } from '../../providers/FeatureProvider';
 import { useRevampFlag } from '../../hooks/useRevampFlag';
-import WidgetRenderer from '../admin/WidgetRenderer';
+import WidgetRenderer from '../shared/WidgetRenderer';
 import { createWidgetSDK } from '../../services/WidgetSDK';
 import { Card } from '../ui';
 // import { useLayout } from '../../providers/LayoutProvider';
@@ -30,6 +30,9 @@ import ProgramStatusWidget from '../widgets/ProgramStatusWidget';
 import ConditioningWidget from '../widgets/ConditioningWidget';
 import NotificationsWidget from '../widgets/NotificationsWidget';
 import ConditioningTutorialWidget from '../widgets/ConditioningTutorialWidget';
+import AscentMyEventsWidget from '../widgets/AscentMyEventsWidget';
+import AscentUpcomingEventsWidget from '../widgets/AscentUpcomingEventsWidget';
+import AscentAskTrainerWidget from '../widgets/AscentAskTrainerWidget';
 import PrepCompleteModal from '../modals/PrepCompleteModal';
 import AscentWelcomeModal from '../modals/AscentWelcomeModal';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -474,7 +477,7 @@ const Dashboard = () => {
           {label}
         </p>
         {subLabel && (
-          <p className="text-xs text-slate-400 mt-1">{subLabel}</p>
+          <p className="text-xs text-slate-600 mt-1">{subLabel}</p>
         )}
       </div>
     </div>
@@ -752,11 +755,24 @@ const Dashboard = () => {
   };
 
   if (dailyPlanLoading) {
+    // Render a layout-stable skeleton that mirrors the boot skeleton and the
+    // final dashboard structure so we don't trigger a CLS when the loader
+    // mounts/unmounts. Avoids vertical-center → top-align shift (CLS ~0.3).
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <div className="flex flex-col items-center gap-4">
-          <Loader className="w-8 h-8 animate-spin text-corporate-navy" />
-          <p className="text-slate-500 text-sm font-medium">Loading your daily plan...</p>
+      <div className="p-5 sm:p-6 lg:p-8 space-y-5 bg-[#FAFBFC] dark:bg-slate-900 min-h-screen">
+        <div className="max-w-[860px] mx-auto">
+          <header className="mb-8 text-center pt-2">
+            <div className="flex items-center justify-center gap-4 mb-3">
+              <div className="w-7 h-7 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+              <div className="h-7 w-40 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+            </div>
+            <div className="h-4 w-64 mx-auto bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+          </header>
+          <div className="grid gap-5 grid-cols-1" aria-hidden="true">
+            <div className="h-[120px] rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 animate-pulse" />
+            <div className="h-[120px] rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 animate-pulse" />
+            <div className="h-[120px] rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 animate-pulse" />
+          </div>
         </div>
       </div>
     );
@@ -775,9 +791,9 @@ const Dashboard = () => {
 
       <header className="mb-8 text-center">
         <FadeIn delay={0.1}>
-          {revampEnabled && (
+          {revampEnabled && currentPhase?.id === 'post-start' && (
             <div className="flex justify-center mb-3">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-corporate-teal/10 text-corporate-teal text-xs font-semibold uppercase tracking-widest">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-corporate-teal/15 text-[#1F6B59] dark:text-corporate-teal-ink text-xs font-semibold uppercase tracking-widest">
                 Ascent
               </span>
             </div>
@@ -788,21 +804,32 @@ const Dashboard = () => {
               Dashboard
             </h1>
           </div>
-          <p className="text-slate-500 dark:text-slate-400 mt-2 leading-relaxed" style={{ fontFamily: 'var(--font-body)' }}>
+          <p className="text-slate-600 dark:text-slate-300 mt-2 leading-relaxed" style={{ fontFamily: 'var(--font-body)' }}>
             {greeting} Welcome to the Arena.
           </p>
         </FadeIn>
       </header>
 
       {/* Forced 1-col layout for now - with staggered animation */}
-      <Stagger staggerDelay={0.08} className="grid gap-5 grid-cols-1">
-        {/* DYNAMIC FEATURES */}
-        {sortedFeatures.map(featureId => (
-          <React.Fragment key={featureId}>
-            {renderers[featureId] ? renderers[featureId]() : null}
-          </React.Fragment>
-        ))}
-      </Stagger>
+      <h2 className="sr-only">Dashboard widgets</h2>
+      {revampEnabled && currentPhase?.id === 'post-start' ? (
+        <Stagger staggerDelay={0.08} className="grid gap-5 grid-cols-1">
+          {/* Ascent revamp — Ryan's 4-widget dashboard (post-program only) */}
+          <NotificationsWidget />
+          <AscentMyEventsWidget />
+          <AscentUpcomingEventsWidget />
+          <AscentAskTrainerWidget />
+        </Stagger>
+      ) : (
+        <Stagger staggerDelay={0.08} className="grid gap-5 grid-cols-1">
+          {/* DYNAMIC FEATURES */}
+          {sortedFeatures.map(featureId => (
+            <React.Fragment key={featureId}>
+              {renderers[featureId] ? renderers[featureId]() : null}
+            </React.Fragment>
+          ))}
+        </Stagger>
+      )}
 
       {/* Anchor Editor Modal */}
       <UnifiedAnchorEditorModal

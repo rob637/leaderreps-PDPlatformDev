@@ -25,6 +25,13 @@ module.exports = {
         'corporate-orange': '#E04E1B',
         'corporate-teal': '#47A88D',
         'corporate-teal-dark': '#349881',
+        // Accessibility-tuned text variants of brand teal (WCAG AA on white).
+        // Use these for TEXT/LINKS on light surfaces. The plain
+        // `corporate-teal` should be reserved for fills, icons, indicators,
+        // and large/decorative surfaces where contrast is not required.
+        'corporate-teal-ink':  '#1F7864', // ~5.5:1 on white — body text & links
+        'corporate-teal-soft': '#7FCBB3', // text/links on dark surfaces
+        'corporate-orange-ink': '#B83E15', // ~4.7:1 on white — text variant of brand orange
         'corporate-light-gray': '#E5E7EB',
         'corporate-subtle-teal': '#349881',
         

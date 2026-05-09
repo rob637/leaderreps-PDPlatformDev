@@ -94,7 +94,7 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
                   </div>
                   <div className="flex-1">
                     <p className="text-xs text-slate-500 dark:text-slate-400">Email</p>
-                    <p className="text-sm text-corporate-navy dark:text-white font-medium group-hover:text-corporate-teal transition-colors">{email}</p>
+                    <p className="text-sm text-corporate-navy dark:text-white font-medium group-hover:text-corporate-teal-ink transition-colors">{email}</p>
                   </div>
                 </a>
               )}
@@ -109,7 +109,7 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
                   </div>
                   <div className="flex-1">
                     <p className="text-xs text-slate-500 dark:text-slate-400">Phone</p>
-                    <p className="text-sm text-corporate-navy dark:text-white font-medium group-hover:text-corporate-teal transition-colors">{phone}</p>
+                    <p className="text-sm text-corporate-navy dark:text-white font-medium group-hover:text-corporate-teal-ink transition-colors">{phone}</p>
                   </div>
                 </a>
               )}

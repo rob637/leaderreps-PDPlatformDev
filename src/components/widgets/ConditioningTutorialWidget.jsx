@@ -192,7 +192,7 @@ const MockupProgressTracker = () => (
           key={m.milestone}
           className={`rounded-lg flex flex-col items-center justify-center py-3 px-2 text-xs ${
             m.status === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
-            m.status === 'active' ? 'bg-corporate-teal/20 text-corporate-teal ring-2 ring-corporate-teal' :
+            m.status === 'active' ? 'bg-corporate-teal/20 text-corporate-teal-ink ring-2 ring-corporate-teal' :
             'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
           }`}
         >
@@ -224,7 +224,7 @@ const TUTORIAL_STEPS = [
     id: 'intro',
     title: 'Welcome to Conditioning',
     icon: Dumbbell,
-    iconColor: 'text-corporate-teal',
+    iconColor: 'text-corporate-teal-ink',
     content: 'Conditioning is the core practice of the Foundation program. Just like athletes do reps to build muscle, you\'ll do leadership reps to build your leadership muscles.',
     highlight: 'One Real Rep per week is your minimum commitment.',
     tip: null,
@@ -294,7 +294,7 @@ const TUTORIAL_STEPS = [
     id: 'ready',
     title: 'You\'re Ready!',
     icon: Star,
-    iconColor: 'text-corporate-teal',
+    iconColor: 'text-corporate-teal-ink',
     content: 'That\'s the conditioning system. When you start the program, you\'ll see the Conditioning card on your dashboard. Click it to commit to your first Real Rep.',
     highlight: 'Remember: One real rep per week. Specific commitment. Honest debrief. That\'s how leaders are made.',
     tip: null,
@@ -447,7 +447,7 @@ const ConditioningTutorialWidget = ({ onComplete, onClose }) => {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
               onClick={handleReviewAgain}
-              className="px-6 py-2 border-2 border-corporate-teal text-corporate-teal rounded-lg hover:bg-corporate-teal/10 transition-colors font-medium"
+              className="px-6 py-2 border-2 border-corporate-teal text-corporate-teal-ink rounded-lg hover:bg-corporate-teal/10 transition-colors font-medium"
             >
               Review Tutorial Again
             </button>
@@ -550,7 +550,7 @@ const ConditioningTutorialWidget = ({ onComplete, onClose }) => {
         {/* Step Icon & Title */}
         <div className="flex items-center gap-3 mb-4">
           <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-            step.iconColor === 'text-corporate-teal' ? 'bg-teal-100 dark:bg-teal-900/30' :
+            step.iconColor === 'text-corporate-teal-ink' ? 'bg-teal-100 dark:bg-teal-900/30' :
             step.iconColor === 'text-blue-600' ? 'bg-blue-100 dark:bg-blue-900/30' :
             step.iconColor === 'text-amber-600' ? 'bg-amber-100 dark:bg-amber-900/30' :
             step.iconColor === 'text-orange-500' ? 'bg-orange-100 dark:bg-orange-900/30' :
@@ -583,7 +583,7 @@ const ConditioningTutorialWidget = ({ onComplete, onClose }) => {
         {/* Tip */}
         {step.tip && (
           <div className="flex items-start gap-2 text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-            <span className="font-semibold text-corporate-teal shrink-0">💡 Tip:</span>
+            <span className="font-semibold text-corporate-teal-ink shrink-0">💡 Tip:</span>
             <span>{step.tip}</span>
           </div>
         )}

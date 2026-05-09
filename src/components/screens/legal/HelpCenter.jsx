@@ -47,7 +47,7 @@ const colorClasses = {
   orange: 'bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400',
   slate: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400',
   red: 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400',
-  teal: 'bg-corporate-teal/10 text-corporate-teal'
+  teal: 'bg-corporate-teal/10 text-corporate-teal-ink'
 };
 
 const iconBgClasses = {
@@ -242,7 +242,7 @@ const ArticleCard = ({ article, onClick, showCategory = false, searchQuery = '' 
         <CategoryIcon icon={article.categoryIcon || BookOpen} color={article.categoryColor || 'teal'} size="sm" />
       </div>
       <div className="flex-1 min-w-0">
-        <h4 className="font-medium text-slate-900 dark:text-white group-hover:text-corporate-teal transition-colors">
+        <h4 className="font-medium text-slate-900 dark:text-white group-hover:text-corporate-teal-ink transition-colors">
           <HighlightText text={article.title} query={searchQuery} />
         </h4>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
@@ -408,7 +408,7 @@ const ArticleView = ({ article, onBack, onArticleSelect }) => {
         {/* Back navigation */}
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-corporate-teal 
+          className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-corporate-teal-ink 
             transition-colors mb-6 group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -528,7 +528,7 @@ const CategoryView = ({ category, onBack, onArticleSelect }) => {
         {/* Back navigation */}
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-corporate-teal 
+          className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-corporate-teal-ink 
             transition-colors mb-6 group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -727,7 +727,7 @@ const HomeView = ({ onCategorySelect, onArticleSelect, searchQuery, setSearchQue
                 <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
                   <FileText className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                 </div>
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-corporate-teal transition-colors truncate">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-corporate-teal-ink transition-colors truncate">
                   {article.title}
                 </span>
               </button>
@@ -785,7 +785,7 @@ const HomeView = ({ onCategorySelect, onArticleSelect, searchQuery, setSearchQue
                 <Mail className="w-6 h-6 text-corporate-teal" />
               </div>
               <div>
-                <div className="font-medium text-slate-900 dark:text-white group-hover:text-corporate-teal transition-colors">
+                <div className="font-medium text-slate-900 dark:text-white group-hover:text-corporate-teal-ink transition-colors">
                   Email Support
                 </div>
                 <div className="text-sm text-slate-500 dark:text-slate-400">
@@ -804,7 +804,7 @@ const HomeView = ({ onCategorySelect, onArticleSelect, searchQuery, setSearchQue
                 <Sparkles className="w-6 h-6 text-pink-600 dark:text-pink-400" />
               </div>
               <div>
-                <div className="font-medium text-slate-900 dark:text-white group-hover:text-corporate-teal transition-colors">
+                <div className="font-medium text-slate-900 dark:text-white group-hover:text-corporate-teal-ink transition-colors">
                   Ask RepUp
                 </div>
                 <div className="text-sm text-slate-500 dark:text-slate-400">

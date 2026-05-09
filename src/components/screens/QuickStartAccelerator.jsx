@@ -18,7 +18,7 @@ import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 const mdToHtml = async (md) => { /* ... Re-use definition from Labs.jsx ... */
     if (!md) return ''; let html = md;
     html = html.replace(/^## (.*$)/gim, '<h2 class="text-xl font-extrabold text-corporate-navy border-b border-gray-200 dark:border-gray-700 pb-2 mb-3 mt-5">$1</h2>');
-    html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold text-corporate-teal mt-4 mb-2">$1</h3>');
+    html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold text-corporate-teal-ink mt-4 mb-2">$1</h3>');
     html = html.replace(/\*\*(.*?)\*\*/gim, '<strong class="font-semibold">$1</strong>');
     html = html.replace(/^\* (.*$)/gim, '<li>$1</li>');
     html = html.replace(/(<li>.*<\/li>\s*)+/g, (match) => `<ul class="list-disc list-inside space-y-1 mb-4 pl-4">${match.trim()}</ul>`);
@@ -266,7 +266,7 @@ const QuickStartAcceleratorScreen = () => {
                         {/* Link to LIS Auditor Tool (Highlighted Card) */}
                         <Card title="Tool: Leadership Identity Statement (LIS) Auditor" icon={ShieldCheck} accent="TEAL" className="mb-8 cursor-pointer hover:border-teal-400" onClick={() => setQuickStartView('lis-auditor')}>
                             <p className='text-gray-700 dark:text-gray-200 text-sm'>Draft and refine your core leadership statement using AI critique. **Crucial pre-work for Session 2.**</p>
-                            <div className="mt-4 text-corporate-teal font-semibold flex items-center group">
+                            <div className="mt-4 text-corporate-teal-ink font-semibold flex items-center group">
                                 Launch LIS Auditor <span className="inline-block transition-transform group-hover:translate-x-1 ml-1">&rarr;</span>
                             </div>
                         </Card>
@@ -292,7 +292,7 @@ const QuickStartAcceleratorScreen = () => {
                                     <div className="grid md:grid-cols-2 gap-5 pt-4 border-t border-slate-100">
                                         {/* Core Focus */}
                                         <div>
-                                            <h3 className="text-sm font-semibold mb-2 flex items-center gap-2 text-corporate-teal"><Target className='w-4 h-4'/> Core Focus</h3>
+                                            <h3 className="text-sm font-semibold mb-2 flex items-center gap-2 text-corporate-teal-ink"><Target className='w-4 h-4'/> Core Focus</h3>
                                             <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{session.focus}</p>
                                         </div>
                                         {/* Pre-Work */}

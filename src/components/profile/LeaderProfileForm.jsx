@@ -297,7 +297,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
           onClick={() => handleChange(field, opt.value)}
           className={`p-3 rounded-xl border-2 transition-all text-left
             ${formData[field] === opt.value
-              ? 'border-corporate-teal bg-corporate-teal/10 text-corporate-teal'
+              ? 'border-corporate-teal bg-corporate-teal/10 text-corporate-teal-ink'
               : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-white dark:bg-slate-800'
             }`}
         >
@@ -325,7 +325,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
                 onChange={() => handleChange(field, val)}
                 className="w-5 h-5 text-corporate-teal focus:ring-corporate-teal border-slate-300 dark:border-slate-600 cursor-pointer"
               />
-              <span className={`text-xs mt-1 font-medium ${parseInt(formData[field]) === val ? 'text-corporate-teal' : 'text-slate-400 group-hover:text-slate-600'}`}>{val}</span>
+              <span className={`text-xs mt-1 font-medium ${parseInt(formData[field]) === val ? 'text-corporate-teal-ink' : 'text-slate-400 group-hover:text-slate-600'}`}>{val}</span>
             </label>
           ))}
         </div>
@@ -415,7 +415,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
                 </label>
               </div>
               {labEnrolled ? (
-                <p className="text-xs text-corporate-teal italic ml-6">
+                <p className="text-xs text-corporate-teal-ink italic ml-6">
                   You're enrolled in Leadership Lab — your coaching texts come from there. Reply STOP to that conversation to unsubscribe.
                 </p>
               ) : !formData.phoneNumber && (
@@ -575,7 +575,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
                 ${isActive 
                   ? 'bg-white dark:bg-slate-800 border-b-2 border-corporate-teal' 
                   : isComplete
-                    ? 'text-corporate-teal hover:bg-white/50 cursor-pointer'
+                    ? 'text-corporate-teal-ink hover:bg-white/50 cursor-pointer'
                     : 'text-slate-400 cursor-not-allowed'
                 }`}
             >
@@ -584,7 +584,7 @@ const LeaderProfileForm = ({ onComplete, onClose, isModal = true }) => {
                   ${isActive 
                     ? 'bg-corporate-teal text-white' 
                     : isComplete
-                      ? 'bg-corporate-teal/20 text-corporate-teal'
+                      ? 'bg-corporate-teal/20 text-corporate-teal-ink'
                       : 'bg-slate-200 text-slate-400'
                   }`}
                 >

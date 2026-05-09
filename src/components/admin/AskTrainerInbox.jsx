@@ -229,7 +229,7 @@ const QuestionRow = ({ question, expanded, onToggle, onReply, onReopen, busy }) 
             {question.userName || question.userEmail || 'Unknown leader'}
           </span>
           {question.rrTag && RR_TAG_LABEL[question.rrTag] && (
-            <span className="inline-flex items-center gap-1 text-corporate-teal">
+            <span className="inline-flex items-center gap-1 text-corporate-teal-ink">
               <Tag className="w-3 h-3" />
               {RR_TAG_LABEL[question.rrTag]}
             </span>
@@ -267,7 +267,7 @@ const QuestionRow = ({ question, expanded, onToggle, onReply, onReopen, busy }) 
 
           {question.status === 'answered' && (
             <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-              <div className="text-xs font-semibold uppercase tracking-wider text-corporate-teal mb-2">
+              <div className="text-xs font-semibold uppercase tracking-wider text-corporate-teal-ink mb-2">
                 Current reply
               </div>
               {question.responseText && (
@@ -280,7 +280,7 @@ const QuestionRow = ({ question, expanded, onToggle, onReply, onReopen, busy }) 
                   href={question.responseVideoUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm font-medium text-corporate-teal hover:underline"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-corporate-teal-ink hover:underline"
                 >
                   <Video className="w-4 h-4" />
                   {question.responseVideoUrl}

@@ -37,7 +37,7 @@ export default function MaintenancePage({ message }) {
         </p>
         
         {/* Status indicator */}
-        <div className="flex items-center justify-center gap-2 text-corporate-teal mb-8">
+        <div className="flex items-center justify-center gap-2 text-corporate-teal-ink mb-8">
           <Clock className="w-5 h-5" />
           <span className="text-sm font-medium">Estimated downtime: Brief</span>
         </div>
@@ -47,7 +47,7 @@ export default function MaintenancePage({ message }) {
           <p className="text-slate-400 text-sm mb-2">Need immediate assistance?</p>
           <a 
             href="mailto:support@leaderreps.com" 
-            className="inline-flex items-center gap-2 text-corporate-teal hover:text-corporate-teal/80 transition-colors"
+            className="inline-flex items-center gap-2 text-corporate-teal-ink hover:text-corporate-teal/80 transition-colors"
           >
             <Mail className="w-4 h-4" />
             support@leaderreps.com

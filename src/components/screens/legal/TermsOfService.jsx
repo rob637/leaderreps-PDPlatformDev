@@ -196,7 +196,7 @@ const TermsOfService = () => {
             <h3>Section 10. Contact</h3>
             <p>
               If you have any questions or comments concerning these Terms of Use, please contact us at{' '}
-              <a href="mailto:team@leaderreps.com" className="text-corporate-teal hover:underline">team@leaderreps.com</a>.
+              <a href="mailto:team@leaderreps.com" className="text-corporate-teal-ink hover:underline">team@leaderreps.com</a>.
             </p>
           </div>
         </Card>

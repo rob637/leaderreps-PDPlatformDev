@@ -326,7 +326,7 @@ const SessionPickerModal = ({
                   <div className="p-3 rounded-xl bg-teal-50 dark:bg-teal-900/20 border-2 border-corporate-teal">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-corporate-teal">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-corporate-teal-ink">
                           <CheckCircle className="w-4 h-4 flex-shrink-0" />
                           <span>Your Current Registration</span>
                         </div>

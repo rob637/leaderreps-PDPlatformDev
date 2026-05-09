@@ -5,7 +5,7 @@ import { useAppServices } from '../../services/useAppServices.jsx';
 import { useNotifications } from '../../providers/NotificationProvider';
 import { Shield, ToggleLeft, ToggleRight, Save, Loader, AlertTriangle, ArrowLeft, Key, Settings, Mail, Plus, X, Calendar, Trash2, Database } from 'lucide-react';
 import { Button, Card } from '../ui';
-import WidgetRenderer from '../admin/WidgetRenderer';
+import WidgetRenderer from '../shared/WidgetRenderer';
 import { seedCoachingData, clearCoachingData } from '../../services/coachingService';
 
 const AdminEmailManager = ({ initialEmails, updateGlobalMetadata }) => {

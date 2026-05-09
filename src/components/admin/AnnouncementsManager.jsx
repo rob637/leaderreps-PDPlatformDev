@@ -485,7 +485,7 @@ const AnnouncementsManager = () => {
                               href={announcement.link} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="flex items-center gap-1 text-corporate-teal hover:underline"
+                              className="flex items-center gap-1 text-corporate-teal-ink hover:underline"
                             >
                               <ExternalLink className="w-3 h-3" />
                               Link

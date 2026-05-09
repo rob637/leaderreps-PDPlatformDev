@@ -25,7 +25,7 @@ const ReadingHub = () => {
               </div>
               <h3 className="font-bold text-lg text-corporate-navy mb-2">Leadership Book Title {i}</h3>
               <Text variant="small" className="mb-4">A brief summary of the key takeaways from this influential leadership text.</Text>
-              <Button variant="link" size="sm" className="text-corporate-teal font-semibold text-sm flex items-center gap-1 p-0">
+              <Button variant="link" size="sm" className="text-corporate-teal-ink font-semibold text-sm flex items-center gap-1 p-0">
                 Read Summary <ArrowRight className="w-4 h-4" />
               </Button>
             </div>

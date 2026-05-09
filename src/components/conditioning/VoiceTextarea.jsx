@@ -5,7 +5,9 @@
 
 import React, { useState } from 'react';
 import VoiceInputButton from './VoiceInputButton';
-import { AlertCircle } from 'lucide-react';
+import { polishTranscript } from './polishTranscript';
+import { useAppServices } from '../../services/useAppServices';
+import { AlertCircle, Sparkles, Undo2, RotateCcw } from 'lucide-react';
 
 // ============================================
 // VOICE TEXTAREA COMPONENT
@@ -26,10 +28,16 @@ const VoiceTextarea = ({
   disabled = false,
   autoFocus = false,
   className = '',
+  polish = true,
 }) => {
+  const { callSecureGeminiAPI, geminiModel, hasGeminiKey } = useAppServices();
   const [partialTranscript, setPartialTranscript] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const [isPolishing, setIsPolishing] = useState(false);
   const [micError, setMicError] = useState(null);
+  // Tracks the most recent polish so the user can flip between polished and
+  // raw text. Cleared automatically as soon as they manually edit the field.
+  const [lastPolish, setLastPolish] = useState(null); // { raw, polished, mode }
 
   const MIC_ERROR_MESSAGES = {
     'not-allowed':
@@ -49,12 +57,43 @@ const VoiceTextarea = ({
     setIsRecording(false);
   };
 
-  const handleTranscription = (text) => {
+  const handleTranscription = async (text) => {
     setMicError(null);
-    const newValue = value ? `${value} ${text}` : text;
-    onChange(newValue);
     setPartialTranscript('');
     setIsRecording(false);
+
+    const canPolish =
+      polish &&
+      typeof callSecureGeminiAPI === 'function' &&
+      (typeof hasGeminiKey !== 'function' || hasGeminiKey());
+
+    const prefix = value ? `${value} ` : '';
+    const rawFull = `${prefix}${text}`;
+
+    if (!canPolish) {
+      setLastPolish(null);
+      onChange(rawFull);
+      return;
+    }
+
+    setIsPolishing(true);
+    let polished = text;
+    try {
+      polished = await polishTranscript(text, {
+        callSecureGeminiAPI,
+        model: geminiModel,
+      });
+    } finally {
+      setIsPolishing(false);
+    }
+
+    const polishedFull = `${prefix}${polished}`;
+    if (polished && polished.trim() !== text.trim()) {
+      setLastPolish({ raw: rawFull, polished: polishedFull, mode: 'polished' });
+    } else {
+      setLastPolish(null);
+    }
+    onChange(polishedFull);
   };
 
   const handlePartialTranscription = (text) => {
@@ -103,7 +142,11 @@ const VoiceTextarea = ({
         <textarea
           id={id}
           value={displayText}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            // Manual edits invalidate the polish toggle.
+            if (lastPolish) setLastPolish(null);
+            onChange(e.target.value);
+          }}
           placeholder={placeholder}
           rows={rows}
           disabled={disabled}
@@ -131,7 +174,7 @@ const VoiceTextarea = ({
           />
         </div>
 
-        {/* Recording indicator */}
+        {/* Recording / polishing indicator */}
         {isRecording && (
           <div className="absolute top-2 right-14 flex items-center gap-1.5">
             <span className="relative flex h-2 w-2">
@@ -141,7 +184,48 @@ const VoiceTextarea = ({
             <span className="text-xs text-red-600 font-medium">Recording...</span>
           </div>
         )}
+        {!isRecording && isPolishing && (
+          <div className="absolute top-2 right-14 flex items-center gap-1.5">
+            <Sparkles className="w-3 h-3 text-corporate-teal animate-pulse" />
+            <span className="text-xs text-corporate-teal-ink font-medium">Polishing…</span>
+          </div>
+        )}
       </div>
+
+      {/* Show original / Revert toggle (only after a polish actually changed the text) */}
+      {lastPolish && !isRecording && !isPolishing && (
+        <div className="mt-1.5 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+          <Sparkles className="w-3 h-3 text-corporate-teal flex-shrink-0" />
+          <span>
+            {lastPolish.mode === 'polished'
+              ? 'Cleaned by AI.'
+              : 'Showing your original words.'}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              if (lastPolish.mode === 'polished') {
+                onChange(lastPolish.raw);
+                setLastPolish({ ...lastPolish, mode: 'raw' });
+              } else {
+                onChange(lastPolish.polished);
+                setLastPolish({ ...lastPolish, mode: 'polished' });
+              }
+            }}
+            className="inline-flex items-center gap-1 font-semibold text-corporate-teal-ink hover:underline"
+          >
+            {lastPolish.mode === 'polished' ? (
+              <>
+                <Undo2 className="w-3 h-3" /> Show original
+              </>
+            ) : (
+              <>
+                <RotateCcw className="w-3 h-3" /> Use cleaned version
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Inline mic error banner (visible even if the floating tooltip
           inside VoiceInputButton is clipped by an overflow-hidden parent) */}

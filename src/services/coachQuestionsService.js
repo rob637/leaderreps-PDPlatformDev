@@ -50,6 +50,39 @@ export const subscribeUserQuestions = (db, userId, callback) => {
   );
 };
 
+/**
+ * Subscribe to ANSWERED questions across the cohort/community.
+ * Firestore rules expose `status == 'answered'` docs to all authenticated
+ * users so they can be surfaced as a curated public Q&A on the dashboard.
+ *
+ * @param {object} db
+ * @param {(items: Array) => void} callback
+ * @param {object} [opts]
+ * @param {number} [opts.limit] - cap result size client-side
+ * @returns {() => void} unsubscribe
+ */
+export const subscribeAnsweredQuestions = (db, callback, opts = {}) => {
+  if (!db) throw new Error('db required');
+  const max = typeof opts.limit === 'number' ? opts.limit : null;
+  const q = query(
+    collection(db, COLLECTION),
+    where('status', '==', 'answered'),
+    orderBy('respondedAt', 'desc')
+  );
+  return onSnapshot(
+    q,
+    (snap) => {
+      let items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      if (max && items.length > max) items = items.slice(0, max);
+      callback(items);
+    },
+    (err) => {
+      // eslint-disable-next-line no-console
+      console.warn('[coachQuestions] answered subscribe error', err);
+    }
+  );
+};
+
 export const submitQuestion = async (db, user, payload) => {
   if (!db || !user?.uid) throw new Error('db + user required');
   if (!payload?.title || payload.title.trim().length < 3) {

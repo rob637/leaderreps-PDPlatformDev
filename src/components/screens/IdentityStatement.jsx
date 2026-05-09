@@ -1,248 +1,154 @@
 // src/components/screens/IdentityStatement.jsx
 //
-// Leadership Identity Statement (LIS) — in-Ascent builder.
+// Leadership Identity Statement (LIS) — lesson-aligned builder.
 //
-// This is NOT a lead magnet. It lives inside Ascent and produces a structured
-// living artifact:
+// Built from the in-program lesson "Leadership Identity & Intentions".
+// Three exercises, in order:
 //
-//   ANCHOR    — one word + one first-person sentence ("who I am at my best")
-//   EVIDENCE  — 3 observable behaviors that prove the anchor
-//   EDGE      — the trigger that pulls me off the anchor + a recovery move
+//   1) Leadership Qualities
+//        - Name leaders you admire and the qualities that draw you to them.
+//        - Then pick 3–5 qualities you commit to embodying.
 //
-// The artifact is persisted to:
-//   developmentPlanData.dailyPracticeData.leadershipIdentity = { ... }
+//   2) Leadership Identity Statement
+//        - You write it. One sentence. "I am the type of leader who..."
+//        - Your selected qualities are shown as reference. No AI generation.
 //
-// Backward compatibility: we ALSO write `identityAnchor` (a string) so the
-// existing GroundingRepWidget and any consumer reading the legacy field keeps
-// working without migration.
+//   3) Leadership Intentions
+//        - Pairs of (Scenario, Intention) you decide BEFORE the moment arrives.
 //
-// The Locker links here. Trainers can see the artifact through normal user
-// reads (no separate UI in this PR — added later).
+// Persisted to:
+//   developmentPlanData.dailyPracticeData.leadershipIdentity = {
+//     admiredLeaders: [{ id, name, qualities: [string] }],
+//     qualities: [string],            // user's 3–5
+//     statement: string,              // "I am the type of leader who..."
+//     intentions: [{ id, scenario, intention }],
+//     anchor: { word, statement },    // mirrored for backward compatibility
+//     versions: [...], updatedAt, createdAt
+//   }
+//
+// Backward compatibility:
+//   - We mirror `statement` into `anchor.statement` so the existing
+//     GroundingRepWidget and Locker card keep working.
+//   - We also write the legacy `identityAnchor` string field.
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { httpsCallable } from 'firebase/functions';
-import { functions as firebaseFunctions } from '../../lib/firebase';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowRight, ArrowLeft, Sparkles, Loader2, Check, Pencil, Save,
-  Quote, Compass, Eye, AlertTriangle, RefreshCw, ShieldCheck, Star,
-  Plus, X, History, Lightbulb, ChevronDown, ChevronUp, Zap, Layers,
-  Heart, Moon,
+  ArrowRight, ArrowLeft, Save, Pencil, Plus, X, Check,
+  Compass, Users, Quote, Target, ShieldCheck, Loader2,
+  ChevronDown, ChevronUp, Lightbulb, RefreshCw,
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { PageLayout } from '../ui/PageLayout';
-import { Card } from '../ui';
+import VoiceTextarea from '../conditioning/VoiceTextarea';
 
 // ---------------------------------------------------------------------------
-// Question bank — drives the AI generation.
-//
-// CORE_QUESTIONS (4): the Quick Draft path. ~4 minutes.
-// DEEP_QUESTIONS (3): added for Deep Dive path. Values, Purpose, Shadow.
-//   - Shadow grounds the Edge card in actual self-knowledge instead of AI guess
-//   - Values surfaces non-negotiables (Bill George / True North)
-//   - Purpose answers "who am I leading for" (Quinn / Kouzes-Posner)
-//
-// Every prompt carries 3 example answers (real-feeling, plain English) that
-// are surfaced via an inline "Stuck? See examples" disclosure on the question
-// step. This is the difference between a survey and a tool.
+// Quality bank — straight from the workbook. Scan, don't read top to bottom.
 // ---------------------------------------------------------------------------
-const CORE_QUESTIONS = [
-  {
-    id: 'word',
-    label: 'One word',
-    icon: Compass,
-    prompt: 'What one word do you want your team to use when they describe you?',
-    helper: 'Honest. Steady. Curious. Direct. — pick your word.',
-    placeholder: 'e.g. steady',
-    maxLen: 40,
-    examples: ['steady', 'curious', 'direct', 'honest', 'present'],
-  },
-  {
-    id: 'best',
-    label: 'At your best',
-    icon: Star,
-    prompt: 'When are you at your best as a leader?',
-    helper: 'A moment, a meeting, a season — describe it briefly.',
-    placeholder: 'When the team is under pressure and I…',
-    maxLen: 240,
-    multiline: true,
-    examples: [
-      'When something is breaking and the team is scattered, I get calm, name what we know, and pick the next move.',
-      'In 1:1s when someone is stuck — I ask two questions before I offer anything.',
-      'When the room is quiet and someone needs to say the hard thing, I go first.',
-    ],
-  },
-  {
-    id: 'known',
-    label: 'Known for',
-    icon: Quote,
-    prompt: 'What do you most want to be known for?',
-    helper: 'Not your title. Not your output. Who you are.',
-    placeholder: 'Calling out the truth with care.',
-    maxLen: 200,
-    multiline: true,
-    examples: [
-      'Telling people the truth before it gets worse — and still rooting for them.',
-      'Being the leader who actually listens — not the one waiting to talk.',
-      'Making my people braver than they were when they started here.',
-    ],
-  },
-  {
-    id: 'gap',
-    label: 'The gap',
-    icon: AlertTriangle,
-    prompt: "What does your team need from you that they aren't getting enough of?",
-    helper: 'Be honest. This is for you, not a review.',
-    placeholder: 'Direct, specific feedback.',
-    maxLen: 200,
-    multiline: true,
-    examples: [
-      'Direct feedback in the moment — not after I have stewed for two days.',
-      'My full attention. I am there but distracted half the time.',
-      'A clearer "no" — I say maybe when I mean no, and it slows everyone down.',
-    ],
-  },
+const QUALITY_BANK = [
+  'Accountable', 'Adaptable', 'Authentic', 'Bold', 'Brave', 'Calm', 'Caring',
+  'Clear', 'Collaborative', 'Composed', 'Confident', 'Consistent',
+  'Constructive', 'Courageous', 'Creative', 'Curious', 'Decisive', 'Dedicated',
+  'Dependable', 'Determined', 'Disciplined', 'Driven', 'Dynamic', 'Empathetic',
+  'Empowering', 'Encouraging', 'Energetic', 'Engaged', 'Ethical', 'Fair',
+  'Flexible', 'Focused', 'Forgiving', 'Forward-thinking', 'Generous', 'Genuine',
+  'Grateful', 'Grounded', 'Growth-oriented', 'Hardworking', 'Helpful', 'Honest',
+  'Humble', 'Inclusive', 'Influential', 'Innovative', 'Insightful', 'Inspiring',
+  'Intentional', 'Intuitive', 'Joyful', 'Just', 'Kind', 'Knowledgeable',
+  'Level-headed', 'Listener', 'Loyal', 'Mentally-tough', 'Motivating',
+  'Objective', 'Open-minded', 'Optimistic', 'Organized', 'Outgoing',
+  'Passionate', 'Patient', 'Perceptive', 'Persistent', 'Persuasive', 'Positive',
+  'Practical', 'Proactive', 'Purposeful', 'Rational', 'Realistic', 'Reflective',
+  'Reliable', 'Resilient', 'Respectful', 'Responsible', 'Results-focused',
+  'Risk-aware', 'Self-aware', 'Self-controlled', 'Selfless', 'Servant-hearted',
+  'Strategic', 'Supportive', 'Tactful', 'Team-oriented', 'Tenacious',
+  'Thoughtful', 'Transparent', 'Trust-building', 'Trustworthy', 'Unbiased',
+  'Understanding', 'Visionary', 'Vulnerable', 'Wise',
 ];
 
-const DEEP_QUESTIONS = [
-  {
-    id: 'values',
-    label: 'Non-negotiables',
-    icon: ShieldCheck,
-    prompt: 'What 2–3 things will you not compromise on as a leader?',
-    helper: 'The lines you will hold even when it costs you.',
-    placeholder: 'Honesty even when it is awkward. Following through on what I say.',
-    maxLen: 280,
-    multiline: true,
-    examples: [
-      'Telling people the real story. Following through on what I commit to. Protecting my team\'s time.',
-      'Doing what I said I would do. Not punishing people for bringing me bad news.',
-      'Treating the most junior person in the room with the same respect as the CEO.',
-    ],
-  },
-  {
-    id: 'purpose',
-    label: 'Who you serve',
-    icon: Heart,
-    prompt: 'Who are you leading for, and why does it matter?',
-    helper: 'Past your KPIs. Who actually benefits when you lead well?',
-    placeholder: 'Six engineers who deserve a manager who has their back.',
-    maxLen: 280,
-    multiline: true,
-    examples: [
-      'Eight people who picked this team for a reason — they deserve a manager who fights for them.',
-      'The customers we never meet. If we are sloppy, somebody\'s day gets worse.',
-      'The next generation of leaders on my team — I want them better than I was at their stage.',
-    ],
-  },
-  {
-    id: 'shadow',
-    label: 'Under pressure',
-    icon: Moon,
-    prompt: 'When you are stressed or threatened, how do you show up that you are NOT proud of?',
-    helper: 'Be honest — this becomes the trigger your Edge card watches for.',
-    placeholder: 'I get short. I take over. I go quiet and avoid people.',
-    maxLen: 280,
-    multiline: true,
-    examples: [
-      'I take over the work instead of coaching through it. People stop bringing me problems.',
-      'I get sharp and clipped. People start walking on eggshells around me.',
-      'I go quiet and avoid the hard conversation. It festers and gets worse.',
-    ],
-  },
-];
-
-const QUESTIONS_BY_MODE = {
-  quick: CORE_QUESTIONS,
-  deep: [...CORE_QUESTIONS, ...DEEP_QUESTIONS],
-};
-
-// ---------------------------------------------------------------------------
-// Sample LIS artifacts — shown on the intro screen so leaders can SEE what
-// they're building toward before they start typing. Each one is fictional
-// but plausible (anonymized composite).
-// ---------------------------------------------------------------------------
-const SAMPLE_ARTIFACTS = [
-  {
-    word: 'steady',
-    statement: 'I am the steady voice in the room when the noise gets loud — calm, clear, and willing to make the call.',
-    evidence: [
-      'I name what we know and what we don\'t in the first 5 minutes of a crisis.',
-      'I make the decision out loud, even when I\'m not sure, and own it.',
-      'I check in 1:1 within 24 hours of a hard moment.',
-    ],
-    edge: {
-      trigger: 'When deadlines compress, I default to barking orders and stop explaining.',
-      recovery: 'I pause for 30 seconds and ask one question before I tell.',
-    },
-  },
-  {
-    word: 'curious',
-    statement: 'I am the leader who asks one more question before I answer — because the real problem is rarely the first one named.',
-    evidence: [
-      'I ask "what would have to be true?" before I push back on an idea.',
-      'I write down what I learned in every 1:1, not what I told them.',
-      'I check my first reaction before I send the message.',
-    ],
-    edge: {
-      trigger: 'When I think I already know the answer, I stop listening.',
-      recovery: 'I say "tell me more" and actually wait for the next sentence.',
-    },
-  },
-  {
-    word: 'direct',
-    statement: 'I am the leader who says the real thing the first time — with care, without softening it into nothing.',
-    evidence: [
-      'I name the hard thing in the first 5 minutes of a 1:1.',
-      'I give the feedback in the room, not in the hallway after.',
-      'I say "I was wrong" before anyone has to ask.',
-    ],
-    edge: {
-      trigger: 'When I am tired or hurt, I get sharp and start pointing fingers.',
-      recovery: 'I close the laptop, take a walk, and rewrite before I send.',
-    },
-  },
-];
+const MIN_QUALITIES = 3;
+const MAX_QUALITIES = 5;
+const MAX_INTENTIONS = 5;
 
 // ---------------------------------------------------------------------------
 // Pure helpers
 // ---------------------------------------------------------------------------
 const safeStr = (v) => (typeof v === 'string' ? v : '');
+const newId = () =>
+  (typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `id_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
 
-const buildLegacyAnchorString = (artifact) => {
-  // The legacy `identityAnchor` is a single string. Use the anchor statement.
-  return safeStr(artifact?.anchor?.statement).trim();
-};
-
-const normalizeArtifact = (raw) => {
-  if (!raw || typeof raw !== 'object') return null;
-  const anchor = raw.anchor || {};
-  const edge = raw.edge || {};
-  const evidence = Array.isArray(raw.evidence) ? raw.evidence : [];
+const normalizeData = (raw) => {
+  if (!raw || typeof raw !== 'object') {
+    return {
+      admiredLeaders: [],
+      qualities: [],
+      statement: '',
+      intentions: [],
+      versions: [],
+      updatedAt: null,
+      createdAt: null,
+    };
+  }
+  // Pull statement from new field, falling back to mirrored anchor.statement
+  const statement = safeStr(raw.statement || raw?.anchor?.statement || '').trim();
+  const qualities = Array.isArray(raw.qualities)
+    ? raw.qualities.map(safeStr).map((q) => q.trim()).filter(Boolean).slice(0, MAX_QUALITIES)
+    : [];
+  const admiredLeaders = Array.isArray(raw.admiredLeaders)
+    ? raw.admiredLeaders.map((l) => ({
+        id: l?.id || newId(),
+        name: safeStr(l?.name).trim(),
+        qualities: Array.isArray(l?.qualities)
+          ? l.qualities.map(safeStr).map((q) => q.trim()).filter(Boolean)
+          : [],
+      })).filter((l) => l.name || l.qualities.length > 0)
+    : [];
+  const intentions = Array.isArray(raw.intentions)
+    ? raw.intentions.map((i) => ({
+        id: i?.id || newId(),
+        scenario: safeStr(i?.scenario).trim(),
+        intention: safeStr(i?.intention).trim(),
+      })).slice(0, MAX_INTENTIONS)
+    : [];
   return {
-    anchor: {
-      word: safeStr(anchor.word).trim(),
-      statement: safeStr(anchor.statement).trim(),
-    },
-    evidence: evidence.map((e) => safeStr(e).trim()).filter(Boolean).slice(0, 5),
-    edge: {
-      trigger: safeStr(edge.trigger).trim(),
-      recovery: safeStr(edge.recovery).trim(),
-    },
-    answers: raw.answers || {},
-    alternates: Array.isArray(raw.alternates) ? raw.alternates.slice(0, 5) : [],
+    admiredLeaders,
+    qualities,
+    statement,
+    intentions,
     versions: Array.isArray(raw.versions) ? raw.versions : [],
     updatedAt: raw.updatedAt || null,
     createdAt: raw.createdAt || null,
   };
 };
 
-const isArtifactComplete = (a) =>
-  !!(a && a.anchor?.statement && a.evidence?.length >= 1);
+const isComplete = (d) =>
+  !!(d && d.statement && d.qualities?.length >= MIN_QUALITIES);
 
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
+const StepHeader = ({ stepNumber, totalSteps, label, title, helper }) => (
+  <div>
+    <div className="flex items-center gap-2 mb-2">
+      <span className="text-xs font-bold uppercase tracking-wider text-corporate-teal">
+        Exercise {stepNumber} of {totalSteps}
+      </span>
+      <span className="text-xs text-slate-400">·</span>
+      <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+        {label}
+      </span>
+    </div>
+    <h2 className="text-2xl md:text-3xl font-semibold text-corporate-navy dark:text-white leading-tight">
+      {title}
+    </h2>
+    {helper && (
+      <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{helper}</p>
+    )}
+  </div>
+);
+
 const ProgressBar = ({ step, total }) => (
   <div className="flex items-center gap-1.5 mb-6">
     {Array.from({ length: total }).map((_, i) => (
@@ -256,495 +162,818 @@ const ProgressBar = ({ step, total }) => (
   </div>
 );
 
-// Inline examples disclosure — surfaces below each question so leaders can
-// see how others answered without leaving the flow. Tap an example to use it
-// as a starter (they can edit from there).
-const ExamplesPeek = ({ examples, onUseExample }) => {
-  const [open, setOpen] = useState(false);
-  if (!examples || examples.length === 0) return null;
+const NavRow = ({ onBack, onNext, nextLabel, nextDisabled, backLabel = 'Back' }) => (
+  <div className="flex justify-between items-center pt-2">
+    <button
+      type="button"
+      onClick={onBack}
+      className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700"
+    >
+      <ArrowLeft className="w-4 h-4" /> {backLabel}
+    </button>
+    <button
+      type="button"
+      onClick={onNext}
+      disabled={nextDisabled}
+      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-corporate-teal text-white font-semibold hover:bg-corporate-teal/90 disabled:opacity-40 disabled:cursor-not-allowed"
+    >
+      {nextLabel}
+      <ArrowRight className="w-4 h-4" />
+    </button>
+  </div>
+);
+
+// ---------------------------------------------------------------------------
+// EXERCISE 1 — Leadership Qualities
+// ---------------------------------------------------------------------------
+const QualityChip = ({ label, selected, onClick, disabled }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled && !selected}
+    className={`px-3 py-1.5 rounded-full text-sm border transition ${
+      selected
+        ? 'bg-corporate-teal text-white border-corporate-teal'
+        : disabled
+        ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
+        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 hover:border-corporate-teal hover:text-corporate-teal-ink'
+    }`}
+  >
+    {selected && <Check className="inline w-3.5 h-3.5 -mt-0.5 mr-1" />}
+    {label}
+  </button>
+);
+
+const AdmiredLeaderRow = ({ leader, onChange, onRemove, qualityBank, onAddFromBank }) => {
+  const [bankOpen, setBankOpen] = useState(false);
+  const updateQuality = (idx, val) => {
+    const next = [...leader.qualities];
+    next[idx] = val;
+    onChange({ ...leader, qualities: next });
+  };
+  const removeQuality = (idx) => {
+    const next = leader.qualities.filter((_, i) => i !== idx);
+    onChange({ ...leader, qualities: next });
+  };
+  const addQuality = (val = '') => {
+    onChange({ ...leader, qualities: [...leader.qualities, val] });
+  };
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-2 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
-      >
-        <span className="inline-flex items-center gap-1.5">
-          <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
-          Stuck? See how other leaders answered
-        </span>
-        {open ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-      </button>
-      {open && (
-        <ul className="px-3 pb-3 space-y-1.5">
-          {examples.map((ex, i) => (
-            <li key={i}>
+    <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 space-y-3">
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={leader.name}
+          onChange={(e) => onChange({ ...leader, name: e.target.value.slice(0, 80) })}
+          placeholder="Leader's name (e.g. my old manager Sara)"
+          className="flex-1 p-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm font-semibold"
+        />
+        <button
+          type="button"
+          onClick={onRemove}
+          className="p-1.5 text-slate-400 hover:text-rose-600"
+          aria-label="Remove leader"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+      <div>
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+          Qualities that draw you to them
+        </div>
+        <ul className="space-y-1.5">
+          {leader.qualities.map((q, i) => (
+            <li key={i} className="flex items-center gap-2">
+              <input
+                type="text"
+                value={q}
+                onChange={(e) => updateQuality(i, e.target.value.slice(0, 40))}
+                placeholder="e.g. honest"
+                className="flex-1 p-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm"
+              />
               <button
                 type="button"
-                onClick={() => onUseExample(ex)}
-                className="w-full text-left text-sm px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-corporate-teal hover:bg-corporate-teal/5 transition text-slate-700 dark:text-slate-300"
-                title="Click to use as a starting point — you can edit it"
+                onClick={() => removeQuality(i)}
+                className="p-1 text-slate-400 hover:text-rose-600"
+                aria-label="Remove quality"
               >
-                {ex}
+                <X className="w-3.5 h-3.5" />
               </button>
             </li>
           ))}
-          <li className="text-[10px] text-slate-400 italic pt-1">
-            Click any example to use it as a starter — then make it yours.
-          </li>
         </ul>
-      )}
+        <div className="flex flex-wrap gap-2 mt-2">
+          <button
+            type="button"
+            onClick={() => addQuality('')}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-corporate-teal-ink hover:text-corporate-teal"
+          >
+            <Plus className="w-3.5 h-3.5" /> Add quality
+          </button>
+          <button
+            type="button"
+            onClick={() => setBankOpen((v) => !v)}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-700"
+          >
+            <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
+            {bankOpen ? 'Hide examples' : 'See examples'}
+          </button>
+        </div>
+        {bankOpen && (
+          <div className="mt-2 p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 max-h-56 overflow-y-auto">
+            <p className="text-[10px] text-slate-500 italic mb-2">
+              Tap any to add it to {leader.name || 'this leader'}.
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {qualityBank.map((q) => {
+                const already = leader.qualities.some(
+                  (existing) => existing.toLowerCase().trim() === q.toLowerCase()
+                );
+                return (
+                  <button
+                    key={q}
+                    type="button"
+                    disabled={already}
+                    onClick={() => onAddFromBank(leader.id, q)}
+                    className={`text-xs px-2 py-1 rounded-full border ${
+                      already
+                        ? 'bg-corporate-teal/10 border-corporate-teal/30 text-corporate-teal-ink cursor-default'
+                        : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-corporate-teal hover:text-corporate-teal-ink'
+                    }`}
+                  >
+                    {already && <Check className="inline w-3 h-3 -mt-0.5 mr-0.5" />}
+                    {q}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-const QuestionStep = ({ question, value, onChange, onNext, onBack, isFirst, isLast, stepNumber, totalSteps }) => {
-  const Tag = question.multiline ? 'textarea' : 'input';
-  const Icon = question.icon || Compass;
+const Exercise1Qualities = ({
+  admiredLeaders, setAdmiredLeaders,
+  qualities, setQualities,
+  onBack, onNext,
+}) => {
+  const addLeader = () => {
+    setAdmiredLeaders([
+      ...admiredLeaders,
+      { id: newId(), name: '', qualities: [''] },
+    ]);
+  };
+  const updateLeader = (id, next) => {
+    setAdmiredLeaders(admiredLeaders.map((l) => (l.id === id ? next : l)));
+  };
+  const removeLeader = (id) => {
+    setAdmiredLeaders(admiredLeaders.filter((l) => l.id !== id));
+  };
+  const addBankQualityToLeader = (leaderId, q) => {
+    setAdmiredLeaders(
+      admiredLeaders.map((l) => {
+        if (l.id !== leaderId) return l;
+        const has = l.qualities.some(
+          (existing) => existing.toLowerCase().trim() === q.toLowerCase()
+        );
+        if (has) return l;
+        // Replace first empty slot, otherwise append
+        const emptyIdx = l.qualities.findIndex((existing) => !existing.trim());
+        const next = [...l.qualities];
+        if (emptyIdx >= 0) next[emptyIdx] = q;
+        else next.push(q);
+        return { ...l, qualities: next };
+      })
+    );
+  };
+
+  // Aggregate suggested qualities — what showed up across admired leaders.
+  const suggested = useMemo(() => {
+    const counts = new Map();
+    admiredLeaders.forEach((l) => {
+      l.qualities.forEach((qRaw) => {
+        const q = qRaw.trim();
+        if (!q) return;
+        // Normalize to title case-ish for display, dedupe by lowercase
+        const key = q.toLowerCase();
+        counts.set(key, (counts.get(key) || 0) + 1);
+      });
+    });
+    // Capitalize first letter for display
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([key]) => key.charAt(0).toUpperCase() + key.slice(1));
+  }, [admiredLeaders]);
+
+  const toggleQuality = (q) => {
+    const has = qualities.some((x) => x.toLowerCase() === q.toLowerCase());
+    if (has) {
+      setQualities(qualities.filter((x) => x.toLowerCase() !== q.toLowerCase()));
+    } else if (qualities.length < MAX_QUALITIES) {
+      setQualities([...qualities, q]);
+    }
+  };
+
+  const [bankOpen, setBankOpen] = useState(false);
+  const [customInput, setCustomInput] = useState('');
+
+  const addCustomQuality = () => {
+    const v = customInput.trim();
+    if (!v) return;
+    if (qualities.length >= MAX_QUALITIES) return;
+    if (qualities.some((x) => x.toLowerCase() === v.toLowerCase())) return;
+    setQualities([...qualities, v]);
+    setCustomInput('');
+  };
+
+  const canAdvance = qualities.length >= MIN_QUALITIES;
+
   return (
-    <motion.div
-      key={question.id}
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={{ duration: 0.25 }}
-      className="space-y-5"
-    >
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <div className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-corporate-teal/10 text-corporate-teal">
-            <Icon className="w-4 h-4" />
-          </div>
-          <span className="text-xs font-semibold uppercase tracking-wider text-corporate-teal">
-            {question.label}
-          </span>
+    <div className="space-y-6">
+      <StepHeader
+        stepNumber={1}
+        totalSteps={3}
+        label="Leadership Qualities"
+        title="Who do you admire — and what makes them stand out?"
+        helper="Before you define who you want to be, notice who you already admire and why. The positive qualities you see in others are usually the ones you want most in yourself."
+      />
+
+      {/* Admired leaders list */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Users className="w-4 h-4 text-corporate-navy dark:text-corporate-teal" />
+          <h3 className="text-sm font-bold text-corporate-navy dark:text-white uppercase tracking-wider">
+            Admired Leaders
+          </h3>
           <span className="text-xs text-slate-400 ml-auto">
-            {stepNumber} of {totalSteps}
+            Real or fictional. Living or not.
           </span>
         </div>
-        <h2 className="text-2xl md:text-3xl font-semibold text-corporate-navy dark:text-white leading-tight">
-          {question.prompt}
-        </h2>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{question.helper}</p>
+
+        {admiredLeaders.length === 0 && (
+          <div className="p-4 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-center">
+            <p className="text-sm text-slate-500 mb-3">
+              Add at least one leader who has influenced you.
+            </p>
+          </div>
+        )}
+
+        <AnimatePresence initial={false}>
+          {admiredLeaders.map((l) => (
+            <motion.div
+              key={l.id}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.15 }}
+            >
+              <AdmiredLeaderRow
+                leader={l}
+                onChange={(next) => updateLeader(l.id, next)}
+                onRemove={() => removeLeader(l.id)}
+                qualityBank={QUALITY_BANK}
+                onAddFromBank={addBankQualityToLeader}
+              />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+
+        <button
+          type="button"
+          onClick={addLeader}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-300 dark:border-slate-600 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:border-corporate-teal hover:text-corporate-teal-ink"
+        >
+          <Plus className="w-4 h-4" /> Add a leader
+        </button>
       </div>
 
-      <Tag
-        type={question.multiline ? undefined : 'text'}
-        rows={question.multiline ? 4 : undefined}
-        value={value}
-        onChange={(e) => onChange(e.target.value.slice(0, question.maxLen))}
-        placeholder={question.placeholder}
-        autoFocus
-        className="w-full p-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-base focus:border-corporate-teal focus:outline-none focus:ring-2 focus:ring-corporate-teal/30 resize-none"
+      {/* My qualities selection */}
+      <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-700">
+        <div className="flex items-center gap-2">
+          <Compass className="w-4 h-4 text-corporate-navy dark:text-corporate-teal" />
+          <h3 className="text-sm font-bold text-corporate-navy dark:text-white uppercase tracking-wider">
+            My Leadership Qualities
+          </h3>
+          <span className="text-xs text-slate-400 ml-auto">
+            Pick {MIN_QUALITIES}–{MAX_QUALITIES} ({qualities.length}/{MAX_QUALITIES})
+          </span>
+        </div>
+        <p className="text-sm text-slate-600 dark:text-slate-300">
+          From what you noticed above, choose {MIN_QUALITIES}–{MAX_QUALITIES} qualities you want to consistently embody as a leader.
+        </p>
+
+        {/* Selected qualities row */}
+        {qualities.length > 0 && (
+          <div className="flex flex-wrap gap-2 p-3 rounded-xl bg-corporate-teal/5 border border-corporate-teal/20">
+            {qualities.map((q) => (
+              <QualityChip
+                key={q}
+                label={q}
+                selected
+                onClick={() => toggleQuality(q)}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Suggested from admired leaders */}
+        {suggested.length > 0 && (
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+              From the leaders you admire
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {suggested.map((q) => {
+                const selected = qualities.some(
+                  (x) => x.toLowerCase() === q.toLowerCase()
+                );
+                return (
+                  <QualityChip
+                    key={q}
+                    label={q}
+                    selected={selected}
+                    onClick={() => toggleQuality(q)}
+                    disabled={qualities.length >= MAX_QUALITIES}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Custom add */}
+        <div>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={customInput}
+              onChange={(e) => setCustomInput(e.target.value.slice(0, 40))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  addCustomQuality();
+                }
+              }}
+              placeholder="Add your own quality"
+              className="flex-1 p-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm"
+            />
+            <button
+              type="button"
+              onClick={addCustomQuality}
+              disabled={!customInput.trim() || qualities.length >= MAX_QUALITIES}
+              className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:border-corporate-teal disabled:opacity-40"
+            >
+              <Plus className="w-4 h-4" /> Add
+            </button>
+          </div>
+        </div>
+
+        {/* Quality bank */}
+        <button
+          type="button"
+          onClick={() => setBankOpen((v) => !v)}
+          className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <Lightbulb className="w-4 h-4 text-amber-500" />
+            {bankOpen ? 'Hide quality list' : 'Browse the full quality list'}
+          </span>
+          {bankOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </button>
+        {bankOpen && (
+          <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 max-h-72 overflow-y-auto">
+            <p className="text-[10px] text-slate-500 italic mb-2">
+              Scan, don't read top to bottom. Tap what resonates.
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {QUALITY_BANK.map((q) => {
+                const selected = qualities.some(
+                  (x) => x.toLowerCase() === q.toLowerCase()
+                );
+                return (
+                  <QualityChip
+                    key={q}
+                    label={q}
+                    selected={selected}
+                    onClick={() => toggleQuality(q)}
+                    disabled={qualities.length >= MAX_QUALITIES}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {!canAdvance && (
+          <p className="text-xs text-slate-500 italic">
+            Pick at least {MIN_QUALITIES} qualities to continue.
+          </p>
+        )}
+      </div>
+
+      <NavRow
+        onBack={onBack}
+        onNext={onNext}
+        nextDisabled={!canAdvance}
+        nextLabel="Continue to Statement"
+        backLabel="Cancel"
+      />
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// EXERCISE 2 — Leadership Identity Statement
+// ---------------------------------------------------------------------------
+const Exercise2Statement = ({
+  qualities, statement, setStatement,
+  onBack, onNext,
+}) => {
+  const canAdvance = statement.trim().length >= 10;
+  return (
+    <div className="space-y-5">
+      <StepHeader
+        stepNumber={2}
+        totalSteps={3}
+        label="Leadership Identity Statement"
+        title="What kind of leader are you committed to being?"
+        helper="Don't write what you think you should say. Write what is true for you. Be specific. This will evolve as you grow — it doesn't need to be perfect."
       />
 
-      <ExamplesPeek
-        examples={question.examples}
-        onUseExample={(ex) => onChange(ex.slice(0, question.maxLen))}
+      {qualities.length > 0 && (
+        <div className="p-3 rounded-xl bg-corporate-teal/5 border border-corporate-teal/20">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-corporate-teal-ink mb-1.5">
+            Your qualities — use them as your starting point
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {qualities.map((q) => (
+              <span
+                key={q}
+                className="px-2.5 py-1 rounded-full bg-white dark:bg-slate-800 border border-corporate-teal/30 text-xs font-semibold text-corporate-teal-ink"
+              >
+                {q}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+          I am the type of leader who…
+        </label>
+        <VoiceTextarea
+          value={statement}
+          onChange={(v) => setStatement(String(v || '').slice(0, 500))}
+          rows={6}
+          placeholder="I am the type of leader who…"
+          maxLength={500}
+        />
+        <div className="mt-1 text-right text-[10px] text-slate-400">
+          {statement.length}/500
+        </div>
+      </div>
+
+      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700">
+        <div className="flex items-start gap-2">
+          <Quote className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-slate-600 dark:text-slate-400 italic">
+            Your identity is your foundation. It is your target and North Star.
+            Identity drives behavior. It allows you to respond rather than react.
+          </p>
+        </div>
+      </div>
+
+      <NavRow
+        onBack={onBack}
+        onNext={onNext}
+        nextDisabled={!canAdvance}
+        nextLabel="Continue to Intentions"
+      />
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// EXERCISE 3 — Leadership Intentions
+// ---------------------------------------------------------------------------
+const IntentionRow = ({ item, onChange, onRemove, index }) => (
+  <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 space-y-2">
+    <div className="flex items-center gap-2">
+      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-corporate-teal/15 text-corporate-teal text-xs font-bold">
+        {index + 1}
+      </span>
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+        Scenario &amp; Intention
+      </span>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="ml-auto p-1 text-slate-400 hover:text-rose-600"
+        aria-label="Remove"
+      >
+        <X className="w-4 h-4" />
+      </button>
+    </div>
+    <div>
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
+        Scenario
+      </div>
+      <input
+        type="text"
+        value={item.scenario}
+        onChange={(e) => onChange({ ...item, scenario: e.target.value.slice(0, 200) })}
+        placeholder="If I'm unsure what to say or do next…"
+        className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm"
+      />
+    </div>
+    <div>
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
+        Intention
+      </div>
+      <input
+        type="text"
+        value={item.intention}
+        onChange={(e) => onChange({ ...item, intention: e.target.value.slice(0, 200) })}
+        placeholder="I will lead with curiosity and ask a question."
+        className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm"
+      />
+    </div>
+  </div>
+);
+
+const Exercise3Intentions = ({
+  intentions, setIntentions,
+  onBack, onSave, saving, saveError,
+}) => {
+  const update = (id, next) => {
+    setIntentions(intentions.map((i) => (i.id === id ? next : i)));
+  };
+  const remove = (id) => {
+    setIntentions(intentions.filter((i) => i.id !== id));
+  };
+  const add = () => {
+    if (intentions.length >= MAX_INTENTIONS) return;
+    setIntentions([...intentions, { id: newId(), scenario: '', intention: '' }]);
+  };
+
+  const filledCount = intentions.filter(
+    (i) => i.scenario.trim() && i.intention.trim()
+  ).length;
+  const canSave = filledCount >= 1;
+
+  return (
+    <div className="space-y-5">
+      <StepHeader
+        stepNumber={3}
+        totalSteps={3}
+        label="Leadership Intentions"
+        title="How will you show up in the moments that test you?"
+        helper="Identify specific scenarios where reaction comes easier than response — then decide in advance how you intend to show up. Pick the ones that come to mind first; they're usually the right ones."
       />
 
-      <div className="flex justify-between items-center">
+      {/* Example */}
+      <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800">
+        <div className="flex items-start gap-2">
+          <Lightbulb className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+          <div className="text-xs text-amber-900 dark:text-amber-200">
+            <div className="font-semibold mb-1">Example</div>
+            <div><span className="font-semibold">Scenario:</span> If I'm unsure what to say or do next.</div>
+            <div><span className="font-semibold">Intention:</span> I will lead with curiosity and ask a question.</div>
+          </div>
+        </div>
+      </div>
+
+      {intentions.length === 0 && (
+        <div className="p-4 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-center">
+          <p className="text-sm text-slate-500 mb-3">
+            Add at least one scenario and intention.
+          </p>
+          <button
+            type="button"
+            onClick={add}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90"
+          >
+            <Plus className="w-4 h-4" /> Add my first intention
+          </button>
+        </div>
+      )}
+
+      <AnimatePresence initial={false}>
+        {intentions.map((item, idx) => (
+          <motion.div
+            key={item.id}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.15 }}
+          >
+            <IntentionRow
+              item={item}
+              index={idx}
+              onChange={(next) => update(item.id, next)}
+              onRemove={() => remove(item.id)}
+            />
+          </motion.div>
+        ))}
+      </AnimatePresence>
+
+      {intentions.length > 0 && intentions.length < MAX_INTENTIONS && (
+        <button
+          type="button"
+          onClick={add}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-300 dark:border-slate-600 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:border-corporate-teal hover:text-corporate-teal-ink"
+        >
+          <Plus className="w-4 h-4" /> Add another intention
+        </button>
+      )}
+
+      {saveError && (
+        <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-sm text-rose-700">
+          {saveError}
+        </div>
+      )}
+
+      <div className="flex justify-between items-center pt-2">
         <button
           type="button"
           onClick={onBack}
-          disabled={isFirst}
-          className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 disabled:opacity-30"
+          className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700"
         >
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
-        <div className="text-xs text-slate-400">
-          {value.length}/{question.maxLen}
-        </div>
         <button
           type="button"
-          onClick={onNext}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-corporate-teal text-white font-semibold hover:bg-corporate-teal/90"
+          onClick={onSave}
+          disabled={!canSave || saving}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-corporate-teal text-white font-semibold hover:bg-corporate-teal/90 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {isLast ? 'Draft my statement' : 'Next'}
-          <ArrowRight className="w-4 h-4" />
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {saving ? 'Saving…' : 'Save my Leadership Identity'}
         </button>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
-const AnchorCard = ({ artifact, editing, onChange, alternates, onPickAlternate }) => (
-  <div className="p-5 rounded-2xl border-2 border-corporate-navy/20 bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 dark:border-slate-700">
-    <div className="flex items-center gap-2 mb-2">
-      <Compass className="w-4 h-4 text-corporate-navy dark:text-corporate-teal" />
-      <span className="text-[11px] font-semibold uppercase tracking-wider text-corporate-navy dark:text-corporate-teal">
-        Anchor
-      </span>
-      {artifact.anchor.word && (
-        <span className="ml-auto text-[11px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-corporate-navy/10 dark:bg-corporate-teal/20 text-corporate-navy dark:text-corporate-teal">
-          {artifact.anchor.word}
-        </span>
-      )}
+// ---------------------------------------------------------------------------
+// VIEW MODE — show the saved artifact
+// ---------------------------------------------------------------------------
+const ViewMode = ({ data, onEdit, onStartOver }) => (
+  <div className="space-y-4">
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2 text-xs text-slate-500">
+        <ShieldCheck className="w-4 h-4 text-corporate-teal" />
+        Saved · only you and your trainer can see this
+      </div>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onEdit}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-slate-300 hover:bg-slate-50"
+        >
+          <Pencil className="w-3.5 h-3.5" /> Edit
+        </button>
+        <button
+          type="button"
+          onClick={onStartOver}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-slate-300 hover:bg-slate-50"
+        >
+          <RefreshCw className="w-3.5 h-3.5" /> Start over
+        </button>
+      </div>
     </div>
-    {editing ? (
-      <>
-        <input
-          type="text"
-          value={artifact.anchor.word}
-          onChange={(e) => onChange({ anchor: { ...artifact.anchor, word: e.target.value.slice(0, 40) } })}
-          placeholder="One-word anchor (e.g. steady)"
-          className="w-full mb-2 p-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm font-mono"
-        />
-        <textarea
-          rows={3}
-          value={artifact.anchor.statement}
-          onChange={(e) => onChange({ anchor: { ...artifact.anchor, statement: e.target.value.slice(0, 280) } })}
-          className="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-base font-serif italic resize-none"
-        />
-      </>
-    ) : (
-      <p className="text-lg md:text-xl font-serif italic leading-snug text-slate-900 dark:text-slate-100">
-        “{artifact.anchor.statement}”
-      </p>
-    )}
 
-    {editing && alternates && alternates.length > 0 && (
-      <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">
-          Try a different tone
+    {/* Statement — the centerpiece */}
+    <div className="rounded-2xl border-2 border-corporate-teal/30 bg-gradient-to-br from-corporate-teal/5 to-white dark:from-corporate-teal/10 dark:to-slate-900 p-6">
+      <Quote className="w-6 h-6 text-corporate-teal/40 mb-2" />
+      <p className="text-xl sm:text-2xl font-serif italic text-corporate-navy dark:text-white leading-relaxed">
+        {data.statement}
+      </p>
+    </div>
+
+    {/* Qualities */}
+    {data.qualities.length > 0 && (
+      <div className="p-4 rounded-2xl border-2 border-corporate-navy/15 bg-white dark:bg-slate-800 dark:border-slate-700">
+        <div className="flex items-center gap-2 mb-3">
+          <Compass className="w-4 h-4 text-corporate-navy dark:text-corporate-teal" />
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-corporate-navy dark:text-corporate-teal-ink">
+            My Leadership Qualities
+          </span>
         </div>
-        <div className="space-y-1.5">
-          {alternates.map((alt, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => onPickAlternate(alt)}
-              className="w-full text-left text-sm px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-corporate-teal hover:bg-corporate-teal/5 transition"
+        <div className="flex flex-wrap gap-2">
+          {data.qualities.map((q) => (
+            <span
+              key={q}
+              className="px-3 py-1.5 rounded-full bg-corporate-teal text-white text-sm font-semibold"
             >
-              {alt}
-            </button>
+              {q}
+            </span>
           ))}
         </div>
+      </div>
+    )}
+
+    {/* Intentions */}
+    {data.intentions.length > 0 && (
+      <div className="p-4 rounded-2xl border-2 border-amber-200 dark:border-amber-800 bg-gradient-to-br from-white to-amber-50/30 dark:from-slate-800 dark:to-amber-900/10">
+        <div className="flex items-center gap-2 mb-3">
+          <Target className="w-4 h-4 text-amber-700 dark:text-amber-400" />
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+            My Leadership Intentions
+          </span>
+        </div>
+        <ul className="space-y-3">
+          {data.intentions.map((it) => (
+            <li
+              key={it.id}
+              className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
+            >
+              <div className="text-xs text-slate-500 mb-1">
+                <span className="font-semibold">Scenario:</span> {it.scenario}
+              </div>
+              <div className="text-sm text-slate-800 dark:text-slate-200">
+                <span className="font-semibold">Intention:</span> {it.intention}
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
     )}
   </div>
 );
 
-const EvidenceCard = ({ artifact, editing, onChange }) => {
-  const evidence = artifact.evidence || [];
+// ---------------------------------------------------------------------------
+// INTRO — shown to brand-new leaders before starting
+// ---------------------------------------------------------------------------
+const Intro = ({ onStart, hasExisting }) => (
+  <div className="space-y-5">
+    <div>
+      <h2 className="text-2xl md:text-3xl font-semibold text-corporate-navy dark:text-white leading-tight">
+        {hasExisting ? 'Refine your Leadership Identity' : 'Build your Leadership Identity'}
+      </h2>
+      <p className="mt-2 text-base text-slate-600 dark:text-slate-300">
+        Having a leadership identity is the difference between reacting and responding.
+        Reaction is automatic. Response is intentional.
+      </p>
+      <p className="mt-2 text-sm text-slate-500">
+        You're not building from scratch — you already have one. These three exercises help you surface it, name it, and make it something you use every day.
+      </p>
+    </div>
 
-  const updateAt = (idx, val) => {
-    const next = [...evidence];
-    next[idx] = val.slice(0, 200);
-    onChange({ evidence: next });
-  };
-  const removeAt = (idx) => {
-    const next = evidence.filter((_, i) => i !== idx);
-    onChange({ evidence: next });
-  };
-  const add = () => {
-    if (evidence.length >= 5) return;
-    onChange({ evidence: [...evidence, ''] });
-  };
-
-  return (
-    <div className="p-5 rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-white to-emerald-50/30 dark:from-slate-800 dark:to-emerald-900/10 dark:border-emerald-800">
-      <div className="flex items-center gap-2 mb-3">
-        <Eye className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-          Evidence
-        </span>
-        <span className="ml-auto text-[10px] text-slate-500">
-          You'll know I'm living this when I…
-        </span>
-      </div>
-      <ul className="space-y-2">
-        {evidence.map((line, i) => (
-          <li key={i} className="flex items-start gap-2">
-            <Check className="w-4 h-4 mt-1 text-emerald-600 flex-shrink-0" />
-            {editing ? (
-              <>
-                <input
-                  type="text"
-                  value={line}
-                  onChange={(e) => updateAt(i, e.target.value)}
-                  placeholder="I name the hard thing in the first 5 minutes."
-                  className="flex-1 p-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeAt(i)}
-                  className="p-1 text-slate-400 hover:text-rose-600"
-                  aria-label="Remove"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </>
-            ) : (
-              <span className="text-sm text-slate-800 dark:text-slate-200">{line}</span>
-            )}
-          </li>
-        ))}
-        {evidence.length === 0 && !editing && (
-          <li className="text-sm text-slate-400 italic">No evidence yet.</li>
-        )}
-      </ul>
-      {editing && evidence.length < 5 && (
-        <button
-          type="button"
-          onClick={add}
-          className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+    <ol className="space-y-3">
+      {[
+        {
+          n: 1,
+          icon: Users,
+          title: 'Leadership Qualities',
+          desc: 'Identify leaders you admire and the qualities that draw you to them. Then pick the qualities you commit to embodying.',
+        },
+        {
+          n: 2,
+          icon: Quote,
+          title: 'Leadership Identity Statement',
+          desc: 'Use your qualities to draft a statement: "I am the type of leader who…"',
+        },
+        {
+          n: 3,
+          icon: Target,
+          title: 'Leadership Intentions',
+          desc: 'Connect your identity to specific scenarios where leadership gets hard for you. This is where identity becomes behavior.',
+        },
+      ].map(({ n, icon: Icon, title, desc }) => (
+        <li
+          key={n}
+          className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-start gap-3"
         >
-          <Plus className="w-3.5 h-3.5" /> Add another behavior
-        </button>
-      )}
-    </div>
-  );
-};
-
-const EdgeCard = ({ artifact, editing, onChange }) => {
-  const edge = artifact.edge || {};
-  return (
-    <div className="p-5 rounded-2xl border-2 border-amber-200 bg-gradient-to-br from-white to-amber-50/40 dark:from-slate-800 dark:to-amber-900/10 dark:border-amber-800">
-      <div className="flex items-center gap-2 mb-3">
-        <AlertTriangle className="w-4 h-4 text-amber-700 dark:text-amber-400" />
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
-          Edge
-        </span>
-        <span className="ml-auto text-[10px] text-slate-500">
-          What pulls me off — and how I get back
-        </span>
-      </div>
-
-      <div className="space-y-3">
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
-            Trigger
+          <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-corporate-teal/15 text-corporate-teal-ink font-bold text-sm flex-shrink-0">
+            {n}
           </div>
-          {editing ? (
-            <textarea
-              rows={2}
-              value={edge.trigger}
-              onChange={(e) => onChange({ edge: { ...edge, trigger: e.target.value.slice(0, 240) } })}
-              placeholder="When deadlines slip, I default to barking orders."
-              className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm resize-none"
-            />
-          ) : (
-            <p className="text-sm text-slate-800 dark:text-slate-200">{edge.trigger || '—'}</p>
-          )}
-        </div>
-
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
-            Recovery
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <Icon className="w-4 h-4 text-corporate-navy dark:text-corporate-teal" />
+              <h3 className="text-sm font-bold text-corporate-navy dark:text-white">{title}</h3>
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-300">{desc}</p>
           </div>
-          {editing ? (
-            <textarea
-              rows={2}
-              value={edge.recovery}
-              onChange={(e) => onChange({ edge: { ...edge, recovery: e.target.value.slice(0, 240) } })}
-              placeholder="I pause for 30 seconds and ask one question before I tell."
-              className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm resize-none"
-            />
-          ) : (
-            <p className="text-sm text-slate-800 dark:text-slate-200">{edge.recovery || '—'}</p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
+        </li>
+      ))}
+    </ol>
 
-const HistoryDrawer = ({ versions }) => {
-  const [open, setOpen] = useState(false);
-  if (!versions || versions.length === 0) return null;
-  return (
-    <div className="mt-4">
+    <div className="flex justify-end pt-2">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700"
+        onClick={onStart}
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-corporate-teal text-white font-semibold hover:bg-corporate-teal/90"
       >
-        <History className="w-3.5 h-3.5" />
-        {open ? 'Hide history' : `History (${versions.length})`}
+        {hasExisting ? 'Start refining' : 'Start Exercise 1'}
+        <ArrowRight className="w-4 h-4" />
       </button>
-      {open && (
-        <ul className="mt-2 space-y-2">
-          {versions.map((v, i) => (
-            <li
-              key={i}
-              className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
-            >
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] uppercase tracking-wider text-slate-500">
-                  {v.savedAt ? new Date(v.savedAt).toLocaleDateString() : 'Earlier'}
-                  {v.source ? ` · ${v.source}` : ''}
-                </span>
-                {v.anchorWord && (
-                  <span className="text-[10px] font-mono uppercase text-slate-500">{v.anchorWord}</span>
-                )}
-              </div>
-              <p className="text-sm font-serif italic text-slate-700 dark:text-slate-300">
-                “{v.anchorStatement}”
-              </p>
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
-  );
-};
-
-// Sample artifact preview — used on the intro screen so leaders can see what
-// they're building toward. Compact 3-line summary; expand reveals evidence/edge.
-const SampleArtifactCard = ({ sample }) => {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full text-left p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
-      >
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-corporate-navy/10 dark:bg-corporate-teal/20 text-corporate-navy dark:text-corporate-teal">
-            {sample.word}
-          </span>
-          <span className="text-[10px] text-slate-400 ml-auto inline-flex items-center gap-1">
-            {open ? 'Hide details' : 'See full artifact'}
-            {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-          </span>
-        </div>
-        <p className="text-sm font-serif italic text-slate-800 dark:text-slate-200 leading-snug">
-          “{sample.statement}”
-        </p>
-      </button>
-      {open && (
-        <div className="px-4 pb-4 pt-0 border-t border-slate-100 dark:border-slate-700 space-y-3 text-sm">
-          <div>
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 mb-1.5 inline-flex items-center gap-1">
-              <Eye className="w-3 h-3" /> Evidence
-            </div>
-            <ul className="space-y-1">
-              {sample.evidence.map((e, i) => (
-                <li key={i} className="flex items-start gap-1.5 text-slate-700 dark:text-slate-300">
-                  <Check className="w-3.5 h-3.5 mt-0.5 text-emerald-600 flex-shrink-0" />
-                  <span className="text-xs">{e}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-amber-700 mb-1 inline-flex items-center gap-1">
-              <AlertTriangle className="w-3 h-3" /> Edge
-            </div>
-            <p className="text-xs text-slate-700 dark:text-slate-300 mb-1">
-              <span className="font-semibold">Trigger:</span> {sample.edge.trigger}
-            </p>
-            <p className="text-xs text-slate-700 dark:text-slate-300">
-              <span className="font-semibold">Recovery:</span> {sample.edge.recovery}
-            </p>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Path picker — the entry point for new users (or anyone re-building).
-// Two clear paths, with example artifacts inline for inspiration.
-const IntroPathPicker = ({ onPick, hasExisting }) => {
-  const [examplesOpen, setExamplesOpen] = useState(false);
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl md:text-3xl font-semibold text-corporate-navy dark:text-white leading-tight">
-          {hasExisting ? 'Refine your Leadership Identity' : 'Build your Leadership Identity'}
-        </h2>
-        <p className="mt-2 text-base text-slate-600 dark:text-slate-300">
-          A living artifact: <span className="font-semibold">who you are at your best</span>,
-          the <span className="font-semibold">behaviors that prove it</span>, and the
-          <span className="font-semibold"> edge</span> that pulls you off course.
-        </p>
-        <p className="mt-1 text-sm text-slate-500">
-          Not a slogan. Not a tagline. A practice you'll come back to.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Quick Draft */}
-        <button
-          type="button"
-          onClick={() => onPick('quick')}
-          className="group text-left p-5 rounded-2xl border-2 border-corporate-teal/30 bg-gradient-to-br from-white to-corporate-teal/5 dark:from-slate-800 dark:to-slate-800/50 hover:border-corporate-teal hover:shadow-card-hover transition"
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-corporate-teal/15 text-corporate-teal">
-              <Zap className="w-4 h-4" />
-            </div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-corporate-teal">
-              Recommended for first pass
-            </span>
-          </div>
-          <h3 className="text-lg font-semibold text-corporate-navy dark:text-white">Quick Draft</h3>
-          <p className="text-sm text-slate-500 mt-0.5">4 prompts · about 4 minutes</p>
-          <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">
-            One word. At your best. Known for. The gap. AI drafts a structured artifact you can edit.
-          </p>
-          <div className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-corporate-teal group-hover:gap-2 transition-all">
-            Start <ArrowRight className="w-4 h-4" />
-          </div>
-        </button>
-
-        {/* Deep Dive */}
-        <button
-          type="button"
-          onClick={() => onPick('deep')}
-          className="group text-left p-5 rounded-2xl border-2 border-corporate-navy/20 bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 hover:border-corporate-navy hover:shadow-card-hover transition"
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-corporate-navy/10 text-corporate-navy dark:text-corporate-teal">
-              <Layers className="w-4 h-4" />
-            </div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-corporate-navy dark:text-corporate-teal">
-              Richer · grounded
-            </span>
-          </div>
-          <h3 className="text-lg font-semibold text-corporate-navy dark:text-white">Deep Dive</h3>
-          <p className="text-sm text-slate-500 mt-0.5">7 prompts · about 10 minutes</p>
-          <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">
-            Quick Draft <span className="font-semibold">plus</span> your non-negotiables, who you're leading
-            for, and how you derail under pressure. Produces a sharper, more honest artifact.
-          </p>
-          <div className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-corporate-navy dark:text-corporate-teal group-hover:gap-2 transition-all">
-            Go deeper <ArrowRight className="w-4 h-4" />
-          </div>
-        </button>
-      </div>
-
-      {/* Examples */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40">
-        <button
-          type="button"
-          onClick={() => setExamplesOpen((v) => !v)}
-          className="w-full flex items-center justify-between gap-2 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white"
-        >
-          <span className="inline-flex items-center gap-2">
-            <Lightbulb className="w-4 h-4 text-amber-500" />
-            See three sample Leadership Identity artifacts
-          </span>
-          {examplesOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
-        {examplesOpen && (
-          <div className="px-4 pb-4 space-y-2">
-            <p className="text-xs text-slate-500 mb-1">
-              Three composite examples of what a finished artifact looks like. Yours will sound
-              different — that's the point.
-            </p>
-            {SAMPLE_ARTIFACTS.map((s, i) => (
-              <SampleArtifactCard key={i} sample={s} />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
+  </div>
+);
 
 // ---------------------------------------------------------------------------
 // Main screen
@@ -756,156 +985,126 @@ const IdentityStatement = () => {
     navigate,
   } = useAppServices();
 
-  // Read existing artifact (if any)
-  const existingArtifact = useMemo(
-    () => normalizeArtifact(dailyPracticeData?.leadershipIdentity),
+  const existing = useMemo(
+    () => normalizeData(dailyPracticeData?.leadershipIdentity),
     [dailyPracticeData?.leadershipIdentity]
   );
   const legacyAnchor = safeStr(dailyPracticeData?.identityAnchor).trim();
 
-  // View modes:
-  //   'view'      — has artifact, show it
-  //   'intro'     — path picker (Quick Draft vs Deep Dive) + sample artifacts
-  //   'questions' — answering N questions (4 quick / 7 deep)
-  //   'crafting'  — calling the AI
-  //   'edit'      — editing the structured artifact
-  const initialMode = isArtifactComplete(existingArtifact) ? 'view' : 'intro';
+  // Modes:
+  //   'view'   — saved artifact display
+  //   'intro'  — overview before starting (new users)
+  //   'ex1' / 'ex2' / 'ex3' — the three exercises
+  const initialMode = isComplete(existing) ? 'view' : 'intro';
   const [mode, setMode] = useState(initialMode);
-  const [pathMode, setPathMode] = useState('quick'); // 'quick' | 'deep'
-  const [step, setStep] = useState(0);
 
-  const [answers, setAnswers] = useState({
-    word: '',
-    best: '',
-    known: '',
-    gap: '',
-    values: '',
-    purpose: '',
-    shadow: '',
-  });
+  // Editable state — seeded from existing
+  const [admiredLeaders, setAdmiredLeaders] = useState(existing.admiredLeaders);
+  const [qualities, setQualities] = useState(existing.qualities);
+  const [statement, setStatement] = useState(
+    existing.statement || legacyAnchor || ''
+  );
+  const [intentions, setIntentions] = useState(existing.intentions);
 
-  const [draftArtifact, setDraftArtifact] = useState(existingArtifact || null);
-  const [alternates, setAlternates] = useState([]);
-  const [genError, setGenError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
-  // Sync if data arrives later (initial Firestore subscription)
+  // Resync when Firestore data arrives later
   useEffect(() => {
-    if (existingArtifact && (mode === 'questions' || mode === 'intro') && isArtifactComplete(existingArtifact)) {
-      setDraftArtifact(existingArtifact);
+    if (isComplete(existing) && (mode === 'intro')) {
+      setAdmiredLeaders(existing.admiredLeaders);
+      setQualities(existing.qualities);
+      setStatement(existing.statement);
+      setIntentions(existing.intentions);
       setMode('view');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [existingArtifact?.anchor?.statement]);
+  }, [existing.statement]);
 
-  // ---------------- AI generation ----------------
-  const generate = async () => {
-    setGenError(null);
-    setMode('crafting');
-    try {
-      const fn = httpsCallable(firebaseFunctions, 'generateIdentityStatement');
-      const res = await fn({ answers });
-      const data = res?.data || {};
-      const a = data.artifact || {};
-      const next = normalizeArtifact({
-        anchor: {
-          word: a.anchorWord || answers.word || '',
-          statement: a.anchorStatement || '',
-        },
-        evidence: a.evidence || [],
-        edge: {
-          trigger: a.edgeTrigger || '',
-          recovery: a.edgeRecovery || '',
-        },
-        alternates: a.alternates || [],
-        answers,
-      });
-      if (!next?.anchor?.statement) {
-        throw new Error('Empty draft from coach.');
-      }
-      setDraftArtifact(next);
-      setAlternates(next.alternates || []);
-      setMode('edit');
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error('[LIS] generate failed', e);
-      setGenError(
-        e?.message?.includes('unauthenticated')
-          ? 'Please sign in to use the AI draft.'
-          : 'The coach had trouble drafting your statement. You can still write it manually below.'
-      );
-      // Fall back to a manual edit shell so they can keep going.
-      const fallback = normalizeArtifact({
-        anchor: { word: answers.word, statement: '' },
-        evidence: ['', '', ''],
-        edge: { trigger: '', recovery: '' },
-        answers,
-      });
-      setDraftArtifact(fallback);
-      setMode('edit');
-    }
+  const startEdit = () => {
+    setAdmiredLeaders(existing.admiredLeaders.length ? existing.admiredLeaders : []);
+    setQualities(existing.qualities);
+    setStatement(existing.statement);
+    setIntentions(existing.intentions);
+    setMode('ex1');
   };
 
-  // ---------------- Save ----------------
+  const startOver = () => {
+    setAdmiredLeaders([]);
+    setQualities([]);
+    setStatement('');
+    setIntentions([]);
+    setMode('intro');
+  };
+
   const save = async () => {
     if (!updateDailyPracticeData) {
       setSaveError('Not connected. Refresh and try again.');
       return;
     }
-    if (!draftArtifact?.anchor?.statement?.trim()) {
-      setSaveError('Add an anchor statement before saving.');
+    if (!statement.trim()) {
+      setSaveError('Write your Leadership Identity Statement before saving.');
+      return;
+    }
+    if (qualities.length < MIN_QUALITIES) {
+      setSaveError(`Pick at least ${MIN_QUALITIES} qualities before saving.`);
       return;
     }
     setSaving(true);
     setSaveError(null);
     try {
       const now = new Date().toISOString();
-      const versions = Array.isArray(existingArtifact?.versions)
-        ? existingArtifact.versions
-        : [];
+      const versions = Array.isArray(existing?.versions) ? existing.versions : [];
+      const cleanStatement = statement.trim();
 
-      // If anchor statement changed, push the previous one onto versions.
+      // Push previous statement onto history if it changed
       let nextVersions = versions;
-      if (
-        existingArtifact?.anchor?.statement &&
-        existingArtifact.anchor.statement !== draftArtifact.anchor.statement
-      ) {
+      if (existing?.statement && existing.statement !== cleanStatement) {
         nextVersions = [
           {
-            savedAt: existingArtifact.updatedAt || now,
-            anchorWord: existingArtifact.anchor.word || '',
-            anchorStatement: existingArtifact.anchor.statement,
+            savedAt: existing.updatedAt || now,
+            statement: existing.statement,
+            qualities: existing.qualities || [],
             source: 'self',
           },
           ...versions,
         ].slice(0, 10);
       }
 
+      const cleanIntentions = intentions
+        .map((i) => ({
+          id: i.id || newId(),
+          scenario: safeStr(i.scenario).trim(),
+          intention: safeStr(i.intention).trim(),
+        }))
+        .filter((i) => i.scenario && i.intention);
+
+      const cleanLeaders = admiredLeaders
+        .map((l) => ({
+          id: l.id || newId(),
+          name: safeStr(l.name).trim(),
+          qualities: (l.qualities || [])
+            .map(safeStr)
+            .map((q) => q.trim())
+            .filter(Boolean),
+        }))
+        .filter((l) => l.name || l.qualities.length > 0);
+
       const payload = {
         leadershipIdentity: {
-          anchor: {
-            word: draftArtifact.anchor.word || '',
-            statement: draftArtifact.anchor.statement.trim(),
-          },
-          evidence: (draftArtifact.evidence || [])
-            .map((e) => safeStr(e).trim())
-            .filter(Boolean)
-            .slice(0, 5),
-          edge: {
-            trigger: safeStr(draftArtifact.edge?.trigger).trim(),
-            recovery: safeStr(draftArtifact.edge?.recovery).trim(),
-          },
-          answers: { ...(draftArtifact.answers || answers) },
+          admiredLeaders: cleanLeaders,
+          qualities: qualities.slice(0, MAX_QUALITIES),
+          statement: cleanStatement,
+          intentions: cleanIntentions,
+          // Mirror to legacy `anchor.statement` so the GroundingRepWidget and
+          // Locker card keep displaying without a migration.
+          anchor: { word: '', statement: cleanStatement },
           versions: nextVersions,
           updatedAt: now,
-          createdAt: existingArtifact?.createdAt || now,
+          createdAt: existing?.createdAt || now,
         },
-        // Backward-compat: keep the legacy single-string field alive so the
-        // current Grounding Rep widget and any other consumer keeps working.
-        identityAnchor: buildLegacyAnchorString({
-          anchor: { statement: draftArtifact.anchor.statement.trim() },
-        }),
+        // Backward-compat: legacy single-string field used by widgets.
+        identityAnchor: cleanStatement,
       };
 
       const ok = await updateDailyPracticeData(payload);
@@ -920,16 +1119,14 @@ const IdentityStatement = () => {
     }
   };
 
-  // ---------------- Render ----------------
-  const activeQuestions = QUESTIONS_BY_MODE[pathMode] || CORE_QUESTIONS;
-  const total = activeQuestions.length;
-  const currentQ = activeQuestions[step];
+  // Map mode → step index for progress bar
+  const stepIndex = mode === 'ex1' ? 0 : mode === 'ex2' ? 1 : mode === 'ex3' ? 2 : -1;
 
   return (
     <PageLayout
       title="Leadership Identity"
       icon={Compass}
-      subtitle="Who you are at your best — and the practice that keeps you there."
+      subtitle="Three exercises. Who you admire, who you are, and how you'll show up."
       navigate={navigate}
       backTo="locker"
       backLabel="Back to Locker"
@@ -940,210 +1137,66 @@ const IdentityStatement = () => {
       ]}
       maxWidth="max-w-3xl"
     >
-      {/* --------------------------- VIEW MODE --------------------------- */}
-      {mode === 'view' && draftArtifact && isArtifactComplete(draftArtifact) && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-              <ShieldCheck className="w-4 h-4 text-corporate-teal" />
-              Saved · only you and your trainer can see this
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setMode('edit')}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-slate-300 hover:bg-slate-50"
-              >
-                <Pencil className="w-3.5 h-3.5" /> Edit
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setAnswers((a) => ({ ...a, ...(existingArtifact?.answers || {}) }));
-                  setStep(0);
-                  setMode('intro');
-                }}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-slate-300 hover:bg-slate-50"
-              >
-                <RefreshCw className="w-3.5 h-3.5" /> Rebuild with AI
-              </button>
-            </div>
-          </div>
-
-          <AnchorCard artifact={draftArtifact} editing={false} onChange={() => {}} />
-          <EvidenceCard artifact={draftArtifact} editing={false} onChange={() => {}} />
-          <EdgeCard artifact={draftArtifact} editing={false} onChange={() => {}} />
-
-          <HistoryDrawer versions={existingArtifact?.versions} />
-        </div>
-      )}
-
-      {/* --------------------------- INTRO MODE -------------------------- */}
-      {mode === 'intro' && (
-        <IntroPathPicker
-          hasExisting={!!(existingArtifact && isArtifactComplete(existingArtifact))}
-          onPick={(picked) => {
-            setPathMode(picked);
-            setStep(0);
-            setMode('questions');
-          }}
+      {mode === 'view' && isComplete(existing) && (
+        <ViewMode
+          data={existing}
+          onEdit={startEdit}
+          onStartOver={startOver}
         />
       )}
 
-      {/* ------------------------ QUESTIONS MODE ------------------------ */}
-      {mode === 'questions' && (
-        <div>
-          <ProgressBar step={step} total={total} />
-          {step === 0 && !legacyAnchor && (
-            <div className="mb-5 p-4 rounded-xl bg-corporate-teal/5 border border-corporate-teal/20">
-              <div className="flex items-start gap-2">
-                <Sparkles className="w-4 h-4 text-corporate-teal mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-slate-700 dark:text-slate-300">
-                  {pathMode === 'deep' ? (
-                    <>Seven prompts. Then a coach AI drafts a structured Leadership Identity grounded in
-                    your values, purpose, and honest self-knowledge. Takes about 10 minutes.</>
-                  ) : (
-                    <>Four short prompts. Then a coach AI drafts a structured Leadership Identity
-                    you can edit, save, and refine over time. Takes about 4 minutes.</>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setMode('intro')}
-                  className="ml-auto text-xs font-semibold text-slate-500 hover:text-slate-700 whitespace-nowrap"
-                >
-                  Change path
-                </button>
-              </div>
-            </div>
-          )}
-          {step === 0 && legacyAnchor && !existingArtifact && (
-            <div className="mb-5 p-4 rounded-xl bg-amber-50 border border-amber-200">
-              <div className="flex items-start gap-2 text-sm text-amber-900">
-                <Star className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div>
-                  You already have a statement saved:
-                  <div className="mt-1 italic">“{legacyAnchor}”</div>
-                  <div className="mt-1 text-xs">
-                    Going through these prompts will draft a richer, structured version.
-                    Your old statement stays unchanged until you save the new one.
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+      {mode === 'intro' && (
+        <Intro
+          hasExisting={isComplete(existing)}
+          onStart={() => setMode('ex1')}
+        />
+      )}
 
+      {stepIndex >= 0 && (
+        <>
+          <ProgressBar step={stepIndex} total={3} />
           <AnimatePresence mode="wait">
-            <QuestionStep
-              key={currentQ.id}
-              question={currentQ}
-              value={answers[currentQ.id] || ''}
-              onChange={(v) => setAnswers((a) => ({ ...a, [currentQ.id]: v }))}
-              onBack={() => {
-                if (step === 0) setMode('intro');
-                else setStep((s) => Math.max(0, s - 1));
-              }}
-              onNext={() => {
-                if (step + 1 < total) setStep(step + 1);
-                else generate();
-              }}
-              isFirst={false}
-              isLast={step === total - 1}
-              stepNumber={step + 1}
-              totalSteps={total}
-            />
+            <motion.div
+              key={mode}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+            >
+              {mode === 'ex1' && (
+                <Exercise1Qualities
+                  admiredLeaders={admiredLeaders}
+                  setAdmiredLeaders={setAdmiredLeaders}
+                  qualities={qualities}
+                  setQualities={setQualities}
+                  onBack={() =>
+                    isComplete(existing) ? setMode('view') : setMode('intro')
+                  }
+                  onNext={() => setMode('ex2')}
+                />
+              )}
+              {mode === 'ex2' && (
+                <Exercise2Statement
+                  qualities={qualities}
+                  statement={statement}
+                  setStatement={setStatement}
+                  onBack={() => setMode('ex1')}
+                  onNext={() => setMode('ex3')}
+                />
+              )}
+              {mode === 'ex3' && (
+                <Exercise3Intentions
+                  intentions={intentions}
+                  setIntentions={setIntentions}
+                  onBack={() => setMode('ex2')}
+                  onSave={save}
+                  saving={saving}
+                  saveError={saveError}
+                />
+              )}
+            </motion.div>
           </AnimatePresence>
-        </div>
-      )}
-
-      {/* ------------------------- CRAFTING MODE ------------------------- */}
-      {mode === 'crafting' && (
-        <div className="text-center py-16">
-          <Loader2 className="w-10 h-10 animate-spin text-corporate-teal mx-auto mb-4" />
-          <p className="text-slate-700 dark:text-slate-300 font-medium">
-            Crafting your Leadership Identity…
-          </p>
-          <p className="text-sm text-slate-500 mt-1">
-            Anchor, three pieces of evidence, and your edge.
-          </p>
-        </div>
-      )}
-
-      {/* --------------------------- EDIT MODE --------------------------- */}
-      {mode === 'edit' && draftArtifact && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="text-xs text-slate-500">
-              Edit anything. Save when it sounds like <em>you</em>.
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                if (existingArtifact && isArtifactComplete(existingArtifact)) {
-                  setDraftArtifact(existingArtifact);
-                  setMode('view');
-                } else {
-                  setMode('intro');
-                }
-              }}
-              className="text-xs text-slate-500 hover:text-slate-700"
-            >
-              Cancel
-            </button>
-          </div>
-
-          {genError && (
-            <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-800">
-              {genError}
-            </div>
-          )}
-
-          <AnchorCard
-            artifact={draftArtifact}
-            editing
-            onChange={(patch) => setDraftArtifact((d) => ({ ...d, ...patch }))}
-            alternates={alternates}
-            onPickAlternate={(alt) =>
-              setDraftArtifact((d) => ({ ...d, anchor: { ...d.anchor, statement: alt } }))
-            }
-          />
-          <EvidenceCard
-            artifact={draftArtifact}
-            editing
-            onChange={(patch) => setDraftArtifact((d) => ({ ...d, ...patch }))}
-          />
-          <EdgeCard
-            artifact={draftArtifact}
-            editing
-            onChange={(patch) => setDraftArtifact((d) => ({ ...d, ...patch }))}
-          />
-
-          {saveError && (
-            <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-sm text-rose-700">
-              {saveError}
-            </div>
-          )}
-
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={generate}
-              disabled={mode === 'crafting'}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-300 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50"
-            >
-              <RefreshCw className="w-4 h-4" /> Re-draft with AI
-            </button>
-            <button
-              type="button"
-              onClick={save}
-              disabled={saving}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-corporate-teal text-white font-semibold hover:bg-corporate-teal/90 disabled:opacity-50"
-            >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              {saving ? 'Saving…' : 'Save my Leadership Identity'}
-            </button>
-          </div>
-        </div>
+        </>
       )}
     </PageLayout>
   );

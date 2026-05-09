@@ -1,15 +1,16 @@
 // src/components/layout/AppContent.jsx 
 
-import React, { Suspense, useState, useEffect, useRef } from 'react';
+import React, { Suspense, useState, useEffect, useRef, lazy } from 'react';
 import { signOut } from 'firebase/auth';
 import { LogOut, Loader, Settings, ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
 import ScreenRouter from '../../routing/ScreenRouter.jsx';
 import MobileBottomNav from './MobileBottomNav.jsx';
 import ArenaSidebar from './ArenaSidebar.jsx';
-import WidgetRenderer from '../admin/WidgetRenderer.jsx';
+import WidgetRenderer from '../shared/WidgetRenderer.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { NavigationProvider } from '../../providers/NavigationProvider.jsx';
-import TimeTravelBanner from '../admin/TimeTravelBanner.jsx';
+// Lazy: TimeTravelBanner is admin-only and pulls the admin chunk via /admin/ path.
+const TimeTravelBanner = lazy(() => import('../admin/TimeTravelBanner.jsx'));
 import { PageTransition } from '../motion';
 import { SyncIndicator } from '../offline';
 import SkipLinks from '../accessibility/SkipLinks';
@@ -116,8 +117,12 @@ const AppContent = ({
         ]} 
       />
       
-      {/* Time Travel Banner - visible to admins when active */}
-      <TimeTravelBanner isAdmin={isAdmin} />
+      {/* Time Travel Banner - visible to admins when active (lazy-loaded) */}
+      {isAdmin && (
+        <Suspense fallback={null}>
+          <TimeTravelBanner isAdmin={isAdmin} />
+        </Suspense>
+      )}
       
       <div className="relative min-h-screen flex justify-center font-sans antialiased bg-corporate-navy overflow-hidden">
         
@@ -146,7 +151,7 @@ const AppContent = ({
                 <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center shadow-sm z-10 shrink-0">
                   <button 
                     onClick={goBack}
-                    className="flex items-center text-corporate-navy hover:text-corporate-teal transition-colors font-medium"
+                    className="flex items-center text-corporate-navy hover:text-corporate-teal-ink transition-colors font-medium"
                   >
                     <ArrowLeft className="w-5 h-5 mr-2" />
                     Back
@@ -187,13 +192,13 @@ const AppContent = ({
               <div className="flex justify-center mb-3">
                 <SyncIndicator variant="badge" showWhenSynced={false} />
               </div>
-              <p className="text-slate-400 dark:text-slate-500 text-sm" style={{ fontFamily: 'var(--font-body)' }}>
+              <p className="text-slate-600 dark:text-slate-300 text-sm" style={{ fontFamily: 'var(--font-body)' }}>
                 © {currentYear} LeaderReps. All rights reserved.
               </p>
-              <nav className="mt-3 flex flex-wrap justify-center gap-2 text-xs text-slate-500 dark:text-slate-400" aria-label="Footer navigation">
+              <nav className="mt-3 flex flex-wrap justify-center gap-2 text-xs text-slate-700 dark:text-slate-300" aria-label="Footer navigation">
                 <button
                   onClick={() => navigate('privacy-policy')}
-                  className="hover:text-corporate-teal focus:text-corporate-teal transition-colors duration-200 text-slate-500 dark:text-slate-400 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
+                  className="hover:text-corporate-teal-ink focus:text-corporate-teal-ink transition-colors duration-200 text-slate-700 dark:text-slate-300 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
                   aria-label="View privacy policy"
                 >
                   Privacy Policy
@@ -201,7 +206,7 @@ const AppContent = ({
                 <span className="text-slate-300 dark:text-slate-600 self-center" aria-hidden="true">·</span>
                 <button
                   onClick={() => navigate('terms-of-service')}
-                  className="hover:text-corporate-teal focus:text-corporate-teal transition-colors duration-200 text-slate-500 dark:text-slate-400 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
+                  className="hover:text-corporate-teal-ink focus:text-corporate-teal-ink transition-colors duration-200 text-slate-700 dark:text-slate-300 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
                   aria-label="View terms and conditions"
                 >
                   Terms & Conditions
@@ -209,7 +214,7 @@ const AppContent = ({
                 <span className="text-slate-300 dark:text-slate-600 self-center" aria-hidden="true">·</span>
                 <button
                   onClick={() => navigate('contact-us')}
-                  className="hover:text-corporate-teal focus:text-corporate-teal transition-colors duration-200 text-slate-500 dark:text-slate-400 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
+                  className="hover:text-corporate-teal-ink focus:text-corporate-teal-ink transition-colors duration-200 text-slate-700 dark:text-slate-300 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
                   aria-label="Contact us"
                 >
                   Contact Us
@@ -217,7 +222,7 @@ const AppContent = ({
                 <span className="text-slate-300 dark:text-slate-600 self-center" aria-hidden="true">·</span>
                 <button
                   onClick={() => navigate('help-center')}
-                  className="hover:text-corporate-teal focus:text-corporate-teal transition-colors duration-200 text-slate-500 dark:text-slate-400 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
+                  className="hover:text-corporate-teal-ink focus:text-corporate-teal-ink transition-colors duration-200 text-slate-700 dark:text-slate-300 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
                   aria-label="Visit help center"
                 >
                   Help Center
@@ -225,7 +230,7 @@ const AppContent = ({
                 <span className="text-slate-300 dark:text-slate-600 self-center" aria-hidden="true">·</span>
                 <button
                   onClick={() => setIsBugReportModalOpen(true)}
-                  className="hover:text-corporate-teal focus:text-corporate-teal transition-colors duration-200 text-slate-500 dark:text-slate-400 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
+                  className="hover:text-corporate-teal-ink focus:text-corporate-teal-ink transition-colors duration-200 text-slate-700 dark:text-slate-300 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
                   aria-label="Report a bug"
                 >
                   Report Bug

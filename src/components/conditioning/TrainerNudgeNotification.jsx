@@ -25,14 +25,14 @@ const NUDGE_TYPES = {
     label: 'From Your Trainer',
     icon: Heart,
     bgColor: 'bg-corporate-teal/10 dark:bg-corporate-teal/30',
-    textColor: 'text-corporate-teal',
+    textColor: 'text-corporate-teal-ink',
     borderColor: 'border-l-corporate-teal'
   },
   check_in: {
     label: 'Check-In',
     icon: HelpCircle,
     bgColor: 'bg-corporate-teal/10',
-    textColor: 'text-corporate-teal',
+    textColor: 'text-corporate-teal-ink',
     borderColor: 'border-l-corporate-teal'
   },
   escalation: {

@@ -1444,7 +1444,7 @@ const TestCenter = () => {
           onClick={() => setActiveTab('automated')}
           className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2
             ${activeTab === 'automated' 
-              ? 'border-corporate-teal text-corporate-teal' 
+              ? 'border-corporate-teal text-corporate-teal-ink' 
               : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:border-gray-300'}`}
         >
           <Database className="w-4 h-4" />
@@ -1456,7 +1456,7 @@ const TestCenter = () => {
           onClick={() => setActiveTab('manual')}
           className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2
             ${activeTab === 'manual' 
-              ? 'border-corporate-teal text-corporate-teal' 
+              ? 'border-corporate-teal text-corporate-teal-ink' 
               : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:border-gray-300'}`}
         >
           <ClipboardList className="w-4 h-4" />
@@ -1468,7 +1468,7 @@ const TestCenter = () => {
           onClick={() => setActiveTab('e2e')}
           className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2
             ${activeTab === 'e2e' 
-              ? 'border-corporate-teal text-corporate-teal' 
+              ? 'border-corporate-teal text-corporate-teal-ink' 
               : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:border-gray-300'}`}
         >
           <PlayCircle className="w-4 h-4" />
@@ -1497,7 +1497,7 @@ const TestCenter = () => {
             onClick={() => setAutoRefresh(!autoRefresh)}
             className={`px-3 py-2 rounded-lg border text-sm font-medium flex items-center gap-2 transition-colors
               ${autoRefresh 
-                ? 'bg-corporate-teal/10 border-corporate-teal text-corporate-teal' 
+                ? 'bg-corporate-teal/10 border-corporate-teal text-corporate-teal-ink' 
                 : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50'}`}
           >
             <RefreshCw className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`} />
@@ -1519,7 +1519,7 @@ const TestCenter = () => {
               onClick={() => setShowHistory(!showHistory)}
               className={`px-3 py-2 rounded-lg border text-sm font-medium flex items-center gap-2 transition-colors
                 ${showHistory 
-                  ? 'bg-corporate-teal/10 border-corporate-teal text-corporate-teal' 
+                  ? 'bg-corporate-teal/10 border-corporate-teal text-corporate-teal-ink' 
                   : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50'}`}
             >
               <BarChart3 className="w-4 h-4" />

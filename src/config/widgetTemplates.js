@@ -2859,7 +2859,7 @@ const RepsHistoryWidget = () => {
                     )}
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
-                    <span className="font-bold text-corporate-teal">{entry.completedCount || (entry.items?.length || 0)}</span>
+                    <span className="font-bold text-corporate-teal-ink">{entry.completedCount || (entry.items?.length || 0)}</span>
                     <span className="text-slate-400 text-xs ml-1">reps</span>
                   </td>
                 </tr>
@@ -3170,7 +3170,7 @@ render(<RepsHistoryWidget />);
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1 text-corporate-teal">
+          <div className="flex items-center gap-1 text-corporate-teal-ink">
             <span className="text-xs font-medium">{hasCompletedAssessment ? 'View' : 'Start'}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </div>

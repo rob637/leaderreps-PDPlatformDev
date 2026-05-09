@@ -138,7 +138,7 @@ const DayCard = ({ day, onEdit, displayDayNumber }) => {
               <span className="font-bold">{day.actions?.length || 0}</span> Actions
             </span>
             {linkedResourceCount > 0 && (
-              <span className="flex items-center gap-1 text-corporate-teal">
+              <span className="flex items-center gap-1 text-corporate-teal-ink">
                 <Link className="w-3 h-3" />
                 <span className="font-bold">{linkedResourceCount}</span> Linked
               </span>
@@ -182,7 +182,7 @@ const DayCard = ({ day, onEdit, displayDayNumber }) => {
         {/* Focus */}
         {day.focus && (
           <div className="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 p-1.5 rounded border border-slate-100">
-            <span className="font-bold text-corporate-teal">Focus:</span> {day.focus}
+            <span className="font-bold text-corporate-teal-ink">Focus:</span> {day.focus}
           </div>
         )}
 
@@ -192,7 +192,7 @@ const DayCard = ({ day, onEdit, displayDayNumber }) => {
             <span className="font-bold">{day.actions?.length || 0}</span> Actions
           </span>
           {linkedResourceCount > 0 && (
-            <span className="flex items-center gap-1 text-corporate-teal">
+            <span className="flex items-center gap-1 text-corporate-teal-ink">
               <Link className="w-3 h-3" />
               <span className="font-bold">{linkedResourceCount}</span> Linked
             </span>
@@ -586,7 +586,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
             <div className="flex gap-1">
               <button 
                 onClick={() => handlePropagate('actions')}
-                className="text-[10px] text-corporate-teal hover:underline px-1 mr-2"
+                className="text-[10px] text-corporate-teal-ink hover:underline px-1 mr-2"
                 title="Copy these actions to Mon-Fri of this week"
               >
                 Propagate
@@ -730,18 +730,18 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
         {/* Linked Resources Summary */}
         {(formData.actions || []).some(a => a.resourceId) && (
           <div className="bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg p-3">
-            <label className="text-xs font-bold text-corporate-teal uppercase mb-2 block flex items-center gap-1">
+            <label className="text-xs font-bold text-corporate-teal-ink uppercase mb-2 block flex items-center gap-1">
               <Link className="w-3 h-3" />
               Unlocked Resources ({(formData.actions || []).filter(a => a.resourceId).length})
             </label>
-            <p className="text-[10px] text-corporate-teal mb-2">
+            <p className="text-[10px] text-corporate-teal-ink mb-2">
               Resources linked to actions above are automatically unlocked for users on this day.
             </p>
             <div className="flex flex-wrap gap-1">
               {(formData.actions || [])
                 .filter(a => a.resourceId)
                 .map((action, idx) => (
-                  <span key={idx} className="bg-white dark:bg-slate-800 text-corporate-teal text-[10px] px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800 flex items-center gap-1">
+                  <span key={idx} className="bg-white dark:bg-slate-800 text-corporate-teal-ink text-[10px] px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800 flex items-center gap-1">
                     {action.resourceType === 'video' && <Video className="w-2.5 h-2.5" />}
                     {action.resourceType === 'document' && <FileText className="w-2.5 h-2.5" />}
                     {action.resourceType === 'book' && <BookOpen className="w-2.5 h-2.5" />}
@@ -813,7 +813,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-2">
             <MessageSquare className="w-4 h-4 text-corporate-teal" />
-            <label className="text-xs font-bold text-corporate-teal uppercase">Coaching Sessions</label>
+            <label className="text-xs font-bold text-corporate-teal-ink uppercase">Coaching Sessions</label>
           </div>
           <p className="text-xs text-slate-400 mb-3">Select which coaching session types are available for this milestone. Users can schedule sessions from these types.</p>
           <div className="space-y-2">
@@ -846,7 +846,7 @@ const DayEditor = ({ day, onSave, onCancel, allDays, displayDayNumber }) => {
             })}
           </div>
           {(formData.coachingSessionTypes || []).length > 0 && (
-            <div className="mt-2 p-2 bg-teal-50 dark:bg-teal-900/20 rounded text-xs text-corporate-teal">
+            <div className="mt-2 p-2 bg-teal-50 dark:bg-teal-900/20 rounded text-xs text-corporate-teal-ink">
               {(formData.coachingSessionTypes || []).length} coaching session type(s) selected
             </div>
           )}
@@ -985,7 +985,7 @@ const ContentManager = () => {
       description: '5 Gated Milestones (Self-Paced, Trainer Approval Required)',
       weekRange: [1, 5], // Milestones 1-5 (reusing weekRange for milestone numbers)
       bgColor: 'bg-teal-50 dark:bg-teal-900/20',
-      textColor: 'text-corporate-teal',
+      textColor: 'text-corporate-teal-ink',
       borderColor: 'border-corporate-teal',
       activeColor: 'bg-corporate-teal',
       dayOffset: 14,
@@ -1667,14 +1667,14 @@ const ContentManager = () => {
                       <span>{(day.actions || []).length} Actions</span>
                       <span>{(day.resources || []).length} Resources</span>
                       {(day.coachingSessionTypes || []).length > 0 && (
-                        <span className="text-corporate-teal">{(day.coachingSessionTypes || []).length} Coaching</span>
+                        <span className="text-corporate-teal-ink">{(day.coachingSessionTypes || []).length} Coaching</span>
                       )}
                       {(day.communitySessionTypes || []).length > 0 && (
                         <span className="text-corporate-orange">{(day.communitySessionTypes || []).length} Community</span>
                       )}
                     </div>
                     <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                      <button className="text-sm font-medium text-corporate-teal hover:underline flex items-center gap-1">
+                      <button className="text-sm font-medium text-corporate-teal-ink hover:underline flex items-center gap-1">
                         Configure Milestone Content →
                       </button>
                     </div>

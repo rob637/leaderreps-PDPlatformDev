@@ -230,7 +230,7 @@ const DevelopmentPlanWidget = ({ helpText }) => {
                 style={{ width: `${progressPercent}%` }}
               ></div>
             </div>
-            <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
+            <div className="flex justify-between text-xs text-slate-600 dark:text-slate-300">
               <span>{progressPercent}% Complete</span>
               <span>{weekData.actions.length} Items</span>
             </div>
@@ -268,10 +268,10 @@ const DevelopmentPlanWidget = ({ helpText }) => {
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium ${isCompleted ? 'text-slate-500 dark:text-slate-400 line-through' : 'text-slate-700 dark:text-slate-200'}`}>
+                    <p className={`text-sm font-medium ${isCompleted ? 'text-slate-600 dark:text-slate-300 line-through' : 'text-slate-700 dark:text-slate-200'}`}>
                       {item.label || item.title}
                     </p>
-                    <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                    <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                       <Icon className="w-3 h-3" />
                       <span className="capitalize">{item.type?.replace(/_/g, ' ').toLowerCase()}</span>
                     </div>

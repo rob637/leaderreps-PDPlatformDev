@@ -474,7 +474,7 @@ const Ascent2Center = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-1.5 px-3 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap flex-shrink-0 ${
                   isActive
-                    ? 'border-corporate-teal text-corporate-teal'
+                    ? 'border-corporate-teal text-corporate-teal-ink'
                     : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                 }`}
               >

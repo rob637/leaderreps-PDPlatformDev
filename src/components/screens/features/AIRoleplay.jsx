@@ -21,7 +21,7 @@ const AIRoleplay = () => {
           <Card key={i} variant="interactive" className="hover:border-corporate-teal/50 transition-colors cursor-pointer">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-2 bg-corporate-teal/10 text-corporate-teal rounded-lg">
+                <div className="p-2 bg-corporate-teal/10 text-corporate-teal-ink rounded-lg">
                   <Mic className="w-6 h-6" />
                 </div>
                 <Badge variant="default">Intermediate</Badge>

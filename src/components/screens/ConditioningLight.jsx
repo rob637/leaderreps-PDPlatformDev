@@ -161,7 +161,7 @@ const ConditioningLight = () => {
               onClick={() => { setRrType(r.key); setStep('input'); }}
               className="text-left bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-card hover:shadow-card-hover transition focus:outline-none focus:ring-2 focus:ring-corporate-teal"
             >
-              <div className="text-xs font-semibold tracking-wider text-corporate-teal mb-1">
+              <div className="text-xs font-semibold tracking-wider text-corporate-teal-ink mb-1">
                 {r.key}
               </div>
               <h2 className="text-base font-semibold text-corporate-navy dark:text-white mb-1">
@@ -187,13 +187,13 @@ const ConditioningLight = () => {
         <button
           type="button"
           onClick={reset}
-          className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 hover:text-corporate-teal mb-4"
+          className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 hover:text-corporate-teal-ink mb-4"
         >
           <ArrowLeft className="w-4 h-4" /> Pick a different rep
         </button>
 
         <header className="mb-4">
-          <div className="text-xs font-semibold tracking-wider text-corporate-teal">
+          <div className="text-xs font-semibold tracking-wider text-corporate-teal-ink">
             {rr.key}
           </div>
           <h1
@@ -322,7 +322,7 @@ const ConditioningLight = () => {
           <button
             type="button"
             onClick={() => { setStep('input'); setError(null); }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border border-corporate-teal text-corporate-teal bg-white dark:bg-slate-900 hover:bg-corporate-teal/10"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border border-corporate-teal text-corporate-teal-ink bg-white dark:bg-slate-900 hover:bg-corporate-teal/10"
           >
             <ArrowLeft className="w-4 h-4" />
             Revise &amp; Resubmit

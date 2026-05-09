@@ -123,7 +123,7 @@ export const MorningBookend = ({
             <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
                 <button 
                     onClick={() => setShowLIS(!showLIS)}
-                    className="flex items-center gap-2 text-sm font-semibold transition-colors hover:opacity-80 w-full text-corporate-teal"
+                    className="flex items-center gap-2 text-sm font-semibold transition-colors hover:opacity-80 w-full text-corporate-teal-ink"
                 >
                     <User className="w-4 h-4" />
                     {showLIS ? 'Hide' : 'Read'} Leadership Identity Statement

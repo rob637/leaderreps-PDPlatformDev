@@ -375,7 +375,7 @@ const AccountabilityInsights = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-[10px] text-corporate-teal font-bold uppercase mb-1">Yes — {yesPct}%</p>
+                    <p className="text-[10px] text-corporate-teal-ink font-bold uppercase mb-1">Yes — {yesPct}%</p>
                     <PercentBar value={yesPct} colorClass="bg-corporate-teal" />
                   </div>
                   <div>
@@ -515,7 +515,7 @@ const AccountabilityInsights = () => {
               href="https://console.firebase.google.com/project/leaderreps-prod/firestore/data/accountability-leads"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 text-corporate-teal hover:underline font-medium"
+              className="flex items-center gap-1 text-corporate-teal-ink hover:underline font-medium"
             >
               Open in Firestore <ExternalLink className="w-3 h-3" />
             </a>

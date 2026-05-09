@@ -403,15 +403,15 @@ const SortableHeader = ({ column, currentSort, onSort }) => {
   return (
     <button
       onClick={() => onSort(column.key)}
-      className="flex items-center gap-1 hover:text-corporate-teal transition-colors group"
+      className="flex items-center gap-1 hover:text-corporate-teal-ink transition-colors group"
     >
       <span>{column.label}</span>
       <div className="flex flex-col">
         <ChevronUp 
-          className={`w-3 h-3 -mb-1 ${isActive && isAsc ? 'text-corporate-teal' : 'text-slate-300 group-hover:text-slate-400'}`} 
+          className={`w-3 h-3 -mb-1 ${isActive && isAsc ? 'text-corporate-teal-ink' : 'text-slate-300 group-hover:text-slate-400'}`} 
         />
         <ChevronDown 
-          className={`w-3 h-3 ${isActive && !isAsc ? 'text-corporate-teal' : 'text-slate-300 group-hover:text-slate-400'}`} 
+          className={`w-3 h-3 ${isActive && !isAsc ? 'text-corporate-teal-ink' : 'text-slate-300 group-hover:text-slate-400'}`} 
         />
       </div>
     </button>
@@ -644,7 +644,7 @@ const LeaderProfileReports = () => {
                         <User className="w-4 h-4 text-corporate-navy" />
                       </div>
                       <div>
-                        <div className="font-medium text-corporate-navy dark:text-white hover:text-corporate-teal transition-colors">
+                        <div className="font-medium text-corporate-navy dark:text-white hover:text-corporate-teal-ink transition-colors">
                           {profile.firstName && profile.lastName 
                             ? `${profile.firstName} ${profile.lastName}` 
                             : profile.userName}

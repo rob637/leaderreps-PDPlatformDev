@@ -9,6 +9,7 @@
 import { 
   collection, 
   doc, 
+  getDoc,
   setDoc, 
   updateDoc,
   deleteDoc,
@@ -19,6 +20,7 @@ import {
   serverTimestamp,
   Timestamp
 } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 import {
   COMMUNITY_SESSIONS_COLLECTION,
@@ -272,6 +274,25 @@ export const registerForCommunitySession = async (db, userId, sessionId, session
   const regRef = doc(db, COMMUNITY_COLLECTIONS.REGISTRATIONS, registrationId);
   const sessionRef = doc(db, COMMUNITY_COLLECTIONS.SESSIONS, sessionId);
 
+  // Fetch user profile up front (outside the txn) so the email cloud
+  // function can deliver confirmations/cancellations.
+  let userEmail = null;
+  let userName = null;
+  try {
+    const userSnap = await getDoc(doc(db, 'users', userId));
+    const userData = userSnap.exists() ? userSnap.data() : {};
+    const authUser = getAuth().currentUser;
+    userEmail = userData.email || userData.primaryEmail || authUser?.email || null;
+    userName =
+      userData.displayName ||
+      userData.name ||
+      userData.fullName ||
+      authUser?.displayName ||
+      null;
+  } catch (e) {
+    console.warn('[communityService] could not load user profile for registration:', e?.message);
+  }
+
   await runTransaction(db, async (tx) => {
     const sessionSnap = await tx.get(sessionRef);
     if (!sessionSnap.exists()) {
@@ -296,15 +317,20 @@ export const registerForCommunitySession = async (db, userId, sessionId, session
     tx.set(regRef, {
       id: registrationId,
       userId,
+      userEmail,
+      userName,
       sessionId,
       sessionTitle: sessionData.title || session.title || '',
       sessionDate: sessionData.date || session.date || '',
       sessionTime: sessionData.time || session.time || '',
       sessionType: sessionData.sessionType || session.sessionType || '',
+      host: session.host || sessionData.host || null,
+      hostEmail: session.hostEmail || sessionData.hostEmail || null,
+      zoomLink: session.zoomLink || session.meetingLink || sessionData.zoomLink || null,
       status: REGISTRATION_STATUS.REGISTERED,
       registeredAt: existing?.registeredAt || serverTimestamp(),
       updatedAt: serverTimestamp(),
-    });
+    }, { merge: true });
 
     if (!alreadyActive && maxAttendees !== null) {
       tx.update(sessionRef, {

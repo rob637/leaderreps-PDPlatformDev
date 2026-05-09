@@ -35,8 +35,13 @@ import LeaderDashboard from './components/lab/LeaderDashboard.jsx';
 import IdentityBuilder from './components/lab/IdentityBuilder.jsx';
 
 // --- New Structure ---
-import AuthPanel from './components/auth/AuthPanel.jsx';
+// AuthPanel is lazy-loaded so an unauthenticated cold load doesn't pull
+// firebase/auth + firebase/firestore + AuthPanel itself into the eager
+// critical-path bundle. The boot skeleton stays as the LCP element while
+// the auth chunk streams in.
+const AuthPanel = React.lazy(() => import('./components/auth/AuthPanel.jsx'));
 import AppContent from './components/layout/AppContent.jsx';
+import BootSkeleton from './components/system/BootSkeleton.jsx';
 import DataProvider from './providers/DataProvider.jsx';
 import { FeatureProvider } from './providers/FeatureProvider.jsx';
 import { LayoutProvider } from './providers/LayoutProvider.jsx';
@@ -236,16 +241,40 @@ function MainApp() {
   }
 
   if (!isAuthReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader className="animate-spin h-10 w-10 text-corporate-teal" />
-      </div>
-    );
+    return <BootSkeleton />;
   }
 
   // Show maintenance page if maintenance mode is enabled (bypass emails are excluded)
   if (isMaintenanceMode) {
     return <MaintenancePage message={maintenanceMessage} />;
+  }
+
+  // Unauthenticated users: render AuthPanel WITHOUT mounting Data/Feature
+  // providers. Those providers open Firestore listeners which hang for ~30s
+  // when there is no auth (rules block them), pinning Lighthouse LCP at 9-10s.
+  if (isAuthRequired) {
+    return (
+      <>
+        <SkipLinks
+          links={[
+            { id: 'main-content', label: 'Skip to main content' },
+            { id: 'main-nav', label: 'Skip to navigation' },
+          ]}
+        />
+        <LiveRegion />
+        <ThemeProvider>
+          <Suspense fallback={<BootSkeleton />}>
+            <AuthPanel
+              auth={firebaseServices.auth}
+              db={firebaseServices.db}
+              functions={firebaseServices.functions}
+              onSuccess={() => navigate('dashboard')}
+            />
+          </Suspense>
+        </ThemeProvider>
+        <UpdateNotification />
+      </>
+    );
   }
 
   return (
@@ -278,28 +307,19 @@ function MainApp() {
                     {/* Offline Banner - shows when connection is lost */}
                     <OfflineBanner position="top" />
                     
-                    {isAuthRequired ? (
-                      <AuthPanel 
-                        auth={firebaseServices.auth} 
-                        db={firebaseServices.db}
-                        functions={firebaseServices.functions}
-                        onSuccess={() => navigate('dashboard')}
+                    <NotificationProvider>
+                      <AppContent
+                        currentScreen={currentScreen}
+                        user={user}
+                        navParams={navParams}
+                        isMobileOpen={isMobileOpen}
+                        setIsMobileOpen={setIsMobileOpen}
+                        isAuthRequired={isAuthRequired}
+                        auth={firebaseServices.auth}
+                        goBack={goBack}
+                        canGoBack={canGoBack}
                       />
-                    ) : (
-                      <NotificationProvider>
-                        <AppContent
-                          currentScreen={currentScreen}
-                          user={user}
-                          navParams={navParams}
-                          isMobileOpen={isMobileOpen}
-                          setIsMobileOpen={setIsMobileOpen}
-                          isAuthRequired={isAuthRequired}
-                          auth={firebaseServices.auth}
-                          goBack={goBack}
-                          canGoBack={canGoBack}
-                        />
-                      </NotificationProvider>
-                    )}
+                    </NotificationProvider>
                 </AccessControlProvider>
               </LayoutProvider>
             </FeatureProvider>

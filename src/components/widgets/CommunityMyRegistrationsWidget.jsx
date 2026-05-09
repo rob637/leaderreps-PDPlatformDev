@@ -72,7 +72,7 @@ const RegistrationCard = ({ registration, sessions = [], onCancel, onReschedule 
   
   const getIconColor = (type) => {
     switch (type) {
-      case 'leader_circle': return 'text-corporate-teal';
+      case 'leader_circle': return 'text-corporate-teal-ink';
       case 'community_event': return 'text-orange-600';
       case 'accountability_pod': return 'text-teal-600';
       case 'mastermind': return 'text-blue-600';
@@ -127,7 +127,7 @@ const PastEventCard = ({ session }) => (
       <p className="font-medium text-slate-700 dark:text-slate-200 truncate">{session.title}</p>
       <p className="text-xs text-slate-400">{formatSessionDate(session.date)}</p>
     </div>
-    {session.replayUrl && <a href={session.replayUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-corporate-teal hover:text-corporate-teal-dark">Replay →</a>}
+    {session.replayUrl && <a href={session.replayUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-corporate-teal-ink hover:text-corporate-teal-dark">Replay →</a>}
   </div>
 );
 
@@ -224,7 +224,7 @@ const CommunityMyRegistrationsWidget = ({ scope = {}, helpText }) => {
         <div className="mb-4">
           <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2 flex items-center gap-1"><Calendar className="w-3 h-3" />Upcoming ({scheduledRegistrations.length})</p>
           <div className="space-y-2">{scheduledRegistrations.slice(0, 3).map(reg => <RegistrationCard key={reg.id} registration={reg} sessions={sessions} onCancel={handleCancel} onReschedule={handleReschedule} />)}</div>
-          {scheduledRegistrations.length > 3 && <button onClick={() => navigate?.('community')} className="w-full mt-2 py-2 text-sm text-corporate-teal font-medium hover:bg-slate-50 rounded-lg transition-colors flex items-center justify-center gap-1">View all {scheduledRegistrations.length}<ChevronRight className="w-4 h-4" /></button>}
+          {scheduledRegistrations.length > 3 && <button onClick={() => navigate?.('community')} className="w-full mt-2 py-2 text-sm text-corporate-teal-ink font-medium hover:bg-slate-50 rounded-lg transition-colors flex items-center justify-center gap-1">View all {scheduledRegistrations.length}<ChevronRight className="w-4 h-4" /></button>}
         </div>
       )}
       

@@ -220,7 +220,7 @@ const AskCoach = () => {
               </h3>
             )}
             {q.rrTag && RR_TAG_LABEL[q.rrTag] && (
-              <div className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-corporate-teal bg-corporate-teal/10 border border-corporate-teal/30 rounded-full px-2 py-0.5 mb-2">
+              <div className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-corporate-teal-ink bg-corporate-teal/10 border border-corporate-teal/30 rounded-full px-2 py-0.5 mb-2">
                 <Tag className="w-3 h-3" />
                 {RR_TAG_LABEL[q.rrTag]}
               </div>
@@ -250,7 +250,7 @@ const AskCoach = () => {
 
             {q.status === 'answered' && (
               <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                <div className="text-xs font-semibold uppercase tracking-wider text-corporate-teal mb-2">
+                <div className="text-xs font-semibold uppercase tracking-wider text-corporate-teal-ink mb-2">
                   Trainer&apos;s reply
                   {q.respondedAt && (
                     <span className="ml-2 font-normal text-slate-500">
@@ -268,7 +268,7 @@ const AskCoach = () => {
                     href={q.responseVideoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-sm font-medium text-corporate-teal hover:underline"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-corporate-teal-ink hover:underline"
                   >
                     <Video className="w-4 h-4" />
                     Watch video reply

@@ -347,12 +347,12 @@ const InMomentRepForm = ({
                     type="radio"
                     checked={whenOption === option.id}
                     onChange={() => setWhenOption(option.id)}
-                    className="text-corporate-teal"
+                    className="text-corporate-teal-ink"
                   />
                   <div>
                     <span className={`text-sm font-medium ${
                       whenOption === option.id 
-                        ? 'text-corporate-teal' 
+                        ? 'text-corporate-teal-ink' 
                         : 'text-gray-700 dark:text-slate-200'
                     }`}>
                       {option.label}
@@ -370,7 +370,7 @@ const InMomentRepForm = ({
             {/* Specific date/time inputs */}
             {whenOption === 'specific' && (
               <div className="space-y-1">
-                <span className="text-xs font-medium text-corporate-teal">Date & Time</span>
+                <span className="text-xs font-medium text-corporate-teal-ink">Date & Time</span>
                 <div className="flex gap-2">
                   <input
                     type="date"

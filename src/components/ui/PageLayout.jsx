@@ -69,10 +69,10 @@ export const PageLayout = ({
   const nav = navigate || onNavigate;
   const sub = subtitle || description;
   const iconColorClass = {
-    teal: 'text-corporate-teal',
+    teal: 'text-corporate-teal-ink',
     orange: 'text-corporate-orange',
     navy: 'text-corporate-navy',
-  }[accentColor] || 'text-corporate-teal';
+  }[accentColor] || 'text-corporate-teal-ink';
 
   // Determine layout based on sidebar presence
   const hasSidebar = !!sidebar;
@@ -208,7 +208,7 @@ export const NoWidgetsEnabled = ({ moduleName = 'this module' }) => (
     </div>
     <p className="text-lg font-medium mb-2 text-corporate-navy">No widgets enabled</p>
     <p className="text-sm text-slate-500 dark:text-slate-400">
-      Go to <span className="font-semibold text-corporate-teal">Widget Lab</span> in Admin Portal to enable {moduleName} widgets.
+      Go to <span className="font-semibold text-corporate-teal-ink">Widget Lab</span> in Admin Portal to enable {moduleName} widgets.
     </p>
   </div>
 );

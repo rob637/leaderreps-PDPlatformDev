@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { CommunityIcon } from '../icons';
 import { useFeatures } from '../../providers/FeatureProvider';
-import WidgetRenderer from '../admin/WidgetRenderer';
+import WidgetRenderer from '../shared/WidgetRenderer';
 import { NoWidgetsEnabled, TabButton } from '../ui';
 import { generateGoogleCalendarUrl } from '../../services/calendarUtils';
 
@@ -42,7 +42,7 @@ const StatusBadge = ({ status }) => {
 const getSessionTypeStyle = (type) => {
   const t = (type || '').toLowerCase();
   switch (t) {
-    case 'leader_circle': return { bg: 'bg-teal-50 dark:bg-teal-900/20', text: 'text-corporate-teal', icon: Users };
+    case 'leader_circle': return { bg: 'bg-teal-50 dark:bg-teal-900/20', text: 'text-corporate-teal-ink', icon: Users };
     case 'community_event': return { bg: 'bg-orange-50 dark:bg-orange-900/20', text: 'text-orange-600', icon: Star };
     case 'accountability_pod': return { bg: 'bg-teal-50 dark:bg-teal-900/20', text: 'text-teal-600', icon: UserCheck };
     case 'mastermind': return { bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-600', icon: MessageSquare };
@@ -103,7 +103,7 @@ const CalendarView = ({ sessions = [], onViewDetails }) => {
             const daySessions = sessionsByDate[dateKey] || [];
             return (
               <div key={day} className={`h-20 rounded-lg border p-1 transition-colors ${isToday(day) ? 'border-corporate-teal bg-teal-50 dark:bg-teal-900/20' : daySessions.length > 0 ? 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-teal-300 cursor-pointer' : 'border-slate-100 bg-slate-50 dark:bg-slate-800'}`}>
-                <div className={`text-xs font-bold mb-1 ${isToday(day) ? 'text-corporate-teal' : 'text-slate-500 dark:text-slate-400'}`}>{day}</div>
+                <div className={`text-xs font-bold mb-1 ${isToday(day) ? 'text-corporate-teal-ink' : 'text-slate-500 dark:text-slate-400'}`}>{day}</div>
                 {daySessions.slice(0, 2).map(s => (
                   <div key={s.id} onClick={() => onViewDetails?.(s)} className={`text-[10px] px-1 py-0.5 rounded truncate mb-0.5 cursor-pointer ${getSessionTypeStyle(s.sessionType).bg} ${getSessionTypeStyle(s.sessionType).text}`}>{s.title?.substring(0, 12)}...</div>
                 ))}
@@ -197,7 +197,7 @@ const SessionCard = ({ session, onRegister, onCancel, isRegistered }) => {
                 })}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-corporate-teal hover:text-teal-700 font-medium"
+                className="inline-flex items-center gap-1.5 text-xs text-corporate-teal-ink hover:text-teal-700 font-medium"
               >
                 <Calendar className="w-3.5 h-3.5" />
                 Add to Google Calendar
@@ -476,7 +476,7 @@ const CommunityHub = () => {
                     <div className="flex-grow">
                       <h3 className="text-xl font-bold mb-2">Community Feed</h3>
                       <p className="text-teal-100 text-sm mb-4">Share wins, ask questions, and engage with fellow leaders in the community feed.</p>
-                      <button onClick={() => navigate('community-feed')} className="px-4 py-2 bg-white text-corporate-teal font-bold rounded-lg hover:bg-teal-50 transition-colors flex items-center gap-2"><Play className="w-4 h-4" /> View Feed</button>
+                      <button onClick={() => navigate('community-feed')} className="px-4 py-2 bg-white text-corporate-teal-ink font-bold rounded-lg hover:bg-teal-50 transition-colors flex items-center gap-2"><Play className="w-4 h-4" /> View Feed</button>
                     </div>
                   </div>
                 </div>

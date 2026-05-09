@@ -1149,7 +1149,7 @@ Format your response as:
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-slate-700 dark:text-slate-200 hover:border-corporate-teal hover:text-corporate-teal transition-colors"
+              className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-slate-700 dark:text-slate-200 hover:border-corporate-teal hover:text-corporate-teal-ink transition-colors"
             >
               <link.icon className="w-4 h-4" />
               <span className="truncate">{link.title}</span>
@@ -1252,7 +1252,7 @@ Format your response as:
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-8 bg-white dark:bg-slate-800">
               <div 
-                className="prose prose-slate max-w-none prose-headings:text-corporate-navy prose-a:text-corporate-teal prose-pre:bg-slate-800 prose-pre:text-slate-100"
+                className="prose prose-slate max-w-none prose-headings:text-corporate-navy prose-a:text-corporate-teal-ink prose-pre:bg-slate-800 prose-pre:text-slate-100"
                 dangerouslySetInnerHTML={{ 
                   __html: DOMPurify.sanitize(marked.parse(viewingDoc.content)) 
                 }}

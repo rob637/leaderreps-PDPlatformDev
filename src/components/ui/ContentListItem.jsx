@@ -37,7 +37,7 @@ export const ContentListItem = ({
       <div
         className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors
           ${isUnlocked ? (bgColor || 'bg-corporate-teal/10') : 'bg-slate-200'} 
-          ${isUnlocked ? (color || 'text-corporate-teal') : 'text-slate-400'} 
+          ${isUnlocked ? (color || 'text-corporate-teal-ink') : 'text-slate-400'} 
           ${isUnlocked && 'group-hover:bg-opacity-80'}`}
       >
         {Icon && <Icon className="w-6 h-6" />}
@@ -113,7 +113,7 @@ export const ContentListItem = ({
       
       {/* Chevron */}
       {isUnlocked && (
-        <div className="flex-shrink-0 text-slate-400 group-hover:text-corporate-teal transition-colors">
+        <div className="flex-shrink-0 text-slate-400 group-hover:text-corporate-teal-ink transition-colors">
           <ChevronRight className="w-5 h-5" />
         </div>
       )}

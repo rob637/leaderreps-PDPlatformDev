@@ -466,7 +466,7 @@ const TrainerSessionsPanel = () => {
           </div>
         </Card>
         <Card className="p-4 text-center cursor-pointer hover:ring-2 ring-corporate-teal/50 transition-all" onClick={() => setView('with-attendees')}>
-          <div className="text-2xl font-bold text-corporate-teal">
+          <div className="text-2xl font-bold text-corporate-teal-ink">
             {stats.sessionsWithAttendees}
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-400 uppercase">

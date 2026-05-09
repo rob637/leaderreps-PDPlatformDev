@@ -302,7 +302,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                                                 <button 
                                                     onClick={() => handleAddCommitment(c, 'pdp')}
                                                     disabled={!canAddCommitment || isSaving}
-                                                    className={`font-semibold text-xs transition-colors p-1 flex items-center space-x-1 ${canAddCommitment ? 'text-corporate-teal hover:text-teal-700' : 'text-slate-400 cursor-not-allowed'}`}
+                                                    className={`font-semibold text-xs transition-colors p-1 flex items-center space-x-1 ${canAddCommitment ? 'text-corporate-teal-ink hover:text-teal-700' : 'text-slate-400 cursor-not-allowed'}`}
                                                 >
                                                     <PlusCircle className='w-4 h-4'/>
                                                     <span className='hidden sm:inline'>Add</span>
@@ -345,7 +345,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                                                             <button 
                                                                 onClick={() => handleAddCommitment(c, 'bank')}
                                                                 disabled={!canAddCommitment || isSaving}
-                                                                className={`font-semibold text-xs transition-colors p-1 ${canAddCommitment ? 'text-corporate-teal hover:text-teal-700' : 'text-slate-400 cursor-not-allowed'}`}
+                                                                className={`font-semibold text-xs transition-colors p-1 ${canAddCommitment ? 'text-corporate-teal-ink hover:text-teal-700' : 'text-slate-400 cursor-not-allowed'}`}
                                                             >
                                                                 <PlusCircle className='w-4 h-4'/>
                                                             </button>
@@ -423,7 +423,7 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove }) => {
                     Goal: {commitment.linkedGoal || 'N/A'}
                 </div>
                 {commitment.linkedTier && (
-                    <div className='text-xs text-corporate-teal bg-corporate-teal/10 px-3 py-1 rounded-full inline-block font-medium whitespace-nowrap'>
+                    <div className='text-xs text-corporate-teal-ink bg-corporate-teal/10 px-3 py-1 rounded-full inline-block font-medium whitespace-nowrap'>
                         Tier: {tierLabel}
                     </div>
                 )}
@@ -557,7 +557,7 @@ const ScorecardView = ({ setView, initialGoal, initialTier, isSaving, commitment
                                         </div>
                                     ))}
                                 </div>
-                                <p className='mt-3 text-corporate-teal font-medium'>Current Streak: {streak} {streak === 1 ? 'Day' : 'Days'}</p>
+                                <p className='mt-3 text-corporate-teal-ink font-medium'>Current Streak: {streak} {streak === 1 ? 'Day' : 'Days'}</p>
                             </div>
                         </Card>
                     </div>

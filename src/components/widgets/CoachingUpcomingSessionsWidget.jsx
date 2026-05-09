@@ -542,7 +542,7 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
           {hasOtherSessions && typeFilter !== 'all' && (
             <button
               onClick={() => setTypeFilter('all')}
-              className="text-sm text-corporate-teal hover:text-teal-600 font-medium"
+              className="text-sm text-corporate-teal-ink hover:text-teal-600 font-medium"
             >
               View all {allUpcomingSessions.length} available sessions →
             </button>
@@ -696,7 +696,7 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
           {displaySessions.length === 0 && typeFilter !== 'all' ? (
             <div className="text-center py-6">
               <p className="text-sm text-slate-400">No {SESSION_TYPE_CONFIG[typeFilter]?.label || typeFilter} sessions available.</p>
-              <button onClick={() => setTypeFilter('all')} className="mt-2 text-sm text-corporate-teal font-medium">Show all sessions</button>
+              <button onClick={() => setTypeFilter('all')} className="mt-2 text-sm text-corporate-teal-ink font-medium">Show all sessions</button>
             </div>
           ) : (
             displaySessions.slice(0, showAllSessions ? undefined : 5).map(session => {
@@ -723,7 +723,7 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
           {!showAllSessions && displaySessions.length > 5 && (
             <button 
               onClick={() => navigate?.('coaching-lab')}
-              className="w-full py-2 text-sm text-corporate-teal font-medium hover:bg-teal-50 rounded-lg transition-colors flex items-center justify-center gap-1"
+              className="w-full py-2 text-sm text-corporate-teal-ink font-medium hover:bg-teal-50 rounded-lg transition-colors flex items-center justify-center gap-1"
             >
               View all {displaySessions.length} sessions
               <ChevronRight className="w-4 h-4" />

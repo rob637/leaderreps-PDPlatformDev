@@ -121,14 +121,14 @@ const DifficultySelector = ({ value, onChange, repType }) => {
               onClick={() => onChange(level.id)}
               className={`w-full p-3 rounded-xl border-2 text-left transition-all ${
                 value === level.id
-                  ? 'bg-corporate-teal/10 dark:bg-corporate-teal/20 border-corporate-teal ring-2 ring-corporate-teal text-corporate-teal'
+                  ? 'bg-corporate-teal/10 dark:bg-corporate-teal/20 border-corporate-teal ring-2 ring-corporate-teal text-corporate-teal-ink'
                   : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500'
               }`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className={`font-medium text-sm ${
-                    value === level.id ? 'text-corporate-teal dark:text-corporate-teal' : 'text-gray-700 dark:text-slate-200'
+                    value === level.id ? 'text-corporate-teal-ink dark:text-corporate-teal-ink' : 'text-gray-700 dark:text-slate-200'
                   }`}>
                     {level.label}
                   </div>
@@ -541,7 +541,7 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
                       className={`mt-0.5 rounded ${
                         prepIsRequired 
                           ? 'text-amber-600 cursor-not-allowed' 
-                          : 'text-corporate-teal cursor-pointer'
+                          : 'text-corporate-teal-ink cursor-pointer'
                       }`}
                     />
                     <div className="flex-1">
@@ -555,7 +555,7 @@ const CommitRepForm = ({ onSubmit, onClose, isLoading, activeRepsCount = 0 }) =>
                           prepIsRequired 
                             ? 'text-amber-800 dark:text-amber-300'
                             : prepEnabled
-                            ? 'text-corporate-teal'
+                            ? 'text-corporate-teal-ink'
                             : 'text-gray-700 dark:text-slate-300'
                         }`}>
                           {prepIsRequired ? 'Prep required before execution' : 'Prep before execution'}

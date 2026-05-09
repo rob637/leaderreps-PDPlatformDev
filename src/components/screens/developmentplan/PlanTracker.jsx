@@ -3,7 +3,7 @@ import { Target, TrendingUp, Calendar, Edit, ArrowLeft, Zap, Crosshair, Flag, Lo
 import { Button, Card, ProgressBar } from './DevPlanComponents';
 import ProgressBreakdown from './ProgressBreakdown';
 import QuickPlanEditor from './QuickPlanEditor';
-import WidgetRenderer from '../../admin/WidgetRenderer';
+import WidgetRenderer from '../../shared/WidgetRenderer';
 import { useFeatures } from '../../../providers/FeatureProvider';
 import { ZONE_CONFIG } from '../../../config/zoneConfig';
 import { NoWidgetsEnabled } from '../../ui';

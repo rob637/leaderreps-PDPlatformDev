@@ -44,6 +44,7 @@ export const BreadcrumbNav = ({ items = [], navigate, onBack }) => {
         onClick={handleBack}
         className="p-1 bg-transparent hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-lg transition-colors flex-shrink-0"
         title="Go Back"
+        aria-label="Go back"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00A896" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
@@ -70,10 +71,11 @@ export const BreadcrumbNav = ({ items = [], navigate, onBack }) => {
               ) : (
                 <button 
                   onClick={() => item.path && navigate(item.path, item.params)}
-                  className={`bg-transparent hover:text-corporate-teal hover:underline transition-colors flex items-center gap-1 ${!item.path ? 'cursor-default hover:no-underline' : ''}`}
+                  className={`bg-transparent hover:text-corporate-teal-ink hover:underline transition-colors flex items-center gap-1 ${!item.path ? 'cursor-default hover:no-underline' : ''}`}
                   disabled={!item.path}
+                  aria-label={item.label === 'Home' ? 'Home' : undefined}
                 >
-                  {item.label === 'Home' ? <Home className="w-3.5 h-3.5" /> : item.label}
+                  {item.label === 'Home' ? <Home className="w-3.5 h-3.5" aria-hidden="true" /> : item.label}
                 </button>
               )}
             </React.Fragment>

@@ -378,7 +378,7 @@ const ActivitySection = ({ title, icon: Icon, color, items, expanded, onToggle, 
     pink: 'bg-pink-100 text-pink-600',
     rose: 'bg-rose-100 text-rose-600',
     amber: 'bg-amber-100 text-amber-600',
-    'corporate-teal': 'bg-corporate-teal/10 text-corporate-teal',
+    'corporate-teal': 'bg-corporate-teal/10 text-corporate-teal-ink',
   };
   
   const completedCount = items.filter(i => 

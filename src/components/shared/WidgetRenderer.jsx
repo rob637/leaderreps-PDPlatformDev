@@ -1,12 +1,10 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { useFeatures } from '../../providers/FeatureProvider';
-import DynamicWidgetRenderer from './DynamicWidgetRenderer';
 import { WIDGET_TEMPLATES } from '../../config/widgetTemplates';
 import WinTheDayWidget from '../widgets/WinTheDayWidget';
 import PMReflectionWidget from '../widgets/PMReflectionWidget';
 import DevelopmentPlanWidget from '../widgets/DevelopmentPlanWidget';
 import ThisWeeksActionsWidget from '../widgets/ThisWeeksActionsWidget';
-import AdminAccessViewer from './AdminAccessViewer';
 import CoachingUpcomingSessionsWidget from '../widgets/CoachingUpcomingSessionsWidget';
 import CoachingOnDemandWidget from '../widgets/CoachingOnDemandWidget';
 import CoachingMySessionsWidget from '../widgets/CoachingMySessionsWidget';
@@ -14,6 +12,12 @@ import CommunityUpcomingSessionsWidget from '../widgets/CommunityUpcomingSession
 import CommunityMyRegistrationsWidget from '../widgets/CommunityMyRegistrationsWidget';
 import PrepWelcomeBanner from '../widgets/PrepWelcomeBanner';
 import DailyPlanWidget from '../widgets/DailyPlanWidget';
+
+// Heavy admin-only dependencies — lazy-loaded so they aren't bundled into
+// the dashboard's eager critical path. DynamicWidgetRenderer pulls in
+// react-live (Babel parser) and AdminAccessViewer is admin-only.
+const DynamicWidgetRenderer = lazy(() => import('../admin/DynamicWidgetRenderer'));
+const AdminAccessViewer = lazy(() => import('../admin/AdminAccessViewer'));
 
 /**
  * WidgetRenderer - Renders widgets from templates defined in widgetTemplates.js
@@ -63,7 +67,11 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
   }
 
   if (widgetId === 'admin-access-viewer') {
-    return <AdminAccessViewer />;
+    return (
+      <Suspense fallback={<div className="p-4 text-sm text-slate-500">Loading admin viewer…</div>}>
+        <AdminAccessViewer />
+      </Suspense>
+    );
   }
 
   // Coaching widgets
@@ -111,7 +119,9 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
   if (templateCode && templateCode.trim().length > 0) {
     return (
       <div id={`widget-${widgetId}`}>
-        <DynamicWidgetRenderer code={templateCode} scope={enhancedScope} />
+        <Suspense fallback={<div className="p-4 text-sm text-slate-500">Loading widget…</div>}>
+          <DynamicWidgetRenderer code={templateCode} scope={enhancedScope} />
+        </Suspense>
       </div>
     );
   }

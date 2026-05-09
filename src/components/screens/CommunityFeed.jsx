@@ -196,7 +196,7 @@ const CommunityFeedScreen = () => {
                                 {/* Name */}
                                 <span className="flex-1 font-semibold text-sm ml-2 truncate text-corporate-navy">{leader.name}</span>
                                 {/* Streak */}
-                                <span className="text-xs font-medium ml-2 text-corporate-teal">{leader.streak} Day Streak</span>
+                                <span className="text-xs font-medium ml-2 text-corporate-teal-ink">{leader.streak} Day Streak</span>
                             </div>
                         ))}
                          {/* Optional: Link to full leaderboard */}

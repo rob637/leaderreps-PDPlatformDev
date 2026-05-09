@@ -53,7 +53,7 @@ const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const SESSION_TYPE_BADGES = {
   clinic:             { label: 'Clinic',         cls: 'bg-corporate-orange/10 text-corporate-orange border-corporate-orange/30' },
   workshop:           { label: 'Clinic',         cls: 'bg-corporate-orange/10 text-corporate-orange border-corporate-orange/30' },
-  open_gym:           { label: 'Open Gym',       cls: 'bg-corporate-teal/10 text-corporate-teal border-corporate-teal/30' },
+  open_gym:           { label: 'Open Gym',       cls: 'bg-corporate-teal/10 text-corporate-teal-ink border-corporate-teal/30' },
   leader_circle:      { label: 'Leaders Circle', cls: 'bg-purple-100 text-purple-800 border-purple-300' },
   one_on_one:         { label: '1:1',            cls: 'bg-blue-100 text-blue-800 border-blue-300' },
   live_workout:       { label: 'Live Workout',   cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
@@ -245,7 +245,7 @@ const EventCard = ({ event, onRegister, onCancel, onOpenDetails, busy }) => {
             href={event.replayUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-sm font-medium text-corporate-teal hover:underline"
+            className="inline-flex items-center gap-1 text-sm font-medium text-corporate-teal-ink hover:underline"
           >
             <Video className="w-4 h-4" /> Watch Replay
           </a>
@@ -401,7 +401,7 @@ const EventDetailModal = ({ event, onClose, onRegister, onCancel, busy }) => {
                   href={event.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm font-medium text-corporate-teal hover:underline break-all"
+                  className="inline-flex items-center gap-1 text-sm font-medium text-corporate-teal-ink hover:underline break-all"
                 >
                   <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
                   {event.link}
@@ -421,7 +421,7 @@ const EventDetailModal = ({ event, onClose, onRegister, onCancel, busy }) => {
                 href={event.replayUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-sm font-medium text-corporate-teal hover:underline"
+                className="inline-flex items-center gap-1 text-sm font-medium text-corporate-teal-ink hover:underline"
               >
                 <Video className="w-4 h-4" /> Watch replay
               </a>
@@ -596,12 +596,26 @@ const Events = () => {
       await registerForEvent(db, userId, event);
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.error('register failed', err);
+      console.error('[Events] register failed', {
+        code: err?.code,
+        message: err?.message,
+        sourceType: event?.sourceType,
+        sourceId: event?.sourceId,
+        userId,
+        event,
+        err,
+      });
       const code = err?.message || '';
       if (code === 'SESSION_FULL') {
         setError('This session is now full. Please pick another time.');
       } else if (code === 'SESSION_NOT_FOUND') {
         setError('This session is no longer available.');
+      } else if (err?.code === 'permission-denied' || /insufficient permissions/i.test(code)) {
+        setError(
+          'Registration was blocked by a permissions check. ' +
+          'A previous registration record may be malformed. ' +
+          'Please contact support and share the event title and time so we can clear it.'
+        );
       } else {
         setError(err?.message || 'Could not register. Try again.');
       }
@@ -634,16 +648,18 @@ const Events = () => {
       maxWidth="max-w-[1080px]"
     >
 
-      <div className="flex items-center gap-2 mb-5 border-b border-slate-200 dark:border-slate-700">
+      <div className="flex items-center gap-2 mb-5 border-b border-slate-200 dark:border-slate-700" role="tablist">
         {VIEW_TABS.map((f) => (
           <button
             key={f.key}
             type="button"
+            role="tab"
+            aria-selected={view === f.key}
             onClick={() => setView(f.key)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition ${
+            className={`px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition ${
               view === f.key
-                ? 'border-corporate-teal text-corporate-teal'
-                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                ? 'border-corporate-teal text-corporate-navy dark:text-white'
+                : 'border-transparent text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
             {f.label}
@@ -674,7 +690,7 @@ const Events = () => {
                 onClick={() => setUpcomingFilter(chip.key)}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
                   upcomingFilter === chip.key
-                    ? 'bg-corporate-teal/10 text-corporate-teal border-corporate-teal/30'
+                    ? 'bg-corporate-teal/10 text-corporate-teal-ink border-corporate-teal/30'
                     : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
                 }`}
               >
@@ -753,16 +769,18 @@ const Events = () => {
 
       {!loading && view === 'my-events' && (
         <section className="space-y-5">
-          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-700">
+          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-700" role="tablist">
             {MY_EVENT_RANGES.map((range) => (
               <button
                 key={range.key}
                 type="button"
+                role="tab"
+                aria-selected={myRange === range.key}
                 onClick={() => setMyRange(range.key)}
-                className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition ${
+                className={`px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition ${
                   myRange === range.key
-                    ? 'border-corporate-teal text-corporate-teal'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                    ? 'border-corporate-teal text-corporate-navy dark:text-white'
+                    : 'border-transparent text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
                 {range.label}

@@ -129,7 +129,7 @@ const MobilePWABanner = () => {
           {/* Install Button */}
           <button
             onClick={handleInstall}
-            className="w-full mt-3 py-2.5 px-4 bg-corporate-teal hover:bg-corporate-teal/90 text-white font-medium text-sm rounded-xl flex items-center justify-center gap-2 transition-colors active:scale-[0.98]"
+            className="w-full mt-3 py-2.5 px-4 bg-corporate-navy hover:bg-corporate-navy/90 text-white font-medium text-sm rounded-xl flex items-center justify-center gap-2 transition-colors active:scale-[0.98]"
           >
             <Download className="w-4 h-4" />
             Install App

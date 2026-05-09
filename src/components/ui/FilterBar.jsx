@@ -272,7 +272,7 @@ const ActiveFilters = React.forwardRef(({
       {filters.map((filter, index) => (
         <span
           key={index}
-          className="inline-flex items-center gap-1 px-2 py-1 bg-corporate-teal/10 text-corporate-teal text-sm rounded-md"
+          className="inline-flex items-center gap-1 px-2 py-1 bg-corporate-teal/10 text-corporate-teal-ink text-sm rounded-md"
         >
           {filter.label}: {filter.value}
           <button

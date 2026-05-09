@@ -382,10 +382,23 @@ service cloud.firestore {
     }
 
     // Coaching Registrations
+    // Doc id pattern: `${sessionId}_${userId}` (see eventsService.js).
     match /coaching_registrations/{document} {
-      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      // Allow read when doc doesn't exist OR the requesting user owns it.
+      // We also accept ownership inferred from the deterministic docId so
+      // legacy documents missing the `userId` field don't block registration.
+      allow read: if request.auth != null && (
+        resource == null
+        || ('userId' in resource.data && request.auth.uid == resource.data.userId)
+        || document.matches('.+_' + request.auth.uid)
+        || isAdmin()
+      );
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow update, delete: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow update, delete: if request.auth != null && (
+        ('userId' in resource.data && request.auth.uid == resource.data.userId)
+        || document.matches('.+_' + request.auth.uid)
+        || isAdmin()
+      );
     }
 
     // Community Session Types (Templates)
@@ -409,17 +422,35 @@ service cloud.firestore {
     }
 
     // Community Registrations
+    // Doc id pattern: `${userId}_${sessionId}` (see communityService.js).
     match /community_registrations/{document} {
-      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      // Allow read when doc doesn't exist OR the requesting user owns it.
+      // We also accept ownership inferred from the deterministic docId so
+      // legacy documents missing the `userId` field don't block registration.
+      allow read: if request.auth != null && (
+        resource == null
+        || ('userId' in resource.data && request.auth.uid == resource.data.userId)
+        || document.matches(request.auth.uid + '_.+')
+        || isAdmin()
+      );
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow update, delete: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow update, delete: if request.auth != null && (
+        ('userId' in resource.data && request.auth.uid == resource.data.userId)
+        || document.matches(request.auth.uid + '_.+')
+        || isAdmin()
+      );
     }
 
     // Ascent Revamp WS-4: Ask a Coach
-    // Users create + read their own; only Christina/Ryan (or admins) read all
-    // and write the response payload (text + optional video URL).
+    // Users create + read their own; trainers/responders read all.
+    // Additionally: ANSWERED questions are readable by all authenticated users
+    // (curated public knowledge base — see Ascent Dashboard "Other Questions").
     match /coach_questions/{document} {
-      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAskCoachResponder());
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.userId
+        || isAskCoachResponder()
+        || resource.data.status == 'answered'
+      );
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.userId
         && request.resource.data.status == 'open'

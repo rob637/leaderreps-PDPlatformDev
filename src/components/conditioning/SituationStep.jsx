@@ -27,7 +27,7 @@ const SituationOption = ({ label, description, isSelected, onClick }) => {
       <div className="flex items-center justify-between gap-3">
         <div className="flex-1">
           <span className={`text-sm ${
-            isSelected ? 'text-corporate-teal font-medium' : 'text-gray-700 dark:text-slate-300'
+            isSelected ? 'text-corporate-teal-ink font-medium' : 'text-gray-700 dark:text-slate-300'
           }`}>
             {label}
           </span>

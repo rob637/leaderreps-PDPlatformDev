@@ -20,7 +20,7 @@ const FlowOptionCard = ({ icon: Icon, title, description, onClick, color = 'teal
     teal: {
       bg: 'bg-corporate-teal/10 dark:bg-corporate-teal/20',
       border: 'border-corporate-teal/30',
-      icon: 'text-corporate-teal',
+      icon: 'text-corporate-teal-ink',
       hover: 'hover:border-corporate-teal hover:shadow-md'
     },
     navy: {

@@ -40,7 +40,7 @@ const ScrollingQuotes = () => {
           <div key={index} className="flex items-center mx-8 text-sm font-medium opacity-90 hover:opacity-100 transition-opacity">
             <span className="italic mr-2">"{quote.text}"</span>
             {quote.author && (
-              <span className="text-corporate-teal font-bold text-xs uppercase tracking-wider">— {quote.author}</span>
+              <span className="text-corporate-teal-ink font-bold text-xs uppercase tracking-wider">— {quote.author}</span>
             )}
           </div>
         ))}

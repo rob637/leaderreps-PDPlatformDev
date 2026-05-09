@@ -130,7 +130,7 @@ const UserRow = ({ summary, isExpanded, onToggle, db, cohortId }) => {
               {summary.email || summary.userId}
             </div>
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              <span className="font-medium text-corporate-teal">{summary.totalHistoricalReps || 0}</span> total reps
+              <span className="font-medium text-corporate-teal-ink">{summary.totalHistoricalReps || 0}</span> total reps
               {(currentWeek?.totalCompleted > 0 || currentWeek?.totalActive > 0) && (
                 <span className="ml-2 text-gray-400">• This week: {currentWeek?.totalCompleted || 0} done, {currentWeek?.totalActive || 0} active</span>
               )}
@@ -214,12 +214,12 @@ const UserRow = ({ summary, isExpanded, onToggle, db, cohortId }) => {
                           className="w-full p-2 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors rounded-t"
                         >
                           <div className="flex items-center gap-2">
-                            <Calendar className={`w-4 h-4 ${isCurrentWeek ? 'text-corporate-teal' : 'text-gray-400'}`} />
-                            <span className={`text-sm font-medium ${isCurrentWeek ? 'text-corporate-teal' : 'text-gray-700 dark:text-gray-200'}`}>
+                            <Calendar className={`w-4 h-4 ${isCurrentWeek ? 'text-corporate-teal-ink' : 'text-gray-400'}`} />
+                            <span className={`text-sm font-medium ${isCurrentWeek ? 'text-corporate-teal-ink' : 'text-gray-700 dark:text-gray-200'}`}>
                               {formatWeekLabel(weekId)}
                             </span>
                             {isCurrentWeek && (
-                              <span className="text-xs px-1.5 py-0.5 bg-corporate-teal/20 text-corporate-teal rounded">
+                              <span className="text-xs px-1.5 py-0.5 bg-corporate-teal/20 text-corporate-teal-ink rounded">
                                 Current
                               </span>
                             )}

@@ -385,7 +385,7 @@ const CampaignDetail = ({ campaignId, onBack }) => {
     <div className="space-y-5 max-w-4xl">
       <button
         onClick={onBack}
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-corporate-teal"
+        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-corporate-teal-ink"
       >
         <ArrowLeft className="w-4 h-4" />
         All campaigns
@@ -450,7 +450,7 @@ const CampaignDetail = ({ campaignId, onBack }) => {
         />
         <button
           onClick={refresh}
-          className="p-1.5 text-slate-400 hover:text-corporate-teal"
+          className="p-1.5 text-slate-400 hover:text-corporate-teal-ink"
           title="Refresh"
         >
           <RefreshCw className="w-4 h-4" />
@@ -459,7 +459,7 @@ const CampaignDetail = ({ campaignId, onBack }) => {
 
       {/* Question card */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
-        <div className="text-xs uppercase tracking-wider font-bold text-corporate-teal mb-1">
+        <div className="text-xs uppercase tracking-wider font-bold text-corporate-teal-ink mb-1">
           {question.theme}
         </div>
         <div className="text-base font-semibold text-corporate-navy dark:text-white">
@@ -863,7 +863,7 @@ const RecipientsPanel = ({ campaign, recipients, onChange }) => {
                       <Icon
                         className={`w-3.5 h-3.5 ${
                           channel === 'sms'
-                            ? 'text-corporate-teal'
+                            ? 'text-corporate-teal-ink'
                             : 'text-corporate-navy'
                         }`}
                       />
@@ -961,7 +961,7 @@ const QuestionBankPanel = () => (
     <div className="space-y-3">
       {PULSE_QUESTION_BANK.map((q, idx) => (
         <div key={q.id} className="text-sm">
-          <div className="text-xs uppercase tracking-wider text-corporate-teal font-bold">
+          <div className="text-xs uppercase tracking-wider text-corporate-teal-ink font-bold">
             Week {idx + 1} · {q.theme}
           </div>
           <div className="text-slate-700 dark:text-slate-200">{q.quant}</div>
@@ -1099,7 +1099,7 @@ const PulseLeadsPanel = ({ db, onBack }) => {
                       href={`/?leader=${encodeURIComponent(l.token || l.id)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs font-semibold text-corporate-teal hover:underline"
+                      className="text-xs font-semibold text-corporate-teal-ink hover:underline"
                     >
                       Open →
                     </a>

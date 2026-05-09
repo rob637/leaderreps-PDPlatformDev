@@ -170,7 +170,7 @@ const ContentGroupsListView = ({
                     w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0
                     ${isLocked 
                       ? 'bg-gray-100 dark:bg-gray-700 text-gray-400' 
-                      : `${bgColor || 'bg-corporate-teal/10'} ${color || 'text-corporate-teal'}`
+                      : `${bgColor || 'bg-corporate-teal/10'} ${color || 'text-corporate-teal-ink'}`
                     }
                   `}>
                     {isLocked 

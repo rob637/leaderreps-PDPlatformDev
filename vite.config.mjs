@@ -22,6 +22,21 @@ export default defineConfig(({ mode }) => {
         fs.writeFileSync('build/version.json', JSON.stringify({ version: packageJson.version }));
       }
     },
+    {
+      // Convert the eager <link rel="stylesheet"> for the main CSS bundle into
+      // an async preload+swap to eliminate render-blocking CSS. The boot
+      // skeleton is fully styled inline so initial paint is unaffected.
+      name: 'async-css-link',
+      apply: 'build',
+      transformIndexHtml(html) {
+        return html.replace(
+          /<link rel="stylesheet" crossorigin href="([^"]+\.css)">/g,
+          (_m, href) =>
+            `<link rel="preload" as="style" href="${href}" onload="this.onload=null;this.rel='stylesheet'">` +
+            `<noscript><link rel="stylesheet" href="${href}"></noscript>`
+        );
+      }
+    },
     react(),
     VitePWA({
       registerType: 'prompt',
@@ -190,17 +205,39 @@ export default defineConfig(({ mode }) => {
             if (id.includes('date-fns') || id.includes('dayjs')) {
               return 'dates';
             }
+            // Heavy admin/lazy-only libs — give each its own chunk so they
+            // don't sink into the eagerly-preloaded `vendor` chunk.
+            if (id.includes('recharts')) return 'recharts';
+            if (id.includes('react-live') || id.includes('@babel') || id.includes('prismjs')) return 'react-live';
+            if (id.includes('@monaco-editor') || id.includes('monaco-editor')) return 'monaco';
+            if (id.includes('@google/genai') || id.includes('openai')) return 'ai-sdk';
+            if (id.includes('@tanstack')) return 'tanstack';
+            if (id.includes('@dnd-kit')) return 'dnd-kit';
+            if (id.includes('marked') || id.includes('dompurify')) return 'markdown';
+            if (id.includes('cmdk')) return 'cmdk';
+            if (id.includes('csv-parse')) return 'csv';
             // Other vendor - keep small
             return 'vendor';
           }
           
-          // Admin screens - only loaded when needed
-          if (id.includes('/admin/') || id.includes('AdminPortal') || id.includes('AdminFunctions')) {
-            return 'admin';
-          }
+          // Note: We intentionally do NOT manually chunk admin screens.
+          // Each admin screen is lazy-loaded via ScreenRouter and forms its
+          // own chunk naturally, which keeps the eager critical-path bundle
+          // free of admin code for non-admin users. Forcing them into a
+          // single 'admin' chunk caused that chunk to become the de-facto
+          // common chunk for Vite runtime helpers (__vitePreload), which
+          // pulled the entire admin bundle into the eager preload graph.
           
           // Constants/data - shared across app, must initialize first
           if (id.includes('/data/Constants') || id.includes('/data/')) {
+            return 'shared';
+          }
+
+          // widgetTemplates is imported by FeatureProvider (eager) AND by
+          // several admin screens. Force it into the shared chunk so that
+          // eager FeatureProvider doesn't drag the admin chunk into the
+          // critical path.
+          if (id.includes('/config/widgetTemplates')) {
             return 'shared';
           }
           

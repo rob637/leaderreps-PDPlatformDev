@@ -188,7 +188,7 @@ const ReppyCoach = () => {
           {!isOnboarding ? (
             <button 
               onClick={handleToggleBookmark}
-              className="p-2 -mr-2 text-rep-text-secondary hover:text-corporate-teal transition-colors"
+              className="p-2 -mr-2 text-rep-text-secondary hover:text-corporate-teal-ink transition-colors"
             >
               {isBookmarked ? (
                 <BookmarkCheck className="w-5 h-5 text-corporate-teal" />
@@ -307,7 +307,7 @@ const ReppyCoach = () => {
           {phase === 'onboarding-role' && (
             <div className="space-y-6">
               <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100">
-                <p className="text-sm text-corporate-teal font-medium mb-2">Nice to meet you, {onboardingData.preferredName}! 👋</p>
+                <p className="text-sm text-corporate-teal-ink font-medium mb-2">Nice to meet you, {onboardingData.preferredName}! 👋</p>
                 <h2 className="text-xl font-semibold text-corporate-navy mb-2">Tell me about your role</h2>
                 <p className="text-rep-text-secondary">
                   Are you a manager, team lead, executive, individual contributor, or something else? 
@@ -320,7 +320,7 @@ const ReppyCoach = () => {
           {phase === 'onboarding-context' && (
             <div className="space-y-6">
               <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100">
-                <p className="text-sm text-corporate-teal font-medium mb-2">Got it — {onboardingData.role}</p>
+                <p className="text-sm text-corporate-teal-ink font-medium mb-2">Got it — {onboardingData.role}</p>
                 <h2 className="text-xl font-semibold text-corporate-navy mb-2">A bit more context</h2>
                 <p className="text-rep-text-secondary">
                   How many people do you work with or lead? And roughly how much leadership experience do you have?
@@ -335,7 +335,7 @@ const ReppyCoach = () => {
           {phase === 'onboarding-challenge' && (
             <div className="space-y-6">
               <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100">
-                <p className="text-sm text-corporate-teal font-medium mb-2">Thanks for sharing</p>
+                <p className="text-sm text-corporate-teal-ink font-medium mb-2">Thanks for sharing</p>
                 <h2 className="text-xl font-semibold text-corporate-navy mb-2">What's your biggest challenge right now?</h2>
                 <p className="text-rep-text-secondary">
                   Difficult conversations? Delegation? Building trust? Time management? 
@@ -348,7 +348,7 @@ const ReppyCoach = () => {
           {phase === 'onboarding-goals' && (
             <div className="space-y-6">
               <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100">
-                <p className="text-sm text-corporate-teal font-medium mb-2">"{onboardingData.biggestChallenge}" — we'll work on that</p>
+                <p className="text-sm text-corporate-teal-ink font-medium mb-2">"{onboardingData.biggestChallenge}" — we'll work on that</p>
                 <h2 className="text-xl font-semibold text-corporate-navy mb-2">What does success look like?</h2>
                 <p className="text-rep-text-secondary">
                   After going through this program, what do you hope to achieve? 
@@ -398,7 +398,7 @@ const ReppyCoach = () => {
             <div className="space-y-6">
               {/* Session Card */}
               <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100">
-                <div className="flex items-center gap-2 text-sm text-corporate-teal font-medium mb-3">
+                <div className="flex items-center gap-2 text-sm text-corporate-teal-ink font-medium mb-3">
                   <span className="px-2 py-0.5 bg-rep-teal-light rounded-full">{weekData?.phase?.name}</span>
                   <span>•</span>
                   <span>Session {currentSessionData?.dayInWeek}</span>
@@ -447,7 +447,7 @@ const ReppyCoach = () => {
                                 href={resource.url} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-xs text-corporate-teal hover:underline mt-1"
+                                className="inline-flex items-center gap-1 text-xs text-corporate-teal-ink hover:underline mt-1"
                               >
                                 Watch <ExternalLink className="w-3 h-3" />
                               </a>
@@ -489,7 +489,7 @@ const ReppyCoach = () => {
           {phase === 'learning' && session && (
             <div className="space-y-6">
               <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100">
-                <div className="flex items-center gap-2 text-sm text-corporate-teal font-medium mb-3">
+                <div className="flex items-center gap-2 text-sm text-corporate-teal-ink font-medium mb-3">
                   <span className="w-6 h-6 bg-rep-teal-light rounded-full flex items-center justify-center text-xs">2</span>
                   Today's Insight
                 </div>

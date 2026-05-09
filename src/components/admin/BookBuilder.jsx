@@ -302,9 +302,9 @@ function BookSelector({ books, selectedBook, onSelectBook, onCreateBook, booksLo
                     }`}
                   >
                     <div className="flex items-start gap-2">
-                      <StyleIcon className={`w-4 h-4 mt-0.5 ${isSelected ? 'text-corporate-teal' : 'text-slate-400'}`} />
+                      <StyleIcon className={`w-4 h-4 mt-0.5 ${isSelected ? 'text-corporate-teal-ink' : 'text-slate-400'}`} />
                       <div className="flex-1 min-w-0">
-                        <p className={`font-medium truncate ${isSelected ? 'text-corporate-teal' : 'text-slate-900 dark:text-white'}`}>
+                        <p className={`font-medium truncate ${isSelected ? 'text-corporate-teal-ink' : 'text-slate-900 dark:text-white'}`}>
                           {book.title}
                         </p>
                         <p className="text-xs text-slate-500 truncate">{style?.label}</p>
@@ -317,7 +317,7 @@ function BookSelector({ books, selectedBook, onSelectBook, onCreateBook, booksLo
               {/* Create New Book Button */}
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="p-3 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-corporate-teal hover:bg-corporate-teal/5 transition flex items-center justify-center gap-2 text-slate-500 hover:text-corporate-teal"
+                className="p-3 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-corporate-teal hover:bg-corporate-teal/5 transition flex items-center justify-center gap-2 text-slate-500 hover:text-corporate-teal-ink"
               >
                 <Plus className="w-4 h-4" />
                 <span className="text-sm font-medium">New Book</span>
@@ -365,7 +365,7 @@ function BookSelector({ books, selectedBook, onSelectBook, onCreateBook, booksLo
                             <StyleIcon className="w-5 h-5" />
                           </div>
                           <div className="flex-1">
-                            <p className={`font-medium ${isSelected ? 'text-corporate-teal' : 'text-slate-900 dark:text-white'}`}>
+                            <p className={`font-medium ${isSelected ? 'text-corporate-teal-ink' : 'text-slate-900 dark:text-white'}`}>
                               {style.label}
                             </p>
                             <p className="text-xs text-slate-500 mt-1">{style.description}</p>
@@ -652,7 +652,7 @@ function DashboardTab({ metadata, metadataLoading, updateMetadata, chapters, sou
             <CheckCircle className="w-4 h-4" />
             <span>Progress</span>
           </div>
-          <p className="text-2xl font-bold text-corporate-teal">{progress.percent}%</p>
+          <p className="text-2xl font-bold text-corporate-teal-ink">{progress.percent}%</p>
           <p className="text-xs text-slate-500 mt-1">{progress.complete} of {progress.total} complete</p>
         </div>
       </div>
@@ -1361,7 +1361,7 @@ function NotesTab({ notes, sharedNotes, bookNotes, notesLoading, showToast, user
                 <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                   <button
                     onClick={() => setEditingNote({ ...note })}
-                    className="p-2 text-slate-400 hover:text-corporate-teal hover:bg-corporate-teal/10 rounded-lg"
+                    className="p-2 text-slate-400 hover:text-corporate-teal-ink hover:bg-corporate-teal/10 rounded-lg"
                     title="Edit note"
                   >
                     <Edit3 className="w-4 h-4" />
@@ -1798,7 +1798,7 @@ function OutlineTab({ chapters, chaptersLoading, showToast, userEmail, setSelect
                   setSelectedChapter(chapter);
                   setActiveTab('chapters');
                 }}
-                className="p-2 text-slate-400 hover:text-corporate-teal hover:bg-corporate-teal/10 rounded-lg"
+                className="p-2 text-slate-400 hover:text-corporate-teal-ink hover:bg-corporate-teal/10 rounded-lg"
               >
                 <Edit3 className="w-4 h-4" />
               </button>
@@ -2149,7 +2149,7 @@ The content auto-saves as you type."
             </h3>
             <button
               onClick={() => setShowSourcePicker(!showSourcePicker)}
-              className="p-1 text-corporate-teal hover:bg-corporate-teal/10 rounded"
+              className="p-1 text-corporate-teal-ink hover:bg-corporate-teal/10 rounded"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -2504,7 +2504,7 @@ export default function BookBuilder() {
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
                       activeTab === tab.id
-                        ? 'bg-white dark:bg-slate-700 text-corporate-teal shadow-sm'
+                        ? 'bg-white dark:bg-slate-700 text-corporate-teal-ink shadow-sm'
                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                     }`}
                   >

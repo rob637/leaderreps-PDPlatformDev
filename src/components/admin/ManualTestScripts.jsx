@@ -150,7 +150,7 @@ const ManualTestScripts = () => {
           <div className="text-sm text-gray-500 dark:text-gray-400">Test Suites</div>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <div className="text-2xl font-bold text-corporate-teal">{MANUAL_TOTAL}</div>
+          <div className="text-2xl font-bold text-corporate-teal-ink">{MANUAL_TOTAL}</div>
           <div className="text-sm text-gray-500 dark:text-gray-400">Unique Scenarios</div>
         </div>
         <div className="bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800 p-4">
@@ -201,7 +201,7 @@ const ManualTestScripts = () => {
                 <Zap className="w-5 h-5 text-corporate-teal" />
                 <span className="font-bold text-gray-800 dark:text-gray-200">E2E Suite Tests</span>
               </div>
-              <div className="text-4xl font-bold text-corporate-teal mb-1">{E2E_SUITE_TOTAL}</div>
+              <div className="text-4xl font-bold text-corporate-teal-ink mb-1">{E2E_SUITE_TOTAL}</div>
               <div className="text-sm text-gray-600 dark:text-gray-300">automated (1:1 with manual)</div>
               <div className="mt-3 pt-3 border-t border-teal-200 dark:border-teal-800">
                 <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">

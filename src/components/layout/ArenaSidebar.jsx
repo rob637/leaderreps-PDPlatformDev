@@ -186,7 +186,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
             <img src="/icons/icon-192x192.png" alt="Logo" className="w-10 h-10 rounded-xl bg-white dark:bg-slate-700 shadow-lg" />
             <div className="flex flex-col">
               <span className="font-semibold text-lg tracking-tight leading-tight text-corporate-navy dark:text-white" style={{ fontFamily: 'var(--font-heading)' }}>LeaderReps</span>
-              <span className="text-[11px] text-corporate-teal font-medium uppercase tracking-widest">
+              <span className="text-[11px] text-corporate-teal-ink font-medium uppercase tracking-widest">
                 The Arena
               </span>
             </div>
@@ -267,8 +267,8 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
                       isActive 
                         ? 'text-white' 
                         : isHighlighted 
-                          ? 'text-corporate-teal'
-                          : 'text-corporate-teal group-hover:text-corporate-teal'
+                          ? 'text-corporate-teal-ink'
+                          : 'text-corporate-teal-ink group-hover:text-corporate-teal-ink'
                     }`} />
                   </div>
                   <span className={`whitespace-nowrap text-sm transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
@@ -343,7 +343,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
                              <div className="space-y-4 text-sm">
                                 {identityStatement && (
                                     <div>
-                                    <p className="font-semibold text-corporate-teal uppercase tracking-wider text-[10px] mb-1">Identity</p>
+                                    <p className="font-semibold text-corporate-teal-ink uppercase tracking-wider text-[10px] mb-1">Identity</p>
                                     <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{identityStatement}</p>
                                     </div>
                                 )}

@@ -33,7 +33,7 @@ const Tooltip = ({ content, children }) => {
 const mdToHtml = async (md) => {
     let html = md;
     html = html.replace(/## (.*$)/gim, '<h2 class="text-2xl font-extrabold text-corporate-orange mb-3">$1</h2>');
-    html = html.replace(/### (.*$)/gim, '<h3 class="text-xl font-bold text-corporate-teal mt-4 mb-2">$1</h3>');
+    html = html.replace(/### (.*$)/gim, '<h3 class="text-xl font-bold text-corporate-teal-ink mt-4 mb-2">$1</h3>');
     html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
     html = html.split('\n').map(line => line.trim()).filter(line => line.length > 0).map(line => {
         if (line.startsWith('<ul>') || line.startsWith('<li>') || line.startsWith('<h') || line.startsWith('<s')) return line;
@@ -341,7 +341,7 @@ const RoadmapTimeline = ({ data, navigateToMonth, viewMonth }) => {
                                  if (isClickable) navigateToMonth(monthData.month); 
                              }}
                         >
-                            <span className={`text-sm ${isCurrentView ? 'text-corporate-teal' : 'text-corporate-navy'}`}>
+                            <span className={`text-sm ${isCurrentView ? 'text-corporate-teal-ink' : 'text-corporate-navy'}`}>
                                 **Training Month {monthData.month}**: {monthData.theme}
                             </span>
                             <span className="flex items-center space-x-1 text-xs">
@@ -596,7 +596,7 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                          <div className="relative w-32 h-32 mx-auto mb-4">
                             <svg viewBox="0 0 36 36" className="w-full h-32 h-full transform -rotate-90">
                                 <path className="text-gray-300" fill="none" stroke="currentColor" strokeWidth="3.8" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                                <path className="text-corporate-teal" fill="none" stroke="currentColor" strokeWidth="3.8" strokeDasharray={`${tierProgress.overallPercentage}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                <path className="text-corporate-teal-ink" fill="none" stroke="currentColor" strokeWidth="3.8" strokeDasharray={`${tierProgress.overallPercentage}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
                             </svg>
                             <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
                                 <span className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-corporate-navy">{tierProgress.overallPercentage}%</span>
@@ -713,10 +713,10 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                             ></textarea>
                             {isCurrentView && (
                                 <div className='flex justify-between items-center mt-1'>
-                                    <p className={`text-xs ${localReflection.length < 50 ? 'text-corporate-orange' : 'text-corporate-teal'}`}>
+                                    <p className={`text-xs ${localReflection.length < 50 ? 'text-corporate-orange' : 'text-corporate-teal-ink'}`}>
                                         {localReflection.length} / 50 characters written.
                                     </p>
-                                    <span className={`text-xs font-semibold ${isSaving ? 'text-gray-500 dark:text-gray-400' : 'text-corporate-teal'}`}>
+                                    <span className={`text-xs font-semibold ${isSaving ? 'text-gray-500 dark:text-gray-400' : 'text-corporate-teal-ink'}`}>
                                         {isSaving ? 'Saving...' : 'Reflection ready'}
                                     </span>
                                 </div>
@@ -1114,7 +1114,7 @@ if (isLoading || pdpData === undefined) {
             <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 min-h-screen flex items-center justify-center">
                 <div className="flex flex-col items-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-corporate-teal mb-3"></div>
-                    <p className="text-corporate-teal font-medium">Loading Personalized Development Roadmap...</p>
+                    <p className="text-corporate-teal-ink font-medium">Loading Personalized Development Roadmap...</p>
                 </div>
             </div>
         );

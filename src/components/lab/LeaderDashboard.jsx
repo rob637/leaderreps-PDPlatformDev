@@ -216,7 +216,7 @@ const LeaderDashboard = ({ token }) => {
       <div className="mt-5 rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-5">
         <div className="flex items-center gap-2 mb-2">
           <Sparkles className="w-4 h-4 text-corporate-teal" />
-          <span className="text-[11px] font-bold uppercase tracking-wider text-corporate-teal">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-corporate-teal-ink">
             This week's coaching insight
           </span>
         </div>
@@ -227,7 +227,7 @@ const LeaderDashboard = ({ token }) => {
             </p>
             {insight.behaviorShift && (
               <div className="mt-3 p-3 rounded-lg bg-corporate-teal/5 border border-corporate-teal/20">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-corporate-teal mb-1">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-corporate-teal-ink mb-1">
                   Behavior shift
                 </div>
                 <div className="text-sm text-corporate-navy">{insight.behaviorShift}</div>
@@ -427,7 +427,7 @@ const LeaderDashboard = ({ token }) => {
 const Wrap = ({ children, wide = false }) => (
   <div className="min-h-screen bg-slate-50 flex items-start justify-center p-4">
     <div className={`w-full ${wide ? 'max-w-xl' : 'max-w-md'} bg-white rounded-2xl shadow-card p-6 mt-6`}>
-      <div className="flex items-center gap-2 mb-1 text-corporate-teal">
+      <div className="flex items-center gap-2 mb-1 text-corporate-teal-ink">
         <ShieldCheck className="w-4 h-4" />
         <span className="text-xs font-bold uppercase tracking-wider">
           LeaderReps · Your Pulse

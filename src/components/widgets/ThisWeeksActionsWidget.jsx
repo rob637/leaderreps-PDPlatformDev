@@ -2351,7 +2351,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   ? 'text-emerald-700 dark:text-emerald-400' 
                   : isCertified
                     ? 'text-amber-700 dark:text-amber-400'
-                    : 'text-slate-500 dark:text-slate-400'
+                    : 'text-slate-600 dark:text-slate-300'
               }`}>
                 {item.label}
               </p>
@@ -2544,12 +2544,12 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                     </span>
                   </div>
                   {registration.coach && (
-                    <p className="text-slate-500 dark:text-slate-400 mt-0.5">with {registration.coach}</p>
+                    <p className="text-slate-600 dark:text-slate-300 mt-0.5">with {registration.coach}</p>
                   )}
                   <p className="text-slate-400 dark:text-slate-500 mt-0.5">• {item.sessionType === SESSION_TYPES.OPEN_GYM ? '60' : '30'} min</p>
                 </div>
               ) : (
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-slate-600 dark:text-slate-300">
                   Click to schedule your coaching session • 5 min
                 </p>
               )}
@@ -2557,7 +2557,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             
             {/* Right side: Status badge and action button */}
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-corporate-teal bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">
+              <span className="text-[10px] font-bold text-corporate-teal-ink bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">
                 Required
               </span>
               {!isCertified && (
@@ -2660,7 +2660,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 {displayLabel}
               </p>
               {!isAttended && (
-                <span className="text-[10px] font-bold text-corporate-teal bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
+                <span className="text-[10px] font-bold text-corporate-teal-ink bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
               )}
             </div>
             {isAttended ? (
@@ -2684,7 +2684,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 <span className="text-amber-500 dark:text-amber-300 underline ml-1">Reschedule</span>
               </div>
             ) : isSchedulableCoaching ? (
-              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                 <Calendar className="w-3 h-3" />
                 <span>Click to schedule your coaching session • 5 min</span>
               </div>
@@ -2752,7 +2752,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 {item.label}
               </p>
               {!isScheduled && (
-                <span className="text-[10px] font-bold text-corporate-teal bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
+                <span className="text-[10px] font-bold text-corporate-teal-ink bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
               )}
             </div>
             {isScheduled && registration ? (
@@ -2771,7 +2771,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 <span className="text-emerald-400 dark:text-emerald-500">• 30 min</span>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                 <Calendar className="w-3 h-3" />
                 <span>Coaching • Personal coaching session • 5 min</span>
               </div>
@@ -2829,7 +2829,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 {item.label}
               </p>
               {!isScheduled && (
-                <span className="text-[10px] font-bold text-corporate-teal bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
+                <span className="text-[10px] font-bold text-corporate-teal-ink bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
               )}
             </div>
             {isScheduled && registration ? (
@@ -2848,7 +2848,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 <span className="text-emerald-400 dark:text-emerald-500">• 60 min</span>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                 <Calendar className="w-3 h-3" />
                 <span>Coaching • Drop-in feedback session • 5 min</span>
               </div>
@@ -2961,7 +2961,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     const getIconColor = () => {
       if (isCompleted) return 'text-emerald-600 dark:text-emerald-400';
       if (item.isLocked) return 'text-gray-400 dark:text-gray-500';
-      return 'text-corporate-teal dark:text-teal-400';
+      return 'text-teal-700 dark:text-teal-400';
     };
     
     // Determine if this item is clickable (interactive, has resource, or is session picker) - but NOT if locked
@@ -3028,7 +3028,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               </span>
             )}
             {!item.isLocked && item.required !== false && !item.optional && !isCarriedOver && !isCompleted && (
-              <span className="text-[10px] font-bold text-corporate-teal bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
+              <span className="text-[10px] font-bold text-corporate-teal-ink bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
             )}
             {!item.isInteractive && item.optional && !isCarriedOver && !isCompleted && (
               <span className="text-[10px] font-bold text-slate-500 bg-slate-100 dark:text-slate-400 dark:bg-slate-700 px-1.5 py-0.5 rounded uppercase tracking-wider">Optional</span>
@@ -3077,7 +3077,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   </>
                 )}
                 {item.estimatedMinutes && (
-                  <><span>•</span><span className="text-slate-500 dark:text-slate-400">{item.estimatedMinutes} min</span></>
+                  <><span>•</span><span className="text-slate-600 dark:text-slate-300">{item.estimatedMinutes} min</span></>
                 )}
               </>
             ) : item.isInteractive ? (
@@ -3090,7 +3090,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                     : 'Foundation Onboarding'}
                 </span>
                 {(interactiveDurations[item.resourceId] || item.estimatedMinutes || item.duration) && (
-                  <><span>•</span><span className="text-slate-500 dark:text-slate-400">{interactiveDurations[item.resourceId] || item.estimatedMinutes || item.duration} min</span></>
+                  <><span>•</span><span className="text-slate-600 dark:text-slate-300">{interactiveDurations[item.resourceId] || item.estimatedMinutes || item.duration} min</span></>
                 )}
               </>
             ) : (
@@ -3104,7 +3104,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 )}
                 {/* Show estimated time to complete - uses explicit values or defaults by resource type */}
                 {getEstimatedTime(item) && (
-                   <><span>•</span><span className="text-slate-500 dark:text-slate-400">{getEstimatedTime(item)} min</span></>
+                   <><span>•</span><span className="text-slate-600 dark:text-slate-300">{getEstimatedTime(item)} min</span></>
                 )}
               </>
             )}
@@ -3118,7 +3118,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-corporate-teal hover:bg-teal-50 dark:text-slate-500 dark:hover:text-teal-400 dark:hover:bg-teal-900/30 rounded-xl transition-all"
+              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-corporate-teal-ink hover:bg-teal-50 dark:text-slate-500 dark:hover:text-teal-400 dark:hover:bg-teal-900/30 rounded-xl transition-all"
             >
               <Calendar className="w-5 h-5" />
             </a>
@@ -3131,8 +3131,9 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 e.stopPropagation();
                 handleInteractiveClick(item);
               }}
-              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-transparent text-slate-400 hover:text-corporate-teal hover:bg-teal-50 dark:text-slate-500 dark:hover:text-teal-400 dark:hover:bg-teal-900/30 rounded-xl transition-all"
+              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-transparent text-slate-400 hover:text-corporate-teal-ink hover:bg-teal-50 dark:text-slate-500 dark:hover:text-teal-400 dark:hover:bg-teal-900/30 rounded-xl transition-all"
               title={isCompleted ? 'Edit' : 'Complete'}
+              aria-label={isCompleted ? `Edit ${item.title || 'item'}` : `Complete ${item.title || 'item'}`}
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -3155,7 +3156,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   handleViewResource(e, item);
                 }
               }}
-              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-transparent text-slate-400 hover:text-corporate-teal hover:bg-teal-50 dark:text-slate-500 dark:hover:text-teal-400 dark:hover:bg-teal-900/30 rounded-xl transition-all"
+              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-transparent text-slate-400 hover:text-corporate-teal-ink hover:bg-teal-50 dark:text-slate-500 dark:hover:text-teal-400 dark:hover:bg-teal-900/30 rounded-xl transition-all"
+              aria-label={`Open ${item.title || 'resource'}`}
             >
               {loadingResource === item.id ? (
                 <Loader className="w-5 h-5 animate-spin" />
@@ -3261,7 +3263,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   
                   {prepExpanded && (
                     <div className="mt-2 p-3 bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 space-y-2">
-                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Completed Items</p>
+                      <p className="text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-2">Completed Items</p>
                       {onboardingActions.map((item) => (
                         <div key={item.id} className="flex items-center gap-2 text-sm">
                           <CheckCircle className="w-4 h-4 text-corporate-teal flex-shrink-0" />
@@ -3321,7 +3323,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   
                   {exploreExpanded && (
                     <div className="mt-2 p-3 bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 space-y-2">
-                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Completed Items</p>
+                      <p className="text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-2">Completed Items</p>
                       {session1Actions.map((item) => (
                         <div key={item.id} className="flex items-center gap-2 text-sm">
                           <CheckCircle className="w-4 h-4 text-corporate-teal flex-shrink-0" />
@@ -3373,7 +3375,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   
                   {exploreExpanded && (
                     <div className="mt-2 p-3 bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 space-y-2">
-                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Explored Items</p>
+                      <p className="text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-2">Explored Items</p>
                       {allExploreActions.map((item) => (
                         <div key={item.id} className="flex items-center gap-2 text-sm">
                           <CheckCircle className="w-4 h-4 text-corporate-teal flex-shrink-0" />
@@ -3627,7 +3629,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             {/* Empty state */}
             {allActions.length === 0 && displayedCarriedOverItems.length === 0 && 
              (currentPhase?.id !== 'start' || Object.values(groupedSessionPrepItems).every(g => g.totalCount === 0)) && (
-              <div className="p-4 text-center text-slate-500 dark:text-slate-400 text-sm italic">
+              <div className="p-4 text-center text-slate-600 dark:text-slate-300 text-sm italic">
                 {currentPhase?.id === 'start' 
                   ? 'No content configured for this milestone yet. Check Content Manager.'
                   : 'No actions scheduled for this week.'

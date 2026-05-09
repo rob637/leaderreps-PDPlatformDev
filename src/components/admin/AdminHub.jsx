@@ -21,7 +21,7 @@ const CENTERS = [
     icon: Settings,
     bg: 'bg-corporate-teal/10 hover:bg-corporate-teal/20 border-corporate-teal/30',
     iconBg: 'bg-corporate-teal/20',
-    iconColor: 'text-corporate-teal',
+    iconColor: 'text-corporate-teal-ink',
   },
   {
     id: 'facilitator-center',

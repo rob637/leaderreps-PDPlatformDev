@@ -880,7 +880,7 @@ const SessionManager = () => {
                   <>
                     <div className={`text-sm font-bold mb-1 ${
                       dayData.dateStr === new Date().toISOString().split('T')[0]
-                        ? 'text-corporate-teal'
+                        ? 'text-corporate-teal-ink'
                         : 'text-slate-600 dark:text-slate-300'
                     }`}>
                       {dayData.day}
@@ -1393,7 +1393,7 @@ const SessionRow = ({
       <td className="px-4 py-3">
         <button
           onClick={onViewAttendees}
-          className="flex items-center gap-2 text-sm text-corporate-teal hover:underline"
+          className="flex items-center gap-2 text-sm text-corporate-teal-ink hover:underline"
         >
           <Users className="w-4 h-4" />
           {registrations.length}/{session.maxAttendees || 20}

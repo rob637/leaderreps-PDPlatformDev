@@ -122,7 +122,7 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
       return {
         label: 'Days Until Start',
         value: daysUntil,
-        color: 'text-corporate-teal',
+        color: 'text-corporate-teal-ink',
         bgColor: 'bg-corporate-teal/10',
         icon: Calendar
       };
@@ -234,7 +234,7 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
                     >
                       <FacilitatorAvatar name={trainer.name} photoUrl={trainer.photoUrl} size="sm" />
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-slate-800 dark:text-white group-hover:text-corporate-teal transition-colors truncate text-sm">{trainer.name}</p>
+                        <p className="font-medium text-slate-800 dark:text-white group-hover:text-corporate-teal-ink transition-colors truncate text-sm">{trainer.name}</p>
                         {trainer.title && (
                           <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{trainer.title}</p>
                         )}
@@ -281,7 +281,7 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
               <div className="flex justify-between mt-1">
                 <span className="text-xs text-slate-400 dark:text-slate-500">Required Items</span>
                 <span className={`text-xs font-medium ${
-                  prepRequirementsComplete.allComplete ? 'text-emerald-600' : 'text-corporate-teal'
+                  prepRequirementsComplete.allComplete ? 'text-emerald-600' : 'text-corporate-teal-ink'
                 }`}>
                   {prepRequirementsComplete.progressPercent}%
                 </span>
@@ -326,7 +326,7 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
               </div>
             ) : (
               <div className="mt-4 p-3 bg-corporate-teal/5 rounded-lg border border-corporate-teal/20 text-center">
-                <span className="text-corporate-teal font-medium text-sm">
+                <span className="text-corporate-teal-ink font-medium text-sm">
                   Complete all items to unlock additional resources
                 </span>
               </div>
@@ -367,7 +367,7 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
           {currentLevelName && (
             <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
               <span className="text-xs text-slate-500 dark:text-slate-400">Current Focus</span>
-              <span className="text-xs font-medium text-corporate-teal">
+              <span className="text-xs font-medium text-corporate-teal-ink">
                 {currentLevelName}
               </span>
             </div>

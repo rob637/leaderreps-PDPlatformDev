@@ -81,7 +81,7 @@ const EventsManager = () => {
                 onClick={() => setActiveSubtab(tab.id)}
                 className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition ${
                   isActive
-                    ? 'border-corporate-teal text-corporate-teal'
+                    ? 'border-corporate-teal text-corporate-teal-ink'
                     : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300'
                 }`}
               >

@@ -124,7 +124,7 @@ export const EveningBookend = ({
         <Card title="Evening Bookend - Daily Reflection" icon={Moon} accent='NAVY'>
             {/* Good - What went well */}
             <div className="mb-4">
-                <label className="text-sm font-semibold mb-2 flex items-center text-corporate-teal">
+                <label className="text-sm font-semibold mb-2 flex items-center text-corporate-teal-ink">
                     <CheckCircle className="w-4 h-4 mr-1" />
                     Good - What went well today?
                 </label>

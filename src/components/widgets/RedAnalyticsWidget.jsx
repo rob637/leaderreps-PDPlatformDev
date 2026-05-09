@@ -130,7 +130,7 @@ const RedAnalyticsWidget = ({ helpText }) => {
       {/* Summary Stats Row */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="text-center p-3 bg-corporate-teal/10 rounded-lg">
-          <div className="text-2xl font-bold text-corporate-teal">{scenarios.total}</div>
+          <div className="text-2xl font-bold text-corporate-teal-ink">{scenarios.total}</div>
           <div className="text-xs text-gray-500 dark:text-gray-400">Total REDs</div>
         </div>
         <div className="text-center p-3 bg-corporate-orange/10 rounded-lg">

@@ -334,7 +334,7 @@ const MembershipModule = () => {
                         <div className="border-b pb-4 mb-4">
                             <p className="text-lg font-semibold text-corporate-navy">
                                 Total Due Today: 
-                                <span className="ml-2 text-xl sm:text-2xl font-extrabold text-corporate-teal">
+                                <span className="ml-2 text-xl sm:text-2xl font-extrabold text-corporate-teal-ink">
                                     ${selectedPlan.price.toFixed(2)}
                                 </span>
                                 <span className="text-sm text-gray-500 dark:text-gray-400"> / {selectedPlan.recurrence}</span>

@@ -138,7 +138,7 @@ const ConditioningCard = ({ onNavigate }) => {
               ? 'bg-red-50 dark:bg-red-900/20 text-red-700'
               : nudgeStatus.type === 'warning'
               ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700'
-              : 'bg-corporate-teal/10 dark:bg-corporate-teal/20 text-corporate-teal'
+              : 'bg-corporate-teal/10 dark:bg-corporate-teal/20 text-corporate-teal-ink'
           }`}>
             {nudgeStatus.message}
           </div>
@@ -154,7 +154,7 @@ const ConditioningCard = ({ onNavigate }) => {
         {/* CTA Button */}
         <div className={`flex items-center gap-2 mt-3 px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
           requiredRepCompleted 
-            ? 'bg-corporate-teal/10 dark:bg-corporate-teal/20 hover:bg-corporate-teal/20 text-corporate-teal' 
+            ? 'bg-corporate-teal/10 dark:bg-corporate-teal/20 hover:bg-corporate-teal/20 text-corporate-teal-ink' 
             : 'bg-corporate-navy/10 dark:bg-corporate-navy/20 hover:bg-corporate-navy/20 text-corporate-navy'
         }`}>
           <Plus className="w-4 h-4" />

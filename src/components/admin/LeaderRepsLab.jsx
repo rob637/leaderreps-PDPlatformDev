@@ -141,7 +141,7 @@ const LeaderRepsLab = () => {
                 href="/?pulse-start"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-corporate-teal text-corporate-teal text-sm font-semibold hover:bg-corporate-teal/5 transition-colors w-fit"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-corporate-teal text-corporate-teal-ink text-sm font-semibold hover:bg-corporate-teal/5 transition-colors w-fit"
               >
                 View public landing
                 <ExternalLink className="w-4 h-4" />

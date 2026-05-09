@@ -126,7 +126,7 @@ const ConversationModal = ({ conversation, journey, onToggleStep, onStepCta, onP
                             }
                           </div>
                           <span className={`text-[9px] uppercase tracking-wider font-bold leading-tight text-center ${
-                            done ? 'text-emerald-600 dark:text-emerald-400' : isNextStep ? 'text-corporate-teal' : 'text-slate-400'
+                            done ? 'text-emerald-600 dark:text-emerald-400' : isNextStep ? 'text-corporate-teal-ink' : 'text-slate-400'
                           }`}>{STEP_META[k].label}</span>
                         </button>
                         {i < STEP_KEYS.length - 1 && (
@@ -267,7 +267,7 @@ const ConversationModal = ({ conversation, journey, onToggleStep, onStepCta, onP
                       <button
                         onClick={() => copyStarter(p, i)}
                         aria-label="Copy"
-                        className="shrink-0 text-slate-400 hover:text-corporate-teal opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="shrink-0 text-slate-400 hover:text-corporate-teal-ink opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         {copiedIdx === i ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                       </button>

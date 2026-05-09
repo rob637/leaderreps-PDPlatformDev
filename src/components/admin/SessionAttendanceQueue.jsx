@@ -572,7 +572,7 @@ const SessionAttendanceQueue = () => {
               ).length;
               return (
                 <span key={num} className="text-slate-600 dark:text-slate-400">
-                  S{num}: <span className="font-medium text-corporate-teal">{attendedCount}</span>/{participants.length}
+                  S{num}: <span className="font-medium text-corporate-teal-ink">{attendedCount}</span>/{participants.length}
                 </span>
               );
             })}

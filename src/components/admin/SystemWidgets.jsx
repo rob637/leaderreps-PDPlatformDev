@@ -4,7 +4,7 @@ import TimeTraveler from './TimeTraveler';
 import { Card } from '../ui';
 import { FEATURE_METADATA } from '../../config/widgetTemplates';
 import { useFeatures } from '../../providers/FeatureProvider';
-import WidgetRenderer from './WidgetRenderer';
+import WidgetRenderer from '../shared/WidgetRenderer';
 import { ENHANCEMENT_IDEAS } from '../../data/enhancementIdeas';
 
 // List of system widget IDs

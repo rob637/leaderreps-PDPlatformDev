@@ -143,7 +143,7 @@ const MediaSelector = ({ value, onChange, mediaType = 'ALL', onClose }) => {
                   >
                     <div className={`
                       p-2 rounded-lg flex-shrink-0
-                      ${isSelected ? 'bg-white dark:bg-slate-800 text-corporate-teal' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}
+                      ${isSelected ? 'bg-white dark:bg-slate-800 text-corporate-teal-ink' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}
                     `}>
                       <Icon className="w-5 h-5" />
                     </div>

@@ -12,7 +12,7 @@ import {
   CalendarDays, ExternalLink, Lock, Megaphone
 } from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
-import WidgetRenderer from '../admin/WidgetRenderer';
+import WidgetRenderer from '../shared/WidgetRenderer';
 import { NoWidgetsEnabled, TabButton } from '../ui';
 import { generateGoogleCalendarUrl } from '../../services/calendarUtils';
 
@@ -340,7 +340,7 @@ const SessionCard = ({ session, onRegister, onCancel, isRegistered }) => {
                 })}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-corporate-teal hover:text-teal-700 font-medium"
+                className="inline-flex items-center gap-1.5 text-xs text-corporate-teal-ink hover:text-teal-700 font-medium"
               >
                 <Calendar className="w-3.5 h-3.5" />
                 Add to Google Calendar
@@ -494,7 +494,7 @@ const MyCoachingSection = ({ registrations = [], sessions = [], pastSessions = [
                 <p className="text-xs text-slate-400 mt-1">with {registration.coach}</p>
               )}
               {registration.coachingItemId && (
-                <p className="text-xs text-corporate-teal mt-1">
+                <p className="text-xs text-corporate-teal-ink mt-1">
                   Milestone {registration.coachingItemId.includes('-') ? registration.coachingItemId.split('-')[1] : ''} requirement
                 </p>
               )}
@@ -507,7 +507,7 @@ const MyCoachingSection = ({ registrations = [], sessions = [], pastSessions = [
                 {onReschedule && (
                   <button 
                     onClick={() => onReschedule(registration)}
-                    className="text-xs font-medium text-corporate-teal hover:text-teal-700"
+                    className="text-xs font-medium text-corporate-teal-ink hover:text-teal-700"
                   >
                     Reschedule
                   </button>

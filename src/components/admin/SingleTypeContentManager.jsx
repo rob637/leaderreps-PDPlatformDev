@@ -138,7 +138,7 @@ const SingleTypeContentManager = ({ type, title, description, icon: Icon }) => {
           {filteredList.length === 0 ? (
             <div className="text-center py-12 bg-slate-50 dark:bg-slate-800 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
               <p className="text-slate-500 dark:text-slate-400">No items found.</p>
-              <button onClick={handleAddNew} className="text-corporate-teal font-bold mt-2 hover:underline">
+              <button onClick={handleAddNew} className="text-corporate-teal-ink font-bold mt-2 hover:underline">
                 Create your first one
               </button>
             </div>
@@ -184,7 +184,7 @@ const SingleTypeContentManager = ({ type, title, description, icon: Icon }) => {
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button 
                     onClick={() => handleEdit(item)}
-                    className="p-2 text-slate-400 hover:text-corporate-teal hover:bg-teal-50 rounded-lg transition-colors"
+                    className="p-2 text-slate-400 hover:text-corporate-teal-ink hover:bg-teal-50 rounded-lg transition-colors"
                   >
                     <Edit className="w-4 h-4" />
                   </button>

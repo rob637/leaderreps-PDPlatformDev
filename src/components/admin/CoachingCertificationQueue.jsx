@@ -387,14 +387,14 @@ const CoachingCertificationQueue = () => {
                               href={calendarLinks.google}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="p-1.5 text-slate-400 hover:text-corporate-teal hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-lg transition-colors"
+                              className="p-1.5 text-slate-400 hover:text-corporate-teal-ink hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-lg transition-colors"
                               title="Add to Google Calendar"
                             >
                               <Calendar className="w-4 h-4" />
                             </a>
                             <button
                               onClick={() => calendarLinks.downloadICS()}
-                              className="p-1.5 text-slate-400 hover:text-corporate-teal hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-lg transition-colors"
+                              className="p-1.5 text-slate-400 hover:text-corporate-teal-ink hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-lg transition-colors"
                               title="Download ICS file"
                             >
                               <Download className="w-4 h-4" />

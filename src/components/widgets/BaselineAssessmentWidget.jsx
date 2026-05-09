@@ -84,7 +84,7 @@ const BaselineAssessmentWidget = () => {
             </div>
             <button
               onClick={() => setShowModal(true)}
-              className="text-sm font-medium text-corporate-teal hover:text-corporate-teal/80 hover:underline transition-colors"
+              className="text-sm font-medium text-corporate-teal-ink hover:text-corporate-teal/80 hover:underline transition-colors"
             >
               View or Update
             </button>

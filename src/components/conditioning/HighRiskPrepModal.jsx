@@ -239,7 +239,7 @@ const HighRiskPrepModal = ({
             }
           </p>
           {allComplete && (
-            <p className="text-sm text-corporate-teal font-medium">
+            <p className="text-sm text-corporate-teal-ink font-medium">
               Click "Complete Prep" to unlock execution
             </p>
           )}
@@ -293,7 +293,7 @@ const HighRiskPrepModal = ({
               ? 'bg-corporate-orange/10 text-corporate-orange' 
               : riskLevel === 'medium' 
               ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700' 
-              : 'bg-corporate-teal/10 text-corporate-teal'
+              : 'bg-corporate-teal/10 text-corporate-teal-ink'
           }`}>
             {riskLevel.toUpperCase()} RISK
           </span>
