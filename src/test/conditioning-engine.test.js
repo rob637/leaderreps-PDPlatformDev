@@ -114,6 +114,12 @@ describe('DRF — Reinforcing Feedback', () => {
     expect(out.case).toBe('strong');
     expect(out.question).toBeNull();
   });
+
+  it('fails when Impact is Missing (new fail rule — reinforcement without impact = praise)', () => {
+    const out = evaluateRep(baseArgs({ scores: { Behavior: 3, Impact: 0, Reinforcement: 3 } }));
+    expect(out.case).toBe('fail');
+    expect(out.coachingTarget).toBe('Impact');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -180,6 +186,17 @@ describe('FUW — Follow-Up on Work', () => {
     expect(isStrongRep('FUW', { WorkAnchored: 3, ProgressVisibility: 2, Ownership: 2 }, { failed: false })).toBe(true);
     expect(isStrongRep('FUW', { WorkAnchored: 2, ProgressVisibility: 3, Ownership: 3 }, { failed: false })).toBe(false);
   });
+
+  it('fails when Ownership <= Weak (new fail rule — follow-up without owner = drift)', () => {
+    const out = evaluateRep(
+      baseArgs({
+        rrType: 'FUW',
+        scores: { WorkAnchored: 3, ProgressVisibility: 3, Ownership: 1 },
+      })
+    );
+    expect(out.case).toBe('fail');
+    expect(out.coachingTarget).toBe('Ownership');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -212,6 +229,14 @@ describe('SCE — Set Clear Expectations', () => {
   it('strong rep needs both critical Strong + Ownership Adequate', () => {
     expect(isStrongRep('SCE', { Expectation: 3, Success: 3, Understanding: 2, Ownership: 2 }, { failed: false })).toBe(true);
     expect(isStrongRep('SCE', { Expectation: 3, Success: 3, Understanding: 2, Ownership: 1 }, { failed: false })).toBe(false);
+  });
+
+  it('fails when Understanding is Missing (new fail rule — expectation never landed)', () => {
+    const out = evaluateRep(
+      sceArgs({ scores: { Expectation: 3, Success: 3, Understanding: 0, Ownership: 3 } })
+    );
+    expect(out.case).toBe('fail');
+    expect(out.coachingTarget).toBe('Understanding');
   });
 });
 

@@ -33,6 +33,10 @@ const OBSERVATIONS = {
     'The impact is implied but not named. Make it explicit so the reinforcement carries weight.',
     'Connect the behavior to a clear outcome — without it the praise feels generic.',
   ],
+  'DRF.Impact.fail': [
+    'You named the behavior but not the impact. Without impact, this reads as praise, not reinforcement.',
+    'Reinforcement only sticks when the leader knows what their behavior actually changed.',
+  ],
   'DRF.Reinforcement.gap': [
     'The reinforcement is present but soft. Be direct about wanting more of this behavior.',
     'Make the ask explicit: "do this again" lands harder than "nice job."',
@@ -86,6 +90,10 @@ const OBSERVATIONS = {
   'FUW.Ownership.gap': [
     'Ownership is unclear — who is moving this forward, and by when?',
   ],
+  'FUW.Ownership.fail': [
+    'No clear next owner. Follow-up without ownership trains the team to expect drift.',
+    'You surfaced status but left ownership floating. Name who owns the next step before you close the loop.',
+  ],
   'FUW.WorkAnchored.strong': [
     'Anchored to specific work with clear ownership — that\'s how follow-up creates accountability.',
   ],
@@ -107,6 +115,10 @@ const OBSERVATIONS = {
   ],
   'SCE.Understanding.gap': [
     'You set the expectation but didn\'t check for understanding. Confirm the leader heard what you meant.',
+  ],
+  'SCE.Understanding.fail': [
+    'You delivered the expectation but never confirmed it landed. Setting it isn\'t the same as the leader receiving it.',
+    'Without surfacing their interpretation, you\'re assuming alignment that may not exist.',
   ],
   'SCE.Ownership.gap': [
     'Ownership is implied, not assigned. Name who owns the next step.',
