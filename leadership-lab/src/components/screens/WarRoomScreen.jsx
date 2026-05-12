@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { AlertTriangle, Star, TrendingUp, Users, Loader2, Shield, Eye } from 'lucide-react';
+import { AlertTriangle, Star, TrendingUp, Users, Loader2, Shield, Eye, Smartphone, SmartphoneCharging as SmartphoneOff, MessageSquare } from 'lucide-react';
 import { useNavigation } from '../../providers/NavigationProvider.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import { SCREENS, WEEKLY_THEMES } from '../../config/navigation.js';
-import { getWarRoomData } from '../../services/facilitatorService.js';
+import { getWarRoomData, setMemberSmsStatus } from '../../services/facilitatorService.js';
 
 export default function WarRoomScreen() {
   const { navigate, screenParams } = useNavigation();
@@ -14,27 +14,43 @@ export default function WarRoomScreen() {
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [togglingSms, setTogglingSms] = useState(null); // memberId
 
-  useEffect(() => {
+  const loadData = async (showLoading = true) => {
     if (!cohortId) {
       setLoading(false);
       return;
     }
+    if (showLoading) setLoading(true);
+    try {
+      const result = await getWarRoomData(cohortId);
+      setData(result);
+    } catch {
+      // Will show empty state
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  };
 
-    let cancelled = false;
-    (async () => {
-      try {
-        const result = await getWarRoomData(cohortId);
-        if (!cancelled) setData(result);
-      } catch {
-        // Will show empty state
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => { cancelled = true; };
+  useEffect(() => {
+    loadData();
   }, [cohortId]);
+
+  const handleToggleSms = async (memberId, currentStatus, e) => {
+    e.stopPropagation(); // Don't navigate to deep dive
+    if (togglingSms) return;
+    
+    setTogglingSms(memberId);
+    try {
+      await setMemberSmsStatus(memberId, !currentStatus);
+      // Refresh data to show updated state
+      await loadData(false);
+    } catch (err) {
+      alert("Failed to update SMS status: " + err.message);
+    } finally {
+      setTogglingSms(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -106,7 +122,27 @@ export default function WarRoomScreen() {
                   <Star className="text-status-breakthrough flex-shrink-0 mt-0.5" size={16} />
                 )}
                 <div>
-                  <p className="text-sm font-medium text-lab-navy">{alert.name}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-lab-navy">{alert.name}</p>
+                    <button
+                      onClick={(e) => handleToggleSms(alert.uid, alert.smsOptIn !== false, e)}
+                      disabled={!!togglingSms}
+                      className={`p-1.5 rounded-lg transition-colors ${
+                        alert.smsOptIn === false 
+                        ? 'bg-stone-100 text-stone-400' 
+                        : 'bg-lab-teal/10 text-lab-teal hover:bg-lab-teal/20'
+                      }`}
+                      title={alert.smsOptIn === false ? "Enable SMS" : "Disable SMS"}
+                    >
+                      {togglingSms === alert.uid ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : alert.smsOptIn === false ? (
+                        <SmartphoneOff size={14} />
+                      ) : (
+                        <Smartphone size={14} />
+                      )}
+                    </button>
+                  </div>
                   <p className="text-sm text-stone-600 mt-0.5">
                     {formatAlertMessage(alert)}
                   </p>
@@ -138,7 +174,26 @@ export default function WarRoomScreen() {
                 <span className="font-semibold text-sm text-lab-navy truncate mr-1">
                   {member.firstName}
                 </span>
-                <StatusDot engagement={member.engagement} />
+                <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-stone-50 border border-stone-100">
+                  <button
+                    onClick={(e) => handleToggleSms(member.id, member.smsOptIn !== false, e)}
+                    disabled={!!togglingSms}
+                    className={`p-1 rounded-md transition-colors ${
+                      member.smsOptIn === false 
+                        ? 'text-stone-300' 
+                        : 'text-lab-teal hover:bg-lab-teal/10'
+                    }`}
+                  >
+                    {togglingSms === member.id ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : member.smsOptIn === false ? (
+                      <SmartphoneOff size={12} />
+                    ) : (
+                      <Smartphone size={12} />
+                    )}
+                  </button>
+                  <StatusDot engagement={member.engagement} />
+                </div>
               </div>
               <EngagementBar current={member.messagesThisWeek} max={maxMessages} />
               <div className="flex items-center justify-between mt-2">

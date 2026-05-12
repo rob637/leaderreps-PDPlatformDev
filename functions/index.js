@@ -2058,12 +2058,13 @@ exports.evaluateRep = onCall(
  * Secure endpoint for making Gemini API calls from the frontend
  * Keeps the API key secure on the server side
  * 
- * Set GEMINI_API_KEY in functions/.env
+ * Set GEMINI_API_KEY in Secret Manager
  */
 exports.geminiProxy = onRequest(
   {
     cors: true,
     invoker: "public", // Required for CORS preflight requests to work
+    secrets: ["GEMINI_API_KEY"],
   },
   async (req, res) => {
     // Handle CORS preflight
@@ -5510,7 +5511,9 @@ async function sendSmsNotification(phoneNumber, message, options = {}) {
   }
 
   // Dynamically determine the app URL based on the Firebase project
-  const projectId = process.env.GCLOUD_PROJECT || (process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId);
+  const projectId = process.env.GCLOUD_PROJECT
+    || (process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId)
+    || admin.instanceId().app.options.projectId;
   const appDomain = projectId === 'leaderreps-prod'
     ? 'arena.leaderreps.com'
     : projectId === 'leaderreps-test'
@@ -23616,6 +23619,8 @@ exports.sendTeamPulseInvites = onCall(
       "TELNYX_API_KEY",
       "TELNYX_MESSAGING_PROFILE_ID",
       "TELNYX_PHONE_NUMBER",
+      
+      
     ],
   },
   async (request) => {
@@ -23627,7 +23632,7 @@ exports.sendTeamPulseInvites = onCall(
     let isAdmin = hardcodedAdmins.includes(userEmail);
     if (!isAdmin) {
       try {
-        const configDoc = await db.collection('metadata').doc('config').get();
+        const configDoc = await admin.firestore().collection('metadata').doc('config').get();
         if (configDoc.exists) {
           const adminEmails = configDoc.data().adminemails || [];
           isAdmin = adminEmails.map((e) => e.toLowerCase()).includes(userEmail);
@@ -23645,7 +23650,7 @@ exports.sendTeamPulseInvites = onCall(
       throw new HttpsError('invalid-argument', 'campaignId required.');
     }
 
-    const campRef = db.collection('team_pulse_campaigns').doc(campaignId);
+    const campRef = admin.firestore().collection('team_pulse_campaigns').doc(campaignId);
     const campSnap = await campRef.get();
     if (!campSnap.exists) {
       throw new HttpsError('not-found', 'Campaign not found.');
@@ -23660,7 +23665,8 @@ exports.sendTeamPulseInvites = onCall(
 
     // Build response link based on the running project
     const projectId = process.env.GCLOUD_PROJECT
-      || (process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId);
+      || (process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId)
+      || admin.instanceId().app.options.projectId;
     const appDomain = projectId === 'leaderreps-prod'
       ? 'arena.leaderreps.com'
       : projectId === 'leaderreps-test'
@@ -23672,76 +23678,68 @@ exports.sendTeamPulseInvites = onCall(
       ? customMessage.slice(0, 140)
       : `Anonymous 90-sec team check-in for ${camp.name || 'your team'}.`;
 
-    let sentSms = 0;
-    let sentEmail = 0;
-    let failed = 0;
-    const errors = [];
+    const subject = `${camp.name || 'Team'} — anonymous 90-sec check-in`;
+    const linkText = 'Take the 90-sec check-in';
+    const emailMessage = `${baseMessage}\n\n${linkText}: ${responseUrl}\n\n` +
+      `Your responses are anonymous — only aggregate trends are shared with the leader.`;
 
-    for (const docSnap of recipientsSnap.docs) {
+    const tasks = recipientsSnap.docs.map(async (docSnap) => {
       const r = docSnap.data();
       const channel = r.channel || (r.phone ? 'sms' : r.email ? 'email' : null);
-      if (!channel) continue;
+      if (!channel) return { status: 'skipped' };
 
       try {
         if (channel === 'sms') {
-          if (!r.phone) {
-            failed += 1;
-            errors.push({ id: docSnap.id, error: 'missing-phone' });
-            continue;
-          }
+          if (!r.phone) return { status: 'failed', error: 'missing-phone' };
           await sendSmsNotification(
             r.phone,
             baseMessage,
             { linkUrl: responseUrl, purpose: 'team-pulse-invite' }
           );
-          sentSms += 1;
         } else if (channel === 'email') {
-          if (!r.email) {
-            failed += 1;
-            errors.push({ id: docSnap.id, error: 'missing-email' });
-            continue;
-          }
-          const subject = `${camp.name || 'Team'} — anonymous 90-sec check-in`;
-          const linkText = 'Take the 90-sec check-in';
-          const message = `${baseMessage}\n\n${linkText}: ${responseUrl}\n\n` +
-            `Your responses are anonymous — only aggregate trends are shared with the leader.`;
+          if (!r.email) return { status: 'failed', error: 'missing-email' };
           await sendEmailNotification(
             r.email,
             subject,
-            message,
+            emailMessage,
             { linkText, linkUrl: responseUrl }
           );
-          sentEmail += 1;
         } else {
-          continue;
+          return { status: 'skipped' };
         }
 
         await docSnap.ref.set({
           lastInvitedAt: admin.firestore.FieldValue.serverTimestamp(),
           inviteCount: (r.inviteCount || 0) + 1,
         }, { merge: true });
+
+        return { status: 'sent', channel };
       } catch (e) {
-        failed += 1;
         const masked = channel === 'sms' && r.phone
           ? r.phone.slice(0, 4) + '****'
           : channel === 'email' && r.email
             ? r.email.replace(/(^.).*(@.*$)/, '$1***$2')
             : docSnap.id;
-        errors.push({ recipient: masked, channel, error: e.message });
         logger.warn('[sendTeamPulseInvites] recipient failed', {
           channel, error: e.message,
         });
+        return { recipient: masked, channel, status: 'failed', error: e.message };
       }
-    }
+    });
 
-    const sent = sentSms + sentEmail;
+    const results = await Promise.all(tasks);
+    
+    const sentSms = results.filter(r => r.status === 'sent' && r.channel === 'sms').length;
+    const sentEmail = results.filter(r => r.status === 'sent' && r.channel === 'email').length;
+    const failedResults = results.filter(r => r.status === 'failed');
+
     return {
-      sent,
+      sent: sentSms + sentEmail,
       sentSms,
       sentEmail,
-      failed,
+      failed: failedResults.length,
       total: recipientsSnap.size,
-      errors,
+      errors: failedResults,
     };
   }
 );
@@ -23821,29 +23819,30 @@ async function _sendPulseInvitesToContacts({ campaignId, leaderFirstName, emails
     `Anonymous link: ${url}`;
   const sms = `${who} would value your anonymous 60-sec team check-in: ${url}`;
 
-  let sent = 0;
-  let failed = 0;
-  for (const email of (emails || [])) {
-    try {
-      await sendEmailNotification(email, subject, messageHtml, {
-        linkText: 'Anonymous link',
-        linkUrl: url,
-      });
-      sent += 1;
-    } catch (e) {
-      failed += 1;
-      logger.warn('[pulse] email invite failed', { email: email.slice(0, 4) + '***', err: e.message });
-    }
-  }
-  for (const phone of (phones || [])) {
-    try {
-      await sendSmsNotification(phone, sms, { linkUrl: url, purpose: 'pulse-invite' });
-      sent += 1;
-    } catch (e) {
-      failed += 1;
-      logger.warn('[pulse] sms invite failed', { err: e.message });
-    }
-  }
+  const emailPromises = (emails || []).map(email => 
+    sendEmailNotification(email, subject, messageHtml, {
+      linkText: 'Anonymous link',
+      linkUrl: url,
+    }).then(() => ({ status: 'sent' }))
+      .catch(e => {
+        logger.warn('[pulse] email invite failed', { email: email.slice(0, 4) + '***', err: e.message });
+        return { status: 'failed' };
+      })
+  );
+
+  const smsPromises = (phones || []).map(phone => 
+    sendSmsNotification(phone, sms, { linkUrl: url, purpose: 'pulse-invite' })
+      .then(() => ({ status: 'sent' }))
+      .catch(e => {
+        logger.warn('[pulse] sms invite failed', { err: e.message });
+        return { status: 'failed' };
+      })
+  );
+
+  const results = await Promise.all([...emailPromises, ...smsPromises]);
+  const sent = results.filter(r => r.status === 'sent').length;
+  const failed = results.filter(r => r.status === 'failed').length;
+
   return { sent, failed };
 }
 
@@ -24688,5 +24687,75 @@ exports.saveIdentityLead = onCall(
     })();
 
     return { token };
+  }
+);
+
+/**
+ * labSetSmsStatus
+ * Facilitator-only callable to toggle a member's SMS subscription.
+ *
+ * @param {string} memberId - The UID of the member to toggle.
+ * @param {boolean} enabled - True to enable, false to disable.
+ */
+
+/**
+ * labSetSmsStatus
+ * Facilitator-only callable to toggle a member's SMS subscription.
+ */
+exports.labSetSmsStatus = functionsV1.https.onCall(
+  async (data, context) => {
+    const { memberId, enabled } = data;
+    if (!memberId) {
+      throw new functionsV1.https.HttpsError("invalid-argument", "memberId is required");
+    }
+
+    if (!context.auth) throw new functionsV1.https.HttpsError("unauthenticated", "Must be authenticated");
+    const callerEmail = (context.auth.token.email || "").toLowerCase();
+
+    // Auth Check via metadata/config
+    const configSnap = await admin.firestore().doc("metadata/config").get();
+    const adminEmails = configSnap.exists ? (configSnap.data().adminemails || []) : [];
+    if (!adminEmails.map(e => e.toLowerCase()).includes(callerEmail)) {
+      logger.error("Unauthorized access attempt", { email: callerEmail });
+      throw new functionsV1.https.HttpsError("permission-denied", "Trainer access only");
+    }
+
+    try {
+      const batch = admin.firestore().batch();
+      const llPrefix = "ll-";
+      
+      // Update global user
+      const userRef = admin.firestore().collection(llPrefix + "users").doc(memberId);
+      const userSnap = await userRef.get();
+      if (userSnap.exists) {
+        batch.update(userRef, { 
+          smsOptIn: !!enabled,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+      }
+
+      // Update enrollment in active cohorts
+      const activeCohorts = await admin.firestore().collection(llPrefix + "cohorts")
+        .where("isActive", "==", true)
+        .get();
+
+      for (const cohortDoc of activeCohorts.docs) {
+        const memberRef = admin.firestore().doc(`${llPrefix}cohorts/${cohortDoc.id}/members/${memberId}`);
+        const memberSnap = await memberRef.get();
+        if (memberSnap.exists) {
+          batch.update(memberRef, { 
+            smsOptIn: !!enabled,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp() 
+          });
+        }
+      }
+      await batch.commit();
+
+      logger.info("labSetSmsStatus success", { memberId, enabled, admin: callerEmail });
+      return { success: true, enabled: !!enabled };
+    } catch (err) {
+      logger.error("labSetSmsStatus failed", { memberId, error: err.message });
+      throw new functionsV1.https.HttpsError("internal", err.message);
+    }
   }
 );

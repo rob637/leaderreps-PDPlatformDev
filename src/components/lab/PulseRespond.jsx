@@ -77,11 +77,13 @@ function getThemeForWeek(weekKey) {
 }
 
 function getStandaloneFirebase() {
+  // Check multiple potential locations for the config, including the direct Vite env
   const config =
-    typeof window !== 'undefined' && window.__FIREBASE_CONFIG__
-      ? window.__FIREBASE_CONFIG__
-      : null;
-  if (!config) return null;
+    (typeof window !== "undefined" && (window.__FIREBASE_CONFIG__ || window.__firebase_config))
+      ? (window.__FIREBASE_CONFIG__ || window.__firebase_config)
+      : (import.meta.env.VITE_FIREBASE_CONFIG ? JSON.parse(import.meta.env.VITE_FIREBASE_CONFIG) : null);
+
+  if (!config || !config.apiKey) return null;
   const app = getApps().length ? getApps()[0] : initializeApp(config);
   return { app, auth: getAuth(app), db: getFirestore(app) };
 }
@@ -128,9 +130,20 @@ const PulseRespond = ({ campaignId }) => {
 
   useEffect(() => {
     let active = true;
+    
+    // Safety timer: If we're still loading after 8 seconds, show a manual retry error
+    const timer = setTimeout(() => {
+      if (active && phase === 'loading') {
+        setError('[Code 408] Connection timeout. This usually happens if the mobile browser is blocking secondary connections. Please try refreshing or using a different browser (Chrome/Safari).');
+        setPhase('error');
+      }
+    }, 8000);
+
     const fb = getStandaloneFirebase();
     if (!fb) {
-      setError('Configuration unavailable. Please try again later.');
+      clearTimeout(timer);
+      const why = typeof window === 'undefined' ? 'ssr' : 'config-missing';
+      setError(`[Code 500] Configuration state "${why}" - please refresh. If this persists, the environment config may be missing.`);
       setPhase('error');
       return;
     }
@@ -139,14 +152,21 @@ const PulseRespond = ({ campaignId }) => {
     const unsub = onAuthStateChanged(fb.auth, async (u) => {
       try {
         if (!u) {
+          console.log('[PulseRespond] No user, signing in anonymously...');
           await signInAnonymously(fb.auth);
           return;
         }
-        const snap = await getDoc(doc(fb.db, 'team_pulse_campaigns', campaignId));
+
+        console.log('[PulseRespond] Auth ready, fetching campaign:', campaignId);
+        const snap = await getDoc(doc(fb.db, "team_pulse_campaigns", campaignId));
+        
         if (!active) return;
+        clearTimeout(timer);
+
         if (!snap.exists()) {
-          setError('This pulse link is no longer active.');
-          setPhase('error');
+          const detail = campaignId?.startsWith("pulse-") ? "exists check failed" : "id format";
+          setError(`[Code 404] Pulse identifier "${campaignId}" was not found or has been deactivated. (${detail})`);
+          setPhase("error");
           return;
         }
         const data = snap.data();
@@ -158,14 +178,23 @@ const PulseRespond = ({ campaignId }) => {
         setCampaign({ id: snap.id, ...data });
         setPhase('ready');
       } catch (err) {
+        clearTimeout(timer);
         console.error('[PulseRespond]', err);
-        setError('Unable to load this pulse. Please check the link.');
+        // Special handling for common mobile auth issues
+        if (err.code === 'auth/operation-not-allowed') {
+          setError('[Code 403] Anonymous sign-in is not enabled in the Firebase console.');
+        } else if (err.code === 'auth/network-request-failed') {
+          setError('[Code 499] Network connection failed. Please check your signal.');
+        } else {
+          setError(`[Code 503] Error loading pulse: ${err.message || 'Unknown'}`);
+        }
         setPhase('error');
       }
     });
 
     return () => {
       active = false;
+      clearTimeout(timer);
       unsub();
     };
   }, [campaignId]);
@@ -294,9 +323,17 @@ const PulseRespond = ({ campaignId }) => {
 
   return (
     <Wrap>
-      <h1 className="text-xl font-bold text-corporate-navy mt-1">
-        {leaderFirstName} wants honest, anonymous feedback.
-      </h1>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-xl font-bold text-corporate-navy">
+          {leaderFirstName} wants honest, anonymous feedback.
+        </h1>
+        <div className="flex items-center gap-2 py-2 px-3 bg-slate-50 border border-slate-200 rounded-lg my-2">
+          <ShieldCheck className="w-5 h-5 text-corporate-teal shrink-0" />
+          <p className="text-[11px] leading-tight text-slate-600">
+            <strong>Privacy Shield Active:</strong> Your responses are mathematically anonymized. {leaderFirstName} can only see group trends once at least {campaign?.minResponsesToUnlock || 4} teammates respond. No individual scores are ever visible.
+          </p>
+        </div>
+      </div>
       <p className="text-xs text-slate-500 mt-1">
         Week {weekKey} · 3 quick questions · ~60 seconds · fully anonymous
       </p>
@@ -315,6 +352,7 @@ const PulseRespond = ({ campaignId }) => {
           onChange={setScoreTrust}
         />
 
+        {/* One word that describes leadership this week. */}
         <div className="pt-2 border-t border-slate-100">
           <div className="text-[10px] font-bold uppercase tracking-wider text-corporate-teal-ink mb-1">
             This week's theme · {themeQuestion.theme}
@@ -336,7 +374,7 @@ const PulseRespond = ({ campaignId }) => {
               onChange={(e) => setText(e.target.value)}
               maxLength={500}
               placeholder="Share what's on your mind…"
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal/50 focus:border-corporate-teal transition-all"
             />
             <div className="text-[11px] text-slate-400 text-right mt-1">
               {text.length}/500

@@ -486,42 +486,63 @@ const CampaignDetail = ({ campaignId, onBack }) => {
         </div>
 
         {!status.unlocked ? (
-          <div className="flex items-center gap-2 p-4 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800">
-            <Lock className="w-4 h-4 flex-shrink-0" />
-            <span>
-              Need {status.needed} more response
-              {status.needed === 1 ? '' : 's'} to protect anonymity (threshold:{' '}
-              {status.threshold}).
-            </span>
+          <div className="flex flex-col gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50">
+            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-400">
+              <Lock className="w-4 h-4 flex-shrink-0" />
+              <span className="text-sm font-bold">Privacy Guard Active</span>
+            </div>
+            <p className="text-xs text-amber-700 dark:text-amber-500 leading-relaxed">
+              To protect your team's anonymity, data and AI insights are hidden until at least {status.threshold} people respond. 
+              <strong> You need {status.needed} more response{status.needed === 1 ? '' : 's'}.</strong>
+            </p>
+            <button
+              onClick={copyLink}
+              className="inline-flex items-center gap-1.5 self-start text-[11px] font-bold text-amber-900 dark:text-amber-300 underline underline-offset-2 hover:text-corporate-orange"
+            >
+              <Send className="w-3 h-3" />
+              Send a friendly nudge to the team
+            </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="text-xs text-slate-500 uppercase tracking-wider">
-                Average score
+          <div className="space-y-6">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700">
+                <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Energy</div>
+                <div className="text-2xl font-black text-corporate-navy dark:text-white mt-1">
+                  {agg.avgEnergy != null ? agg.avgEnergy.toFixed(1) : (agg.avgScore != null ? agg.avgScore.toFixed(1) : '—')}
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">Team battery level</div>
               </div>
-              <div className="text-2xl font-bold text-corporate-navy dark:text-white">
-                {agg.avgScore != null ? agg.avgScore.toFixed(2) : '—'}
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700">
+                <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Trust</div>
+                <div className="text-2xl font-black text-corporate-navy dark:text-white mt-1">
+                  {agg.avgTrust != null ? agg.avgTrust.toFixed(1) : (agg.avgScore != null ? agg.avgScore.toFixed(1) : '—')}
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">Safety floor</div>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700">
+                <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">{question.theme}</div>
+                <div className="text-2xl font-black text-corporate-navy dark:text-white mt-1">
+                  {agg.avgTheme != null ? agg.avgTheme.toFixed(1) : (agg.avgScore != null ? agg.avgScore.toFixed(1) : '—')}
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">Weekly focus</div>
               </div>
             </div>
-            <div>
-              <div className="text-xs text-slate-500 uppercase tracking-wider">
-                Comments
-              </div>
-              <div className="text-2xl font-bold text-corporate-navy dark:text-white">
-                {agg.texts.length}
-              </div>
-            </div>
+
             {agg.texts.length > 0 && (
-              <div className="col-span-2 space-y-1 mt-2 max-h-40 overflow-y-auto">
-                {agg.texts.map((t, i) => (
-                  <div
-                    key={i}
-                    className="text-sm text-slate-700 dark:text-slate-300 p-2 rounded bg-slate-50 dark:bg-slate-700/50"
-                  >
-                    “{t}”
-                  </div>
-                ))}
+              <div className="border-t border-slate-100 dark:border-slate-700 pt-4">
+                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Anonymous Comments ({agg.texts.length})</div>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                  {agg.texts.map((t, i) => (
+                    <div
+                      key={i}
+                      className="text-sm text-slate-700 dark:text-slate-300 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 italic relative group"
+                    >
+                      <span className="text-corporate-teal/20 text-4xl absolute -top-1 -left-1 font-serif select-none">“</span>
+                      <span className="relative z-10">{t}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -661,19 +682,46 @@ const CampaignDetail = ({ campaignId, onBack }) => {
               </div>
             )}
             {monthly.repairScript && (
-              <div>
-                <div className="text-xs uppercase tracking-wider text-slate-500 mb-0.5">
-                  15-minute team conversation
+              <div className="mt-4 p-5 rounded-2xl bg-gradient-to-br from-corporate-orange/5 to-white border border-corporate-orange/20 shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <Sparkles className="w-16 h-16 text-corporate-orange" />
                 </div>
-                <ul className="list-disc list-inside space-y-0.5">
+                
+                <div className="flex items-center gap-2 text-corporate-orange mb-1">
+                  <Plus className="w-4 h-4" />
+                  <span className="text-[11px] font-black uppercase tracking-widest">
+                    Team Repair Protocol
+                  </span>
+                </div>
+                
+                <p className="text-sm text-corporate-navy font-bold leading-tight mb-3">
+                  15-Minute Re-Alignment Script
+                </p>
+
+                <div className="space-y-3 bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-white shadow-inner">
                   {String(monthly.repairScript)
                     .split('|')
                     .map((b) => b.trim())
                     .filter(Boolean)
                     .map((b, i) => (
-                      <li key={i}>{b}</li>
+                      <div key={i} className="flex gap-2 text-xs text-slate-700 leading-relaxed italic">
+                        <span className="text-corporate-orange shrink-0">Step {i+1}:</span>
+                        <span>{b}</span>
+                      </div>
                     ))}
-                </ul>
+                </div>
+
+                <div className="mt-4 flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      const steps = String(monthly.repairScript).split('|').map(s => s.trim()).filter(Boolean).join('\n');
+                      navigator.clipboard.writeText(`TEAM REPAIR PROTOCOL\n\n${steps}`);
+                    }}
+                    className="flex-1 py-2.5 rounded-xl bg-corporate-orange text-white text-[10px] font-black uppercase tracking-wider hover:bg-corporate-orange-dark transition-colors shadow-sm"
+                  >
+                    Copy Facilitation Guide
+                  </button>
+                </div>
               </div>
             )}
           </div>

@@ -55,7 +55,7 @@ const container = document.getElementById('root');
 const root = createRoot(container);
 
 root.render(
-  <React.StrictMode>
+  ErrorBoundary ? (
     <ErrorBoundary>
       <ConfigGate>
         <Suspense fallback={<BootSkeleton />}>
@@ -63,7 +63,13 @@ root.render(
         </Suspense>
       </ConfigGate>
     </ErrorBoundary>
-  </React.StrictMode>
+  ) : (
+    <ConfigGate>
+      <Suspense fallback={<BootSkeleton />}>
+        <App />
+      </Suspense>
+    </ConfigGate>
+  )
 );
 
 // Initialize Web Vitals monitoring

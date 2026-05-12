@@ -95,3 +95,16 @@ export async function getConversation(cohortId, memberId, conversationId) {
   const result = await fn({ cohortId, memberId, conversationId });
   return result.data;
 }
+
+/**
+ * Toggle a member's SMS status (on/off).
+ *
+ * @param {string} memberId
+ * @param {boolean} enabled
+ * @returns {Promise<{ success, enabled }>}
+ */
+export async function setMemberSmsStatus(memberId, enabled) {
+  const fn = httpsCallable(functions, 'labSetSmsStatus');
+  const result = await fn({ memberId, enabled });
+  return result.data;
+}

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Users, Plus, Rocket, Loader2, Check, AlertCircle,
   Phone, Mail, ChevronRight, UserPlus, RefreshCw, Smartphone,
+  SmartphoneCharging as SmartphoneOff,
   FastForward, MessageCircle, ChevronDown, ChevronUp, BookOpen,
 } from 'lucide-react';
 import { httpsCallable } from 'firebase/functions';
@@ -208,6 +209,20 @@ export default function AdminScreen() {
       } else {
         showMessage(`Onboarding conversation created for ${memberName}! They can now chat via the app.`);
       }
+      await loadCohorts();
+    } catch (err) {
+      showMessage(err.message, 'error');
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleToggleSms(memberId, memberName, currentStatus) {
+    setActionLoading(`sms-${memberId}`);
+    try {
+      const fn = httpsCallable(functions, 'labSetSmsStatus');
+      await fn({ memberId, enabled: !currentStatus });
+      showMessage(`SMS ${!currentStatus ? 'enabled' : 'disabled'} for ${memberName}.`);
       await loadCohorts();
     } catch (err) {
       showMessage(err.message, 'error');
@@ -579,6 +594,7 @@ export default function AdminScreen() {
               onUnlockApp={handleUnlockApp}
               onAdvanceWeek={handleAdvanceWeek}
               onTriggerOnboarding={handleTriggerOnboarding}
+              onToggleSms={handleToggleSms}
               actionLoading={actionLoading}
             />
           ))}
@@ -597,7 +613,17 @@ export default function AdminScreen() {
   );
 }
 
-function CohortCard({ cohort, onAddMember, onStart, onViewWarRoom, onUnlockApp, onAdvanceWeek, onTriggerOnboarding, actionLoading }) {
+function CohortCard({ 
+  cohort, 
+  onAddMember, 
+  onStart, 
+  onViewWarRoom, 
+  onUnlockApp, 
+  onAdvanceWeek, 
+  onTriggerOnboarding, 
+  onToggleSms,
+  actionLoading 
+}) {
   const [expandedMember, setExpandedMember] = useState(null);
   const isActive = cohort.isActive || cohort.phase === 'active';
   const isPrep = cohort.phase === 'prep' || (!cohort.phase && !cohort.isActive);
@@ -660,6 +686,25 @@ function CohortCard({ cohort, onAddMember, onStart, onViewWarRoom, onUnlockApp, 
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => onToggleSms(m.id, memberName, m.smsOptIn !== false)}
+                        disabled={actionLoading === `sms-${m.id}`}
+                        className={`p-1 rounded transition-colors ${
+                          m.smsOptIn !== false 
+                            ? 'text-lab-teal hover:bg-lab-teal/10' 
+                            : 'text-stone-300 hover:bg-stone-100'
+                        }`}
+                        title={m.smsOptIn !== false ? 'SMS Alerts: ON (Click to turn OFF)' : 'SMS Alerts: OFF (Click to turn ON)'}
+                      >
+                        {actionLoading === `sms-${m.id}` ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : m.smsOptIn !== false ? (
+                          <Smartphone size={14} />
+                        ) : (
+                          <SmartphoneOff size={14} />
+                        )}
+                      </button>
+
                       {!m.appUnlocked && (
                         <button
                           onClick={() => onUnlockApp(m.id, memberName)}
