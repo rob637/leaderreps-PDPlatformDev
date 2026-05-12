@@ -49,11 +49,10 @@ export default defineConfig(({ mode }) => {
       manifest: false, // Use existing manifest.webmanifest
       
       workbox: {
-        // clientsClaim: false - Don't auto-take control, wait for user to update
-        clientsClaim: false,
-        // skipWaiting: false - Let the user decide when to update (Google-style)
-        // The UpdateNotification component will prompt the user
-        skipWaiting: false,
+        // 2026-05-12 three-phase refactor: force SW takeover on next load so
+        // returning users immediately see the new admin nav + dashboard widget.
+        clientsClaim: true,
+        skipWaiting: true,
 
         // Comprehensive glob patterns for all assets
         globPatterns: [
