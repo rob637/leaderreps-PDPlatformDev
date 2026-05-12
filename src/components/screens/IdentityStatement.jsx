@@ -978,7 +978,7 @@ const Intro = ({ onStart, hasExisting }) => (
 // ---------------------------------------------------------------------------
 // Main screen
 // ---------------------------------------------------------------------------
-const IdentityStatement = ({ embedded = false, onClose, startEdit = false } = {}) => {
+const IdentityStatement = ({ embedded = false, onClose, skipIntro = false } = {}) => {
   const {
     dailyPracticeData,
     updateDailyPracticeData,
@@ -995,12 +995,11 @@ const IdentityStatement = ({ embedded = false, onClose, startEdit = false } = {}
   //   'view'   — saved artifact display
   //   'intro'  — overview before starting (new users)
   //   'ex1' / 'ex2' / 'ex3' — the three exercises
-  // When opened from a kickoff-to-do click (`startEdit` param), skip the
-  // intro and go straight to Exercise 1, matching Leader Profile / Skills
-  // Baseline behavior.
+  // When opened from a kickoff-to-do click (`skipIntro` nav param), jump
+  // straight to Exercise 1, matching Leader Profile / Skills Baseline.
   const initialMode = isComplete(existing)
-    ? (startEdit ? 'ex1' : 'view')
-    : (startEdit ? 'ex1' : 'intro');
+    ? (skipIntro ? 'ex1' : 'view')
+    : (skipIntro ? 'ex1' : 'intro');
   const [mode, setMode] = useState(initialMode);
 
   // Editable state — seeded from existing
