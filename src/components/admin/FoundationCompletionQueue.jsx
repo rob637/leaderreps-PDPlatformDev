@@ -20,6 +20,8 @@ import {
   collection, getDocs, doc, updateDoc, serverTimestamp,
   query, orderBy,
 } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../../lib/firebase';
 import { useAppServices } from '../../services/useAppServices';
 import { Card } from '../ui';
 
@@ -109,6 +111,13 @@ const FoundationCompletionQueue = () => {
         foundationCompletedAt: serverTimestamp(),
         foundationCompletedBy: user.email || null,
       });
+      // Fire-and-forget congratulations email
+      try {
+        const send = httpsCallable(functions, 'sendFoundationCompletionEmail');
+        await send({ userEmail: participant.email, userName: participant.displayName });
+      } catch (emailErr) {
+        console.warn('[FoundationCompletionQueue] email send failed (non-fatal):', emailErr);
+      }
       // Optimistic update
       setParticipants((prev) =>
         prev.map((p) =>

@@ -1806,122 +1806,144 @@ exports.scheduledCoachingReminders = onSchedule("every 1 hours", async (event) =
 });
 
 /**
- * MILESTONE COMPLETION EMAIL
- * Sends email notification when a facilitator signs off on a leader's milestone.
- * Also sends graduation notification when all 5 milestones are complete.
- * Includes link to view/print certificate.
+ * MILESTONE COMPLETION EMAIL (DEPRECATED — May 2026 three-phase refactor)
+ * The day/week/milestone gating model has been removed. This callable is
+ * retained as a no-op stub so legacy clients (e.g. LevelSignOffQueue) that
+ * still invoke it do not throw. Use sendFoundationCompletionEmail and
+ * sendAscentApprovalEmail instead.
  */
 exports.sendMilestoneCompletionEmail = onCall(async (request) => {
-  const { userId, userEmail, userName, milestone, milestoneName, isGraduation } = request.data;
-  
+  logger.warn(
+    '[sendMilestoneCompletionEmail] DEPRECATED — three-phase refactor removed milestone gating. No-op.',
+    { data: request.data }
+  );
+  return { success: true, deprecated: true, skipped: true };
+});
+
+/**
+ * ============================================================
+ * THREE-PHASE MODEL — Foundation Completion + Ascent Approval emails
+ * ============================================================
+ * Replaces the legacy milestone/graduation emails. Two callables:
+ *   - sendFoundationCompletionEmail: leader has finished Foundation (4 reps)
+ *   - sendAscentApprovalEmail:       trainer has granted Ascent access
+ * Both use the email_templates collection if a matching template exists,
+ * otherwise fall back to the inline HTML below.
+ */
+
+async function sendPhaseEmail({ userEmail, userName, templateId, fallback }) {
   if (!userEmail) {
-    logger.warn('No email provided for milestone completion notification');
     return { success: false, error: 'No email provided' };
   }
-  
   const emailUser = process.env.EMAIL_USER;
   const emailPass = process.env.EMAIL_PASS;
-  
   if (!emailUser || !emailPass) {
-    logger.warn('Email credentials not configured for milestone notification');
+    logger.warn('Email credentials not configured for phase email');
     return { success: false, error: 'Email not configured' };
   }
-  
   const transporter = nodemailer.createTransport({
     service: 'gmail',
-    auth: { user: emailUser, pass: emailPass }
+    auth: { user: emailUser, pass: emailPass },
   });
-  
-  const projectId = process.env.GCLOUD_PROJECT || (process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId);
-  const appDomain = projectId === 'leaderreps-test' ? 'leaderreps-test.web.app' : 'leaderreps-pd-platform.web.app';
+  const projectId =
+    process.env.GCLOUD_PROJECT ||
+    (process.env.FIREBASE_CONFIG &&
+      JSON.parse(process.env.FIREBASE_CONFIG).projectId);
+  const appDomain =
+    projectId === 'leaderreps-test'
+      ? 'leaderreps-test.web.app'
+      : projectId === 'leaderreps-prod'
+      ? 'leaderreps-prod.web.app'
+      : 'leaderreps-pd-platform.web.app';
   const appUrl = `https://${appDomain}`;
   const emailFromName = process.env.EMAIL_FROM_NAME || 'LeaderReps';
   const emailReplyTo = process.env.EMAIL_REPLY_TO || emailUser;
-  
-  // Fetch templates
-  const milestoneTemplate = await getTemplate('milestone_completion');
-  const graduationTemplate = await getTemplate('graduation');
-  
-  logger.info('Using milestone templates:', { 
-    milestone: milestoneTemplate?.id || 'fallback',
-    graduation: graduationTemplate?.id || 'fallback'
-  });
-  
-  // Build template variables
-  const templateVars = {
-    userName: userName || 'there',
-    milestoneName: milestoneName || `Milestone ${milestone}`,
-    milestone: String(milestone),
-    nextMilestone: String((milestone || 0) + 1)
-  };
-  
-  const milestoneEmoji = {
-    1: '📍',
-    2: '🎯',
-    3: '💡',
-    4: '🚀',
-    5: '🏆'
-  };
-  
-  let subject, bodyHtml;
-  
-  if (isGraduation) {
-    // Foundation completion does NOT trigger a certificate email — we are not
-    // issuing a Foundation certificate. Skip sending entirely.
-    logger.info(`Skipping Foundation graduation email for ${userEmail} — certificates are not issued for Foundation completion.`);
-    return { success: true, skipped: true, reason: 'no-foundation-certificate' };
+  const templateVars = { userName: userName || 'there' };
+  const template = await getTemplate(templateId);
+  let subject;
+  let bodyHtml;
+  if (template) {
+    subject = applyTemplateVariables(template.subject, templateVars);
+    bodyHtml = generateEmailHtml(template, templateVars, appUrl);
+  } else {
+    subject = fallback.subject;
+    bodyHtml = fallback.html(templateVars, appUrl);
   }
+  try {
+    await transporter.sendMail({
+      from: `"${emailFromName}" <${emailUser}>`,
+      replyTo: emailReplyTo,
+      to: userEmail,
+      subject,
+      html: bodyHtml,
+    });
+    logger.info(`Phase email sent (${templateId}) to ${userEmail}`);
+    return { success: true };
+  } catch (error) {
+    logger.error(`Failed to send phase email (${templateId}) to ${userEmail}:`, error);
+    return { success: false, error: error.message };
+  }
+}
 
-  {
-    if (milestoneTemplate) {
-      subject = applyTemplateVariables(milestoneTemplate.subject, templateVars);
-      bodyHtml = generateEmailHtml(milestoneTemplate, templateVars, appUrl);
-    } else {
-      subject = `✅ Milestone ${milestone} Complete: ${milestoneName}`;
-      bodyHtml = `
+exports.sendFoundationCompletionEmail = onCall(async (request) => {
+  const { userEmail, userName } = request.data || {};
+  return sendPhaseEmail({
+    userEmail,
+    userName,
+    templateId: 'foundation_completion',
+    fallback: {
+      subject: '🎉 You\'ve Completed Foundation',
+      html: (vars, appUrl) => `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 24px; border-radius: 8px 8px 0 0;">
-            <h2 style="color: white; margin: 0;">${milestoneEmoji[milestone] || '✅'} Milestone Complete!</h2>
+            <h2 style="color: white; margin: 0;">🎉 Foundation Complete</h2>
           </div>
           <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
-            <p style="margin-top: 0;">Hi ${userName || 'there'},</p>
-            <p>Congratulations! Your facilitator has signed off on <strong>Milestone ${milestone}: ${milestoneName}</strong>.</p>
-            <div style="background: #10B981; color: white; padding: 16px; border-radius: 8px; margin: 20px 0; text-align: center;">
-              <p style="margin: 0; font-size: 18px; font-weight: bold;">${milestoneEmoji[milestone]} ${milestoneName}</p>
-              <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">Milestone ${milestone} of 5 Complete</p>
-            </div>
-            ${milestone < 5 ? `
-            <p><strong>What's Next?</strong></p>
-            <p>Your certificate for this milestone is now available in the app. <strong>Milestone ${milestone + 1}</strong> is now unlocked and ready for you to begin!</p>
-            ` : ''}
+            <p style="margin-top: 0;">Hi ${vars.userName},</p>
+            <p>Congratulations — your trainer has confirmed you have completed the four core Foundation reps.</p>
+            <p>This is a real milestone. You've built the practice base that everything else stands on.</p>
+            <p><strong>What's next?</strong> Your trainer will review you for Ascent access. Once approved, you'll unlock the ongoing development phase.</p>
             <p style="text-align: center; margin-top: 24px;">
-              <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">View Certificate & Continue</a>
+              <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Open LeaderReps</a>
             </p>
           </div>
           <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
-            <p style="margin: 0; color: #64748b; font-size: 12px;">Keep up the great work!</p>
+            <p style="margin: 0; color: #64748b; font-size: 12px;">Keep showing up.</p>
           </div>
         </div>
-      `;
-    }
-  }
-  
-  const mailOptions = {
-    from: `"${emailFromName}" <${emailUser}>`,
-    replyTo: emailReplyTo,
-    to: userEmail,
-    subject,
-    html: bodyHtml
-  };
-  
-  try {
-    await transporter.sendMail(mailOptions);
-    logger.info(`Milestone completion email sent to ${userEmail} for milestone ${milestone}`);
-    return { success: true };
-  } catch (error) {
-    logger.error(`Failed to send milestone email to ${userEmail}:`, error);
-    return { success: false, error: error.message };
-  }
+      `,
+    },
+  });
+});
+
+exports.sendAscentApprovalEmail = onCall(async (request) => {
+  const { userEmail, userName } = request.data || {};
+  return sendPhaseEmail({
+    userEmail,
+    userName,
+    templateId: 'ascent_approval',
+    fallback: {
+      subject: '🚀 Welcome to Ascent',
+      html: (vars, appUrl) => `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #002E47 0%, #004466 100%); padding: 24px; border-radius: 8px 8px 0 0;">
+            <h2 style="color: white; margin: 0;">🚀 Welcome to Ascent</h2>
+          </div>
+          <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none;">
+            <p style="margin-top: 0;">Hi ${vars.userName},</p>
+            <p>Your trainer has approved you for Ascent. You now have access to the ongoing development content, advanced reps, and continued coaching.</p>
+            <p>Ascent is where you keep sharpening. There is no end date — show up, do the reps, get better.</p>
+            <p style="text-align: center; margin-top: 24px;">
+              <a href="${appUrl}" style="background: #47A88D; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Enter Ascent</a>
+            </p>
+          </div>
+          <div style="background: #f1f5f9; padding: 16px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none;">
+            <p style="margin: 0; color: #64748b; font-size: 12px;">Welcome aboard.</p>
+          </div>
+        </div>
+      `,
+    },
+  });
 });
 
 /**

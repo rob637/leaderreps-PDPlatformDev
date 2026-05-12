@@ -18,6 +18,8 @@ import {
   collection, getDocs, doc, updateDoc, serverTimestamp,
   query, orderBy, where,
 } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../../lib/firebase';
 import { useAppServices } from '../../services/useAppServices';
 import { Card } from '../ui';
 
@@ -110,6 +112,13 @@ const AscentApprovalQueue = () => {
         // Reset welcome flag so the Ascent intro can show on next login
         ascentWelcomeShown: false,
       });
+      // Fire-and-forget welcome email
+      try {
+        const send = httpsCallable(functions, 'sendAscentApprovalEmail');
+        await send({ userEmail: participant.email, userName: participant.displayName });
+      } catch (emailErr) {
+        console.warn('[AscentApprovalQueue] email send failed (non-fatal):', emailErr);
+      }
       setParticipants((prev) =>
         prev.map((p) =>
           p.id === participant.id
