@@ -124,10 +124,7 @@ const KickoffToDoWidget = () => {
         <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 px-2">
           Complete these required items to get the most out of {phaseLabel}.
         </p>
-        <div className="flex items-center justify-between mb-3 px-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-            Required
-          </span>
+        <div className="flex items-center justify-end mb-3 px-2">
           <span className="text-xs text-slate-500 dark:text-slate-400">
             {completedCount} of {requiredItems.length} complete
           </span>
