@@ -40,6 +40,7 @@ import ContentManager from './DailyPlanManager';
 import LevelSignOffQueue from './LevelSignOffQueue';
 import FoundationCompletionQueue from './FoundationCompletionQueue';
 import AscentApprovalQueue from './AscentApprovalQueue';
+import PhaseContentManager from './PhaseContentManager';
 import SessionAttendanceQueue from './SessionAttendanceQueue';
 import CoachingCertificationQueue from './CoachingCertificationQueue';
 import CohortManager from './CohortManager';
@@ -150,6 +151,7 @@ const AdminPortal = () => {
         { id: 'users', label: 'User Management', icon: Users },
         // { id: 'cohorts', label: 'Cohorts', icon: Users },
         { id: 'content-manager', label: 'Content Manager', icon: Calendar },
+        { id: 'phase-content', label: 'Phase Content (v2)', icon: Calendar },
         { id: 'content', label: 'Content Library', icon: FileText },
         { id: 'media', label: 'Media Vault', icon: Database },
         { id: 'video-series', label: 'Video Series', icon: PlaySquare },
@@ -213,6 +215,8 @@ const AdminPortal = () => {
         return <TestCenter />;
       case 'content-manager':
         return <ContentManager />;
+      case 'phase-content':
+        return <PhaseContentManager />;
       case 'sign-off-queue':
         return <LevelSignOffQueue />;
       case 'foundation-completion-queue':
