@@ -150,8 +150,8 @@ const AdminPortal = () => {
       items: [
         { id: 'users', label: 'User Management', icon: Users },
         // { id: 'cohorts', label: 'Cohorts', icon: Users },
-        { id: 'content-manager', label: 'Content Manager', icon: Calendar },
-        { id: 'phase-content', label: 'Phase Content (v2)', icon: Calendar },
+        // { id: 'content-manager', label: 'Content Manager', icon: Calendar }, // RETIRED May 2026 — superseded by 'phase-content'
+        { id: 'phase-content', label: 'Phase Content', icon: Calendar },
         { id: 'content', label: 'Content Library', icon: FileText },
         { id: 'media', label: 'Media Vault', icon: Database },
         { id: 'video-series', label: 'Video Series', icon: PlaySquare },
@@ -165,7 +165,7 @@ const AdminPortal = () => {
       items: [
         { id: 'ask-trainer-inbox', label: 'Ask a Trainer', icon: Megaphone },
         { id: 'session-attendance', label: 'Session Attendance', icon: BookOpen },
-        { id: 'sign-off-queue', label: 'Level Sign-Off', icon: CheckCircle },
+        // { id: 'sign-off-queue', label: 'Level Sign-Off', icon: CheckCircle }, // RETIRED May 2026 — superseded by Foundation Completion + Ascent Approval
         { id: 'foundation-completion-queue', label: 'Foundation Completion', icon: CheckCircle },
         { id: 'ascent-approval-queue', label: 'Ascent Approval', icon: Award },
         { id: 'coaching-cert', label: 'Leader Certification', icon: Award },

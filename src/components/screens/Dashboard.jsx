@@ -52,7 +52,8 @@ const DASHBOARD_FEATURES = [
   'win-the-day',
   'daily-plan',
   // 'daily-leader-reps', // REMOVED - replaced by conditioning widget
-  'this-weeks-actions',
+  // 'this-weeks-actions', // RETIRED May 2026 — replaced by 'my-actions' (three-phase model)
+  'my-actions',
   'notifications',
   'pm-bookend-header',
   'progress-feedback',
