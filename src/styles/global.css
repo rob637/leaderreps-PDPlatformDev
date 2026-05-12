@@ -1624,10 +1624,10 @@ body {
   background: conic-gradient(
     from var(--angle, 0deg),
     transparent 0%,
-    rgba(71, 168, 141, 0.55) 15%,
-    rgba(0, 46, 71, 0.45) 30%,
-    rgba(224, 78, 27, 0.55) 45%,
-    transparent 60%,
+    rgba(71, 168, 141, 0.35) 20%,
+    transparent 40%,
+    rgba(224, 78, 27, 0.30) 60%,
+    transparent 80%,
     transparent 100%
   );
   -webkit-mask:
@@ -1657,26 +1657,7 @@ body {
   animation: v2-rotate-angle 4s linear infinite;
 }
 
-/* ---- SHIMMER SWEEP ON HOVER ---- */
-.ui-v2 [class*="rounded-2xl"].bg-white:not(button):hover,
-.ui-v2 [class*="rounded-xl"].bg-white:not(button):hover {
-  background-image: linear-gradient(
-    115deg,
-    transparent 30%,
-    rgba(71, 168, 141, 0.06) 45%,
-    rgba(255, 255, 255, 0.8) 50%,
-    rgba(224, 78, 27, 0.06) 55%,
-    transparent 70%
-  ) !important;
-  background-size: 250% 100%;
-  background-position: -50% 0;
-  animation: v2-shimmer-sweep 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-@keyframes v2-shimmer-sweep {
-  to { background-position: 150% 0; }
-}
-
-/* ---- BIGGER 3D HOVER LIFT — perspective tilt feel ---- */
+/* ---- SUBTLE HOVER LIFT — perspective tilt feel ---- */
 .ui-v2 [class*="rounded-2xl"].bg-white:not(button),
 .ui-v2 [class*="rounded-xl"].bg-white:not(button) {
   transform-style: preserve-3d;
@@ -1689,14 +1670,13 @@ body {
 }
 .ui-v2 [class*="rounded-2xl"].bg-white:not(button):hover,
 .ui-v2 [class*="rounded-xl"].bg-white:not(button):hover {
-  transform: translateY(-8px) scale(1.01) perspective(1000px) rotateX(1.5deg);
+  transform: translateY(-2px);
   box-shadow:
-    0 0 0 1px rgba(71, 168, 141, 0.30),
-    0 8px 16px -4px rgba(15, 23, 42, 0.10),
-    0 24px 48px -12px rgba(15, 23, 42, 0.18),
-    0 60px 120px -30px rgba(0, 46, 71, 0.40),
-    0 0 80px -20px rgba(71, 168, 141, 0.30) !important;
-  border-color: rgba(71, 168, 141, 0.45) !important;
+    0 0 0 1px rgba(71, 168, 141, 0.20),
+    0 4px 8px -2px rgba(15, 23, 42, 0.08),
+    0 12px 24px -8px rgba(15, 23, 42, 0.12),
+    0 24px 48px -16px rgba(0, 46, 71, 0.18) !important;
+  border-color: rgba(71, 168, 141, 0.30) !important;
 }
 
 /* ---- ANIMATED GRADIENT TEXT ON H1 ---- */
