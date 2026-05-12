@@ -1492,8 +1492,350 @@ body {
   50%      { background-position: 100% 50%; }
 }
 
+/* ===========================================================================
+ * UI v2 — "2030" UPGRADE — Movement, atmosphere, depth.
+ * Adds: animated background orbs, card stagger entrance, rotating conic
+ * border on hover, shimmer sweep, 3D lift, gradient text, bento layout hints.
+ * ======================================================================= */
+
+/* ---- ATMOSPHERE: floating gradient orbs behind the inner panel ---- */
+.ui-v2 .bg-\[\#FAFBFC\] {
+  position: relative;
+  isolation: isolate;
+  overflow-x: hidden;
+}
+.ui-v2 .bg-\[\#FAFBFC\]::before {
+  content: '';
+  position: absolute;
+  top: -200px;
+  right: -300px;
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle, rgba(71, 168, 141, 0.18) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  animation: v2-orb-drift-a 22s ease-in-out infinite;
+  filter: blur(20px);
+}
+.ui-v2 .bg-\[\#FAFBFC\]::after {
+  content: '';
+  position: absolute;
+  bottom: -300px;
+  left: -250px;
+  width: 900px;
+  height: 900px;
+  background: radial-gradient(circle, rgba(224, 78, 27, 0.10) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  animation: v2-orb-drift-b 28s ease-in-out infinite;
+  filter: blur(20px);
+}
+@keyframes v2-orb-drift-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(-120px, 80px) scale(1.15); }
+  66%      { transform: translate(60px, 180px) scale(0.9); }
+}
+@keyframes v2-orb-drift-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(180px, -140px) scale(1.1); }
+}
+/* keep the actual content above the orbs */
+.ui-v2 .bg-\[\#FAFBFC\] > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---- ANIMATED DOT GRID on the navy outer shell ---- */
+.ui-v2 .bg-corporate-navy.min-h-screen::before,
+.ui-v2 div.min-h-screen.bg-corporate-navy::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(71, 168, 141, 0.18) 1px, transparent 0);
+  background-size: 32px 32px;
+  pointer-events: none;
+  opacity: 0.5;
+  mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, black, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, black, transparent 80%);
+  z-index: 0;
+  animation: v2-grid-pulse 8s ease-in-out infinite;
+}
+@keyframes v2-grid-pulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.7; }
+}
+
+/* ---- CARD ENTRANCE: stagger fade-up on every card ---- */
+@keyframes v2-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.985);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+.ui-v2 [class*="rounded-2xl"].bg-white:not(button),
+.ui-v2 [class*="rounded-xl"].bg-white:not(button),
+.ui-v2 [class*="rounded-2xl"][class*="border-l-corporate"],
+.ui-v2 [class*="rounded-xl"][class*="border-l-corporate"] {
+  animation: v2-card-enter 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+/* Stagger by sibling order — works for any grid/flex container */
+.ui-v2 *:nth-child(1)  > [class*="rounded-2xl"].bg-white { animation-delay: 0ms; }
+.ui-v2 *:nth-child(2)  > [class*="rounded-2xl"].bg-white { animation-delay: 60ms; }
+.ui-v2 *:nth-child(3)  > [class*="rounded-2xl"].bg-white { animation-delay: 120ms; }
+.ui-v2 *:nth-child(4)  > [class*="rounded-2xl"].bg-white { animation-delay: 180ms; }
+.ui-v2 *:nth-child(n+1) > * > [class*="rounded-2xl"].bg-white { animation-delay: calc(60ms * var(--n, 0)); }
+
+.ui-v2 [class*="grid"] > *:nth-child(1)  { --enter-delay: 0ms; }
+.ui-v2 [class*="grid"] > *:nth-child(2)  { --enter-delay: 80ms; }
+.ui-v2 [class*="grid"] > *:nth-child(3)  { --enter-delay: 160ms; }
+.ui-v2 [class*="grid"] > *:nth-child(4)  { --enter-delay: 240ms; }
+.ui-v2 [class*="grid"] > *:nth-child(5)  { --enter-delay: 320ms; }
+.ui-v2 [class*="grid"] > *:nth-child(6)  { --enter-delay: 400ms; }
+.ui-v2 [class*="grid"] > *:nth-child(7)  { --enter-delay: 480ms; }
+.ui-v2 [class*="grid"] > *:nth-child(8)  { --enter-delay: 560ms; }
+.ui-v2 [class*="grid"] > * [class*="rounded-2xl"].bg-white,
+.ui-v2 [class*="grid"] > * [class*="rounded-xl"].bg-white,
+.ui-v2 [class*="grid"] > [class*="rounded-2xl"].bg-white,
+.ui-v2 [class*="grid"] > [class*="rounded-xl"].bg-white {
+  animation-delay: var(--enter-delay, 0ms);
+}
+
+/* ---- ROTATING CONIC BORDER ON HOVER (Linear/Vercel signature) ---- */
+.ui-v2 [class*="rounded-2xl"].bg-white:not(button),
+.ui-v2 [class*="rounded-xl"].bg-white:not(button) {
+  position: relative;
+}
+.ui-v2 [class*="rounded-2xl"].bg-white:not(button)::after,
+.ui-v2 [class*="rounded-xl"].bg-white:not(button)::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--angle, 0deg),
+    transparent 0%,
+    rgba(71, 168, 141, 0.55) 15%,
+    rgba(0, 46, 71, 0.45) 30%,
+    rgba(224, 78, 27, 0.55) 45%,
+    transparent 60%,
+    transparent 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 280ms ease;
+  pointer-events: none;
+  z-index: 2;
+}
+@property --angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes v2-rotate-angle {
+  to { --angle: 360deg; }
+}
+.ui-v2 [class*="rounded-2xl"].bg-white:not(button):hover::after,
+.ui-v2 [class*="rounded-xl"].bg-white:not(button):hover::after {
+  opacity: 1;
+  animation: v2-rotate-angle 4s linear infinite;
+}
+
+/* ---- SHIMMER SWEEP ON HOVER ---- */
+.ui-v2 [class*="rounded-2xl"].bg-white:not(button):hover,
+.ui-v2 [class*="rounded-xl"].bg-white:not(button):hover {
+  background-image: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(71, 168, 141, 0.06) 45%,
+    rgba(255, 255, 255, 0.8) 50%,
+    rgba(224, 78, 27, 0.06) 55%,
+    transparent 70%
+  ) !important;
+  background-size: 250% 100%;
+  background-position: -50% 0;
+  animation: v2-shimmer-sweep 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes v2-shimmer-sweep {
+  to { background-position: 150% 0; }
+}
+
+/* ---- BIGGER 3D HOVER LIFT — perspective tilt feel ---- */
+.ui-v2 [class*="rounded-2xl"].bg-white:not(button),
+.ui-v2 [class*="rounded-xl"].bg-white:not(button) {
+  transform-style: preserve-3d;
+  transition:
+    transform 320ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 320ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 240ms ease,
+    background-color 240ms ease;
+  will-change: transform;
+}
+.ui-v2 [class*="rounded-2xl"].bg-white:not(button):hover,
+.ui-v2 [class*="rounded-xl"].bg-white:not(button):hover {
+  transform: translateY(-8px) scale(1.01) perspective(1000px) rotateX(1.5deg);
+  box-shadow:
+    0 0 0 1px rgba(71, 168, 141, 0.30),
+    0 8px 16px -4px rgba(15, 23, 42, 0.10),
+    0 24px 48px -12px rgba(15, 23, 42, 0.18),
+    0 60px 120px -30px rgba(0, 46, 71, 0.40),
+    0 0 80px -20px rgba(71, 168, 141, 0.30) !important;
+  border-color: rgba(71, 168, 141, 0.45) !important;
+}
+
+/* ---- ANIMATED GRADIENT TEXT ON H1 ---- */
+.ui-v2 h1 {
+  background: linear-gradient(
+    110deg,
+    #002E47 0%,
+    #1F7864 30%,
+    #002E47 50%,
+    #C04317 75%,
+    #002E47 100%
+  ) !important;
+  background-size: 250% auto !important;
+  -webkit-background-clip: text !important;
+          background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+          color: transparent !important;
+  animation: v2-text-shine 8s linear infinite;
+}
+@keyframes v2-text-shine {
+  to { background-position: -250% center; }
+}
+
+/* ---- BUTTONS: shimmer on hover sweep ---- */
+.ui-v2 button.bg-corporate-navy,
+.ui-v2 button.bg-corporate-teal,
+.ui-v2 button.bg-corporate-orange {
+  position: relative;
+  overflow: hidden;
+}
+.ui-v2 button.bg-corporate-navy::after,
+.ui-v2 button.bg-corporate-teal::after,
+.ui-v2 button.bg-corporate-orange::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  pointer-events: none;
+  transition: left 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ui-v2 button.bg-corporate-navy:hover::after,
+.ui-v2 button.bg-corporate-teal:hover::after,
+.ui-v2 button.bg-corporate-orange:hover::after {
+  left: 200%;
+}
+
+/* ---- BENTO LAYOUT HINTS — first dashboard card spans wider on lg ---- */
+@media (min-width: 1024px) {
+  .ui-v2 .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3 > *:first-child,
+  .ui-v2 .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-4 > *:first-child {
+    grid-column: span 2;
+  }
+  .ui-v2 .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3 > *:first-child [class*="rounded-2xl"],
+  .ui-v2 .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-4 > *:first-child [class*="rounded-2xl"] {
+    height: 100%;
+  }
+}
+
+/* ---- METRIC NUMBERS — pop with weight ---- */
+.ui-v2 .text-3xl,
+.ui-v2 .text-4xl,
+.ui-v2 .text-5xl {
+  font-weight: 800 !important;
+  letter-spacing: -0.04em !important;
+  font-feature-settings: "tnum" 1, "ss01" 1;
+}
+
+/* ---- ICON BUBBLES: subtle pulse on idle for primary cards ---- */
+@keyframes v2-icon-pulse {
+  0%, 100% { box-shadow: 0 4px 12px -4px rgba(71, 168, 141, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.5); }
+  50%      { box-shadow: 0 6px 24px -4px rgba(71, 168, 141, 0.7), inset 0 1px 0 0 rgba(255, 255, 255, 0.6); }
+}
+.ui-v2 [class*="border-l-corporate-teal"] .bg-corporate-teal\/10,
+.ui-v2 [class*="border-l-corporate-teal"] .bg-corporate-teal\/20 {
+  animation: v2-icon-pulse 3.5s ease-in-out infinite;
+}
+@keyframes v2-icon-pulse-orange {
+  0%, 100% { box-shadow: 0 4px 12px -4px rgba(224, 78, 27, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.5); }
+  50%      { box-shadow: 0 6px 24px -4px rgba(224, 78, 27, 0.65), inset 0 1px 0 0 rgba(255, 255, 255, 0.6); }
+}
+.ui-v2 [class*="border-l-corporate-orange"] .bg-corporate-orange\/10,
+.ui-v2 [class*="border-l-corporate-orange"] .bg-corporate-orange\/20 {
+  animation: v2-icon-pulse-orange 3.5s ease-in-out infinite;
+}
+
+/* ---- SCROLLBAR — modern slim ---- */
+.ui-v2 ::-webkit-scrollbar { width: 10px; height: 10px; }
+.ui-v2 ::-webkit-scrollbar-track { background: transparent; }
+.ui-v2 ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(71, 168, 141, 0.4), rgba(0, 46, 71, 0.4));
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.ui-v2 ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(71, 168, 141, 0.7), rgba(0, 46, 71, 0.7));
+  background-clip: padding-box;
+}
+
+/* ---- SECTION SEPARATOR — animated gradient line ---- */
+.ui-v2 hr {
+  border: none !important;
+  height: 1px !important;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(71, 168, 141, 0.4) 30%,
+    rgba(224, 78, 27, 0.4) 70%,
+    transparent 100%
+  ) !important;
+  background-size: 200% 100%;
+  animation: v2-hr-shift 6s ease-in-out infinite;
+}
+@keyframes v2-hr-shift {
+  0%, 100% { background-position: 0% 0; }
+  50%      { background-position: 100% 0; }
+}
+
+/* ---- FLOATING TOGGLE ITSELF — make it pop in v2 ---- */
+.ui-v2 [aria-label*="UI"] {
+  background: linear-gradient(135deg, #002E47 0%, #1F7864 100%) !important;
+  box-shadow:
+    0 8px 24px -8px rgba(71, 168, 141, 0.6),
+    0 16px 48px -12px rgba(0, 46, 71, 0.5) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ui-v2 * { transition: none !important; animation: none !important; }
+  .ui-v2 .bg-\[\#FAFBFC\]::before,
+  .ui-v2 .bg-\[\#FAFBFC\]::after { display: none !important; }
 }
 
 
