@@ -978,7 +978,7 @@ const Intro = ({ onStart, hasExisting }) => (
 // ---------------------------------------------------------------------------
 // Main screen
 // ---------------------------------------------------------------------------
-const IdentityStatement = ({ embedded = false, onClose, skipIntro = false } = {}) => {
+const IdentityStatement = ({ embedded = false, onClose } = {}) => {
   const {
     dailyPracticeData,
     updateDailyPracticeData,
@@ -993,13 +993,11 @@ const IdentityStatement = ({ embedded = false, onClose, skipIntro = false } = {}
 
   // Modes:
   //   'view'   — saved artifact display
-  //   'intro'  — overview before starting (new users)
   //   'ex1' / 'ex2' / 'ex3' — the three exercises
-  // When opened from a kickoff-to-do click (`skipIntro` nav param), jump
-  // straight to Exercise 1, matching Leader Profile / Skills Baseline.
-  const initialMode = isComplete(existing)
-    ? (skipIntro ? 'ex1' : 'view')
-    : (skipIntro ? 'ex1' : 'intro');
+  // The legacy 'intro' splash was removed (May 2026) — leaders already see
+  // the explainer on the kickoff tile and Locker card, so this screen now
+  // jumps straight into the work.
+  const initialMode = isComplete(existing) ? 'view' : 'ex1';
   const [mode, setMode] = useState(initialMode);
 
   // Editable state — seeded from existing
@@ -1013,9 +1011,11 @@ const IdentityStatement = ({ embedded = false, onClose, skipIntro = false } = {}
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
-  // Resync when Firestore data arrives later
+  // Resync when Firestore data arrives later. If the saved data appears
+  // while the user is at Exercise 1 with a blank slate (i.e. they haven't
+  // started typing), drop them back into the saved view.
   useEffect(() => {
-    if (isComplete(existing) && (mode === 'intro')) {
+    if (isComplete(existing) && mode === 'ex1' && !statement && qualities.length === 0) {
       setAdmiredLeaders(existing.admiredLeaders);
       setQualities(existing.qualities);
       setStatement(existing.statement);
@@ -1038,7 +1038,7 @@ const IdentityStatement = ({ embedded = false, onClose, skipIntro = false } = {}
     setQualities([]);
     setStatement('');
     setIntentions([]);
-    setMode('intro');
+    setMode('ex1');
   };
 
   const save = async () => {
@@ -1139,13 +1139,6 @@ const IdentityStatement = ({ embedded = false, onClose, skipIntro = false } = {}
         />
       )}
 
-      {mode === 'intro' && (
-        <Intro
-          hasExisting={isComplete(existing)}
-          onStart={() => setMode('ex1')}
-        />
-      )}
-
       {stepIndex >= 0 && (
         <>
           <ProgressBar step={stepIndex} total={3} />
@@ -1164,7 +1157,7 @@ const IdentityStatement = ({ embedded = false, onClose, skipIntro = false } = {}
                   qualities={qualities}
                   setQualities={setQualities}
                   onBack={() =>
-                    isComplete(existing) ? setMode('view') : setMode('intro')
+                    isComplete(existing) ? setMode('view') : setMode('ex1')
                   }
                   onNext={() => setMode('ex2')}
                 />

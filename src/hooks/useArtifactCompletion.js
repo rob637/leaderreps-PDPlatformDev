@@ -63,7 +63,7 @@ export const getArtifactNavigation = (kind) => {
     case ARTIFACT_KINDS.SKILLS_BASELINE:
       return { screen: 'development-plan', params: { view: 'baseline' } };
     case ARTIFACT_KINDS.IDENTITY_STATEMENT:
-      return { screen: 'identity-statement', params: { skipIntro: true } };
+      return { screen: 'identity-statement', params: {} };
     default:
       return { screen: 'locker', params: {} };
   }
