@@ -1205,17 +1205,33 @@ body {
 .ui-v2 .shadow-elevated:not(.no-glass),
 .ui-v2 .shadow-pop:not(.no-glass) {
   background-color: #FFFFFF !important;
-  border: 1px solid rgba(15, 23, 42, 0.06) !important;
+  border: 1px solid rgba(15, 23, 42, 0.10) !important;
   box-shadow:
-    0 1px 0 0 rgba(15, 23, 42, 0.04),
-    0 2px 4px -1px rgba(15, 23, 42, 0.04),
-    0 12px 24px -8px rgba(15, 23, 42, 0.08) !important;
+    0 0 0 1px rgba(15, 23, 42, 0.04),
+    0 2px 4px -1px rgba(15, 23, 42, 0.06),
+    0 8px 16px -4px rgba(15, 23, 42, 0.08),
+    0 24px 48px -12px rgba(0, 46, 71, 0.12) !important;
   transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
               box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1),
               border-color 200ms ease;
+  position: relative;
 }
 
-/* Confident hover lift with sharper shadow */
+/* Top accent line on every card — subtle gradient that gives them character */
+.ui-v2 [class*="rounded-2xl"].bg-white:not(button)::before,
+.ui-v2 [class*="rounded-xl"].bg-white:not(button)::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(71, 168, 141, 0.5) 50%, transparent 100%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Confident hover lift — shadow gets DEEPER and a teal ring appears */
 .ui-v2 .hover\:shadow-md:hover,
 .ui-v2 .hover\:shadow-lg:hover,
 .ui-v2 .hover\:shadow-xl:hover,
@@ -1223,38 +1239,62 @@ body {
 .ui-v2 .hover\:shadow-pop:hover,
 .ui-v2 [class*="hover:shadow"]:hover {
   transform: translateY(-4px);
-  border-color: rgba(15, 23, 42, 0.10) !important;
+  border-color: rgba(71, 168, 141, 0.35) !important;
   box-shadow:
-    0 1px 0 0 rgba(15, 23, 42, 0.04),
-    0 4px 8px -2px rgba(15, 23, 42, 0.06),
-    0 24px 48px -12px rgba(0, 46, 71, 0.18),
-    0 0 0 1px rgba(71, 168, 141, 0.10) !important;
+    0 0 0 1px rgba(71, 168, 141, 0.20),
+    0 4px 8px -2px rgba(15, 23, 42, 0.08),
+    0 16px 32px -8px rgba(15, 23, 42, 0.12),
+    0 40px 80px -20px rgba(0, 46, 71, 0.25) !important;
 }
 
-/* Brand-colored left-border accent cards: AMPLIFY the color rail */
+/* Brand-colored left-border accent cards: BOLD vertical rail + matching shadow */
 .ui-v2 [class*="border-l-corporate-teal"] {
-  border-left-width: 0 !important;
+  border-left: 4px solid #47A88D !important;
   box-shadow:
-    inset 6px 0 0 0 #47A88D,
-    0 1px 0 0 rgba(15, 23, 42, 0.04),
-    0 2px 4px -1px rgba(15, 23, 42, 0.04),
-    0 12px 24px -8px rgba(71, 168, 141, 0.18) !important;
+    0 0 0 1px rgba(15, 23, 42, 0.06),
+    0 2px 4px -1px rgba(71, 168, 141, 0.08),
+    0 8px 16px -4px rgba(71, 168, 141, 0.12),
+    0 24px 48px -12px rgba(71, 168, 141, 0.18),
+    -8px 0 24px -8px rgba(71, 168, 141, 0.30) !important;
 }
 .ui-v2 [class*="border-l-corporate-navy"] {
-  border-left-width: 0 !important;
+  border-left: 4px solid #002E47 !important;
   box-shadow:
-    inset 6px 0 0 0 #002E47,
-    0 1px 0 0 rgba(15, 23, 42, 0.04),
-    0 2px 4px -1px rgba(15, 23, 42, 0.04),
-    0 12px 24px -8px rgba(0, 46, 71, 0.18) !important;
+    0 0 0 1px rgba(15, 23, 42, 0.06),
+    0 2px 4px -1px rgba(0, 46, 71, 0.10),
+    0 8px 16px -4px rgba(0, 46, 71, 0.14),
+    0 24px 48px -12px rgba(0, 46, 71, 0.22),
+    -8px 0 24px -8px rgba(0, 46, 71, 0.30) !important;
 }
 .ui-v2 [class*="border-l-corporate-orange"] {
-  border-left-width: 0 !important;
+  border-left: 4px solid #E04E1B !important;
   box-shadow:
-    inset 6px 0 0 0 #E04E1B,
-    0 1px 0 0 rgba(15, 23, 42, 0.04),
-    0 2px 4px -1px rgba(15, 23, 42, 0.04),
-    0 12px 24px -8px rgba(224, 78, 27, 0.20) !important;
+    0 0 0 1px rgba(15, 23, 42, 0.06),
+    0 2px 4px -1px rgba(224, 78, 27, 0.10),
+    0 8px 16px -4px rgba(224, 78, 27, 0.14),
+    0 24px 48px -12px rgba(224, 78, 27, 0.22),
+    -8px 0 24px -8px rgba(224, 78, 27, 0.30) !important;
+}
+
+/* Hero/Foundation cards (ones with both border-l accent AND shadow): give them
+ * a subtle gradient wash on the body so they read like premium content blocks */
+.ui-v2 [class*="border-l-corporate-orange"][class*="rounded-2xl"],
+.ui-v2 [class*="border-l-corporate-orange"][class*="rounded-xl"] {
+  background:
+    linear-gradient(135deg, rgba(224, 78, 27, 0.04) 0%, transparent 30%),
+    linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%) !important;
+}
+.ui-v2 [class*="border-l-corporate-teal"][class*="rounded-2xl"],
+.ui-v2 [class*="border-l-corporate-teal"][class*="rounded-xl"] {
+  background:
+    linear-gradient(135deg, rgba(71, 168, 141, 0.04) 0%, transparent 30%),
+    linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%) !important;
+}
+.ui-v2 [class*="border-l-corporate-navy"][class*="rounded-2xl"],
+.ui-v2 [class*="border-l-corporate-navy"][class*="rounded-xl"] {
+  background:
+    linear-gradient(135deg, rgba(0, 46, 71, 0.04) 0%, transparent 30%),
+    linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%) !important;
 }
 
 /* Sidebar: keep light but with a subtle right edge that pops */
