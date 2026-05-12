@@ -30,7 +30,7 @@ import {
 const COLLECTION = 'coach_questions';
 const VALID_RR_TAGS = ['DRF', 'RED', 'FUW', 'SCE'];
 
-export const subscribeUserQuestions = (db, userId, callback) => {
+export const subscribeUserQuestions = (db, userId, callback, opts = {}) => {
   if (!db || !userId) throw new Error('db + userId required');
   const q = query(
     collection(db, COLLECTION),
@@ -46,6 +46,7 @@ export const subscribeUserQuestions = (db, userId, callback) => {
     (err) => {
       // eslint-disable-next-line no-console
       console.warn('[coachQuestions] subscribe error', err);
+      try { opts.onError?.(err); } catch (_) { /* ignore */ }
     }
   );
 };
@@ -59,6 +60,9 @@ export const subscribeUserQuestions = (db, userId, callback) => {
  * @param {(items: Array) => void} callback
  * @param {object} [opts]
  * @param {number} [opts.limit] - cap result size client-side
+ * @param {(err: Error) => void} [opts.onError] - surface Firestore errors
+ *   (e.g. missing-index) so callers can show a real error state instead of
+ *   spinning indefinitely.
  * @returns {() => void} unsubscribe
  */
 export const subscribeAnsweredQuestions = (db, callback, opts = {}) => {
@@ -79,6 +83,7 @@ export const subscribeAnsweredQuestions = (db, callback, opts = {}) => {
     (err) => {
       // eslint-disable-next-line no-console
       console.warn('[coachQuestions] answered subscribe error', err);
+      try { opts.onError?.(err); } catch (_) { /* ignore */ }
     }
   );
 };

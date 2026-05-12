@@ -4,7 +4,7 @@
 // Two tabs: My Questions (private) and Other Questions (publicly curated,
 // answered-only — see Firestore rules on coach_questions).
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   MessageCircleQuestion,
   ChevronRight,
@@ -13,6 +13,8 @@ import {
   Play,
   Clock3,
   CheckCircle2,
+  AlertCircle,
+  Search,
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import {
@@ -116,20 +118,38 @@ const AscentAskTrainerWidget = () => {
   const [other, setOther] = useState([]);
   const [loadingMine, setLoadingMine] = useState(true);
   const [loadingOther, setLoadingOther] = useState(true);
+  const [errorMine, setErrorMine] = useState(null);
+  const [errorOther, setErrorOther] = useState(null);
+
+  // Dashboard is a synopsis — show only the most recent few. Full history +
+  // search lives on the dedicated 'ask-trainer-archive' screen.
+  const DASHBOARD_LIMIT = 3;
 
   useEffect(() => {
     if (!db || !user?.uid) return undefined;
     setLoadingMine(true);
-    const unsub = subscribeUserQuestions(db, user.uid, (items) => {
-      setMine(items || []);
-      setLoadingMine(false);
-    });
+    setErrorMine(null);
+    const unsub = subscribeUserQuestions(
+      db,
+      user.uid,
+      (items) => {
+        setMine(items || []);
+        setLoadingMine(false);
+      },
+      {
+        onError: (err) => {
+          setErrorMine(err?.message || 'Failed to load your questions.');
+          setLoadingMine(false);
+        },
+      },
+    );
     return unsub;
   }, [db, user?.uid]);
 
   useEffect(() => {
     if (!db) return undefined;
     setLoadingOther(true);
+    setErrorOther(null);
     const unsub = subscribeAnsweredQuestions(
       db,
       (items) => {
@@ -138,15 +158,29 @@ const AscentAskTrainerWidget = () => {
         setOther((items || []).filter((q) => q.userId !== user?.uid));
         setLoadingOther(false);
       },
-      { limit: 10 },
+      {
+        // Pull a small buffer so filtering out self-questions still leaves
+        // enough for the dashboard synopsis.
+        limit: DASHBOARD_LIMIT * 4,
+        onError: (err) => {
+          setErrorOther(
+            err?.code === 'failed-precondition'
+              ? 'Index still building — please retry in a moment.'
+              : err?.message || 'Failed to load community questions.',
+          );
+          setLoadingOther(false);
+        },
+      },
     );
     return unsub;
   }, [db, user?.uid]);
 
   const items = tab === 'mine' ? mine : other;
   const loading = tab === 'mine' ? loadingMine : loadingOther;
+  const errorMsg = tab === 'mine' ? errorMine : errorOther;
 
   const goAsk = () => navigate?.('ask-coach');
+  const goArchive = () => navigate?.('ask-trainer-archive');
 
   return (
     <section
@@ -214,6 +248,14 @@ const AscentAskTrainerWidget = () => {
         <div className="flex items-center justify-center py-6 text-slate-400">
           <Loader2 className="w-5 h-5 animate-spin" aria-label="Loading" />
         </div>
+      ) : errorMsg ? (
+        <div
+          className="flex items-start gap-2 py-3 text-sm text-rose-700 dark:text-rose-300"
+          role="alert"
+        >
+          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+          <span>{errorMsg}</span>
+        </div>
       ) : items.length === 0 ? (
         <div className="text-sm text-slate-500 dark:text-slate-400 py-3">
           {tab === 'mine'
@@ -222,11 +264,24 @@ const AscentAskTrainerWidget = () => {
         </div>
       ) : (
         <ul className="divide-y divide-slate-100 dark:divide-slate-700">
-          {items.slice(0, 5).map((q) => (
+          {items.slice(0, DASHBOARD_LIMIT).map((q) => (
             <QuestionRow key={q.id} item={q} showAuthor={tab === 'other'} />
           ))}
         </ul>
       )}
+
+      {/* Archive link — always visible so users can find old answers */}
+      <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 flex justify-end">
+        <button
+          type="button"
+          onClick={goArchive}
+          className="inline-flex items-center gap-1 text-xs font-semibold text-corporate-teal-ink hover:underline"
+        >
+          <Search className="w-3.5 h-3.5" aria-hidden="true" />
+          Search archive
+          <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+        </button>
+      </div>
     </section>
   );
 };

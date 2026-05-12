@@ -25,6 +25,14 @@
       ]
     },
     {
+      "collectionGroup": "coach_questions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "respondedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "reps_light",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
