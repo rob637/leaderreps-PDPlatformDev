@@ -153,8 +153,10 @@ const MySettingsWidget = () => {
 
   return (
     <>
-      <Card title="My Settings" icon={Settings} accent="TEAL">
-        {/* Settings Rows */}
+      {/* ============================================================
+          MY PROFILE — identity, baseline, identity statement
+          ============================================================ */}
+      <Card title="My Profile" icon={User} accent="TEAL">
         <div className="space-y-2">
           {/* Leader Profile Row - Clickable to edit */}
           <button
@@ -239,7 +241,14 @@ const MySettingsWidget = () => {
               <Edit2 className="w-3.5 h-3.5" />
             </div>
           </button>
+        </div>
+      </Card>
 
+      {/* ============================================================
+          MY SETTINGS — notifications, appearance, account
+          ============================================================ */}
+      <Card title="My Settings" icon={Settings} accent="TEAL" className="mt-6">
+        <div className="space-y-2">
           {/* Notifications Row - Clickable to open settings */}
           <button
             onClick={() => setShowNotificationSettings(true)}
