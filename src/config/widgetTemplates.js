@@ -3349,12 +3349,13 @@ export const FEATURE_METADATA = {
     outputs: [],
   },
   'locker-conditioning-history': {
-    core: true,
+    core: false, // DEPRECATED (May-11 #4): Practice Reps widget now carries the
+                 // week-grouped collapsible UI for all rep history surfacing.
     category: 'Locker',
-    name: 'Conditioning History',
+    name: 'Conditioning History (Deprecated)',
     description: 'Weekly conditioning rep history',
     purpose: 'Track your weekly leadership conditioning reps.',
-    extendedDescription: 'Displays your conditioning rep history grouped by week. Shows completed and canceled reps with details about the person, rep type, and completion status.',
+    extendedDescription: 'DEPRECATED: Replaced by Practice Reps in Locker. The widget file remains in the codebase for one release cycle in case rollback is needed.',
     inputs: ['conditioningReps'],
     outputs: [],
     componentPath: 'src/components/widgets/ConditioningHistoryWidget.jsx',

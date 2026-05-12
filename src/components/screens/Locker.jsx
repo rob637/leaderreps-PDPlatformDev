@@ -9,7 +9,9 @@ import { useNotifications } from '../../providers/NotificationProvider';
 import { Settings, Clock, User, Bell, AlertTriangle } from 'lucide-react';
 import MyJourneyWidget from '../widgets/MyJourneyWidget';
 import MySettingsWidget from '../widgets/MySettingsWidget';
-import ConditioningHistoryWidget from '../widgets/ConditioningHistoryWidget';
+// May-11 #4: ConditioningHistoryWidget retired from Locker. PracticeRepsHistoryWidget
+// now uses the same week-grouped collapsible UI. Widget file kept dormant for
+// one release cycle in case rollback is needed.
 import PracticeRepsHistoryWidget from '../widgets/PracticeRepsHistoryWidget';
 import AscentSmsPrefsWidget from '../widgets/AscentSmsPrefsWidget';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
@@ -20,7 +22,8 @@ const LOCKER_FEATURES = [
   'locker-wins-history',
   'locker-scorecard-history',
   'locker-latest-reflection',
-  'locker-conditioning-history',  // Replaced locker-reps-history with weekly conditioning history
+  // May-11 #4: 'locker-conditioning-history' removed; Practice Reps now
+  // carries the week-grouped UI for all rep history surfacing.
   'locker-practice-reps'  // Practice a Rep (Conditioning Light) history
 ];
 
@@ -171,8 +174,6 @@ const Locker = () => {
             return lockerVisibility.showScorecard;
           case 'locker-latest-reflection':
             return lockerVisibility.showReflection;
-          case 'locker-conditioning-history':
-            return lockerVisibility.showDailyReps; // Uses same visibility as old reps widget
           default:
             return true;
         }
@@ -187,10 +188,6 @@ const Locker = () => {
 
   // Custom renderer for special widgets
   const renderFeature = (featureId) => {
-    // Special handling for conditioning history (React component, not template)
-    if (featureId === 'locker-conditioning-history') {
-      return <ConditioningHistoryWidget key={featureId} helpText={getWidgetHelpText(featureId)} />;
-    }
     if (featureId === 'locker-practice-reps') {
       return <PracticeRepsHistoryWidget key={featureId} helpText={getWidgetHelpText(featureId)} />;
     }
