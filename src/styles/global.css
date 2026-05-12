@@ -1153,103 +1153,163 @@ body {
  * Goals: glass surfaces, mesh aurora backgrounds, rich motion, brand-locked.
  * Keep light mode + corporate colors. Zero impact on classic UI.
  * ======================================================================= */
-.ui-v2 {
-  /* App background: subtle aurora mesh that drifts behind everything. */
-  background:
-    radial-gradient(at 12% 8%, rgba(71, 168, 141, 0.10) 0px, transparent 45%),
-    radial-gradient(at 88% 12%, rgba(224, 78, 27, 0.08) 0px, transparent 45%),
-    radial-gradient(at 50% 100%, rgba(0, 46, 71, 0.08) 0px, transparent 55%),
-    linear-gradient(180deg, #FAFBFC 0%, #F4F6F9 100%);
-  background-attachment: fixed;
-}
+
+/* App-wide aurora background. Apply to body/main containers as well so the
+ * solid white app shells reveal it. */
+.ui-v2,
 .ui-v2 body {
-  background: transparent;
+  background:
+    radial-gradient(at 12% 8%, rgba(71, 168, 141, 0.18) 0px, transparent 45%),
+    radial-gradient(at 88% 12%, rgba(224, 78, 27, 0.14) 0px, transparent 45%),
+    radial-gradient(at 50% 100%, rgba(0, 46, 71, 0.14) 0px, transparent 55%),
+    linear-gradient(180deg, #F4F7FA 0%, #EAF0F5 100%) !important;
+  background-attachment: fixed !important;
 }
 
-/* Crisp typography — tighter, more confident */
+/* Outermost shell uses navy by design — keep it but soften with a navy-aurora */
+.ui-v2 .bg-corporate-navy.min-h-screen,
+.ui-v2 div.min-h-screen.bg-corporate-navy {
+  background:
+    radial-gradient(at 0% 0%, rgba(71, 168, 141, 0.45) 0px, transparent 45%),
+    radial-gradient(at 100% 0%, rgba(224, 78, 27, 0.30) 0px, transparent 45%),
+    radial-gradient(at 50% 100%, rgba(31, 120, 100, 0.40) 0px, transparent 55%),
+    linear-gradient(160deg, #001E2F 0%, #002E47 50%, #003E5F 100%) !important;
+}
+
+/* Inner main-content panel: was solid #FAFBFC — make it translucent glass so
+ * the navy aurora shows through and creates real depth. */
+.ui-v2 .bg-\[\#FAFBFC\] {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.75) 0%, rgba(248, 250, 253, 0.65) 100%) !important;
+  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow:
+    0 30px 80px -20px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Crisp typography */
 .ui-v2 {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01';
   letter-spacing: -0.005em;
 }
 .ui-v2 h1, .ui-v2 h2, .ui-v2 h3 {
-  letter-spacing: -0.02em;
+  letter-spacing: -0.022em;
+  font-weight: 700;
 }
 
-/* Universal upgrade: every classic Tailwind shadow card becomes glass. */
-.ui-v2 .shadow-card,
-.ui-v2 .shadow-elevated {
-  background-color: rgba(255, 255, 255, 0.72) !important;
-  backdrop-filter: saturate(180%) blur(14px);
-  -webkit-backdrop-filter: saturate(180%) blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+/* ---- AGGRESSIVE GLASS SURFACE UPGRADE ----
+ * Catch every kind of card/panel the app uses today:
+ *   - Tailwind `bg-white` on rounded containers
+ *   - Anything with shadow-sm / shadow-md / shadow-lg / shadow-xl / shadow-2xl
+ *   - The custom `.shadow-card` / `.shadow-elevated` / `.shadow-pop`
+ * Excludes: <button> elements (handled separately), nav, header, sidebar.
+ */
+.ui-v2 .bg-white:not(button):not(input):not(select):not(textarea):not(.no-glass),
+.ui-v2 .shadow-sm:not(button):not(input):not(.no-glass),
+.ui-v2 .shadow-md:not(button):not(input):not(.no-glass),
+.ui-v2 .shadow-lg:not(button):not(input):not(.no-glass),
+.ui-v2 .shadow-xl:not(button):not(input):not(.no-glass),
+.ui-v2 .shadow-2xl:not(button):not(input):not(.no-glass),
+.ui-v2 .shadow-card:not(.no-glass),
+.ui-v2 .shadow-elevated:not(.no-glass),
+.ui-v2 .shadow-pop:not(.no-glass) {
+  background-color: rgba(255, 255, 255, 0.65) !important;
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  border-color: rgba(255, 255, 255, 0.7) !important;
   box-shadow:
-    0 8px 32px -12px rgba(0, 46, 71, 0.18),
-    0 2px 8px -4px rgba(0, 46, 71, 0.08),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.7);
-  transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1),
-              box-shadow 240ms cubic-bezier(0.2, 0.8, 0.2, 1),
-              background-color 240ms ease;
+    0 10px 40px -12px rgba(0, 46, 71, 0.22),
+    0 4px 12px -4px rgba(0, 46, 71, 0.10),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.85) !important;
+  transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              background-color 280ms ease;
 }
+
+/* Hover lift on anything that already had a hover shadow */
+.ui-v2 .hover\:shadow-md:hover,
+.ui-v2 .hover\:shadow-lg:hover,
+.ui-v2 .hover\:shadow-xl:hover,
 .ui-v2 .hover\:shadow-card-hover:hover,
-.ui-v2 .hover\:shadow-pop:hover {
+.ui-v2 .hover\:shadow-pop:hover,
+.ui-v2 [class*="hover:shadow"]:hover {
   transform: translateY(-3px) scale(1.005);
   background-color: rgba(255, 255, 255, 0.85) !important;
   box-shadow:
-    0 20px 50px -12px rgba(0, 46, 71, 0.28),
-    0 6px 16px -6px rgba(0, 46, 71, 0.14),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.9);
+    0 24px 60px -12px rgba(0, 46, 71, 0.32),
+    0 8px 20px -6px rgba(0, 46, 71, 0.16),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.95) !important;
 }
 
-/* Buttons — gradient + sheen on primary, soft glass on secondary */
+/* Sidebar/topbar — use a darker glass so they read distinct from body */
+.ui-v2 nav,
+.ui-v2 aside,
+.ui-v2 header {
+  background-color: rgba(255, 255, 255, 0.55) !important;
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Buttons — gradient + lift on primary brand colors */
 .ui-v2 button.bg-corporate-navy,
-.ui-v2 .bg-corporate-navy {
-  background-image: linear-gradient(135deg, #002E47 0%, #003E5F 60%, #1F7864 130%);
+.ui-v2 .bg-corporate-navy:not(.no-grad) {
+  background-image: linear-gradient(135deg, #002E47 0%, #003E5F 55%, #1F7864 130%) !important;
+  background-color: transparent !important;
   box-shadow:
-    0 8px 24px -8px rgba(0, 46, 71, 0.45),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+    0 10px 28px -8px rgba(0, 46, 71, 0.55),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.18);
   transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
               box-shadow 200ms ease,
               filter 200ms ease;
 }
 .ui-v2 button.bg-corporate-navy:hover,
-.ui-v2 .bg-corporate-navy:hover {
+.ui-v2 .bg-corporate-navy:not(.no-grad):hover {
   transform: translateY(-1px);
-  filter: brightness(1.08);
+  filter: brightness(1.1);
   box-shadow:
-    0 12px 32px -8px rgba(0, 46, 71, 0.55),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+    0 14px 36px -8px rgba(0, 46, 71, 0.65),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.25);
 }
 .ui-v2 button.bg-corporate-teal,
-.ui-v2 .bg-corporate-teal {
-  background-image: linear-gradient(135deg, #1F7864 0%, #47A88D 70%);
+.ui-v2 .bg-corporate-teal:not(.no-grad) {
+  background-image: linear-gradient(135deg, #1F7864 0%, #47A88D 70%) !important;
+  background-color: transparent !important;
   box-shadow:
-    0 8px 24px -8px rgba(71, 168, 141, 0.45),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+    0 10px 28px -8px rgba(71, 168, 141, 0.55),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.22);
   transition: transform 200ms ease, filter 200ms ease, box-shadow 200ms ease;
 }
 .ui-v2 button.bg-corporate-teal:hover,
-.ui-v2 .bg-corporate-teal:hover {
+.ui-v2 .bg-corporate-teal:not(.no-grad):hover {
   transform: translateY(-1px);
-  filter: brightness(1.08);
+  filter: brightness(1.1);
 }
 .ui-v2 button.bg-corporate-orange,
-.ui-v2 .bg-corporate-orange {
-  background-image: linear-gradient(135deg, #B83E15 0%, #E04E1B 70%);
+.ui-v2 .bg-corporate-orange:not(.no-grad) {
+  background-image: linear-gradient(135deg, #B83E15 0%, #E04E1B 70%) !important;
+  background-color: transparent !important;
   box-shadow:
-    0 8px 24px -8px rgba(224, 78, 27, 0.45),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+    0 10px 28px -8px rgba(224, 78, 27, 0.55),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.22);
   transition: transform 200ms ease, filter 200ms ease, box-shadow 200ms ease;
 }
 .ui-v2 button.bg-corporate-orange:hover,
-.ui-v2 .bg-corporate-orange:hover {
+.ui-v2 .bg-corporate-orange:not(.no-grad):hover {
   transform: translateY(-1px);
-  filter: brightness(1.08);
+  filter: brightness(1.1);
 }
 
-/* Inputs — glass treatment */
+/* Subtle chip pop for accent left-borders so they glow on glass */
+.ui-v2 [class*="border-l-corporate-teal"]   { box-shadow: inset 4px 0 0 0 #47A88D, 0 10px 40px -12px rgba(71, 168, 141, 0.25), 0 4px 12px -4px rgba(0, 46, 71, 0.10), inset 0 1px 0 0 rgba(255, 255, 255, 0.85) !important; }
+.ui-v2 [class*="border-l-corporate-navy"]   { box-shadow: inset 4px 0 0 0 #002E47, 0 10px 40px -12px rgba(0, 46, 71, 0.25),   0 4px 12px -4px rgba(0, 46, 71, 0.10), inset 0 1px 0 0 rgba(255, 255, 255, 0.85) !important; }
+.ui-v2 [class*="border-l-corporate-orange"] { box-shadow: inset 4px 0 0 0 #E04E1B, 0 10px 40px -12px rgba(224, 78, 27, 0.25), 0 4px 12px -4px rgba(0, 46, 71, 0.10), inset 0 1px 0 0 rgba(255, 255, 255, 0.85) !important; }
+
+/* Inputs — frosted */
 .ui-v2 input[type="text"],
 .ui-v2 input[type="email"],
 .ui-v2 input[type="password"],
@@ -1258,88 +1318,69 @@ body {
 .ui-v2 input[type="number"],
 .ui-v2 textarea,
 .ui-v2 select {
-  background-color: rgba(255, 255, 255, 0.65);
+  background-color: rgba(255, 255, 255, 0.6) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(0, 46, 71, 0.12);
+  border: 1px solid rgba(0, 46, 71, 0.12) !important;
   transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
 }
 .ui-v2 input:focus,
 .ui-v2 textarea:focus,
 .ui-v2 select:focus {
-  border-color: rgba(71, 168, 141, 0.55);
-  box-shadow: 0 0 0 4px rgba(71, 168, 141, 0.15);
-  background-color: rgba(255, 255, 255, 0.95);
+  border-color: rgba(71, 168, 141, 0.6) !important;
+  box-shadow: 0 0 0 4px rgba(71, 168, 141, 0.18) !important;
+  background-color: rgba(255, 255, 255, 0.95) !important;
   outline: none;
 }
 
-/* Reusable v2 utility classes */
-.ui-v2 .v2-glass {
-  background-color: rgba(255, 255, 255, 0.72);
-  backdrop-filter: saturate(180%) blur(14px);
-  -webkit-backdrop-filter: saturate(180%) blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow:
-    0 8px 32px -12px rgba(0, 46, 71, 0.18),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.7);
+/* Modal scrims — richer */
+.ui-v2 .bg-black\/50 {
+  background-color: rgba(0, 30, 50, 0.45) !important;
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
 }
-.ui-v2 .v2-glass-dark {
-  background-color: rgba(0, 46, 71, 0.72);
-  backdrop-filter: saturate(180%) blur(14px);
-  -webkit-backdrop-filter: saturate(180%) blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: white;
+
+/* Reusable opt-in v2 utility classes */
+.ui-v2 .v2-glass {
+  background-color: rgba(255, 255, 255, 0.65);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 10px 40px -12px rgba(0, 46, 71, 0.22),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.85);
 }
 .ui-v2 .v2-hero {
   background:
-    radial-gradient(at 18% 0%, rgba(71, 168, 141, 0.32) 0px, transparent 50%),
-    radial-gradient(at 82% 0%, rgba(224, 78, 27, 0.22) 0px, transparent 55%),
-    radial-gradient(at 50% 120%, rgba(0, 46, 71, 0.22) 0px, transparent 60%),
-    linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+    radial-gradient(at 18% 0%, rgba(71, 168, 141, 0.45) 0px, transparent 55%),
+    radial-gradient(at 82% 0%, rgba(224, 78, 27, 0.32) 0px, transparent 55%),
+    radial-gradient(at 50% 120%, rgba(0, 46, 71, 0.30) 0px, transparent 60%),
+    linear-gradient(180deg, #FFFFFF 0%, #F4F8FB 100%);
   background-size: 200% 200%;
   animation: v2-aurora 18s ease infinite;
   border: 1px solid rgba(255, 255, 255, 0.7);
   box-shadow:
-    0 20px 60px -20px rgba(0, 46, 71, 0.25),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.9);
+    0 24px 70px -20px rgba(0, 46, 71, 0.30),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.95);
 }
 .ui-v2 .v2-lift {
   transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1),
               box-shadow 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
   will-change: transform;
 }
-.ui-v2 .v2-lift:hover {
-  transform: translateY(-3px) scale(1.01);
-}
-.ui-v2 .v2-shine {
-  position: relative;
-  overflow: hidden;
-}
-.ui-v2 .v2-shine::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%);
-  transform: translateX(-120%) skewX(-12deg);
-  pointer-events: none;
-}
-.ui-v2 .v2-shine:hover::after {
-  animation: v2-sheen 1.1s ease-out;
-}
-@keyframes v2-sheen {
-  to { transform: translateX(220%) skewX(-12deg); }
-}
+.ui-v2 .v2-lift:hover { transform: translateY(-3px) scale(1.01); }
+
 @keyframes v2-aurora {
   0%, 100% { background-position: 0% 50%; }
   50%      { background-position: 100% 50%; }
 }
 
-/* Reduce motion respected */
 @media (prefers-reduced-motion: reduce) {
   .ui-v2 .v2-hero { animation: none; }
   .ui-v2 .v2-lift { transition: none; }
-  .ui-v2 .v2-shine:hover::after { animation: none; }
+  .ui-v2 [class*="hover:shadow"] { transition: none; }
 }
+
 
 @layer base {
   :root {
