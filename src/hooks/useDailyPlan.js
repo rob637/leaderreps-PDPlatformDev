@@ -46,15 +46,28 @@ export const PREP_REQUIREMENT_IDS = {
  */
 
 // Phase Configuration
+//
+// THREE-PHASE MODEL (May 2026 — refactor/three-phase-cleanup branch):
+// The product is being simplified to three self-paced phases:
+//   1. Onboarding (was: PRE_START / 'pre-start')   — completion-based prep
+//   2. Foundation (was: START / 'start')           — self-paced, 4 simplified reps
+//   3. Ascent     (was: POST_START / 'post-start') — self-paced, requires trainer approval
+//
+// Day/week/milestone gating is being removed. The legacy fields
+// (dbDayStart/dbDayEnd, weekRange, trackMissedDays) remain on the PHASE
+// objects for one cycle to keep older consumers compiling. New code should
+// branch on `phaseKey(currentPhase)` (returns 'onboarding' | 'foundation' | 'ascent')
+// rather than on legacy `currentPhase.id` strings.
 export const PHASES = {
   PRE_START: {
     id: 'pre-start',
-    name: 'Preparation',
-    displayName: 'Preparation',
+    phaseKey: 'onboarding',
+    name: 'Onboarding',
+    displayName: 'Onboarding',
     // NOTE: dbDayStart/dbDayEnd are for backwards compatibility only
-    // Prep Phase identification should use phase === 'pre-start'
+    // Onboarding identification should use phaseKey === 'onboarding'
     dbDayStart: 1,
-    dbDayEnd: 14, // Legacy - actual prep can have any number of days
+    dbDayEnd: 14, // Legacy - actual onboarding can have any number of days
     weekRange: [-2, -1],
     trackMissedDays: false, // Users can start anytime - no time constraint
     cumulativeActions: true, // Actions accumulate - Day 1 actions persist through Day 14
@@ -63,6 +76,7 @@ export const PHASES = {
   },
   START: {
     id: 'start',
+    phaseKey: 'foundation',
     name: 'Foundation',
     displayName: 'Foundation',
     dbDayStart: 15,
@@ -70,10 +84,11 @@ export const PHASES = {
     weekRange: [1, 8],
     trackMissedDays: true, // Cohort-based progression
     cumulativeActions: false, // Each day/week has specific content
-    description: '8-week leadership development program'
+    description: 'Self-paced leadership development program'
   },
   POST_START: {
     id: 'post-start',
+    phaseKey: 'ascent',
     name: 'Ascent',
     displayName: 'Ascent',
     dbDayStart: 71,
@@ -84,6 +99,59 @@ export const PHASES = {
     description: 'Continue your leadership journey',
     isIndefinite: true // Subscription-based indefinite phase
   }
+};
+
+// Canonical phase keys for the new three-phase model.
+// Use these instead of PHASES.PRE_START.id / .START.id / .POST_START.id in new code.
+export const PHASE_KEYS = {
+  ONBOARDING: 'onboarding',
+  FOUNDATION: 'foundation',
+  ASCENT: 'ascent'
+};
+
+// Map legacy phase ids → new phase keys (so we can interoperate during the cutover).
+const LEGACY_ID_TO_PHASE_KEY = {
+  'pre-start': PHASE_KEYS.ONBOARDING,
+  'start': PHASE_KEYS.FOUNDATION,
+  'post-start': PHASE_KEYS.ASCENT
+};
+
+/**
+ * Resolve a phase object (or phase id string) to the new canonical phase key.
+ * Returns one of 'onboarding' | 'foundation' | 'ascent' | null.
+ *
+ * Accepts:
+ *   - a PHASES.* object (uses .phaseKey, falls back to .id mapping)
+ *   - a legacy id string ('pre-start' | 'start' | 'post-start')
+ *   - a new phase key string ('onboarding' | 'foundation' | 'ascent')
+ *   - null/undefined → null
+ */
+export const phaseKey = (phaseOrId) => {
+  if (!phaseOrId) return null;
+  if (typeof phaseOrId === 'string') {
+    if (Object.values(PHASE_KEYS).includes(phaseOrId)) return phaseOrId;
+    return LEGACY_ID_TO_PHASE_KEY[phaseOrId] || null;
+  }
+  if (typeof phaseOrId === 'object') {
+    if (phaseOrId.phaseKey) return phaseOrId.phaseKey;
+    if (phaseOrId.id) return LEGACY_ID_TO_PHASE_KEY[phaseOrId.id] || null;
+  }
+  return null;
+};
+
+/**
+ * Determine whether a user has been approved to enter Ascent.
+ * Three-phase model rule: foundationCompleted is necessary but no longer sufficient —
+ * an explicit trainer approval (ascentApproved) is required.
+ *
+ * For backward compatibility during the cutover, the legacy `graduated` flag
+ * counts as both foundationCompleted AND ascentApproved (anyone who graduated
+ * under the old system retains full Ascent access).
+ */
+export const isAscentApproved = (user) => {
+  if (!user) return false;
+  if (user.graduated === true) return true; // legacy auto-grant
+  return user.foundationCompleted === true && user.ascentApproved === true;
 };
 
 // Leadership quotes for Prep Phase countdown
@@ -995,10 +1063,10 @@ export const useDailyPlan = () => {
     let phaseDay = getPhaseDayNumber(dbDay);
 
     // FOUNDATION COMPLETION OVERRIDE:
-    // When the trainer signs off Foundation (milestone 5), the user is moved
-    // into Ascent immediately, regardless of calendar position. The legacy
-    // `graduated` flag and the new `foundationCompleted` flag are both honored.
-    if (user?.foundationCompleted === true || user?.graduated === true) {
+    // Three-phase model: a user enters Ascent only when isAscentApproved(user) is true,
+    // which requires foundationCompleted + an explicit trainer approval (ascentApproved),
+    // OR the legacy `graduated` flag for users from the old milestone-based system.
+    if (isAscentApproved(user)) {
       phase = PHASES.POST_START;
       // Use day 71 (start of Ascent) as the effective dbDay so phase-day
       // calculations still produce a sensible "Ascent Day 1+"
