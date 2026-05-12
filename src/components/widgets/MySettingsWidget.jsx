@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { 
   Settings, User, Bell, CheckCircle, Edit2, Zap, Mail, Smartphone, VolumeX, Shield,
   Download, LogOut, AlertTriangle, Sun, Moon, Monitor, ChevronRight, KeyRound,
@@ -11,6 +11,7 @@ import { useTheme } from '../../providers/ThemeProvider';
 import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
 import NotificationPreferencesWidget from './NotificationPreferencesWidget';
 import BaselineAssessmentSimple from '../screens/developmentplan/BaselineAssessmentSimple';
+const IdentityStatement = lazy(() => import('../screens/IdentityStatement'));
 import { logActivity, ACTIVITY_TYPES } from '../../services/activityLogger';
 import PWAInstall from '../ui/PWAInstall';
 import { doc, getDoc } from 'firebase/firestore';
@@ -35,6 +36,7 @@ const STRATEGY_DISPLAY = {
 const MySettingsWidget = () => {
   const [showProfileForm, setShowProfileForm] = useState(false);
   const [showBaselineForm, setShowBaselineForm] = useState(false);
+  const [showIdentityForm, setShowIdentityForm] = useState(false);
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   
@@ -216,7 +218,7 @@ const MySettingsWidget = () => {
 
           {/* Leadership Identity Statement Row */}
           <button
-            onClick={() => navigate && navigate('identity-statement')}
+            onClick={() => setShowIdentityForm(true)}
             className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-corporate-teal/30 transition-colors"
           >
             <div className="flex items-center gap-3">
@@ -406,6 +408,17 @@ const MySettingsWidget = () => {
               onClose={() => setShowBaselineForm(false)}
               initialData={latestAssessment}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Leadership Identity Modal */}
+      {showIdentityForm && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-2xl my-auto">
+            <Suspense fallback={<div className="bg-white rounded-2xl p-8 text-center text-slate-500">Loading…</div>}>
+              <IdentityStatement embedded onClose={() => setShowIdentityForm(false)} />
+            </Suspense>
           </div>
         </div>
       )}
