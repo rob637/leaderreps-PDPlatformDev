@@ -3545,6 +3545,17 @@ export const FEATURE_METADATA = {
     outputs: ['toggleItemComplete'],
     componentPath: 'src/components/widgets/ThisWeeksActionsWidget.jsx',
   },
+  'my-actions': {
+    core: true,
+    category: 'Dashboard',
+    name: 'My Actions',
+    description: 'Self-paced phase content (May 2026 three-phase model).',
+    purpose: 'Phase To-Do List.',
+    extendedDescription: 'Renders Foundation or Ascent content from daily_plan_v2 with completion tracking. Replaces This Week\'s Actions in the simplified phase model.',
+    inputs: ['threePhaseContent', 'userProgress'],
+    outputs: ['toggleItemComplete'],
+    componentPath: 'src/components/widgets/MyActionsWidget.jsx',
+  },
   'dev-plan-focus-areas': {
     core: true,
     category: 'Development Plan',

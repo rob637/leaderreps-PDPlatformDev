@@ -38,6 +38,8 @@ import LOVManager from './LOVManager';
 import DailyRepsLibrary from './DailyRepsLibrary';
 import ContentManager from './DailyPlanManager';
 import LevelSignOffQueue from './LevelSignOffQueue';
+import FoundationCompletionQueue from './FoundationCompletionQueue';
+import AscentApprovalQueue from './AscentApprovalQueue';
 import SessionAttendanceQueue from './SessionAttendanceQueue';
 import CoachingCertificationQueue from './CoachingCertificationQueue';
 import CohortManager from './CohortManager';
@@ -162,6 +164,8 @@ const AdminPortal = () => {
         { id: 'ask-trainer-inbox', label: 'Ask a Trainer', icon: Megaphone },
         { id: 'session-attendance', label: 'Session Attendance', icon: BookOpen },
         { id: 'sign-off-queue', label: 'Level Sign-Off', icon: CheckCircle },
+        { id: 'foundation-completion-queue', label: 'Foundation Completion', icon: CheckCircle },
+        { id: 'ascent-approval-queue', label: 'Ascent Approval', icon: Award },
         { id: 'coaching-cert', label: 'Leader Certification', icon: Award },
         { id: 'leader-profiles', label: 'Leader Profiles', icon: FileText },
         { id: 'conditioning', label: 'Conditioning', icon: Zap },
@@ -211,6 +215,10 @@ const AdminPortal = () => {
         return <ContentManager />;
       case 'sign-off-queue':
         return <LevelSignOffQueue />;
+      case 'foundation-completion-queue':
+        return <FoundationCompletionQueue />;
+      case 'ascent-approval-queue':
+        return <AscentApprovalQueue />;
       case 'ask-trainer-inbox':
         return <AskTrainerInbox />;
       case 'session-attendance':

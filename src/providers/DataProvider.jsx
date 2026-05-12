@@ -33,6 +33,7 @@ const DataProvider = ({
     strategicContentData: null,
     membershipData: null,
     globalMetadata: null,
+    threePhaseContent: { foundation: null, ascent: null },
   });
 
   useEffect(() => {
@@ -319,6 +320,10 @@ const DataProvider = ({
       ...globalHook,
       globalMetadata: resolvedMetadata, // Explicitly expose globalMetadata for components that expect it
 
+      // Three-phase content (daily_plan_v2 — May 2026 model)
+      threePhaseContent: serviceData.threePhaseContent,
+      updatePhaseContent: services?.updatePhaseContent || null,
+
       // Catalogs (from resolvedMetadata)
       SKILL_CATALOG: resolvedMetadata.SKILL_CATALOG || EMPTY_ARRAY_CATALOG,
       COURSE_LIBRARY: resolvedMetadata.COURSE_LIBRARY || EMPTY_ARRAY_CATALOG,
@@ -354,6 +359,8 @@ const DataProvider = ({
     strategicContentHook,
     membershipHook,
     globalHook,
+    serviceData.threePhaseContent,
+    services,
     apiKey,
     hasGeminiKey,
     callSecureGeminiAPI,

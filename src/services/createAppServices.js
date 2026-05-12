@@ -1,6 +1,7 @@
 // src/services/createAppServices.js
 import { onSnapshotEx, setDocEx, getDocEx } from './firestoreUtils';
 import { buildModulePath } from './pathUtils';
+import { subscribeToThreePhaseContent, updatePhaseContent as updatePhaseContentDoc } from './threePhaseContentService.js';
 import { Timestamp } from 'firebase/firestore';
 import { 
     MOCK_DEVELOPMENT_PLAN_DATA, MOCK_DAILY_PRACTICE_DATA, MOCK_STRATEGIC_CONTENT_DATA, 
@@ -71,6 +72,7 @@ export const createAppServices = (db, userId) => {
     strategicContentData: null,
     membershipData: null,
     globalMetadata: null,
+    threePhaseContent: { foundation: null, ascent: null }, // daily_plan_v2 (May 2026 three-phase model)
     listeners: [],
     onChange: null,
     midnightTimer: null // Track the midnight timer for cleanup
@@ -84,7 +86,8 @@ export const createAppServices = (db, userId) => {
         dailyPracticeData: stores.dailyPracticeData,
         strategicContentData: stores.strategicContentData,
         membershipData: stores.membershipData,
-        globalMetadata: stores.globalMetadata
+        globalMetadata: stores.globalMetadata,
+        threePhaseContent: stores.threePhaseContent
       });
     }
   };
@@ -172,6 +175,15 @@ export const createAppServices = (db, userId) => {
       notifyChange();
     });
     stores.listeners.push(unsubMembership);
+
+    // === THREE-PHASE CONTENT (daily_plan_v2) ===
+    // New flat content model — two docs: foundation-content, ascent-content.
+    // Lives alongside the legacy daily_plan_v1 reads above until Commit 3.
+    const unsubThreePhase = subscribeToThreePhaseContent(db, (data) => {
+      stores.threePhaseContent = data;
+      notifyChange();
+    });
+    stores.listeners.push(unsubThreePhase);
 
     const metadataPath = 'metadata/config';
     const unsubMeta = onSnapshotEx(db, metadataPath, (snap) => {
@@ -367,6 +379,14 @@ export const createAppServices = (db, userId) => {
     }
     return ok;
   };
+
+  // Update one phase document in daily_plan_v2.
+  // phaseKey: 'foundation' | 'ascent'
+  const updatePhaseContent = async (phaseKey, updates, opts) => {
+    if (!db) return false;
+    const ok = await updatePhaseContentDoc(db, phaseKey, updates, opts);
+    return ok;
+  };
   
   const clearUserPlanAndAnchors = async () => {
       if (!db || !userId) {
@@ -413,10 +433,12 @@ export const createAppServices = (db, userId) => {
     get globalMetadata() { 
       return resolveGlobalMetadata(stores.globalMetadata);
     },
+    get threePhaseContent() { return stores.threePhaseContent; },
     updateDevelopmentPlanData,
     updateDailyPracticeData,
     updateStrategicContentData,
     updateMembershipData,
+    updatePhaseContent,
     clearUserPlanAndAnchors,
     setOnChange: (callback) => {
       stores.onChange = callback;
