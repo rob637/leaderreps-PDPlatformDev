@@ -18,6 +18,7 @@ import MobilePWABanner from '../ui/MobilePWABanner.jsx';
 // import RepFloatingButton from '../rep/RepFloatingButton.jsx'; // RepUp temporarily disabled — may bring back later
 import BugReportModal from '../modals/BugReportModal.jsx';
 import AscentLaunchAnnouncementModal from '../modals/AscentLaunchAnnouncementModal.jsx';
+import UIVersionFloatingToggle from '../ui/UIVersionFloatingToggle.jsx';
 
 const AppContent = ({
   currentScreen,
@@ -264,6 +265,8 @@ const AppContent = ({
         </div>
       </div>
       </div>
+      {/* Floating UI Version toggle — lets anyone preview the next-gen UI */}
+      <UIVersionFloatingToggle />
     </NavigationProvider>
   );
 };

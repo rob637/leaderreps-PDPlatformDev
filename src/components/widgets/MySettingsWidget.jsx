@@ -2,12 +2,13 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { 
   Settings, User, Bell, CheckCircle, Edit2, Zap, Mail, Smartphone, VolumeX, Shield,
   Download, LogOut, AlertTriangle, Sun, Moon, Monitor, ChevronRight, KeyRound,
-  ClipboardList, ArrowRight, Compass
+  ClipboardList, ArrowRight, Compass, Sparkles
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 import { useAppServices } from '../../services/useAppServices';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useUIVersion } from '../../providers/UIVersionProvider';
 import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
 import NotificationPreferencesWidget from './NotificationPreferencesWidget';
 import BaselineAssessmentSimple from '../screens/developmentplan/BaselineAssessmentSimple';
@@ -45,6 +46,9 @@ const MySettingsWidget = () => {
   
   // Theme
   const { theme, setTheme } = useTheme();
+
+  // UI Version (Classic v1 vs Next v2 — "State of the Art" preview)
+  const { uiVersion, setUIVersion, isV2 } = useUIVersion();
   
   // Use stored isComplete flag - profile is complete once user saves it
   const isProfileComplete = profileComplete;
@@ -313,6 +317,48 @@ const MySettingsWidget = () => {
                   <ThemeIcon className="w-4 h-4" />
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* UI Style Row — Classic vs Next ("State of the Art" preview) */}
+          <div className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isV2 ? 'bg-gradient-to-br from-corporate-teal/20 to-corporate-orange/20' : 'bg-slate-100 dark:bg-slate-700'}`}>
+                <Sparkles className={`w-4 h-4 ${isV2 ? 'text-corporate-teal-ink' : 'text-slate-400'}`} />
+              </div>
+              <div className="text-left">
+                <h4 className="font-medium text-corporate-navy dark:text-white text-sm">UI Style</h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {isV2 ? 'Next — glass, motion, modern' : 'Classic — solid, familiar'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center bg-slate-100 dark:bg-slate-700 rounded-lg p-0.5">
+              <button
+                onClick={() => setUIVersion('v1')}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-200 ${
+                  !isV2
+                    ? 'bg-white dark:bg-slate-600 shadow-sm text-corporate-navy dark:text-white'
+                    : 'bg-transparent text-slate-500 hover:text-slate-700'
+                }`}
+                aria-label="Use classic UI"
+                aria-pressed={!isV2}
+              >
+                Classic
+              </button>
+              <button
+                onClick={() => setUIVersion('v2')}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-200 inline-flex items-center gap-1 ${
+                  isV2
+                    ? 'bg-gradient-to-r from-corporate-teal to-corporate-teal-dark text-white shadow-sm'
+                    : 'bg-transparent text-slate-500 hover:text-slate-700'
+                }`}
+                aria-label="Use next-generation UI"
+                aria-pressed={isV2}
+              >
+                <Sparkles className="w-3 h-3" />
+                Next
+              </button>
             </div>
           </div>
 

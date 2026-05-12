@@ -52,6 +52,7 @@ import { NotificationProvider } from './providers/NotificationProvider.jsx';
 import { TimeProvider } from './providers/TimeProvider.jsx';
 import { AccessControlProvider } from './providers/AccessControlProvider.jsx';
 import { ThemeProvider } from './providers/ThemeProvider.jsx';
+import { UIVersionProvider } from './providers/UIVersionProvider.jsx';
 import { RepTypeProvider } from './providers/RepTypeProvider.jsx';
 
 // --- Mobile Experience Enhancements ---
@@ -263,14 +264,16 @@ function MainApp() {
         />
         <LiveRegion />
         <ThemeProvider>
-          <Suspense fallback={<BootSkeleton />}>
-            <AuthPanel
-              auth={firebaseServices.auth}
-              db={firebaseServices.db}
-              functions={firebaseServices.functions}
-              onSuccess={() => navigate('dashboard')}
-            />
-          </Suspense>
+          <UIVersionProvider>
+            <Suspense fallback={<BootSkeleton />}>
+              <AuthPanel
+                auth={firebaseServices.auth}
+                db={firebaseServices.db}
+                functions={firebaseServices.functions}
+                onSuccess={() => navigate('dashboard')}
+              />
+            </Suspense>
+          </UIVersionProvider>
         </ThemeProvider>
         <UpdateNotification />
       </>
@@ -291,6 +294,7 @@ function MainApp() {
       <LiveRegion />
       
       <ThemeProvider>
+      <UIVersionProvider>
       <TimeProvider>
         <OfflineProvider>
           <DataProvider
@@ -327,6 +331,7 @@ function MainApp() {
           </DataProvider>
         </OfflineProvider>
       </TimeProvider>
+      </UIVersionProvider>
       </ThemeProvider>
       
       {/* PWA Update Notification */}
