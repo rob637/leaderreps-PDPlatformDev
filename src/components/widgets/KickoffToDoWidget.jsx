@@ -64,8 +64,18 @@ const KickoffToDoWidget = () => {
 
   const requiredItems = useMemo(() => {
     const items = Array.isArray(phaseContent?.contentItems) ? phaseContent.contentItems : [];
+    // Hide unlinked items from the leader-facing kickoff list. Artifact
+    // items (Leader Profile, Skills Baseline, Identity Statement) are
+    // always navigable. Everything else needs a real resourceId/contentItemId
+    // pointing at content_library, otherwise the click would just produce
+    // a "not linked" alert. Admins still see these in Phase Content.
+    const cleanId = (v) => (typeof v === 'string' ? v.trim() : v) || '';
+    const linked = (it) => {
+      if (isArtifactItem(it)) return true;
+      return Boolean(cleanId(it?.resourceId) || cleanId(it?.contentItemId));
+    };
     return items
-      .filter((it) => it?.required || it?.isRequiredContent)
+      .filter((it) => (it?.required || it?.isRequiredContent) && linked(it))
       .map((item, idx) => ({
         item,
         idx,
