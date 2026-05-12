@@ -19,6 +19,7 @@ import CoachingActionItem from '../coaching/CoachingActionItem';
 import SessionPickerModal from '../coaching/SessionPickerModal';
 import { doc, getDoc, updateDoc, setDoc, deleteField, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
+import { useFeatures } from '../../providers/FeatureProvider';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
 import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
 import BaselineAssessmentSimple from '../screens/developmentplan/BaselineAssessmentSimple';
@@ -78,6 +79,12 @@ const generateCalendarUrl = (calendarEvent) => {
 
 const ThisWeeksActionsWidget = ({ helpText }) => {
   const { db, user, developmentPlanData, updateDevelopmentPlanData, isAdmin } = useAppServices();
+  const { isFeatureEnabled } = useFeatures();
+  // Foundation Open Access (May-11 revamp): when enabled, Foundation phase
+  // ('start') drops milestone-by-milestone gating and treats all 5 milestones
+  // as flat, all-access content from Day 1. Default OFF (not in FEATURE_METADATA);
+  // toggle in Firestore at config/features.foundation-open-access.enabled = true.
+  const foundationOpenAccess = isFeatureEnabled('foundation-open-access');
   const navigation = useSafeNavigation();
   const navigate = navigation?.navigate;
   const [resettingPrep, setResettingPrep] = useState(false);
@@ -694,6 +701,93 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     // Foundation uses 5 gated milestones instead of 8 weeks
     // Milestones are stored as milestone-1, milestone-2, etc. in daily_plan_v1
     if (currentPhase?.id === 'start') {
+      // -------------------- FOUNDATION OPEN ACCESS (May-11 revamp) --------------------
+      // When the foundation-open-access feature flag is on, Foundation is flat:
+      // all 5 milestones' content is shown at once with no milestone gating,
+      // no trainer-controlled session attendance items, no certificate gating.
+      // Session prep items are still surfaced for completeness.
+      if (foundationOpenAccess) {
+        const flatActions = [];
+        const flatCoaching = [];
+        const flatCommunity = [];
+        const flatSessionPrep = [];
+
+        for (let m = 1; m <= 5; m++) {
+          const mDoc = dailyPlan.find(d => d.id === `milestone-${m}`);
+          if (mDoc?.actions && mDoc.actions.length > 0) {
+            const normalized = normalizeDailyActions(mDoc.actions, `milestone-${m}`, m).filter(a => {
+              if (a.type === 'daily_rep') return false;
+              if (a.handlerType === 'conditioning-rep' && a.repTypeId) {
+                if (!SIMPLIFIED_REP_TYPES.includes(a.repTypeId)) return false;
+              }
+              return true;
+            });
+            flatActions.push(...normalized);
+          }
+          if (mDoc?.coachingSessionTypes && mDoc.coachingSessionTypes.length > 0) {
+            mDoc.coachingSessionTypes.forEach((sessionType) => {
+              const typeInfo = COACHING_SESSION_LABELS[sessionType] || { label: 'Coaching Session', description: '', icon: '🎯' };
+              flatCoaching.push({
+                id: `milestone-${m}-coaching-${sessionType}`,
+                type: 'coaching',
+                displayType: 'coaching',
+                sessionType,
+                label: typeInfo.label,
+                description: typeInfo.description,
+                icon: typeInfo.icon,
+                required: false,
+                category: 'Coaching',
+                fromDailyPlan: true,
+                dayId: `milestone-${m}`,
+                handlerType: 'session-picker',
+                isSessionPicker: true,
+                requiresCertification: false,
+                milestoneId: m
+              });
+            });
+          }
+          if (mDoc?.communitySessionTypes && mDoc.communitySessionTypes.length > 0) {
+            mDoc.communitySessionTypes.forEach((sessionType) => {
+              const typeInfo = COMMUNITY_SESSION_LABELS[sessionType] || { label: 'Community Session', description: '', icon: '🎉' };
+              flatCommunity.push({
+                id: `milestone-${m}-community-${sessionType}`,
+                type: 'community',
+                displayType: 'community',
+                sessionType,
+                label: `Join: ${typeInfo.label}`,
+                description: typeInfo.description,
+                icon: typeInfo.icon,
+                required: false,
+                optional: true,
+                category: 'Community',
+                fromDailyPlan: true,
+                dayId: `milestone-${m}`,
+                handlerType: 'community-session-picker',
+                isSessionPicker: true
+              });
+            });
+          }
+        }
+
+        // Aggregate all session-prep configs (session2..session5) so users see prep items together
+        ['session2', 'session3', 'session4', 'session5'].forEach((spId) => {
+          const cfg = dailyPlan.find(d => d.id === `${spId}-config`);
+          if (cfg?.actions && cfg.actions.length > 0) {
+            const visible = cfg.actions.filter(a => a.hidden !== true);
+            const normalized = normalizeDailyActions(visible, `${spId}-config`, 0).map(action => ({
+              ...action,
+              prepSection: spId,
+              isSessionPrep: true,
+              category: `Session ${spId.replace('session', '')} Prep`
+            }));
+            flatSessionPrep.push(...normalized);
+          }
+        });
+
+        return [...flatActions, ...flatCoaching, ...flatCommunity, ...flatSessionPrep];
+      }
+
+      // -------------------- DEFAULT (milestone-gated) FOUNDATION FLOW --------------------
       // Determine current milestone from user's milestone progress
       // Current milestone = first milestone that is NOT signed off (or 6 if all signed = graduated)
       let currentMilestone = 1;
@@ -942,11 +1036,13 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     // Filter out Daily Reps
     return weekActions.filter(action => action.type !== 'daily_rep');
     
-  }, [dailyPlan, currentPhase?.id, currentWeekNumber, prepRequirementsComplete?.allComplete, normalizeDailyActions, user?.milestoneProgress]);
+  }, [dailyPlan, currentPhase?.id, currentWeekNumber, prepRequirementsComplete?.allComplete, normalizeDailyActions, user?.milestoneProgress, foundationOpenAccess]);
 
   // Calculate current milestone info for display
   const currentMilestoneInfo = useMemo(() => {
     if (currentPhase?.id !== 'start') return null;
+    // Foundation Open Access: hide milestone progression chip & sign-off block.
+    if (foundationOpenAccess) return null;
     
     const milestoneProgress = user?.milestoneProgress || {};
     let currentMilestone = 1;
@@ -985,7 +1081,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       name: milestoneNames[currentMilestone] || `Milestone ${currentMilestone}`,
       isGraduated: false
     };
-  }, [currentPhase?.id, user?.milestoneProgress]);
+  }, [currentPhase?.id, user?.milestoneProgress, foundationOpenAccess]);
 
   // Get carried over items (including incomplete prep phase items AND all prior weeks)
   const carriedOverItems = useMemo(() => {
@@ -1414,6 +1510,37 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   const groupedSessionPrepItems = useMemo(() => {
     if (currentPhase?.id !== 'start') return {};
     
+    // Foundation Open Access: surface ALL session prep groups (session2..session5) flat,
+    // not gated by current milestone progression.
+    if (foundationOpenAccess) {
+      const groups = {
+        session2: { items: [], completedCount: 0, totalCount: 0, allComplete: false },
+        session3: { items: [], completedCount: 0, totalCount: 0, allComplete: false },
+        session4: { items: [], completedCount: 0, totalCount: 0, allComplete: false },
+        session5: { items: [], completedCount: 0, totalCount: 0, allComplete: false }
+      };
+      const isItemCompleteOA = (item) => {
+        if (item.prepComplete !== undefined) return item.prepComplete;
+        const progress = getItemProgress(item.id);
+        return progress?.status === 'completed' || completedItems.includes(item.id);
+      };
+      const seenOA = new Set();
+      allActions.forEach(item => {
+        if (!item.prepSection || seenOA.has(item.id)) return;
+        if (!groups[item.prepSection]) return;
+        seenOA.add(item.id);
+        const isComplete = isItemCompleteOA(item);
+        groups[item.prepSection].items.push({ ...item, isComplete });
+        groups[item.prepSection].totalCount++;
+        if (isComplete) groups[item.prepSection].completedCount++;
+      });
+      Object.keys(groups).forEach(sessionId => {
+        const g = groups[sessionId];
+        g.allComplete = g.totalCount > 0 && g.completedCount === g.totalCount;
+      });
+      return groups;
+    }
+    
     // Calculate current milestone to determine which session prep is "native"
     let currentMilestoneNum = 1;
     const milestoneProgress = user?.milestoneProgress || {};
@@ -1482,7 +1609,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     });
     
     return groups;
-  }, [currentPhase?.id, user?.milestoneProgress, allActions, getItemProgress, completedItems]);
+  }, [currentPhase?.id, user?.milestoneProgress, allActions, getItemProgress, completedItems, foundationOpenAccess]);
 
   // Fetch video series durations for video_series actions
   // Use a ref to track fetched series IDs to avoid infinite loops
@@ -3510,7 +3637,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                     </div>
                     <div className="flex-1 text-left">
                       <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
-                        🎉 {currentPhase?.id === 'start' ? 'Level Complete!' : 'This Week Complete!'}
+                        🎉 {currentPhase?.id === 'start' && currentMilestoneInfo ? 'Level Complete!' : 'This Week Complete!'}
                       </p>
                       <p className="text-xs text-emerald-600 dark:text-emerald-400">
                         All {milestoneActions.length} {milestoneActions.length === 1 ? 'task' : 'tasks'} finished — Great work!
@@ -3536,7 +3663,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                     <div className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                       <span className="text-sm font-bold text-teal-800 dark:text-teal-400 uppercase tracking-wider">
-                        {currentPhase?.id === 'start' 
+                        {currentPhase?.id === 'start' && currentMilestoneInfo
                           ? currentMilestoneInfo?.name || 'Current Milestone'
                           : 'This Week'}
                       </span>
