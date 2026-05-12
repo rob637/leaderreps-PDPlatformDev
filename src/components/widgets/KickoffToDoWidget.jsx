@@ -122,7 +122,7 @@ const KickoffToDoWidget = () => {
       {ResourceViewer}
       <Card title={`${phaseLabel} Kickoff`} icon={Star} accent="ORANGE">
         <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 px-2">
-          Complete these required items to get the most out of {phaseLabel}.
+          Complete these items to get the most out of {phaseLabel}.
         </p>
         <div className="flex items-center justify-end mb-3 px-2">
           <span className="text-xs text-slate-500 dark:text-slate-400">
