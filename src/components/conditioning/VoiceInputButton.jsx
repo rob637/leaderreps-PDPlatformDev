@@ -33,8 +33,13 @@ const VoiceInputButton = ({
   disabled = false,
   size = 'default',
   continuous = true, // Changed: Default to continuous for longer recordings
-  autoStop = true,
-  autoStopDelay = 3000 // Changed: 3 seconds of silence before auto-stop (was 1500)
+  // Changed (May-11): default to manual-stop. Recording stays active until
+  // the user clicks the stop button. On browsers that force non-continuous
+  // mode (iOS/Safari/Android), we auto-restart recognition on `onend` so
+  // the session keeps going through pauses. Pass `autoStop={true}` to opt
+  // back into the legacy silence-detected auto-stop behavior.
+  autoStop = false,
+  autoStopDelay = 3000 // Only used when autoStop is true
 }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isSupported, setIsSupported] = useState(true);
@@ -48,6 +53,17 @@ const VoiceInputButton = ({
   const transcriptRef = useRef('');
   const hasSubmittedRef = useRef(false); // Prevent duplicate submissions
   const processedIndicesRef = useRef(new Set()); // Track processed final result indices (Android fix)
+  // Manual-stop tracking (May-11): when false and `autoStop` is also false,
+  // the `onend` handler will restart recognition so the session continues
+  // through silence on browsers that force non-continuous mode.
+  const userStoppedRef = useRef(false);
+  const wantsActiveRef = useRef(false);
+  // Accumulates final transcript text across auto-restarts within a single
+  // user session. transcriptRef is reset on every recognition.onstart, so
+  // we need a separate session-level buffer to preserve dictated text when
+  // the browser ends and we restart recognition on silence.
+  const sessionTranscriptRef = useRef('');
+  const isRestartingRef = useRef(false);
   // Store callbacks in refs to avoid re-creating recognition on every render
   const onTranscriptionRef = useRef(onTranscription);
   const onPartialTranscriptionRef = useRef(onPartialTranscription);
@@ -87,14 +103,51 @@ const VoiceInputButton = ({
       setIsRecording(true);
       setError(null);
       transcriptRef.current = '';
-      hasSubmittedRef.current = false; // Reset submission flag on new recording
+      // Only reset cross-restart flags on a fresh user-initiated start.
+      // Auto-restarts (silence-driven) preserve sessionTranscriptRef and
+      // hasSubmittedRef so dictated text accumulates across the session.
+      if (!isRestartingRef.current) {
+        hasSubmittedRef.current = false;
+        sessionTranscriptRef.current = '';
+      }
+      isRestartingRef.current = false;
       processedIndicesRef.current = new Set(); // Reset processed indices (Android fix)
     };
     
     recognition.onend = () => {
+      // May-11 manual-stop mode: if the user hasn't pressed stop and we're
+      // not in autoStop mode, immediately restart recognition. The browser
+      // (especially iOS/Android) ends the session on silence; we want it to
+      // keep going until the user explicitly stops.
+      if (!autoStop && wantsActiveRef.current && !userStoppedRef.current) {
+        // Roll the just-finished segment into the session-level buffer so
+        // we don't lose anything when transcriptRef gets cleared on the
+        // next onstart.
+        const segment = transcriptRef.current.trim();
+        if (segment) {
+          sessionTranscriptRef.current = sessionTranscriptRef.current
+            ? `${sessionTranscriptRef.current} ${segment}`
+            : segment;
+          // Surface as a partial so the parent textarea reflects accumulated
+          // text between restarts (without marking the session as submitted).
+          onPartialTranscriptionRef.current?.(sessionTranscriptRef.current);
+        }
+        try {
+          isRestartingRef.current = true;
+          recognitionRef.current?.start();
+          // Stay in the recording state visually; don't clear isRecording.
+          return;
+        } catch (e) {
+          // If start throws (already started, etc.) fall through to the
+          // normal end behavior below.
+          isRestartingRef.current = false;
+        }
+      }
+
       setIsRecording(false);
       setIsProcessing(false);
       setIsStarting(false);
+      wantsActiveRef.current = false;
       
       // Clear timers
       if (autoStopTimerRef.current) {
@@ -106,11 +159,19 @@ const VoiceInputButton = ({
         startupTimerRef.current = null;
       }
       
-      // Send final transcription if we have content (only once)
-      if (transcriptRef.current.trim() && !hasSubmittedRef.current) {
+      // Send final transcription if we have content (only once). Combine
+      // the last segment with anything accumulated across auto-restarts.
+      const lastSegment = transcriptRef.current.trim();
+      const combined = sessionTranscriptRef.current
+        ? (lastSegment
+            ? `${sessionTranscriptRef.current} ${lastSegment}`
+            : sessionTranscriptRef.current)
+        : lastSegment;
+      if (combined && !hasSubmittedRef.current) {
         hasSubmittedRef.current = true;
-        onTranscriptionRef.current?.(transcriptRef.current.trim());
-        transcriptRef.current = ''; // Clear after sending to prevent duplicates
+        onTranscriptionRef.current?.(combined);
+        transcriptRef.current = '';
+        sessionTranscriptRef.current = '';
       }
     };
     
@@ -156,6 +217,15 @@ const VoiceInputButton = ({
         displayText = (finalText + ' ' + interimTranscript).trim();
       } else if (!finalText && interimTranscript.trim()) {
         displayText = interimTranscript.trim();
+      }
+
+      // Prepend the session-level buffer so the live preview shows everything
+      // dictated across auto-restarts (manual-stop mode), not just the
+      // current segment.
+      if (sessionTranscriptRef.current && displayText) {
+        displayText = `${sessionTranscriptRef.current} ${displayText}`;
+      } else if (sessionTranscriptRef.current) {
+        displayText = sessionTranscriptRef.current;
       }
       
       if (onPartialTranscriptionRef.current && displayText) {
@@ -255,6 +325,10 @@ const VoiceInputButton = ({
     if (!recognitionRef.current || disabled || isStarting) return;
     
     if (isRecording) {
+      // Mark this as a user-initiated stop so the onend handler does NOT
+      // auto-restart recognition.
+      userStoppedRef.current = true;
+      wantsActiveRef.current = false;
       setIsProcessing(true);
       try {
         recognitionRef.current.stop();
@@ -265,8 +339,12 @@ const VoiceInputButton = ({
       }
     } else {
       transcriptRef.current = '';
+      sessionTranscriptRef.current = '';
       hasSubmittedRef.current = false; // Reset submission flag
       processedIndicesRef.current = new Set(); // Reset processed indices (Android fix)
+      userStoppedRef.current = false;
+      wantsActiveRef.current = true;
+      isRestartingRef.current = false;
       setError(null);
       setIsStarting(true);
       
