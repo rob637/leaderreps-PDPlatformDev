@@ -9,7 +9,8 @@ import {
 } from 'lucide-react';
 import ConditioningDashboard from './ConditioningDashboard';
 import SessionAttendanceQueue from './SessionAttendanceQueue';
-import LevelSignOffQueue from './LevelSignOffQueue';
+import FoundationCompletionQueue from './FoundationCompletionQueue';
+import AscentApprovalQueue from './AscentApprovalQueue';
 import CoachingCertificationQueue from './CoachingCertificationQueue';
 import LeaderProfileReports from './LeaderProfileReports';
 import LeaderActivityReport from './LeaderActivityReport';
@@ -31,7 +32,8 @@ const TABS = [
   { id: 'red-analytics', label: 'RED Analytics', icon: MessageSquare },
   { id: 'assessment-insights', label: 'Assessment Insights', icon: BarChart3 },
   { id: 'session-attendance', label: 'Session Attendance', icon: BookOpen },
-  { id: 'sign-off-queue', label: 'Level Sign-Off', icon: CheckCircle },
+  { id: 'foundation-completion-queue', label: 'Foundation Completion', icon: CheckCircle },
+  { id: 'ascent-approval-queue', label: 'Ascent Approval', icon: Award },
   { id: 'coaching-cert', label: 'Certification Queue', icon: Award },
 ];
 
@@ -59,7 +61,10 @@ const FacilitatorCenter = () => {
       case 'red-analytics': return <RedAnalyticsPanel />;
       case 'assessment-insights': return <AccountabilityInsights />;
       case 'session-attendance': return <SessionAttendanceQueue />;
-      case 'sign-off-queue': return <LevelSignOffQueue />;
+      case 'foundation-completion-queue': return <FoundationCompletionQueue />;
+      case 'ascent-approval-queue': return <AscentApprovalQueue />;
+      // Legacy alias — deep links from the old Level Sign-Off tab land on Foundation Completion
+      case 'sign-off-queue': return <FoundationCompletionQueue />;
       case 'coaching-cert': return <CoachingCertificationQueue />;
       case 'leader-profiles': return <LeaderProfileReports />;
       case 'activity-report': return <LeaderActivityReport />;

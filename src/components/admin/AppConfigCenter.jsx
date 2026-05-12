@@ -8,7 +8,7 @@ import {
   ShieldAlert, Wrench, Dumbbell,
 } from 'lucide-react';
 import UserManagement from './UserManagement';
-import ContentManager from './DailyPlanManager';
+import PhaseContentManager from './PhaseContentManager';
 import ContentAdminHome from './ContentAdminHome';
 import MediaLibrary from './MediaLibrary';
 import VideoSeriesManager from './VideoSeriesManager';
@@ -35,7 +35,7 @@ const TAB_GROUPS = [
   {
     label: 'Content',
     tabs: [
-      { id: 'content-manager', label: 'Content Manager', icon: Calendar },
+      { id: 'phase-content', label: 'Phase Content', icon: Calendar },
       { id: 'content', label: 'Content Library', icon: FileText },
       { id: 'video-series', label: 'Video Series', icon: PlaySquare },
       { id: 'media', label: 'Media Vault', icon: Database },
@@ -92,7 +92,9 @@ const AppConfigCenter = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'users': return <UserManagement />;
-      case 'content-manager': return <ContentManager />;
+      case 'phase-content': return <PhaseContentManager />;
+      // Legacy alias — preserve any deep links to the old Content Manager tab
+      case 'content-manager': return <PhaseContentManager />;
       case 'content': return <ContentAdminHome />;
       case 'media': return <MediaLibrary />;
       case 'video-series': return <VideoSeriesManager />;
