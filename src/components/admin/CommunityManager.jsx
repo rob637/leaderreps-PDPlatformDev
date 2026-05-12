@@ -28,7 +28,7 @@ import {
 import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
 import CommunitySessionManager from './CommunitySessionManager';
 
-const CommunityManager = () => {
+const CommunityManager = ({ embedded = false }) => {
   const { db, navigate, user } = useAppServices();
   const [activeTab, setActiveTab] = useState('sessions'); // 'sessions', 'posts'
   const [posts, setPosts] = useState([]);
@@ -155,22 +155,26 @@ const CommunityManager = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto bg-slate-50 dark:bg-slate-800 min-h-screen">
-      <BreadcrumbNav
-        items={getBreadcrumbs('admin-community-manager')}
-        navigate={navigate}
-      />
+    <div className={embedded ? 'p-6 max-w-7xl mx-auto' : 'p-6 max-w-7xl mx-auto bg-slate-50 dark:bg-slate-800 min-h-screen'}>
+      {!embedded && (
+        <BreadcrumbNav
+          items={getBreadcrumbs('admin-community-manager')}
+          navigate={navigate}
+        />
+      )}
 
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Users className="w-8 h-8 text-corporate-teal" />
-            <h1 className="text-3xl font-bold text-corporate-navy">
-              Community Management
-            </h1>
-          </div>
-          
+          {!embedded ? (
+            <div className="flex items-center gap-3">
+              <Users className="w-8 h-8 text-corporate-teal" />
+              <h1 className="text-3xl font-bold text-corporate-navy">
+                Community Management
+              </h1>
+            </div>
+          ) : <div />}
+
           {activeTab === 'posts' && (
             <button
               onClick={handleAdd}

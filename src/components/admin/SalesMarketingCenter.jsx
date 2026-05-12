@@ -3,12 +3,12 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Megaphone, Globe, Users,
+  Megaphone, Globe, Users, BarChart3,
   ShieldAlert, ExternalLink, Sparkles, BookOpen,
-  FlaskConical, Brain, Zap, Presentation, Briefcase
 } from 'lucide-react';
 import SocialMediaManager from './SocialMediaManager';
 import AssessmentLeadsManager from './AssessmentLeadsManager';
+import AccountabilityInsights from './AccountabilityInsights';
 import CRMApp from './crm/CRMApp';
 import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
 import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
@@ -23,9 +23,10 @@ const TAB_GROUPS = [
     ],
   },
   {
-    label: 'Lead Generation',
+    label: 'Lead Magnets',
     tabs: [
-      { id: 'assessment-leads', label: 'Lead Magnets', icon: Users },
+      { id: 'assessment-leads', label: 'Accountability Leads', icon: Users },
+      { id: 'assessment-insights', label: 'Accountability Insights', icon: BarChart3 },
     ],
   },
   {
@@ -38,16 +39,6 @@ const TAB_GROUPS = [
     label: 'Content',
     tabs: [
       { id: 'book-builder', label: 'Book Builder', icon: BookOpen },
-    ],
-  },
-  {
-    label: 'LeaderReps Lab',
-    tabs: [
-      { id: 'lab-srs', label: 'SRS Engine', icon: FlaskConical },
-      { id: 'lab-account-intel', label: 'Account Intelligence', icon: Brain },
-      { id: 'lab-trigger-talktrack', label: 'Trigger → Talk Track', icon: Zap },
-      { id: 'lab-demo-autopilot', label: 'Demo Auto-Pilot', icon: Presentation },
-      { id: 'lab-champion-kits', label: 'Champion Kits', icon: Briefcase },
     ],
   },
 ];
@@ -168,6 +159,8 @@ const SalesMarketingCenter = () => {
       case 'assessment-leads': 
       case 'roi-calculator-leads':
         return <AssessmentLeadsManager />;
+      case 'assessment-insights':
+        return <AccountabilityInsights />;
       case 'social-media':
         return <SocialMediaManager />;
       case 'book-builder':
@@ -193,86 +186,6 @@ const SalesMarketingCenter = () => {
               </button>
             </div>
           </div>
-        );
-      case 'lab-srs':
-        return (
-          <ExperimentCard
-            icon={FlaskConical}
-            title="SRS Engine"
-            status="Live"
-            tagline="Spaced Repetition System for leadership reps."
-            description="Active experiment hosted on Firebase. Tests adaptive scheduling for daily leadership reps to maximize retention and behavior change. Use this engine to validate spacing intervals before rolling features into the main platform."
-            primaryAction={{
-              label: 'Launch SRS Engine',
-              href: 'https://leaderreps-lab.web.app/',
-              icon: ExternalLink,
-            }}
-            gradient="from-emerald-600 to-teal-600"
-          />
-        );
-      case 'lab-account-intel':
-        return (
-          <ExperimentCard
-            icon={Brain}
-            title="Account Intelligence Engine"
-            status="Concept"
-            tagline="Persistent dossiers on every target account, refreshed weekly."
-            description="Tracks leadership turnover, layoffs, earnings call mentions of culture/talent, Glassdoor sentiment shifts, and new VP hires across your CRM accounts. Delivers a Monday digest to reps: 'These 3 accounts had leadership changes this week — strike now.' Turns cold calls into warm calls."
-            primaryAction={{
-              label: 'Design Experiment',
-              icon: Sparkles,
-              disabled: true,
-            }}
-            gradient="from-blue-600 to-indigo-600"
-          />
-        );
-      case 'lab-trigger-talktrack':
-        return (
-          <ExperimentCard
-            icon={Zap}
-            title="Trigger → Talk Track Generator"
-            status="Concept"
-            tagline="Auto-generate 3-touch outreach the moment a buying signal fires."
-            description="When the system detects a trigger (new VP, layoff, bad earnings, 'leadership development' in a job posting), it generates a personalized email + LinkedIn message + call script referencing the specific trigger. Reps just click Send or Edit. Flips the 70/30 research-to-selling ratio."
-            primaryAction={{
-              label: 'Design Experiment',
-              icon: Sparkles,
-              disabled: true,
-            }}
-            gradient="from-amber-500 to-orange-600"
-          />
-        );
-      case 'lab-demo-autopilot':
-        return (
-          <ExperimentCard
-            icon={Presentation}
-            title="Demo Auto-Pilot"
-            status="Concept"
-            tagline="Live ROI calculator + guided discovery during the sales call."
-            description="A guided discovery tool reps use during Zoom calls. Asks the prospect 5 questions live → generates a custom 'Leadership ROI Projection' with their company's specific numbers (turnover cost, missed promotion cost) → emailed to them before the call ends. Wires into the existing roi-calculator/ workspace."
-            primaryAction={{
-              label: 'Design Experiment',
-              icon: Sparkles,
-              disabled: true,
-            }}
-            gradient="from-pink-500 to-rose-600"
-          />
-        );
-      case 'lab-champion-kits':
-        return (
-          <ExperimentCard
-            icon={Briefcase}
-            title="Champion Enablement Kits"
-            status="Concept"
-            tagline="The 'Internal Sale' tool — arm your champion to close for you."
-            description="Generates a personalized board deck PDF for each prospect: their company logo, named pain points from discovery, peer benchmarks, and custom pricing. The champion forwards it to their CFO. Solves the #1 reason enterprise deals stall — 'I need to get buy-in.' Hand them the buy-in."
-            primaryAction={{
-              label: 'Design Experiment',
-              icon: Sparkles,
-              disabled: true,
-            }}
-            gradient="from-violet-600 to-purple-700"
-          />
         );
       default:
         return null;

@@ -23,6 +23,7 @@ import { useFeatures } from '../../providers/FeatureProvider';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
 import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
 import BaselineAssessmentSimple from '../screens/developmentplan/BaselineAssessmentSimple';
+import IdentityStatement from '../screens/IdentityStatement';
 import NotificationPreferencesWidget from './NotificationPreferencesWidget';
 import FoundationCommitmentWidget from './FoundationCommitmentWidget';
 import ConditioningTutorialWidget from './ConditioningTutorialWidget';
@@ -96,6 +97,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   // Interactive content modals
   const [showLeaderProfileModal, setShowLeaderProfileModal] = useState(false);
   const [showBaselineModal, setShowBaselineModal] = useState(false);
+  const [showIdentityStatementModal, setShowIdentityStatementModal] = useState(false);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [showFoundationCommitmentModal, setShowFoundationCommitmentModal] = useState(false);
   const [showConditioningTutorialModal, setShowConditioningTutorialModal] = useState(false);
@@ -486,6 +488,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           handlerType = 'leader-profile';
         } else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment' || labelLower.includes('baseline') || labelLower.includes('skills assessment')) {
           handlerType = 'baseline-assessment';
+        } else if (action.id?.includes('identity-statement') || action.resourceId === 'leadership-identity-statement' || action.resourceId === 'interactive-identity-statement' || labelLower.includes('identity statement') || labelLower.includes('leadership identity')) {
+          handlerType = 'identity-statement';
         } else if (action.id?.includes('notification-setup') || action.resourceId === 'interactive-notification-setup' || labelLower.includes('setup notification')) {
           handlerType = 'notification-setup';
         } else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial' || labelLower.includes('conditioning tutorial')) {
@@ -527,7 +531,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         }
       }
 
-      const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial', 'conditioning-rep'].includes(handlerType);
+      const isInteractive = ['leader-profile', 'baseline-assessment', 'identity-statement', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial', 'conditioning-rep'].includes(handlerType);
       
       // Auto-complete status for interactive items
       let autoComplete = undefined;
@@ -1166,7 +1170,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           });
           
           const handlerType = item.handlerType || fullAction?.handlerType || '';
-          const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType);
+          const isInteractive = ['leader-profile', 'baseline-assessment', 'identity-statement', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType);
           
           carriedItems.push({
             ...(fullAction || {}),
@@ -1396,7 +1400,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             else if (labelLower.includes('watch') || labelLower.includes('video')) handlerType = 'video';
             else if (labelLower.includes('read')) handlerType = 'read';
           }
-          const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType);
+          const isInteractive = ['leader-profile', 'baseline-assessment', 'identity-statement', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType);
           
           carriedItems.push({
             ...action,
@@ -1900,6 +1904,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       } else {
         if (action.id?.includes('leader-profile') || action.resourceId === 'interactive-leader-profile' || labelLower.includes('leader profile')) handlerType = 'leader-profile';
         else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment' || labelLower.includes('baseline') || labelLower.includes('skills assessment')) handlerType = 'baseline-assessment';
+        else if (action.id?.includes('identity-statement') || action.resourceId === 'leadership-identity-statement' || action.resourceId === 'interactive-identity-statement' || labelLower.includes('identity statement') || labelLower.includes('leadership identity')) handlerType = 'identity-statement';
+        else if (action.id?.includes('identity-statement') || action.resourceId === 'leadership-identity-statement' || action.resourceId === 'interactive-identity-statement' || labelLower.includes('identity statement') || labelLower.includes('leadership identity')) handlerType = 'identity-statement';
         else if (action.id?.includes('notification-setup') || action.resourceId === 'interactive-notification-setup' || labelLower.includes('setup notification')) handlerType = 'notification-setup';
         else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial' || labelLower.includes('conditioning tutorial')) handlerType = 'conditioning-tutorial';
         else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment' || labelLower.includes('foundation expectation') || labelLower.includes('foundation commitment')) handlerType = 'foundation-commitment';
@@ -1979,7 +1985,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         }
       }
       
-      const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial', 'conditioning-rep'].includes(handlerType);
+      const isInteractive = ['leader-profile', 'baseline-assessment', 'identity-statement', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial', 'conditioning-rep'].includes(handlerType);
       
       return {
         ...action,
@@ -2070,6 +2076,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       setShowLeaderProfileModal(true);
     } else if (item.handlerType === 'baseline-assessment') {
       setShowBaselineModal(true);
+    } else if (item.handlerType === 'identity-statement') {
+      setShowIdentityStatementModal(true);
     } else if (item.handlerType === 'notification-setup') {
       setShowNotificationModal(true);
     } else if (item.handlerType === 'foundation-commitment') {
@@ -3824,6 +3832,18 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               onClose={() => setShowBaselineModal(false)}
               isLoading={savingBaseline}
               initialData={developmentPlanData?.assessmentHistory?.[developmentPlanData.assessmentHistory.length - 1]}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Leadership Identity Statement Modal */}
+      {showIdentityStatementModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pb-24 sm:pb-4 bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-xl">
+            <IdentityStatement
+              embedded
+              onClose={() => setShowIdentityStatementModal(false)}
             />
           </div>
         </div>

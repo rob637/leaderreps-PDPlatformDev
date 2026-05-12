@@ -7,6 +7,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Calendar, Clock, ExternalLink, ChevronRight, Loader2 } from 'lucide-react';
+import { Card } from '../ui';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { subscribeUpcomingEvents } from '../../services/eventsService';
 
@@ -76,8 +77,8 @@ const AscentMyEventsWidget = () => {
     navigate?.('events') || navigate?.('community-hub');
 
   return (
-    <section
-      className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-4 sm:p-5"
+    <Card
+      className="shadow-pop bg-white dark:bg-slate-800 border-l-4 border-l-corporate-teal relative overflow-hidden p-4 sm:p-5"
       aria-labelledby="ascent-my-events-heading"
     >
       <header className="flex items-center justify-between mb-3">
@@ -152,7 +153,7 @@ const AscentMyEventsWidget = () => {
           })}
         </ul>
       )}
-    </section>
+    </Card>
   );
 };
 

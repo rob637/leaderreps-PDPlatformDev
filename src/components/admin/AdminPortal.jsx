@@ -35,22 +35,14 @@ import DocumentationCenter from './DocumentationCenter';
 import TestCenter from './TestCenter';
 import EventsManager from './EventsManager';
 import LOVManager from './LOVManager';
-import DailyRepsLibrary from './DailyRepsLibrary';
 import ContentManager from './DailyPlanManager';
-import LevelSignOffQueue from './LevelSignOffQueue';
-import FoundationCompletionQueue from './FoundationCompletionQueue';
-import AscentApprovalQueue from './AscentApprovalQueue';
 import PhaseContentManager from './PhaseContentManager';
-import SessionAttendanceQueue from './SessionAttendanceQueue';
-import CoachingCertificationQueue from './CoachingCertificationQueue';
 import CohortManager from './CohortManager';
 import UserManagement from './UserManagement';
 import LeaderProfileReports from './LeaderProfileReports';
-import NotificationManager from './NotificationManager';
 import CommunicationsManager from './CommunicationsManager';
 import AnnouncementsManager from './AnnouncementsManager';
 import ConditioningDashboard from './ConditioningDashboard';
-import AccountabilityInsights from './AccountabilityInsights';
 import ConditioningConfig from './ConditioningConfig';
 import UxAuditPanel from './UxAuditPanel';
 import VideoSeriesManager from './VideoSeriesManager';
@@ -156,7 +148,6 @@ const AdminPortal = () => {
         { id: 'media', label: 'Media Vault', icon: Database },
         { id: 'video-series', label: 'Video Series', icon: PlaySquare },
         { id: 'notifications', label: 'Notifications', icon: Bell },
-        { id: 'announcements', label: 'Announcements', icon: Megaphone },
         { id: 'communications', label: 'Communications', icon: Mail }
       ]
     },
@@ -164,21 +155,14 @@ const AdminPortal = () => {
       title: 'Trainer',
       items: [
         { id: 'ask-trainer-inbox', label: 'Ask a Trainer', icon: Megaphone },
-        { id: 'session-attendance', label: 'Session Attendance', icon: BookOpen },
-        // { id: 'sign-off-queue', label: 'Level Sign-Off', icon: CheckCircle }, // RETIRED May 2026 — superseded by Foundation Completion + Ascent Approval
-        { id: 'foundation-completion-queue', label: 'Foundation Completion', icon: CheckCircle },
-        { id: 'ascent-approval-queue', label: 'Ascent Approval', icon: Award },
-        { id: 'coaching-cert', label: 'Leader Certification', icon: Award },
-        { id: 'leader-profiles', label: 'Leader Profiles', icon: FileText },
-        { id: 'conditioning', label: 'Conditioning', icon: Zap },
-        { id: 'assessment-insights', label: 'Assessment Insights', icon: BarChart3 }
+        { id: 'leader-profiles', label: 'Leaders', icon: FileText },
+        { id: 'conditioning', label: 'Conditioning', icon: Zap }
       ]
     },
     {
       title: 'Advanced Management',
       items: [
         { id: 'conditioning-config', label: 'Conditioning Config', icon: Zap },
-        { id: 'daily-reps', label: 'Daily Reps', icon: Zap },
         { id: 'events', label: 'Events', icon: Calendar },
         { id: 'lov', label: 'System Values', icon: List }
       ]
@@ -217,27 +201,16 @@ const AdminPortal = () => {
         return <ContentManager />;
       case 'phase-content':
         return <PhaseContentManager />;
-      case 'sign-off-queue':
-        return <LevelSignOffQueue />;
-      case 'foundation-completion-queue':
-        return <FoundationCompletionQueue />;
-      case 'ascent-approval-queue':
-        return <AscentApprovalQueue />;
       case 'ask-trainer-inbox':
         return <AskTrainerInbox />;
-      case 'session-attendance':
-        return <SessionAttendanceQueue />;
-      case 'assessment-insights':
-        return <AccountabilityInsights />;
-      case 'coaching-cert':
-        return <CoachingCertificationQueue />;
       // 'library' tab removed - Programs/Workouts/Skills now managed as LOVs
       case 'media':
         return <MediaLibrary />;
       case 'notifications':
-        return <NotificationManager />;
+        return <AnnouncementsManager />;
       case 'communications':
         return <CommunicationsManager />;
+      // Legacy alias — 'announcements' tab was renamed to 'notifications' May 2026
       case 'announcements':
         return <AnnouncementsManager />;
       case 'diagnostics':
@@ -253,8 +226,6 @@ const AdminPortal = () => {
         return <EventsManager />;
       case 'lov':
         return <LOVManager />;
-      case 'daily-reps':
-        return <DailyRepsLibrary />;
       case 'features':
         return <FeatureManager />;
       case 'docs':

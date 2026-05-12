@@ -16,6 +16,7 @@ import {
   AlertCircle,
   Search,
 } from 'lucide-react';
+import { Card } from '../ui';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import {
   subscribeUserQuestions,
@@ -183,8 +184,8 @@ const AscentAskTrainerWidget = () => {
   const goArchive = () => navigate?.('ask-trainer-archive');
 
   return (
-    <section
-      className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-4 sm:p-5"
+    <Card
+      className="shadow-pop bg-white dark:bg-slate-800 border-l-4 border-l-corporate-orange relative overflow-hidden p-4 sm:p-5"
       aria-labelledby="ascent-ask-trainer-heading"
     >
       <header className="flex items-center justify-between mb-3">
@@ -282,7 +283,7 @@ const AscentAskTrainerWidget = () => {
           <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
         </button>
       </div>
-    </section>
+    </Card>
   );
 };
 

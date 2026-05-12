@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { Card } from '../ui';
 import { useAppServices } from '../../services/useAppServices';
 
 // Normalize to E.164. Accepts:
@@ -119,7 +120,7 @@ const AscentSmsPrefsWidget = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
+    <Card className="shadow-pop bg-white dark:bg-slate-800 border-l-4 border-l-corporate-teal relative overflow-hidden p-5">
       <div className="flex items-center gap-2 mb-3">
         <Smartphone className="w-5 h-5 text-corporate-teal" />
         <h3 className="text-base font-semibold text-corporate-navy dark:text-white">
@@ -222,7 +223,7 @@ const AscentSmsPrefsWidget = () => {
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 };
 

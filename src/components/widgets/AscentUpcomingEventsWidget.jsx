@@ -6,6 +6,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Calendar, Clock, ChevronRight, Loader2, AlertCircle } from 'lucide-react';
+import { Card } from '../ui';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import {
   subscribeUpcomingEvents,
@@ -98,8 +99,8 @@ const AscentUpcomingEventsWidget = () => {
     navigate?.('events') || navigate?.('community-hub');
 
   return (
-    <section
-      className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-4 sm:p-5"
+    <Card
+      className="shadow-pop bg-white dark:bg-slate-800 border-l-4 border-l-corporate-orange relative overflow-hidden p-4 sm:p-5"
       aria-labelledby="ascent-upcoming-events-heading"
     >
       <header className="flex items-center justify-between mb-3">
@@ -167,7 +168,7 @@ const AscentUpcomingEventsWidget = () => {
           ))}
         </ul>
       )}
-    </section>
+    </Card>
   );
 };
 

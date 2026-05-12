@@ -378,10 +378,10 @@ export const useDevPlan = () => {
       if (type === 'all' || type === 'content') {
         addIds(week.contentItems);
       }
-      if (type === 'all' || type === 'community') {
+      if (type === 'all' || type === 'community' || type === 'coaching' || type === 'events') {
+        addIds(week.events);
+        // Back-compat: legacy split fields
         addIds(week.communityItems);
-      }
-      if (type === 'all' || type === 'coaching') {
         addIds(week.coachingItems);
       }
     }

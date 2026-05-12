@@ -12,13 +12,19 @@
 import React, { useMemo } from 'react';
 import {
   CheckCircle, BookOpen, PlayCircle, Users, Wrench, Activity,
-  Repeat, Lock, Circle, Check, ArrowRight,
+  Repeat, Lock, Circle, Check, ArrowRight, FileText,
 } from 'lucide-react';
 import { Card } from '../ui';
 import useThreePhaseContent from '../../hooks/useThreePhaseContent';
 import { useActionProgress } from '../../hooks/useActionProgress';
+import useResourceOpener from '../../hooks/useResourceOpener';
 import { useAppServices } from '../../services/useAppServices';
 import { isAscentApproved } from '../../hooks/useDailyPlan';
+import useArtifactCompletion, {
+  isArtifactItem,
+  getArtifactKind,
+  getArtifactNavigation,
+} from '../../hooks/useArtifactCompletion';
 
 const SECTION_ICON = {
   actions: CheckCircle,
@@ -66,41 +72,72 @@ const resolveItem = (item, sectionKey, idx) => {
   return { id, label, subtitle };
 };
 
-const ItemRow = ({ item, sectionKey, idx, isComplete, onToggle }) => {
+const ItemRow = ({ item, sectionKey, idx, isComplete, onOpenContent, onOpenArtifact }) => {
   const { id, label, subtitle } = resolveItem(item, sectionKey, idx);
+  const isRequired = !!(item?.required || item?.isRequiredContent);
+  const isArtifact = isArtifactItem(item);
+
+  const handleClick = () => {
+    if (isArtifact) onOpenArtifact(item);
+    else onOpenContent(item, id, label);
+  };
+
   return (
     <div className="flex items-start gap-3 py-2 px-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors">
       <button
         type="button"
-        onClick={() => onToggle(id, item)}
-        aria-label={isComplete ? `Mark ${label} incomplete` : `Mark ${label} complete`}
+        onClick={handleClick}
+        aria-label={`Open ${label}`}
         className="flex-shrink-0 mt-0.5"
       >
         {isComplete ? (
           <Check className="w-5 h-5 text-corporate-teal" />
+        ) : isArtifact ? (
+          <FileText className="w-5 h-5 text-amber-500" />
         ) : (
-          <Circle className="w-5 h-5 text-slate-400 hover:text-corporate-teal" />
+          <FileText className="w-5 h-5 text-corporate-teal" />
         )}
       </button>
-      <div className="min-w-0 flex-1">
-        <div className={`text-sm font-medium ${isComplete ? 'text-slate-400 line-through' : 'text-corporate-navy dark:text-white'}`}>
-          {label}
+      <button
+        type="button"
+        onClick={handleClick}
+        className="min-w-0 flex-1 text-left"
+      >
+        <div className={`text-sm font-medium flex items-center gap-2 flex-wrap ${isComplete ? 'text-slate-400 line-through' : 'text-corporate-navy dark:text-white'}`}>
+          <span className="truncate">{label}</span>
+          {isRequired && !isComplete && (
+            <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+              Required
+            </span>
+          )}
+          {isArtifact && (
+            <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+              Locker
+            </span>
+          )}
         </div>
-        {subtitle && (
+        {subtitle && !isArtifact && (
           <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             {subtitle}
           </div>
         )}
-      </div>
+      </button>
     </div>
   );
 };
 
-const Section = ({ sectionKey, items, isItemCompleted, onToggle }) => {
+const Section = ({ sectionKey, items, isItemCompleted, onOpenContent, onOpenArtifact, isArtifactComplete }) => {
   if (!Array.isArray(items) || items.length === 0) return null;
+  // Sort by `order` (stable for equal values, falls back to original index).
+  const ordered = items
+    .map((item, idx) => ({ item, idx, order: typeof item?.order === 'number' ? item.order : idx }))
+    .sort((a, b) => a.order - b.order);
   const Icon = SECTION_ICON[sectionKey] || CheckCircle;
   const label = SECTION_LABEL[sectionKey] || sectionKey;
-  const completedCount = items.reduce((acc, item, idx) => {
+  const completedCount = ordered.reduce((acc, { item, idx }) => {
+    if (isArtifactItem(item)) {
+      return acc + (isArtifactComplete(getArtifactKind(item)) ? 1 : 0);
+    }
     const { id } = resolveItem(item, sectionKey, idx);
     return acc + (isItemCompleted(id) ? 1 : 0);
   }, 0);
@@ -112,20 +149,24 @@ const Section = ({ sectionKey, items, isItemCompleted, onToggle }) => {
           <h3 className="text-sm font-semibold text-corporate-navy dark:text-white">{label}</h3>
         </div>
         <span className="text-xs text-slate-500 dark:text-slate-400">
-          {completedCount} / {items.length}
+          {completedCount} / {ordered.length}
         </span>
       </div>
       <div className="space-y-0.5">
-        {items.map((item, idx) => {
+        {ordered.map(({ item, idx }) => {
           const { id } = resolveItem(item, sectionKey, idx);
+          const complete = isArtifactItem(item)
+            ? isArtifactComplete(getArtifactKind(item))
+            : isItemCompleted(id);
           return (
             <ItemRow
               key={id}
               item={item}
               sectionKey={sectionKey}
               idx={idx}
-              isComplete={isItemCompleted(id)}
-              onToggle={onToggle}
+              isComplete={complete}
+              onOpenContent={onOpenContent}
+              onOpenArtifact={onOpenArtifact}
             />
           );
         })}
@@ -159,28 +200,37 @@ const OnboardingHandoff = () => (
 );
 
 const MyActionsWidget = ({ helpText }) => {
-  const { user } = useAppServices();
+  const { user, navigate } = useAppServices();
   const { phaseKey, phaseContent, isLoading } = useThreePhaseContent();
-  const { isItemCompleted, completeItem, uncompleteItem } = useActionProgress();
+  const { isItemCompleted, completeItem } = useActionProgress();
+  const { isComplete: isArtifactComplete } = useArtifactCompletion();
+  const { openResource, ResourceViewer } = useResourceOpener({
+    completeItem,
+    idResolver: (item) => item?.actionItemId || item?.id || item?.resourceId,
+    phaseKey,
+  });
 
   // For ascent users who haven't been approved yet, show locked notice.
   const ascentLocked = phaseKey === 'ascent' && !isAscentApproved(user || {});
 
-  const onToggle = (id, item) => {
-    if (isItemCompleted(id)) {
-      uncompleteItem(id);
-    } else {
-      completeItem(id, { source: 'my-actions', phase: phaseKey, ...item });
-    }
+  const onOpenContent = (item, id, label) => {
+    openResource({ ...item, id, label });
   };
 
-  // Section order — actions first, then content, then everything else.
-  const sectionOrder = useMemo(
-    () => ['actions', 'contentItems', 'coachingItems', 'communityItems', 'tools', 'workouts', 'dailyReps'],
-    []
-  );
+  const onOpenArtifact = (item) => {
+    const kind = getArtifactKind(item);
+    if (!kind) return;
+    const { screen, params } = getArtifactNavigation(kind);
+    if (typeof navigate === 'function') navigate(screen, params);
+  };
 
-  const widgetTitle = phaseKey === 'ascent' ? 'My Ascent' : 'My Actions';
+  // Single Content section (May 2026 — actions/events/tools/workouts retired).
+  const sectionOrder = useMemo(() => ['contentItems'], []);
+
+  const widgetTitle =
+    phaseKey === 'ascent' ? 'My Ascent'
+    : phaseKey === 'foundation' ? 'My Foundation'
+    : 'My Actions';
 
   if (phaseKey === 'onboarding') {
     return (
@@ -214,6 +264,7 @@ const MyActionsWidget = ({ helpText }) => {
 
   return (
     <Card title={widgetTitle} icon={CheckCircle} accent="TEAL">
+      {ResourceViewer}
       {helpText && (
         <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 px-2">{helpText}</p>
       )}
@@ -228,7 +279,9 @@ const MyActionsWidget = ({ helpText }) => {
             sectionKey={key}
             items={phaseContent[key]}
             isItemCompleted={isItemCompleted}
-            onToggle={onToggle}
+            onOpenContent={onOpenContent}
+            onOpenArtifact={onOpenArtifact}
+            isArtifactComplete={isArtifactComplete}
           />
         ))
       )}

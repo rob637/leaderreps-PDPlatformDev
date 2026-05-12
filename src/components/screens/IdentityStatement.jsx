@@ -978,7 +978,7 @@ const Intro = ({ onStart, hasExisting }) => (
 // ---------------------------------------------------------------------------
 // Main screen
 // ---------------------------------------------------------------------------
-const IdentityStatement = () => {
+const IdentityStatement = ({ embedded = false, onClose, startEdit = false } = {}) => {
   const {
     dailyPracticeData,
     updateDailyPracticeData,
@@ -995,7 +995,12 @@ const IdentityStatement = () => {
   //   'view'   — saved artifact display
   //   'intro'  — overview before starting (new users)
   //   'ex1' / 'ex2' / 'ex3' — the three exercises
-  const initialMode = isComplete(existing) ? 'view' : 'intro';
+  // When opened from a kickoff-to-do click (`startEdit` param), skip the
+  // intro and go straight to Exercise 1, matching Leader Profile / Skills
+  // Baseline behavior.
+  const initialMode = isComplete(existing)
+    ? (startEdit ? 'ex1' : 'view')
+    : (startEdit ? 'ex1' : 'intro');
   const [mode, setMode] = useState(initialMode);
 
   // Editable state — seeded from existing
@@ -1110,6 +1115,9 @@ const IdentityStatement = () => {
       const ok = await updateDailyPracticeData(payload);
       if (!ok) throw new Error('Save failed');
       setMode('view');
+      if (embedded && typeof onClose === 'function') {
+        onClose();
+      }
     } catch (e) {
       // eslint-disable-next-line no-console
       console.error('[LIS] save failed', e);
@@ -1122,21 +1130,8 @@ const IdentityStatement = () => {
   // Map mode → step index for progress bar
   const stepIndex = mode === 'ex1' ? 0 : mode === 'ex2' ? 1 : mode === 'ex3' ? 2 : -1;
 
-  return (
-    <PageLayout
-      title="Leadership Identity"
-      icon={Compass}
-      subtitle="Three exercises. Who you admire, who you are, and how you'll show up."
-      navigate={navigate}
-      backTo="locker"
-      backLabel="Back to Locker"
-      breadcrumbs={[
-        { label: 'Home', path: 'dashboard' },
-        { label: 'Locker', path: 'locker' },
-        { label: 'Leadership Identity', path: null },
-      ]}
-      maxWidth="max-w-3xl"
-    >
+  const body = (
+    <>
       {mode === 'view' && isComplete(existing) && (
         <ViewMode
           data={existing}
@@ -1198,6 +1193,54 @@ const IdentityStatement = () => {
           </AnimatePresence>
         </>
       )}
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[85vh]">
+        <div className="flex items-center justify-between gap-3 p-4 bg-corporate-navy text-white">
+          <div className="flex items-center gap-2 min-w-0">
+            <Compass className="w-5 h-5 flex-shrink-0" />
+            <div className="min-w-0">
+              <h3 className="text-lg font-bold truncate">Leadership Identity</h3>
+              <p className="text-xs text-white/80 truncate">
+                Three exercises. Who you admire, who you are, and how you'll show up.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0"
+            aria-label="Close"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-5">
+          {body}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <PageLayout
+      title="Leadership Identity"
+      icon={Compass}
+      subtitle="Three exercises. Who you admire, who you are, and how you'll show up."
+      navigate={navigate}
+      backTo="locker"
+      backLabel="Back to Locker"
+      breadcrumbs={[
+        { label: 'Home', path: 'dashboard' },
+        { label: 'Locker', path: 'locker' },
+        { label: 'Leadership Identity', path: null },
+      ]}
+      maxWidth="max-w-3xl"
+    >
+      {body}
     </PageLayout>
   );
 };

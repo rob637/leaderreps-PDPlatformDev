@@ -12,6 +12,10 @@ import {
   Mountain,
   Compass,
   ArrowRight,
+  Brain,
+  Zap,
+  Presentation,
+  Briefcase,
 } from 'lucide-react';
 import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
 import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
@@ -207,6 +211,75 @@ const LeaderRepsLab = () => {
               Open Ascent 2
               <ArrowRight className="w-4 h-4" />
             </button>
+          </ToolCard>
+
+          {/* SRS Engine — Live external experiment */}
+          <ToolCard icon={FlaskConical} title="SRS Engine" status="Live">
+            <p>
+              Spaced Repetition System for leadership reps. Validates adaptive
+              scheduling intervals before features roll into the main platform.
+            </p>
+            <a
+              href="https://leaderreps-lab.web.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+            >
+              Launch SRS Engine
+              <ExternalLink className="w-4 h-4" />
+            </a>
+          </ToolCard>
+
+          {/* Account Intelligence Engine — Concept */}
+          <ToolCard icon={Brain} title="Account Intelligence Engine" status="Experimental">
+            <p>
+              Persistent dossiers on every target account, refreshed weekly.
+              Tracks leadership turnover, layoffs, earnings call mentions of
+              culture/talent, Glassdoor sentiment, and new VP hires. Delivers a
+              Monday digest: “These 3 accounts had leadership changes — strike
+              now.”
+            </p>
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-500 text-sm font-semibold w-fit cursor-not-allowed">
+              Design Experiment
+            </span>
+          </ToolCard>
+
+          {/* Trigger → Talk Track Generator — Concept */}
+          <ToolCard icon={Zap} title="Trigger → Talk Track Generator" status="Experimental">
+            <p>
+              Auto-generates a personalized 3-touch outreach the moment a
+              buying signal fires (new VP, layoff, earnings miss, “leadership
+              development” in a job posting). Reps just click Send or Edit.
+            </p>
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-500 text-sm font-semibold w-fit cursor-not-allowed">
+              Design Experiment
+            </span>
+          </ToolCard>
+
+          {/* Demo Auto-Pilot — Concept */}
+          <ToolCard icon={Presentation} title="Demo Auto-Pilot" status="Experimental">
+            <p>
+              Live ROI calculator + guided discovery during the sales call.
+              Asks 5 questions → generates a custom Leadership ROI Projection
+              with the prospect’s specific numbers → emailed before the call
+              ends. Wires into the existing roi-calculator.
+            </p>
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-500 text-sm font-semibold w-fit cursor-not-allowed">
+              Design Experiment
+            </span>
+          </ToolCard>
+
+          {/* Champion Enablement Kits — Concept */}
+          <ToolCard icon={Briefcase} title="Champion Enablement Kits" status="Experimental">
+            <p>
+              The “internal sale” tool. Generates a personalized board deck PDF
+              for each prospect (logo, named pain points, peer benchmarks,
+              custom pricing). The champion forwards it to their CFO. Solves the
+              #1 reason enterprise deals stall.
+            </p>
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-500 text-sm font-semibold w-fit cursor-not-allowed">
+              Design Experiment
+            </span>
           </ToolCard>
         </div>
 

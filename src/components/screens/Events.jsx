@@ -187,7 +187,7 @@ const EventCard = ({ event, onRegister, onCancel, onOpenDetails, busy }) => {
       tabIndex={0}
       onClick={handleCardClick}
       onKeyDown={handleCardKey}
-      className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 sm:p-5 shadow-card cursor-pointer hover:shadow-card-hover hover:border-corporate-teal/40 focus:outline-none focus:ring-2 focus:ring-corporate-teal/40 transition"
+      className="group bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 border-l-4 border-l-corporate-teal p-4 sm:p-5 shadow-card cursor-pointer hover:shadow-pop hover:-translate-y-1 hover:border-corporate-teal/60 focus:outline-none focus:ring-2 focus:ring-corporate-teal/40 transition-all duration-200 ease-out will-change-transform"
     >
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="flex items-center gap-2 flex-wrap">

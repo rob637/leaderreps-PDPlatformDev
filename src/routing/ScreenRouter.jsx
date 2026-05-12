@@ -190,6 +190,9 @@ const ScreenMap = {
   'admin-coaching-manager': lazy(() =>
     import('../components/admin/CoachingManager.jsx')
   ),
+  'admin-events-manager': lazy(() =>
+    import('../components/admin/EventsManager.jsx')
+  ),
   'admin-lov-manager': lazy(() =>
     import('../components/admin/LOVManager.jsx')
   ),

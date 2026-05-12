@@ -33,6 +33,7 @@ import ConditioningTutorialWidget from '../widgets/ConditioningTutorialWidget';
 import AscentMyEventsWidget from '../widgets/AscentMyEventsWidget';
 import AscentUpcomingEventsWidget from '../widgets/AscentUpcomingEventsWidget';
 import AscentAskTrainerWidget from '../widgets/AscentAskTrainerWidget';
+import KickoffToDoWidget from '../widgets/KickoffToDoWidget';
 import PrepCompleteModal from '../modals/PrepCompleteModal';
 import AscentWelcomeModal from '../modals/AscentWelcomeModal';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -53,6 +54,7 @@ const DASHBOARD_FEATURES = [
   'daily-plan',
   // 'daily-leader-reps', // REMOVED - replaced by conditioning widget
   // 'this-weeks-actions', // RETIRED May 2026 — replaced by 'my-actions' (three-phase model)
+  'kickoff-todo',
   'my-actions',
   'notifications',
   'pm-bookend-header',
@@ -792,6 +794,13 @@ const Dashboard = () => {
 
       <header className="mb-8 text-center">
         <FadeIn delay={0.1}>
+          {(currentPhase?.id === 'start' || currentPhase?.id === 'foundation') && (
+            <div className="flex justify-center mb-3">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-corporate-teal/15 text-[#1F6B59] dark:text-corporate-teal-ink text-xs font-semibold uppercase tracking-widest">
+                Foundation
+              </span>
+            </div>
+          )}
           {revampEnabled && currentPhase?.id === 'post-start' && (
             <div className="flex justify-center mb-3">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-corporate-teal/15 text-[#1F6B59] dark:text-corporate-teal-ink text-xs font-semibold uppercase tracking-widest">
@@ -813,9 +822,12 @@ const Dashboard = () => {
 
       {/* Forced 1-col layout for now - with staggered animation */}
       <h2 className="sr-only">Dashboard widgets</h2>
-      {revampEnabled && currentPhase?.id === 'post-start' ? (
+      {revampEnabled && (currentPhase?.id === 'post-start' || currentPhase?.id === 'start' || currentPhase?.id === 'foundation') ? (
         <Stagger staggerDelay={0.08} className="grid gap-5 grid-cols-1">
-          {/* Ascent revamp — Ryan's 4-widget dashboard (post-program only) */}
+          {/* Foundation + Ascent share the same 4-widget dashboard.
+              KickoffToDo auto-hides until required items exist / are
+              incomplete, so it slots cleanly on top. */}
+          <KickoffToDoWidget />
           <NotificationsWidget />
           <AscentMyEventsWidget />
           <AscentUpcomingEventsWidget />

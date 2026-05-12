@@ -159,7 +159,7 @@ const ConditioningLight = () => {
               key={r.key}
               type="button"
               onClick={() => { setRrType(r.key); setStep('input'); }}
-              className="text-left bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-card hover:shadow-card-hover transition focus:outline-none focus:ring-2 focus:ring-corporate-teal"
+              className="group text-left bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 border-l-4 border-l-corporate-teal rounded-2xl p-5 shadow-card hover:shadow-pop hover:-translate-y-1 hover:border-corporate-teal/60 transition-all duration-200 ease-out will-change-transform focus:outline-none focus:ring-2 focus:ring-corporate-teal/40"
             >
               <div className="text-xs font-semibold tracking-wider text-corporate-teal-ink mb-1">
                 {r.key}

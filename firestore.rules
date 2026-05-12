@@ -622,6 +622,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Daily Plan V2 (May 2026 three-phase model — foundation-content / ascent-content)
+    match /daily_plan_v2/{document} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
     // Invitations - allow unauthenticated token lookup for signup flow
     match /invitations/{document} {
       // Allow reading a specific invitation by token (for signup validation)

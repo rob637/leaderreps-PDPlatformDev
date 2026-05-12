@@ -6,6 +6,7 @@ import PMReflectionWidget from '../widgets/PMReflectionWidget';
 import DevelopmentPlanWidget from '../widgets/DevelopmentPlanWidget';
 import ThisWeeksActionsWidget from '../widgets/ThisWeeksActionsWidget';
 import MyActionsWidget from '../widgets/MyActionsWidget';
+import KickoffToDoWidget from '../widgets/KickoffToDoWidget';
 import CoachingUpcomingSessionsWidget from '../widgets/CoachingUpcomingSessionsWidget';
 import CoachingOnDemandWidget from '../widgets/CoachingOnDemandWidget';
 import CoachingMySessionsWidget from '../widgets/CoachingMySessionsWidget';
@@ -61,6 +62,10 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
 
   if (widgetId === 'my-actions') {
     return <MyActionsWidget scope={enhancedScope} helpText={helpText} />;
+  }
+
+  if (widgetId === 'kickoff-todo') {
+    return <KickoffToDoWidget />;
   }
 
   if (widgetId === 'prep-welcome-banner') {

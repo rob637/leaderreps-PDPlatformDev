@@ -183,7 +183,7 @@ const Library = () => {
                 <button
                   key={item.id}
                   onClick={() => handleCardClick(item)}
-                  className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 text-left hover:shadow-card-hover hover:border-corporate-teal/50 transition-all duration-200 group"
+                  className="group bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 border-l-4 border-l-corporate-teal p-5 text-left shadow-card hover:shadow-pop hover:-translate-y-1 hover:border-corporate-teal/60 focus:outline-none focus:ring-2 focus:ring-corporate-teal/40 transition-all duration-200 ease-out will-change-transform"
                 >
                   <div className="flex items-start gap-4">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${item.bgColor || 'bg-corporate-teal/10'}`}>

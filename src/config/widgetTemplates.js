@@ -3556,6 +3556,17 @@ export const FEATURE_METADATA = {
     outputs: ['toggleItemComplete'],
     componentPath: 'src/components/widgets/MyActionsWidget.jsx',
   },
+  'kickoff-todo': {
+    core: true,
+    category: 'Dashboard',
+    name: 'Phase Kickoff To-Do',
+    description: 'Required content for the current phase.',
+    purpose: 'Surfaces required-only content with progress.',
+    extendedDescription: 'Shows only items marked Required in Phase Content for the leader\'s current phase. Auto-hides when 100% complete.',
+    inputs: ['threePhaseContent', 'userProgress'],
+    outputs: ['toggleItemComplete'],
+    componentPath: 'src/components/widgets/KickoffToDoWidget.jsx',
+  },
   'dev-plan-focus-areas': {
     core: true,
     category: 'Development Plan',

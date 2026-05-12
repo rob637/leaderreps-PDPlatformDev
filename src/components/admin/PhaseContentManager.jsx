@@ -15,26 +15,23 @@
 // continue to be authored in Content Manager / Media Vault.
 //
 // Sections:
-//   Actions          — free-form action items (label + optional notes)
-//   Content Items    — links to videos/readings/tools (via ResourceSelector)
-//   Coaching Items   — coaching session types (via ResourceSelector)
-//   Community Items  — community session types (via ResourceSelector)
-//   Tools            — tool references
-//   Workouts         — workout references
-//   Daily Reps       — daily rep references
-//   Skills           — comma-separated skill names
-//   Pillars          — comma-separated pillar names
-//   Coaching Session Types     — multi-select
-//   Community Session Types    — multi-select
+//   Content — single curated list of content references (videos, Read & Reps,
+//             documents, tools, interactive forms, courses). Picker pulls from
+//             Content Library + Media Vault.
+//
+// Note (May 2026): Actions, Events, and Workouts retired. Events live in
+// Programs → Events and surface to leaders via per-event phase tagging.
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Save, Trash2, Plus, AlertCircle, Loader, RefreshCw, Layers,
+  ArrowUp, ArrowDown, Star, FileText, Link2, AlertTriangle,
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useAppServices } from '../../services/useAppServices';
 import { useThreePhaseContent } from '../../hooks/useThreePhaseContent';
 import ResourceSelector from './ResourceSelector';
+import { ARTIFACT_LIBRARY, ARTIFACT_KINDS } from '../../hooks/useArtifactCompletion';
 
 const PHASE_TABS = [
   { key: 'foundation', label: 'Foundation', accent: 'TEAL' },
@@ -43,34 +40,8 @@ const PHASE_TABS = [
 
 // Sections that are simple arrays of items with a label
 const ITEM_SECTIONS = [
-  { key: 'actions', label: 'Actions', labelField: 'label', selector: null,
-    description: 'Free-form action items shown as a checklist for the leader.' },
-  { key: 'contentItems', label: 'Content Items', labelField: 'contentItemLabel', selector: 'content',
-    description: 'Videos, readings and other content (from Media Vault / Content Library).' },
-  { key: 'coachingItems', label: 'Coaching Items', labelField: 'coachingItemLabel', selector: 'coaching',
-    description: 'Coaching session types/templates available in this phase.' },
-  { key: 'communityItems', label: 'Community Items', labelField: 'communityItemLabel', selector: 'community',
-    description: 'Community session types/templates available in this phase.' },
-  { key: 'tools', label: 'Tools', labelField: 'toolName', selector: 'content',
-    description: 'Tools and worksheets the leader can use.' },
-  { key: 'workouts', label: 'Workouts', labelField: 'workoutName', selector: 'content',
-    description: 'Workout references for this phase.' },
-  { key: 'dailyReps', label: 'Daily Reps', labelField: 'repName', selector: 'conditioning',
-    description: 'Conditioning rep types featured in this phase.' },
-];
-
-// String-array sections
-const STRING_SECTIONS = [
-  { key: 'skills', label: 'Skills', placeholder: 'Leadership Identity, Self-Awareness, Feedback…' },
-  { key: 'pillars', label: 'Pillars', placeholder: 'Lead Self, Lead Work, Lead People, Lead Others' },
-];
-
-// Predefined session-type vocabularies (keep aligned with the rest of the app)
-const COACHING_SESSION_TYPE_OPTIONS = [
-  'one_on_one', 'open_gym', 'leader_circle', 'workshop', 'live_workout',
-];
-const COMMUNITY_SESSION_TYPE_OPTIONS = [
-  'leader_circle', 'community_event', 'accountability_pod', 'mastermind', 'networking',
+  { key: 'contentItems', label: 'Content', labelField: 'contentItemLabel', selector: 'content',
+    description: 'Videos, Read & Reps, documents, tools, and interactive forms (from Content Library / Media Vault).' },
 ];
 
 // ---- Helpers ----
@@ -78,17 +49,22 @@ const ensureArray = (v) => (Array.isArray(v) ? v : []);
 
 const clonePhaseDoc = (doc) => {
   if (!doc) {
-    return {
-      actions: [], coaching: [], community: [], reps: [], content: [], resources: [],
-      contentItems: [], coachingItems: [], communityItems: [],
-      tools: [], workouts: [], dailyReps: [],
-      skills: [], pillars: [],
-      coachingSessionTypes: [], communitySessionTypes: [],
-    };
+    return { contentItems: [] };
   }
-  // Strip provenance and meta — we don't want to write _source on round-trip.
-  // We DO preserve it by spreading it through, but it's harmless to overwrite.
-  return JSON.parse(JSON.stringify(doc));
+  const cloned = JSON.parse(JSON.stringify(doc));
+  if (!Array.isArray(cloned.contentItems)) cloned.contentItems = [];
+  // Back-compat: pull legacy `tools` entries into the unified Content list
+  // so they remain visible in the editor.
+  if (Array.isArray(cloned.tools) && cloned.tools.length) {
+    const promoted = cloned.tools.map((t) => ({
+      ...t,
+      contentItemLabel: t.toolName || t.label || t.title,
+      resourceType: t.resourceType || 'tool',
+    }));
+    cloned.contentItems = cloned.contentItems.concat(promoted);
+    delete cloned.tools;
+  }
+  return cloned;
 };
 
 const labelOf = (item, fallback = 'Untitled') => {
@@ -96,11 +72,11 @@ const labelOf = (item, fallback = 'Untitled') => {
   return (
     item.label ||
     item.contentItemLabel ||
+    item.eventLabel ||
     item.coachingItemLabel ||
     item.communityItemLabel ||
     item.toolName ||
     item.workoutName ||
-    item.repName ||
     item.title ||
     item.id ||
     fallback
@@ -124,7 +100,8 @@ const ItemSection = ({ section, items, onChange }) => {
       resourceId: val.id || val.resourceId || '',
       resourceType: val.resourceType || val.type || section.selector,
       contentItemId: val.id || '',
-      isRequiredContent: false,
+      required: false,
+      order: items.length,
       _addedAt: new Date().toISOString(),
     };
     onChange([...items, newItem]);
@@ -135,13 +112,45 @@ const ItemSection = ({ section, items, onChange }) => {
   const addCustom = () => {
     const labelText = window.prompt(`Add ${section.label}: title?`);
     if (!labelText) return;
-    onChange([...items, { [section.labelField]: labelText, _addedAt: new Date().toISOString() }]);
+    onChange([...items, {
+      [section.labelField]: labelText,
+      required: false,
+      order: items.length,
+      _addedAt: new Date().toISOString(),
+    }]);
   };
 
   const removeAt = (idx) => {
     const next = items.slice();
     next.splice(idx, 1);
+    // re-normalize order so it stays contiguous
+    next.forEach((item, i) => { item.order = i; });
     onChange(next);
+  };
+
+  const moveUp = (idx) => {
+    if (idx <= 0) return;
+    const next = items.slice();
+    [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+    next.forEach((item, i) => { item.order = i; });
+    onChange(next);
+  };
+
+  const moveDown = (idx) => {
+    if (idx >= items.length - 1) return;
+    const next = items.slice();
+    [next[idx + 1], next[idx]] = [next[idx], next[idx + 1]];
+    next.forEach((item, i) => { item.order = i; });
+    onChange(next);
+  };
+
+  const toggleRequired = (idx) => {
+    const updated = items.slice();
+    const cur = updated[idx];
+    const isRequired = !!(cur.required || cur.isRequiredContent);
+    const next = !isRequired;
+    updated[idx] = { ...cur, required: next, isRequiredContent: next };
+    onChange(updated);
   };
 
   const editLabelAt = (idx) => {
@@ -151,6 +160,36 @@ const ItemSection = ({ section, items, onChange }) => {
     const updated = items.slice();
     updated[idx] = { ...updated[idx], [section.labelField]: next };
     onChange(updated);
+  };
+
+  // Per-row "attach / re-link" — opens the picker scoped to a single item
+  // and replaces its resourceId/contentItemId/resourceType in place.
+  const [relinkIdx, setRelinkIdx] = useState(null);
+  const handleRelink = (val) => {
+    if (val == null) {
+      setRelinkIdx(null);
+      return;
+    }
+    const idx = relinkIdx;
+    if (idx == null) return;
+    const updated = items.slice();
+    const cur = updated[idx] || {};
+    updated[idx] = {
+      ...cur,
+      resourceId: val.id || val.resourceId || '',
+      contentItemId: val.id || '',
+      resourceType: val.resourceType || val.type || cur.resourceType || section.selector,
+      // Keep the existing label unless the row was an empty placeholder
+      [section.labelField]: cur[section.labelField] || val.title || val.name || labelOf(val),
+    };
+    onChange(updated);
+    setRelinkIdx(null);
+  };
+
+  const isLinked = (item) => {
+    const rid = (item?.resourceId || '').trim();
+    const cid = (item?.contentItemId || '').trim();
+    return Boolean(rid || cid);
   };
 
   return (
@@ -171,31 +210,104 @@ const ItemSection = ({ section, items, onChange }) => {
         <p className="text-xs text-slate-400 italic py-2">Empty</p>
       ) : (
         <ul className="divide-y divide-slate-200 dark:divide-slate-700 mb-3">
-          {items.map((item, idx) => (
-            <li key={`${section.key}-${idx}`} className="py-2 flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => editLabelAt(idx)}
-                className="flex-1 text-left text-sm text-corporate-navy dark:text-white hover:underline truncate"
-                title="Click to edit title"
-              >
-                {labelOf(item)}
-              </button>
-              {item.resourceId && (
-                <span className="text-xs text-slate-400 truncate max-w-[150px]" title={item.resourceId}>
-                  {item.resourceType || 'ref'}: {item.resourceId.slice(0, 8)}…
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={() => removeAt(idx)}
-                className="p-1 text-slate-400 hover:text-red-500"
-                aria-label={`Remove ${labelOf(item)}`}
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </li>
-          ))}
+          {items.map((item, idx) => {
+            const isRequired = !!(item.required || item.isRequiredContent);
+            return (
+              <li key={`${section.key}-${idx}`} className="py-2 flex items-center gap-2">
+                <div className="flex flex-col">
+                  <button
+                    type="button"
+                    onClick={() => moveUp(idx)}
+                    disabled={idx === 0}
+                    className="p-0.5 text-slate-400 hover:text-corporate-teal disabled:opacity-20 disabled:cursor-not-allowed"
+                    aria-label="Move up"
+                  >
+                    <ArrowUp className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveDown(idx)}
+                    disabled={idx === items.length - 1}
+                    className="p-0.5 text-slate-400 hover:text-corporate-teal disabled:opacity-20 disabled:cursor-not-allowed"
+                    aria-label="Move down"
+                  >
+                    <ArrowDown className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => toggleRequired(idx)}
+                  className={`p-1 rounded ${isRequired ? 'text-amber-500' : 'text-slate-300 hover:text-amber-400'}`}
+                  title={isRequired ? 'Required — click to make optional' : 'Optional — click to mark required'}
+                  aria-label={isRequired ? 'Required' : 'Optional'}
+                >
+                  <Star className={`w-4 h-4 ${isRequired ? 'fill-current' : ''}`} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => editLabelAt(idx)}
+                  className="flex-1 text-left text-sm text-corporate-navy dark:text-white hover:underline truncate"
+                  title="Click to edit title"
+                >
+                  {labelOf(item)}
+                  {isRequired && (
+                    <span className="ml-2 text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                      Required
+                    </span>
+                  )}
+                </button>
+                {item.resourceId ? (
+                  <span
+                    className="text-xs text-slate-400 truncate max-w-[150px]"
+                    title={`${item.resourceType || 'ref'}: ${item.resourceId}`}
+                  >
+                    {item.resourceType || 'ref'}: {item.resourceId.slice(0, 8)}…
+                  </span>
+                ) : (
+                  <span
+                    className="inline-flex items-center gap-1 text-xs text-amber-700 dark:text-amber-300"
+                    title="No content attached — leaders will see an error if they click this item."
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5" /> Not linked
+                  </span>
+                )}
+                {relinkIdx === idx ? (
+                  <div className="inline-flex items-center gap-1">
+                    <ResourceSelector
+                      value={null}
+                      onChange={handleRelink}
+                      resourceType={section.selector}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setRelinkIdx(null)}
+                      className="px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setRelinkIdx(idx)}
+                    className="p-1 text-slate-400 hover:text-corporate-teal"
+                    title={isLinked(item) ? 'Re-link to a different resource' : 'Attach a content_library resource'}
+                    aria-label="Attach or re-link content"
+                  >
+                    <Link2 className="w-4 h-4" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => removeAt(idx)}
+                  className="p-1 text-slate-400 hover:text-red-500"
+                  aria-label={`Remove ${labelOf(item)}`}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
 
@@ -235,73 +347,79 @@ const ItemSection = ({ section, items, onChange }) => {
         >
           <Plus className="w-3 h-3" /> Add custom
         </button>
+        {section.key === 'contentItems' && (
+          <ArtifactPickerButton items={items} onAdd={(item) => onChange([...items, item])} />
+        )}
       </div>
     </div>
   );
 };
 
-const StringListSection = ({ section, value, onChange }) => {
-  const [text, setText] = useState((value || []).join(', '));
+// ---- Artifact picker ----
+//
+// Surfaces the three built-in "artifact" content items (Leader Profile,
+// Skills Baseline, Identity Statement). Each can only be added once per
+// phase. Completion is auto-derived in the user widgets — no checkbox.
 
-  // Sync local text when incoming value changes (after a save/refresh)
-  useEffect(() => {
-    setText((value || []).join(', '));
-  }, [value]);
+const ArtifactPickerButton = ({ items, onAdd }) => {
+  const [open, setOpen] = useState(false);
+  const usedIds = new Set(items.map((it) => it.resourceId));
+  const available = ARTIFACT_LIBRARY.filter((a) => !usedIds.has(a.id));
 
-  const commit = () => {
-    const next = text.split(',').map((s) => s.trim()).filter(Boolean);
-    onChange(next);
+  const handlePick = (artifact) => {
+    onAdd({
+      contentItemLabel: artifact.title,
+      resourceId: artifact.id,
+      resourceType: 'artifact',
+      contentItemId: artifact.id,
+      required: false,
+      order: items.length,
+      _addedAt: new Date().toISOString(),
+    });
+    setOpen(false);
   };
 
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        disabled={available.length === 0}
+        className="px-3 py-1.5 text-xs rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1"
+        title={available.length === 0 ? 'All artifacts already added' : 'Add Leader Profile, Baseline, or Identity Statement'}
+      >
+        <FileText className="w-3 h-3" /> Add artifact
+      </button>
+    );
+  }
+
   return (
-    <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4 mb-4 bg-white dark:bg-slate-800">
-      <h3 className="font-semibold text-corporate-navy dark:text-white mb-2">{section.label}</h3>
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onBlur={commit}
-        placeholder={section.placeholder}
-        rows={2}
-        className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-corporate-navy dark:text-white"
-      />
-      <p className="text-xs text-slate-400 mt-1">Comma-separated. Click outside the box to commit changes.</p>
+    <div className="inline-flex items-center gap-2 flex-wrap">
+      {available.map((a) => (
+        <button
+          key={a.id}
+          type="button"
+          onClick={() => handlePick(a)}
+          className="px-2 py-1 text-xs rounded border border-amber-300 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+          title={a.description}
+        >
+          {a.title}
+        </button>
+      ))}
+      <button
+        type="button"
+        onClick={() => setOpen(false)}
+        className="px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600"
+      >
+        Cancel
+      </button>
     </div>
   );
 };
 
-const MultiSelectSection = ({ label, options, value, onChange }) => {
-  const set = new Set(value || []);
-  const toggle = (opt) => {
-    const next = new Set(set);
-    if (next.has(opt)) next.delete(opt);
-    else next.add(opt);
-    onChange(Array.from(next));
-  };
-  return (
-    <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4 mb-4 bg-white dark:bg-slate-800">
-      <h3 className="font-semibold text-corporate-navy dark:text-white mb-2">{label}</h3>
-      <div className="flex flex-wrap gap-2">
-        {options.map((opt) => {
-          const active = set.has(opt);
-          return (
-            <button
-              key={opt}
-              type="button"
-              onClick={() => toggle(opt)}
-              className={`px-3 py-1 text-xs rounded-full border transition-colors ${
-                active
-                  ? 'bg-corporate-teal text-white border-corporate-teal'
-                  : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-200 border-slate-300 dark:border-slate-600 hover:border-corporate-teal'
-              }`}
-            >
-              {opt}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
+// (StringListSection / MultiSelectSection removed May 2026 — Skills, Pillars,
+// and session-type fields were never consumed by widgets and have been retired
+// from the phase content schema.)
 
 // ---- Main component ----
 
@@ -356,22 +474,15 @@ const PhaseContentManager = () => {
       // Build a clean payload — only the editable fields. We intentionally
       // drop _source and other server-managed fields.
       const payload = {
-        actions: ensureArray(draft.actions),
-        coaching: ensureArray(draft.coaching),
-        community: ensureArray(draft.community),
-        reps: ensureArray(draft.reps),
-        content: ensureArray(draft.content),
-        resources: ensureArray(draft.resources),
         contentItems: ensureArray(draft.contentItems),
-        coachingItems: ensureArray(draft.coachingItems),
-        communityItems: ensureArray(draft.communityItems),
-        tools: ensureArray(draft.tools),
-        workouts: ensureArray(draft.workouts),
-        dailyReps: ensureArray(draft.dailyReps),
-        skills: ensureArray(draft.skills),
-        pillars: ensureArray(draft.pillars),
-        coachingSessionTypes: ensureArray(draft.coachingSessionTypes),
-        communitySessionTypes: ensureArray(draft.communitySessionTypes),
+        // Legacy fields explicitly cleared (May 2026 cleanup):
+        actions: [],
+        events: [],
+        tools: [],
+        workouts: [],
+        coachingItems: [],
+        communityItems: [],
+        dailyReps: [],
         updatedAt: new Date(),
         updatedBy: 'PhaseContentManager',
       };
@@ -402,6 +513,9 @@ const PhaseContentManager = () => {
         Edit the curated content list for each phase. Items reference resources
         that live in <strong>Content Library</strong> and <strong>Media Vault</strong> —
         author the underlying resources there, then add them to a phase here.
+        Use the arrows to reorder, and the <Star className="inline w-3.5 h-3.5 text-amber-500" /> star
+        to mark items as <strong>Required</strong> — required items appear in the leader's
+        kickoff to-do list at the top of their dashboard until completed.
       </p>
 
       {/* Phase tabs */}
@@ -470,26 +584,6 @@ const PhaseContentManager = () => {
               onChange={(next) => updateField(section.key, next)}
             />
           ))}
-          {STRING_SECTIONS.map((section) => (
-            <StringListSection
-              key={section.key}
-              section={section}
-              value={ensureArray(draft[section.key])}
-              onChange={(next) => updateField(section.key, next)}
-            />
-          ))}
-          <MultiSelectSection
-            label="Coaching Session Types"
-            options={COACHING_SESSION_TYPE_OPTIONS}
-            value={ensureArray(draft.coachingSessionTypes)}
-            onChange={(next) => updateField('coachingSessionTypes', next)}
-          />
-          <MultiSelectSection
-            label="Community Session Types"
-            options={COMMUNITY_SESSION_TYPE_OPTIONS}
-            value={ensureArray(draft.communitySessionTypes)}
-            onChange={(next) => updateField('communitySessionTypes', next)}
-          />
         </>
       )}
     </Card>

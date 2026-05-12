@@ -29,6 +29,7 @@ const NotificationsWidget = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const items = [];
       const userCohortId = user?.cohortId || null;
+      const userId = user?.uid || null;
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
         const startDate = data.startDate?.toDate?.() || data.startDate;
@@ -38,8 +39,16 @@ const NotificationsWidget = () => {
         if (startDate && new Date(startDate) > now) return;
         if (endDate && new Date(endDate) < now) return;
 
-        // Filter by cohort — show if no target set, or if user matches target
-        if (data.targetCohortId && data.targetCohortId !== userCohortId) return;
+        // Targeting: if either targetCohortId or targetUserIds is set, the
+        // user must match at least one (OR semantics). If neither is set,
+        // the notification is broadcast to all users.
+        const hasCohortTarget = !!data.targetCohortId;
+        const hasUserTarget = Array.isArray(data.targetUserIds) && data.targetUserIds.length > 0;
+        if (hasCohortTarget || hasUserTarget) {
+          const cohortMatch = hasCohortTarget && data.targetCohortId === userCohortId;
+          const userMatch = hasUserTarget && userId && data.targetUserIds.includes(userId);
+          if (!cohortMatch && !userMatch) return;
+        }
         
         items.push({
           id: docSnap.id,
@@ -55,7 +64,7 @@ const NotificationsWidget = () => {
     });
 
     return () => unsubscribe();
-  }, [db, user?.cohortId]);
+  }, [db, user?.cohortId, user?.uid]);
 
   // Load dismissed announcements from user doc
   useEffect(() => {
@@ -144,7 +153,7 @@ const NotificationsWidget = () => {
           </div>
           <div>
             <h3 className="font-semibold text-slate-800 dark:text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-              Announcements
+              Notifications
             </h3>
             <p className="text-sm text-slate-500 dark:text-slate-400">Updates from your trainers</p>
           </div>
@@ -164,7 +173,7 @@ const NotificationsWidget = () => {
                 <Calendar size={16} />
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">No announcements</p>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">No notifications</p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">You're all caught up!</p>
               </div>
             </div>

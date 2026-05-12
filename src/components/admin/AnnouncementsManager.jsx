@@ -8,15 +8,19 @@ import { Card, Button } from '../ui';
 import { 
   Megaphone, Plus, Edit2, Trash2, Save, X, 
   AlertTriangle, Info, CheckCircle, Bell,
-  Calendar, Eye, EyeOff, ExternalLink, Users
+  Calendar, Eye, EyeOff, ExternalLink, Users, User as UserIcon
 } from 'lucide-react';
 
 /**
- * AnnouncementsManager - Admin interface for posting announcements to the dashboard
- * 
- * Announcements appear in the NotificationsWidget on user dashboards.
- * Supports different types (alert, info, success, announcement), date ranges, 
- * priority ordering, and dismissibility.
+ * AnnouncementsManager — Admin interface for posting Notifications to the dashboard.
+ *
+ * Notifications appear in the NotificationsWidget on user dashboards. Supports
+ * different types (alert, info, success, announcement), date ranges, priority
+ * ordering, dismissibility, and targeting by cohort and/or specific users.
+ *
+ * (File name retained as `AnnouncementsManager.jsx` for diff hygiene; the
+ * underlying Firestore collection is still `announcements` for backwards
+ * compatibility with existing data.)
  */
 
 const ANNOUNCEMENT_TYPES = [
@@ -32,6 +36,9 @@ const AnnouncementsManager = () => {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [cohorts, setCohorts] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
+  const [userPickerOpen, setUserPickerOpen] = useState(false);
+  const [userSearch, setUserSearch] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     message: '',
@@ -42,7 +49,8 @@ const AnnouncementsManager = () => {
     link: '',
     startDate: '',
     endDate: '',
-    targetCohortId: ''
+    targetCohortId: '',
+    targetUserIds: [],
   });
   const [saving, setSaving] = useState(false);
 
@@ -92,6 +100,33 @@ const AnnouncementsManager = () => {
     loadCohorts();
   }, [db]);
 
+  // Fetch users for per-user targeting
+  useEffect(() => {
+    if (!db) return;
+    const loadUsers = async () => {
+      try {
+        const usersRef = collection(db, 'users');
+        const snapshot = await getDocs(usersRef);
+        const items = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          items.push({
+            id: docSnap.id,
+            email: data.email || '',
+            displayName: data.displayName || data.name || '',
+          });
+        });
+        items.sort((a, b) =>
+          (a.displayName || a.email).localeCompare(b.displayName || b.email)
+        );
+        setAllUsers(items);
+      } catch (err) {
+        console.error('Error loading users:', err);
+      }
+    };
+    loadUsers();
+  }, [db]);
+
   const resetForm = () => {
     setFormData({
       title: '',
@@ -103,9 +138,12 @@ const AnnouncementsManager = () => {
       link: '',
       startDate: '',
       endDate: '',
-      targetCohortId: ''
+      targetCohortId: '',
+      targetUserIds: [],
     });
     setEditingId(null);
+    setUserPickerOpen(false);
+    setUserSearch('');
   };
 
   const handleEdit = (announcement) => {
@@ -120,7 +158,8 @@ const AnnouncementsManager = () => {
       link: announcement.link || '',
       startDate: announcement.startDate ? new Date(announcement.startDate).toISOString().split('T')[0] : '',
       endDate: announcement.endDate ? new Date(announcement.endDate).toISOString().split('T')[0] : '',
-      targetCohortId: announcement.targetCohortId || ''
+      targetCohortId: announcement.targetCohortId || '',
+      targetUserIds: Array.isArray(announcement.targetUserIds) ? announcement.targetUserIds : [],
     });
   };
 
@@ -140,6 +179,9 @@ const AnnouncementsManager = () => {
         startDate: formData.startDate ? new Date(formData.startDate) : null,
         endDate: formData.endDate ? new Date(formData.endDate) : null,
         targetCohortId: formData.targetCohortId || null,
+        targetUserIds: Array.isArray(formData.targetUserIds) && formData.targetUserIds.length > 0
+          ? formData.targetUserIds
+          : null,
         updatedAt: serverTimestamp()
       };
 
@@ -206,12 +248,12 @@ const AnnouncementsManager = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-corporate-orange/10 flex items-center justify-center">
-            <Megaphone className="w-5 h-5 text-corporate-orange" />
+            <Bell className="w-5 h-5 text-corporate-orange" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-slate-800 dark:text-white">Announcements</h2>
+            <h2 className="text-lg font-bold text-slate-800 dark:text-white">Notifications</h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Post announcements visible on user dashboards
+              Post notifications to user dashboards. Target everyone, a specific cohort, and/or specific users.
             </p>
           </div>
         </div>
@@ -220,7 +262,7 @@ const AnnouncementsManager = () => {
       {/* Create/Edit Form */}
       <Card className="p-5 bg-white dark:bg-slate-800">
         <h3 className="font-semibold text-slate-800 dark:text-white mb-4">
-          {editingId ? 'Edit Announcement' : 'Create New Announcement'}
+          {editingId ? 'Edit Notification' : 'Create New Notification'}
         </h3>
 
         <div className="space-y-4">
@@ -338,6 +380,118 @@ const AnnouncementsManager = () => {
             </div>
           </div>
 
+          {/* Per-user targeting */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Target Specific Users (optional)
+            </label>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+              If set, only these users see the notification (combined with the cohort filter above using OR — i.e. anyone in the target cohort OR in this list will see it). Leave empty to broadcast.
+            </p>
+
+            {/* Selected user chips */}
+            {formData.targetUserIds.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {formData.targetUserIds.map((uid) => {
+                  const u = allUsers.find((x) => x.id === uid);
+                  const label = u ? (u.displayName || u.email || uid) : uid;
+                  return (
+                    <span
+                      key={uid}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-corporate-teal/10 text-corporate-teal-ink text-xs"
+                    >
+                      <UserIcon className="w-3 h-3" />
+                      {label}
+                      <button
+                        type="button"
+                        onClick={() => setFormData((prev) => ({
+                          ...prev,
+                          targetUserIds: prev.targetUserIds.filter((x) => x !== uid),
+                        }))}
+                        className="ml-0.5 hover:text-red-500"
+                        aria-label={`Remove ${label}`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Picker toggle */}
+            {!userPickerOpen ? (
+              <button
+                type="button"
+                onClick={() => setUserPickerOpen(true)}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
+              >
+                <Plus className="w-3 h-3" /> Add user
+              </button>
+            ) : (
+              <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-slate-50 dark:bg-slate-900/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    placeholder="Search by name or email..."
+                    className="flex-1 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-800 dark:text-white"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { setUserPickerOpen(false); setUserSearch(''); }}
+                    className="px-2 py-1 text-xs rounded-lg border border-slate-300 dark:border-slate-600"
+                  >
+                    Done
+                  </button>
+                </div>
+                <div className="max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700">
+                  {allUsers
+                    .filter((u) => {
+                      const q = userSearch.trim().toLowerCase();
+                      if (!q) return true;
+                      return (u.displayName || '').toLowerCase().includes(q)
+                        || (u.email || '').toLowerCase().includes(q);
+                    })
+                    .slice(0, 50)
+                    .map((u) => {
+                      const selected = formData.targetUserIds.includes(u.id);
+                      return (
+                        <button
+                          key={u.id}
+                          type="button"
+                          onClick={() => setFormData((prev) => ({
+                            ...prev,
+                            targetUserIds: selected
+                              ? prev.targetUserIds.filter((x) => x !== u.id)
+                              : [...prev.targetUserIds, u.id],
+                          }))}
+                          className={`w-full text-left flex items-center justify-between gap-2 px-2 py-1.5 text-xs hover:bg-white dark:hover:bg-slate-800 ${
+                            selected ? 'bg-corporate-teal/5' : ''
+                          }`}
+                        >
+                          <span className="truncate">
+                            <span className="font-medium text-slate-800 dark:text-white">
+                              {u.displayName || u.email || u.id}
+                            </span>
+                            {u.displayName && u.email && (
+                              <span className="text-slate-400 ml-1">{u.email}</span>
+                            )}
+                          </span>
+                          {selected && <CheckCircle className="w-3.5 h-3.5 text-corporate-teal" />}
+                        </button>
+                      );
+                    })}
+                  {allUsers.length === 0 && (
+                    <p className="text-xs text-slate-400 italic px-2 py-2">No users loaded.</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Link */}
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -385,7 +539,7 @@ const AnnouncementsManager = () => {
                        hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Save className="w-4 h-4" />
-              {saving ? 'Saving...' : editingId ? 'Update' : 'Create Announcement'}
+              {saving ? 'Saving...' : editingId ? 'Update' : 'Create Notification'}
             </button>
             {editingId && (
               <button
@@ -404,14 +558,14 @@ const AnnouncementsManager = () => {
       {/* Existing Announcements */}
       <Card className="p-5 bg-white dark:bg-slate-800">
         <h3 className="font-semibold text-slate-800 dark:text-white mb-4">
-          All Announcements ({announcements.length})
+          All Notifications ({announcements.length})
         </h3>
 
         {loading ? (
           <div className="text-center py-8 text-slate-500">Loading...</div>
         ) : announcements.length === 0 ? (
           <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-            No announcements yet. Create one above!
+            No notifications yet. Create one above!
           </div>
         ) : (
           <div className="space-y-3">
@@ -455,6 +609,12 @@ const AnnouncementsManager = () => {
                             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 flex items-center gap-1">
                               <Users className="w-3 h-3" />
                               {cohorts.find(c => c.id === announcement.targetCohortId)?.name || announcement.targetCohortId}
+                            </span>
+                          )}
+                          {Array.isArray(announcement.targetUserIds) && announcement.targetUserIds.length > 0 && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-corporate-teal/15 text-corporate-teal-ink flex items-center gap-1">
+                              <UserIcon className="w-3 h-3" />
+                              {announcement.targetUserIds.length} user{announcement.targetUserIds.length === 1 ? '' : 's'}
                             </span>
                           )}
                         </div>

@@ -138,7 +138,7 @@ const AskCoach = () => {
       {/* Submit form */}
       <form
         onSubmit={onSubmit}
-        className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 mb-8"
+        className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 border-l-4 border-l-corporate-teal shadow-card p-5 mb-8"
       >
         <label
           htmlFor="ask-question"
@@ -205,7 +205,7 @@ const AskCoach = () => {
         {questions.map((q) => (
           <article
             key={q.id}
-            className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5"
+            className="group bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 border-l-4 border-l-corporate-teal shadow-card hover:shadow-pop hover:-translate-y-1 hover:border-corporate-teal/60 transition-all duration-200 ease-out will-change-transform p-5"
           >
             <div className="flex items-start justify-between gap-3 mb-2">
               <StatusPill status={q.status} />

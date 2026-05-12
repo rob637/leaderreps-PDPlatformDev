@@ -4,14 +4,10 @@
 // tools, mirroring the user-facing consolidation of Community + Coaching into
 // a single "Events" experience.
 //
-// Implementation note: rather than rewrite the two existing managers (which
-// are large and battle-tested), this component wraps them with subtabs:
-//
-//   • Live Sessions      → CoachingManager (1:1s, clinics, etc.)
-//   • Community Sessions → CommunityManager (Leader Circles, Open Gym, etc.)
-//
-// The underlying data sources (`coaching_sessions`, `community_sessions`)
-// remain untouched — only the admin surface is unified.
+// Renders the underlying session managers directly (no nested wrappers, no
+// AI Scenarios / Data Tools / Forum Posts subtabs — those are not events).
+// The two data sources stay separate (`coaching_sessions` vs
+// `community_sessions`), surfaced as two simple subtabs.
 //
 // Deep-link support: the `tab` nav param can be 'coaching' or 'community' to
 // open straight into that subtab. Defaults to 'coaching' (Live Sessions),
@@ -19,13 +15,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Calendar, Users, BrainCircuit } from 'lucide-react';
-import CoachingManager from './CoachingManager';
-import CommunityManager from './CommunityManager';
+import SessionManager from './SessionManager';
+import CommunitySessionManager from './CommunitySessionManager';
 import { useNavigation } from '../../providers/NavigationProvider';
 
 const SUBTABS = [
-  { id: 'coaching', label: 'Live Sessions', icon: BrainCircuit, component: CoachingManager },
-  { id: 'community', label: 'Community Sessions', icon: Users, component: CommunityManager },
+  { id: 'coaching', label: 'Live Sessions', icon: BrainCircuit, component: SessionManager },
+  { id: 'community', label: 'Community Sessions', icon: Users, component: CommunitySessionManager },
 ];
 
 const EventsManager = () => {
@@ -49,7 +45,7 @@ const EventsManager = () => {
     }
   }, [navParams?.subtab, navParams?.tab]);
 
-  const Active = SUBTABS.find((t) => t.id === activeSubtab)?.component || CoachingManager;
+  const Active = SUBTABS.find((t) => t.id === activeSubtab)?.component || SessionManager;
 
   return (
     <div className="min-h-full">
@@ -95,7 +91,7 @@ const EventsManager = () => {
 
       {/* Active manager */}
       <div>
-        <Active />
+        <Active embedded />
       </div>
     </div>
   );

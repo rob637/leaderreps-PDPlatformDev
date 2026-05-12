@@ -27,10 +27,10 @@ export const ContentListItem = ({
   return (
     <button
       onClick={isUnlocked ? onClick : undefined}
-      className={`w-full text-left transition-all duration-150 rounded-xl border p-4 flex items-center gap-4 group relative
+      className={`w-full text-left transition-all duration-200 ease-out will-change-transform rounded-xl border border-l-4 p-4 flex items-center gap-4 group relative
         ${isUnlocked 
-          ? 'bg-white dark:bg-slate-800 hover:shadow-md cursor-pointer border-slate-200 dark:border-slate-700 hover:border-corporate-teal/50 active:scale-[0.99] active:bg-slate-50' 
-          : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 opacity-75 cursor-not-allowed'
+          ? 'bg-white dark:bg-slate-800 shadow-card hover:shadow-pop hover:-translate-y-0.5 cursor-pointer border-slate-200 dark:border-slate-700 border-l-corporate-teal hover:border-corporate-teal/60 active:translate-y-0 active:scale-[0.99] active:bg-slate-50' 
+          : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 border-l-slate-300 opacity-75 cursor-not-allowed'
         } mb-3`}
     >
       {/* Icon */}

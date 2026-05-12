@@ -4,19 +4,16 @@
 import React, { useState, useEffect } from 'react';
 import {
   Settings, Users, Calendar, FileText, Database,
-  PlaySquare, Zap, List, Bell, Mail, Megaphone,
-  ShieldAlert, Wrench, Dumbbell,
+  PlaySquare, List, Bell, Mail,
+  ShieldAlert, Wrench,
 } from 'lucide-react';
 import UserManagement from './UserManagement';
 import PhaseContentManager from './PhaseContentManager';
 import ContentAdminHome from './ContentAdminHome';
 import MediaLibrary from './MediaLibrary';
 import VideoSeriesManager from './VideoSeriesManager';
-import DailyRepsLibrary from './DailyRepsLibrary';
-import ConditioningConfig from './ConditioningConfig';
 import EventsManager from './EventsManager';
 import LOVManager from './LOVManager';
-import NotificationManager from './NotificationManager';
 import AnnouncementsManager from './AnnouncementsManager';
 import CommunicationsManager from './CommunicationsManager';
 import MaintenanceToggle from './MaintenanceToggle';
@@ -29,7 +26,7 @@ const TAB_GROUPS = [
   {
     label: 'People',
     tabs: [
-      { id: 'users', label: 'Users & Roles', icon: Users },
+      { id: 'users', label: 'People', icon: Users },
     ],
   },
   {
@@ -44,7 +41,6 @@ const TAB_GROUPS = [
   {
     label: 'Program',
     tabs: [
-      { id: 'conditioning-config', label: 'Conditioning Config', icon: Zap },
       { id: 'events', label: 'Events', icon: Calendar },
     ],
   },
@@ -52,7 +48,6 @@ const TAB_GROUPS = [
     label: 'Communications',
     tabs: [
       { id: 'notifications', label: 'Notifications', icon: Bell },
-      { id: 'announcements', label: 'Announcements', icon: Megaphone },
       { id: 'communications', label: 'Communications', icon: Mail },
     ],
   },
@@ -61,12 +56,6 @@ const TAB_GROUPS = [
     tabs: [
       { id: 'maintenance', label: 'Maintenance Mode', icon: Wrench },
       { id: 'lov', label: 'System Values', icon: List },
-    ],
-  },
-  {
-    label: 'Outdated',
-    tabs: [
-      { id: 'daily-reps', label: 'Daily Reps', icon: Dumbbell },
     ],
   },
 ];
@@ -98,14 +87,13 @@ const AppConfigCenter = () => {
       case 'content': return <ContentAdminHome />;
       case 'media': return <MediaLibrary />;
       case 'video-series': return <VideoSeriesManager />;
-      case 'daily-reps': return <DailyRepsLibrary />;
-      case 'conditioning-config': return <ConditioningConfig />;
       case 'events': return <EventsManager />;
       // Legacy aliases — preserve any deep links to the old separate tabs
       case 'community': return <EventsManager />;
       case 'coaching': return <EventsManager />;
       case 'lov': return <LOVManager />;
-      case 'notifications': return <NotificationManager />;
+      case 'notifications': return <AnnouncementsManager />;
+      // Legacy alias — the old 'announcements' tab was renamed to 'notifications' May 2026
       case 'announcements': return <AnnouncementsManager />;
       case 'communications': return <CommunicationsManager />;
       case 'maintenance': return <MaintenanceToggle />;

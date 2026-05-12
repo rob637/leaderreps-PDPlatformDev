@@ -3,20 +3,15 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Users, Zap, BookOpen, CheckCircle, Award, FileText,
-  ShieldAlert, ClipboardList, Calendar, MessageSquare, BarChart3,
+  Users, Zap, FileText,
+  ShieldAlert, ClipboardList, Calendar, MessageSquare,
   Megaphone,
 } from 'lucide-react';
 import ConditioningDashboard from './ConditioningDashboard';
-import SessionAttendanceQueue from './SessionAttendanceQueue';
-import FoundationCompletionQueue from './FoundationCompletionQueue';
-import AscentApprovalQueue from './AscentApprovalQueue';
-import CoachingCertificationQueue from './CoachingCertificationQueue';
 import LeaderProfileReports from './LeaderProfileReports';
 import LeaderActivityReport from './LeaderActivityReport';
 import TrainerSessionsPanel from './TrainerSessionsPanel';
 import RedAnalyticsPanel from './RedAnalyticsPanel';
-import AccountabilityInsights from './AccountabilityInsights';
 import AskTrainerInbox from './AskTrainerInbox';
 import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
 import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
@@ -26,15 +21,10 @@ import { useNavigation } from '../../providers/NavigationProvider';
 const TABS = [
   { id: 'trainer-sessions', label: 'My Sessions', icon: Calendar },
   { id: 'ask-trainer-inbox', label: 'Ask a Trainer', icon: Megaphone },
-  { id: 'activity-report', label: 'Leader Activity', icon: ClipboardList },
-  { id: 'leader-profiles', label: 'Leader Profiles', icon: FileText },
+  { id: 'activity-report', label: 'Practice Activity', icon: ClipboardList },
+  { id: 'leader-profiles', label: 'Leaders', icon: FileText },
   { id: 'conditioning', label: 'Conditioning', icon: Zap },
   { id: 'red-analytics', label: 'RED Analytics', icon: MessageSquare },
-  { id: 'assessment-insights', label: 'Assessment Insights', icon: BarChart3 },
-  { id: 'session-attendance', label: 'Session Attendance', icon: BookOpen },
-  { id: 'foundation-completion-queue', label: 'Foundation Completion', icon: CheckCircle },
-  { id: 'ascent-approval-queue', label: 'Ascent Approval', icon: Award },
-  { id: 'coaching-cert', label: 'Certification Queue', icon: Award },
 ];
 
 const FacilitatorCenter = () => {
@@ -59,13 +49,6 @@ const FacilitatorCenter = () => {
     switch (activeTab) {
       case 'conditioning': return <ConditioningDashboard />;
       case 'red-analytics': return <RedAnalyticsPanel />;
-      case 'assessment-insights': return <AccountabilityInsights />;
-      case 'session-attendance': return <SessionAttendanceQueue />;
-      case 'foundation-completion-queue': return <FoundationCompletionQueue />;
-      case 'ascent-approval-queue': return <AscentApprovalQueue />;
-      // Legacy alias — deep links from the old Level Sign-Off tab land on Foundation Completion
-      case 'sign-off-queue': return <FoundationCompletionQueue />;
-      case 'coaching-cert': return <CoachingCertificationQueue />;
       case 'leader-profiles': return <LeaderProfileReports />;
       case 'activity-report': return <LeaderActivityReport />;
       case 'trainer-sessions': return <TrainerSessionsPanel />;

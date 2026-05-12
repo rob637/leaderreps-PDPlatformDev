@@ -12,22 +12,7 @@ import { useAppServices } from '../services/useAppServices';
 import { useDailyPlan, phaseKey as resolvePhaseKey } from './useDailyPlan';
 
 const EMPTY_PHASE_DOC = {
-  actions: [],
-  coaching: [],
-  community: [],
-  reps: [],
-  content: [],
-  resources: [],
   contentItems: [],
-  coachingItems: [],
-  communityItems: [],
-  tools: [],
-  workouts: [],
-  dailyReps: [],
-  skills: [],
-  pillars: [],
-  coachingSessionTypes: [],
-  communitySessionTypes: [],
 };
 
 const useThreePhaseContent = () => {
@@ -42,7 +27,46 @@ const useThreePhaseContent = () => {
 
   const phaseContent = useMemo(() => {
     if (phase === 'foundation') return foundationContent || EMPTY_PHASE_DOC;
-    if (phase === 'ascent') return ascentContent || EMPTY_PHASE_DOC;
+    if (phase === 'ascent') {
+      // Ascent inherits all Foundation content automatically. Foundation
+      // items appear as regular (non-required) content in Ascent — the
+      // "required" flag is a per-phase kickoff signal and should not
+      // re-trigger in Ascent.
+      const ascentItems = Array.isArray(ascentContent?.contentItems)
+        ? ascentContent.contentItems
+        : [];
+      const foundationItems = Array.isArray(foundationContent?.contentItems)
+        ? foundationContent.contentItems
+        : [];
+      const seen = new Set();
+      const keyOf = (it) =>
+        it?.resourceId || it?.id || it?.contentItemLabel || JSON.stringify(it);
+      const merged = [];
+      ascentItems.forEach((it, idx) => {
+        const k = keyOf(it);
+        seen.add(k);
+        merged.push({
+          ...it,
+          order: typeof it?.order === 'number' ? it.order : idx,
+        });
+      });
+      const ascentMaxOrder = merged.reduce(
+        (m, it) => (typeof it.order === 'number' && it.order > m ? it.order : m),
+        -1,
+      );
+      foundationItems.forEach((it, idx) => {
+        const k = keyOf(it);
+        if (seen.has(k)) return;
+        seen.add(k);
+        merged.push({
+          ...it,
+          required: false,
+          inheritedFrom: 'foundation',
+          order: ascentMaxOrder + 1 + idx,
+        });
+      });
+      return { ...(ascentContent || {}), contentItems: merged };
+    }
     return EMPTY_PHASE_DOC;
   }, [phase, foundationContent, ascentContent]);
 
@@ -51,7 +75,8 @@ const useThreePhaseContent = () => {
   // loaded since it doesn't use this hook's content.
   const isLoading = useMemo(() => {
     if (phase === 'foundation') return foundationContent === null;
-    if (phase === 'ascent') return ascentContent === null;
+    // Ascent merges Foundation content, so wait for both docs.
+    if (phase === 'ascent') return ascentContent === null || foundationContent === null;
     return false;
   }, [phase, foundationContent, ascentContent]);
 

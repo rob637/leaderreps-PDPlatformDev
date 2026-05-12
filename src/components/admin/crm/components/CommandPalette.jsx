@@ -69,7 +69,7 @@ const CommandPalette = () => {
                 className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer data-[selected=true]:bg-slate-100"
               >
                 <Sparkles className="w-4 h-4 text-amber-500" />
-                <span>Jeff Search</span>
+                <span>Apollo Search</span>
               </Command.Item>
               <Command.Item 
                 onSelect={() => runCommand(() => navigate('/tasks'))}

@@ -1123,6 +1123,30 @@ body {
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------------
+ * Global "card lift" — make every interactive card feel alive on hover.
+ * Any element that already uses Tailwind's `hover:shadow-card-hover` or
+ * `hover:shadow-pop` will gain a smooth shadow + lift transition.
+ * ------------------------------------------------------------------------- */
+@layer utilities {
+  .hover\:shadow-card-hover,
+  .hover\:shadow-pop {
+    transition-property: box-shadow, transform, border-color, background-color;
+    transition-duration: 200ms;
+    transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+    will-change: transform;
+  }
+  .hover\:shadow-card-hover:hover,
+  .hover\:shadow-pop:hover {
+    transform: translateY(-2px);
+  }
+  .hover\:shadow-card-hover:active,
+  .hover\:shadow-pop:active {
+    transform: translateY(0);
+    transition-duration: 80ms;
+  }
+}
+
 @layer base {
   :root {
     font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;

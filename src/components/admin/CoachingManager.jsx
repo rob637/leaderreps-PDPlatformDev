@@ -33,7 +33,7 @@ import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
 import { seedCoachingData, clearCoachingData } from '../../services/coachingService';
 import SessionManager from './SessionManager';
 
-const CoachingManager = () => {
+const CoachingManager = ({ embedded = false }) => {
   const { db, navigate } = useAppServices();
   const [scenarios, setScenarios] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -230,24 +230,28 @@ const CoachingManager = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto bg-slate-50 dark:bg-slate-800 min-h-screen">
-      <BreadcrumbNav
-        items={getBreadcrumbs('admin-coaching-manager')}
-        navigate={navigate}
-      />
+    <div className={embedded ? 'p-6 max-w-7xl mx-auto' : 'p-6 max-w-7xl mx-auto bg-slate-50 dark:bg-slate-800 min-h-screen'}>
+      {!embedded && (
+        <>
+          <BreadcrumbNav
+            items={getBreadcrumbs('admin-coaching-manager')}
+            navigate={navigate}
+          />
 
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-3">
-          <BrainCircuit className="w-8 h-8 text-corporate-teal" />
-          <div>
-            <h1 className="text-3xl font-bold text-corporate-navy">
-              Coaching Management
-            </h1>
-            <p className="text-slate-500 dark:text-slate-400">Manage live sessions, AI scenarios, and coaching data</p>
+          {/* Header */}
+          <div className="mb-6">
+            <div className="flex items-center gap-3">
+              <BrainCircuit className="w-8 h-8 text-corporate-teal" />
+              <div>
+                <h1 className="text-3xl font-bold text-corporate-navy">
+                  Coaching Management
+                </h1>
+                <p className="text-slate-500 dark:text-slate-400">Manage live sessions, AI scenarios, and coaching data</p>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
       {/* Tab Navigation */}
       <div className="flex border-b border-slate-200 dark:border-slate-700 mb-6 overflow-x-auto">
