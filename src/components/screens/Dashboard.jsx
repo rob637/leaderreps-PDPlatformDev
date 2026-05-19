@@ -57,6 +57,7 @@ import { FadeIn, Stagger } from '../motion';
 import ProgramStatusWidget from '../widgets/ProgramStatusWidget';
 import ConditioningWidget from '../widgets/ConditioningWidget';
 import NotificationsWidget from '../widgets/NotificationsWidget';
+import KickoffProgressCard from '../widgets/KickoffProgressCard';
 import ConditioningTutorialWidget from '../widgets/ConditioningTutorialWidget';
 import MyEventsWidget from '../widgets/MyEventsWidget';
 import UpcomingEventsWidget from '../widgets/UpcomingEventsWidget';
@@ -85,6 +86,7 @@ const DASHBOARD_FEATURES = [
   // 'this-weeks-actions', // RETIRED May 2026 — replaced by 'my-actions' (three-phase model)
   // 'kickoff-todo', // RETIRED May 2026 — onboarding now flows through 'notifications'
   'my-actions',
+  'kickoff-progress',
   'notifications',
   'pm-bookend-header',
   'progress-feedback',
@@ -917,6 +919,7 @@ const Dashboard = () => {
       ) : null,
     notifications: () =>
       shouldShow('notifications', true) ? <NotificationsWidget /> : null,
+    'kickoff-progress': () => <KickoffProgressCard />,
     'conditioning-tutorial': () =>
       shouldShow('conditioning-tutorial', true) ? (
         <ConditioningTutorialWidget />
@@ -1042,7 +1045,12 @@ const Dashboard = () => {
               Onboarding (formerly the Kickoff To-Do box) now flows through
               NotificationsWidget — trainers post per-cohort announcements
               with internal links to the relevant Locker artifact or
-              content item (see AnnouncementsManager). */}
+              content item (see AnnouncementsManager).
+
+              KickoffProgressCard renders the Foundation/Ascent required-
+              items checklist as a single collapsible progress card above
+              Notifications. It self-hides when there's nothing pending. */}
+              <KickoffProgressCard />
               <NotificationsWidget />
               <MyEventsWidget />
               <UpcomingEventsWidget />

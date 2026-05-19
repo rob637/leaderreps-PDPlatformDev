@@ -5,7 +5,6 @@ import { useAppServices } from '../../services/useAppServices';
 import { useDailyPlan, phaseKey } from '../../hooks/useDailyPlan';
 import { useSafeNavigation } from '../../providers/NavigationProvider';
 import { collection, query, where, orderBy, limit, onSnapshot, doc, updateDoc, arrayUnion } from 'firebase/firestore';
-import KickoffNotifications from './KickoffNotifications';
 
 const NotificationsWidget = () => {
   const { db, user } = useAppServices();
@@ -16,7 +15,6 @@ const NotificationsWidget = () => {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dismissedIds, setDismissedIds] = useState([]);
-  const [kickoffCount, setKickoffCount] = useState(0);
 
   // Fetch active announcements
   useEffect(() => {
@@ -166,7 +164,6 @@ const NotificationsWidget = () => {
       </header>
 
       <div className="space-y-3">
-        <KickoffNotifications onCountChange={setKickoffCount} />
         {loading ? (
           <div className="flex items-center justify-center py-4">
             <div className="animate-pulse flex items-center gap-2 text-slate-400">
@@ -174,7 +171,7 @@ const NotificationsWidget = () => {
               <div className="h-3 w-32 bg-slate-200 dark:bg-slate-700 rounded"></div>
             </div>
           </div>
-        ) : visibleAnnouncements.length === 0 && kickoffCount === 0 ? (
+        ) : visibleAnnouncements.length === 0 ? (
           <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-100 dark:border-slate-700">
             <div className="mt-0.5 text-slate-400">
               <Calendar size={16} />
