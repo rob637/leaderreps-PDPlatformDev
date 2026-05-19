@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Mountain, BookOpen, Sparkles, ArrowRight } from 'lucide-react';
+import FocusTrap from '../accessibility/FocusTrap';
 
 /**
  * AscentWelcomeModal
@@ -23,7 +24,14 @@ const AscentWelcomeModal = ({ isOpen, onClose, onGoToContent, onOpenAscentArena,
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+      <FocusTrap
+        active={isOpen}
+        onEscape={onClose}
+        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ascent-welcome-title"
+      >
         {/* Hero header */}
         <div className="relative bg-gradient-to-br from-corporate-navy via-slate-700 to-corporate-teal p-6 text-white">
           <button
@@ -41,7 +49,7 @@ const AscentWelcomeModal = ({ isOpen, onClose, onGoToContent, onOpenAscentArena,
               <p className="text-xs uppercase tracking-wider text-white/70 font-semibold">
                 Foundation Complete
               </p>
-              <h2 className="text-xl font-bold">Welcome to Ascent, {firstName}!</h2>
+              <h2 id="ascent-welcome-title" className="text-xl font-bold">Welcome to Ascent, {firstName}!</h2>
             </div>
           </div>
           <p className="text-sm text-white/90 leading-relaxed">
@@ -96,7 +104,7 @@ const AscentWelcomeModal = ({ isOpen, onClose, onGoToContent, onOpenAscentArena,
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
-      </div>
+      </FocusTrap>
     </div>
   );
 };

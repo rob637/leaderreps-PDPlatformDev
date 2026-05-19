@@ -214,11 +214,9 @@ const AskCoach = () => {
               </span>
             </div>
 
-            {q.title && (
-              <h3 className="text-base font-semibold text-corporate-navy dark:text-white mb-1">
-                {q.title}
-              </h3>
-            )}
+            {/* Title is auto-derived from the question body, so it would just
+                duplicate the first line in the user's own list. Trainers still
+                see the title in their inbox. */}
             {q.rrTag && RR_TAG_LABEL[q.rrTag] && (
               <div className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-corporate-teal-ink bg-corporate-teal/10 border border-corporate-teal/30 rounded-full px-2 py-0.5 mb-2">
                 <Tag className="w-3 h-3" />

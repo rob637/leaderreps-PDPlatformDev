@@ -60,6 +60,18 @@ const INTERACTIVE_ITEMS = [
         estimatedTime: '10 min'
     },
     searchTokens: ['baseline', 'assessment', 'skills', 'track']
+  },
+  {
+    id: 'interactive-foundation-commitment',
+    title: 'Accept Foundation Expectations',
+    description: 'Review and acknowledge the Foundation program expectations to commit to your leadership development journey.',
+    type: 'INTERACTIVE',
+    handlerType: 'foundation-commitment',
+    metadata: {
+        category: 'Onboarding',
+        estimatedTime: '3 min'
+    },
+    searchTokens: ['foundation', 'expectations', 'commitment', 'accept', 'acknowledge']
   }
 ];
 

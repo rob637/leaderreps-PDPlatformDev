@@ -9,6 +9,7 @@ import conditioningService, { REP_STATUS, getCurrentWeekId, COACH_PROMPTS } from
 import { Card } from '../ui';
 import { TrainerNudgePanel, CoachPromptsPanel, RepDetailModal } from '../conditioning';
 import FacilitatorFeedbackPanel from './FacilitatorFeedbackPanel';
+import RedAnalyticsPanel from './RedAnalyticsPanel';
 import { getRepType } from '../../services/repTaxonomy';
 import { 
   Users, CheckCircle, AlertTriangle, Clock, RefreshCw,
@@ -617,6 +618,8 @@ const ConditioningDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [error, setError] = useState(null);
+  // Tab: 'roster' (per-user accountability) | 'feedback-analytics' (RED aggregate analytics)
+  const [activeView, setActiveView] = useState('roster');
   
   // Load cohorts
   useEffect(() => {
@@ -868,14 +871,49 @@ const ConditioningDashboard = () => {
           onSelect={setSelectedCohortId}
         />
       </div>
-      
+
+      {/* View tabs: Roster (per-user) | Feedback Analytics (RED aggregate) */}
+      {selectedCohortId && (
+        <div className="mb-6 flex gap-2 border-b border-slate-200 dark:border-slate-700">
+          {[
+            { id: 'roster', label: 'Roster', icon: Users },
+            { id: 'feedback-analytics', label: 'Feedback Analytics', icon: BarChart3 },
+          ].map((view) => {
+            const ViewIcon = view.icon;
+            const isActive = activeView === view.id;
+            return (
+              <button
+                key={view.id}
+                onClick={() => setActiveView(view.id)}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 -mb-px ${
+                  isActive
+                    ? 'border-corporate-teal text-corporate-teal-ink'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <ViewIcon className="w-4 h-4" />
+                {view.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Error */}
       {error && (
         <Card className="mb-6 p-4 border-l-4 border-l-red-500 bg-red-50 dark:bg-red-900/20">
           <p className="text-red-700">{error}</p>
         </Card>
       )}
-      
+
+      {/* Feedback Analytics view — RED aggregate, scoped to selected cohort */}
+      {selectedCohortId && activeView === 'feedback-analytics' && (
+        <RedAnalyticsPanel cohortId={selectedCohortId} />
+      )}
+
+      {/* Roster view (default) — everything below renders only for the per-user roster */}
+      {activeView === 'roster' && (
+      <>
       {/* Stats Summary */}
       <StatsSummary cohortSummary={cohortSummary} />
       
@@ -976,6 +1014,8 @@ const ConditioningDashboard = () => {
             </div>
           )}
         </Card>
+      )}
+      </>
       )}
     </div>
   );

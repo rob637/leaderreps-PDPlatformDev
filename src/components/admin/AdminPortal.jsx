@@ -29,13 +29,11 @@ import SystemDiagnostics from './SystemDiagnostics';
 import FeatureManager from './FeatureManager';
 import ContentAdminHome from './ContentAdminHome'; // Existing component
 import MediaLibrary from './MediaLibrary'; // New component
-// import MigrationTool from './MigrationTool'; // New component
 import SystemWidgets from './SystemWidgets';
 import DocumentationCenter from './DocumentationCenter';
 import TestCenter from './TestCenter';
 import EventsManager from './EventsManager';
 import LOVManager from './LOVManager';
-import ContentManager from './DailyPlanManager';
 import PhaseContentManager from './PhaseContentManager';
 import CohortManager from './CohortManager';
 import UserManagement from './UserManagement';
@@ -50,7 +48,7 @@ import AskTrainerInbox from './AskTrainerInbox';
 import { BreadcrumbNav } from '../ui/BreadcrumbNav';
 import { useAppServices } from '../../services/useAppServices';
 import { useNavigation } from '../../providers/NavigationProvider';
-import { doc, getDoc } from 'firebase/firestore';
+import { fetchAdminEmails, isAdminEmail, FALLBACK_ADMIN_EMAILS } from '../../services/adminAuth';
 import { FlaskConical as LabIcon } from 'lucide-react';
 
 // Define version locally if not available globally
@@ -81,29 +79,14 @@ const AdminPortal = () => {
         return;
       }
 
-      // Default fallback admins
-      const DEFAULT_ADMINS = ['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com', 'cristina@leaderreps.com'];
-      
+      // Use centralized admin source. Always prefers metadata/config and
+      // falls back to FALLBACK_ADMIN_EMAILS only if Firestore is unreachable.
       try {
-        // Try to fetch from Firestore config
-        const configRef = doc(db, 'metadata', 'config');
-        const configSnap = await getDoc(configRef);
-        
-        let allowedEmails = DEFAULT_ADMINS;
-        
-        if (configSnap.exists() && configSnap.data().adminemails) {
-          allowedEmails = configSnap.data().adminemails;
-        }
-        
-        // Check if user is in the allowed list (case-insensitive)
-        const userEmail = user.email.toLowerCase();
-        const isAllowed = allowedEmails.some(email => email.toLowerCase() === userEmail);
-        
-        setIsAdmin(isAllowed);
+        const allowedEmails = await fetchAdminEmails(db);
+        setIsAdmin(isAdminEmail(user.email, allowedEmails));
       } catch (error) {
-        console.error("Error checking admin status:", error);
-        // Fallback to default list on error
-        setIsAdmin(DEFAULT_ADMINS.includes(user.email));
+        console.error('Error checking admin status:', error);
+        setIsAdmin(isAdminEmail(user.email, FALLBACK_ADMIN_EMAILS.map(e => e.toLowerCase())));
       } finally {
         setLoading(false);
       }
@@ -142,7 +125,6 @@ const AdminPortal = () => {
       items: [
         { id: 'users', label: 'User Management', icon: Users },
         // { id: 'cohorts', label: 'Cohorts', icon: Users },
-        // { id: 'content-manager', label: 'Content Manager', icon: Calendar }, // RETIRED May 2026 — superseded by 'phase-content'
         { id: 'phase-content', label: 'Phase Content', icon: Calendar },
         { id: 'content', label: 'Content Library', icon: FileText },
         { id: 'media', label: 'Media Vault', icon: Database },
@@ -173,7 +155,6 @@ const AdminPortal = () => {
         { id: 'diagnostics', label: 'Diagnostics', icon: Activity },
         { id: 'features', label: 'Widget Lab', icon: FlaskConical },
         { id: 'system', label: 'System', icon: Settings },
-        // { id: 'migration', label: 'Migration', icon: ArrowLeftRight },
         { id: 'tests', label: 'Test Center', icon: TestTube2 },
         { id: 'ux-audit', label: 'UX Audit Lab', icon: Eye },
         { id: 'leaderreps-lab', label: 'LeaderReps Lab', icon: LabIcon, screen: 'leaderreps-lab' }
@@ -197,8 +178,6 @@ const AdminPortal = () => {
         return <CohortManager />;
       case 'tests':
         return <TestCenter />;
-      case 'content-manager':
-        return <ContentManager />;
       case 'phase-content':
         return <PhaseContentManager />;
       case 'ask-trainer-inbox':
@@ -232,8 +211,6 @@ const AdminPortal = () => {
         return <DocumentationCenter />;
       case 'system':
         return <SystemWidgets />;
-      // case 'migration':
-      //   return <MigrationTool />;
       case 'leader-profiles':
         return <LeaderProfileReports />;
       case 'conditioning':

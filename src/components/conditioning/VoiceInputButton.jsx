@@ -64,6 +64,15 @@ const VoiceInputButton = ({
   // the browser ends and we restart recognition on silence.
   const sessionTranscriptRef = useRef('');
   const isRestartingRef = useRef(false);
+  // Deferred-restart bookkeeping (May 2026 — fix for transcription dying
+  // when the user pauses). `recognition.start()` called synchronously inside
+  // `onend` throws InvalidStateError on iOS / Android because the previous
+  // session hasn't fully released. We retry on a short timer with backoff
+  // up to a small cap so silence pauses don't end the session.
+  const restartTimerRef = useRef(null);
+  const restartAttemptsRef = useRef(0);
+  const RESTART_MAX_ATTEMPTS = 5;
+  const RESTART_BASE_DELAY_MS = 250;
   // Store callbacks in refs to avoid re-creating recognition on every render
   const onTranscriptionRef = useRef(onTranscription);
   const onPartialTranscriptionRef = useRef(onPartialTranscription);
@@ -103,6 +112,8 @@ const VoiceInputButton = ({
       setIsRecording(true);
       setError(null);
       transcriptRef.current = '';
+      // Reset restart-backoff counter on every successful start.
+      restartAttemptsRef.current = 0;
       // Only reset cross-restart flags on a fresh user-initiated start.
       // Auto-restarts (silence-driven) preserve sessionTranscriptRef and
       // hasSubmittedRef so dictated text accumulates across the session.
@@ -116,9 +127,12 @@ const VoiceInputButton = ({
     
     recognition.onend = () => {
       // May-11 manual-stop mode: if the user hasn't pressed stop and we're
-      // not in autoStop mode, immediately restart recognition. The browser
-      // (especially iOS/Android) ends the session on silence; we want it to
-      // keep going until the user explicitly stops.
+      // not in autoStop mode, restart recognition on a short timer. We MUST
+      // defer the start() call: invoking it synchronously inside onend
+      // throws InvalidStateError on iOS/Android because the browser hasn't
+      // released the previous session yet. The deferred retry with backoff
+      // (up to RESTART_MAX_ATTEMPTS) keeps the session alive through
+      // silence pauses without spinning into a tight loop.
       if (!autoStop && wantsActiveRef.current && !userStoppedRef.current) {
         // Roll the just-finished segment into the session-level buffer so
         // we don't lose anything when transcriptRef gets cleared on the
@@ -132,15 +146,56 @@ const VoiceInputButton = ({
           // text between restarts (without marking the session as submitted).
           onPartialTranscriptionRef.current?.(sessionTranscriptRef.current);
         }
-        try {
+        transcriptRef.current = '';
+
+        if (restartAttemptsRef.current >= RESTART_MAX_ATTEMPTS) {
+          // Backoff cap reached — give up on auto-restart and fall through
+          // to the normal end behavior. The accumulated transcript is still
+          // submitted below.
+          wantsActiveRef.current = false;
+        } else {
+          const attempt = restartAttemptsRef.current;
+          restartAttemptsRef.current = attempt + 1;
+          const delay = RESTART_BASE_DELAY_MS * Math.pow(2, attempt);
+          if (restartTimerRef.current) {
+            clearTimeout(restartTimerRef.current);
+          }
           isRestartingRef.current = true;
-          recognitionRef.current?.start();
-          // Stay in the recording state visually; don't clear isRecording.
+          restartTimerRef.current = setTimeout(() => {
+            restartTimerRef.current = null;
+            if (!wantsActiveRef.current || userStoppedRef.current) {
+              isRestartingRef.current = false;
+              return;
+            }
+            try {
+              recognitionRef.current?.start();
+            } catch (e) {
+              // start() can still throw on devices that haven't released the
+              // mic yet. Schedule another retry until we hit the cap.
+              isRestartingRef.current = false;
+              if (recognitionRef.current && wantsActiveRef.current && !userStoppedRef.current) {
+                // Re-enter onend's restart path by simulating it: bump the
+                // attempt counter and try again on the same backoff curve.
+                const next = restartAttemptsRef.current;
+                if (next < RESTART_MAX_ATTEMPTS) {
+                  restartAttemptsRef.current = next + 1;
+                  const retryDelay = RESTART_BASE_DELAY_MS * Math.pow(2, next);
+                  restartTimerRef.current = setTimeout(() => {
+                    restartTimerRef.current = null;
+                    if (!wantsActiveRef.current || userStoppedRef.current) return;
+                    try {
+                      isRestartingRef.current = true;
+                      recognitionRef.current?.start();
+                    } catch (_) {
+                      isRestartingRef.current = false;
+                    }
+                  }, retryDelay);
+                }
+              }
+            }
+          }, delay);
+          // Keep the visual recording state on — we're between segments.
           return;
-        } catch (e) {
-          // If start throws (already started, etc.) fall through to the
-          // normal end behavior below.
-          isRestartingRef.current = false;
         }
       }
 
@@ -148,7 +203,7 @@ const VoiceInputButton = ({
       setIsProcessing(false);
       setIsStarting(false);
       wantsActiveRef.current = false;
-      
+
       // Clear timers
       if (autoStopTimerRef.current) {
         clearTimeout(autoStopTimerRef.current);
@@ -158,7 +213,12 @@ const VoiceInputButton = ({
         clearTimeout(startupTimerRef.current);
         startupTimerRef.current = null;
       }
-      
+      if (restartTimerRef.current) {
+        clearTimeout(restartTimerRef.current);
+        restartTimerRef.current = null;
+      }
+      restartAttemptsRef.current = 0;
+
       // Send final transcription if we have content (only once). Combine
       // the last segment with anything accumulated across auto-restarts.
       const lastSegment = transcriptRef.current.trim();
@@ -317,6 +377,10 @@ const VoiceInputButton = ({
       if (startupTimerRef.current) {
         clearTimeout(startupTimerRef.current);
       }
+      if (restartTimerRef.current) {
+        clearTimeout(restartTimerRef.current);
+        restartTimerRef.current = null;
+      }
     };
   }, [effectiveContinuous, autoStop, autoStopDelay]);
   
@@ -329,6 +393,10 @@ const VoiceInputButton = ({
       // auto-restart recognition.
       userStoppedRef.current = true;
       wantsActiveRef.current = false;
+      if (restartTimerRef.current) {
+        clearTimeout(restartTimerRef.current);
+        restartTimerRef.current = null;
+      }
       setIsProcessing(true);
       try {
         recognitionRef.current.stop();
@@ -345,6 +413,11 @@ const VoiceInputButton = ({
       userStoppedRef.current = false;
       wantsActiveRef.current = true;
       isRestartingRef.current = false;
+      restartAttemptsRef.current = 0;
+      if (restartTimerRef.current) {
+        clearTimeout(restartTimerRef.current);
+        restartTimerRef.current = null;
+      }
       setError(null);
       setIsStarting(true);
       

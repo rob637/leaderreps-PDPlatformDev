@@ -89,17 +89,20 @@ const ItemSection = ({ section, items, onChange }) => {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerValue, setPickerValue] = useState(null);
 
-  const handlePickerChange = (val) => {
+  // ResourceSelector calls onChange(id, resource); we need the full resource object.
+  const handlePickerChange = (id, resource) => {
+    const val = resource || (id && typeof id === 'object' ? id : null);
     if (!val) {
       setPickerOpen(false);
       return;
     }
     // val is the resource picked — coerce into a phase-doc item shape
+    const resolvedId = val.id || val.resourceId || (typeof id === 'string' ? id : '');
     const newItem = {
       [section.labelField]: val.title || val.name || val.label || labelOf(val),
-      resourceId: val.id || val.resourceId || '',
+      resourceId: resolvedId,
       resourceType: val.resourceType || val.type || section.selector,
-      contentItemId: val.id || '',
+      contentItemId: resolvedId,
       required: false,
       order: items.length,
       _addedAt: new Date().toISOString(),
@@ -165,22 +168,25 @@ const ItemSection = ({ section, items, onChange }) => {
   // Per-row "attach / re-link" — opens the picker scoped to a single item
   // and replaces its resourceId/contentItemId/resourceType in place.
   const [relinkIdx, setRelinkIdx] = useState(null);
-  const handleRelink = (val) => {
-    if (val == null) {
+  // ResourceSelector calls onChange(id, resource); we need the full resource object.
+  const handleRelink = (id, resource) => {
+    const val = resource || (id && typeof id === 'object' ? id : null);
+    if (val == null && id == null) {
       setRelinkIdx(null);
       return;
     }
     const idx = relinkIdx;
     if (idx == null) return;
+    const resolvedId = (val && (val.id || val.resourceId)) || (typeof id === 'string' ? id : '');
     const updated = items.slice();
     const cur = updated[idx] || {};
     updated[idx] = {
       ...cur,
-      resourceId: val.id || val.resourceId || '',
-      contentItemId: val.id || '',
-      resourceType: val.resourceType || val.type || cur.resourceType || section.selector,
+      resourceId: resolvedId,
+      contentItemId: resolvedId,
+      resourceType: (val && (val.resourceType || val.type)) || cur.resourceType || section.selector,
       // Keep the existing label unless the row was an empty placeholder
-      [section.labelField]: cur[section.labelField] || val.title || val.name || labelOf(val),
+      [section.labelField]: cur[section.labelField] || (val && (val.title || val.name || labelOf(val))) || cur[section.labelField],
     };
     onChange(updated);
     setRelinkIdx(null);

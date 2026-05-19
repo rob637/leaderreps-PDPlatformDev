@@ -231,23 +231,36 @@ export const COACHING_COLLECTION = 'coaching_sessions'; // Legacy - individual s
 export const COACHING_SESSION_TYPES_COLLECTION = 'coaching_session_types'; // Session templates (Open Gym, Leader Circle, etc.)
 export const COACHING_SESSIONS_COLLECTION = 'coaching_sessions'; // Scheduled session instances
 export const COACHING_REGISTRATIONS_COLLECTION = 'coaching_registrations'; // User registrations
+export const COACHING_WAITLIST_COLLECTION = 'coaching_waitlist'; // Per-session waitlist entries (added May 2026)
 
-// Coaching Session Types (keys are enum-style, values are Firestore strings)
+// Event Types — unified across coaching + community after the May 2026 merge.
+// All events live in `coaching_sessions`; the type distinguishes the flavor.
+// (Keys are enum-style, values are Firestore strings.)
 export const SESSION_TYPES = {
-    OPEN_GYM: 'open_gym',           // Weekly drop-in feedback sessions
-    LEADER_CIRCLE: 'leader_circle', // Peer discussion groups
-    WORKSHOP: 'workshop',           // Structured learning sessions
-    LIVE_WORKOUT: 'live_workout',   // Quick skill practice
-    ONE_ON_ONE: 'one_on_one'        // Personal coaching
+    // Coaching-origin
+    OPEN_GYM: 'open_gym',                 // Weekly drop-in feedback sessions
+    LEADER_CIRCLE: 'leader_circle',       // Peer discussion groups
+    WORKSHOP: 'workshop',                 // Structured learning sessions
+    LIVE_WORKOUT: 'live_workout',         // Quick skill practice
+    ONE_ON_ONE: 'one_on_one',             // Personal coaching
+    // Community-origin (merged into events May 2026)
+    COMMUNITY_EVENT: 'community_event',   // Live networking events
+    ACCOUNTABILITY_POD: 'accountability_pod', // Small group check-ins
+    MASTERMIND: 'mastermind',             // Expert-led group sessions
+    NETWORKING: 'networking'              // Casual networking sessions
 };
 
-// Default max attendees per session type
+// Default max attendees per event type
 export const SESSION_TYPE_DEFAULT_MAX_ATTENDEES = {
     [SESSION_TYPES.OPEN_GYM]: 20,
     [SESSION_TYPES.LEADER_CIRCLE]: 12,
     [SESSION_TYPES.WORKSHOP]: 25,
     [SESSION_TYPES.LIVE_WORKOUT]: 30,
-    [SESSION_TYPES.ONE_ON_ONE]: 1
+    [SESSION_TYPES.ONE_ON_ONE]: 1,
+    [SESSION_TYPES.COMMUNITY_EVENT]: 50,
+    [SESSION_TYPES.ACCOUNTABILITY_POD]: 8,
+    [SESSION_TYPES.MASTERMIND]: 12,
+    [SESSION_TYPES.NETWORKING]: 30
 };
 
 // Helper to get default max attendees for a session type
@@ -273,21 +286,33 @@ export const REGISTRATION_STATUS = {
     CANCELLED: 'cancelled'
 };
 
-// --- COMMUNITY HUB COLLECTIONS ---
-export const COMMUNITY_SESSIONS_COLLECTION = 'community_sessions'; // Scheduled community session instances
-export const COMMUNITY_SESSION_TYPES_COLLECTION = 'community_session_types'; // Session templates
-export const COMMUNITY_REGISTRATIONS_COLLECTION = 'community_registrations'; // User registrations
-
-// Community Session Types
-export const COMMUNITY_SESSION_TYPES = {
-    LEADER_CIRCLE: 'leader_circle',       // Peer discussion/accountability groups
-    COMMUNITY_EVENT: 'community_event',   // Live networking events
-    ACCOUNTABILITY_POD: 'accountability_pod', // Small group check-ins
-    MASTERMIND: 'mastermind',             // Expert-led group sessions
-    NETWORKING: 'networking'              // Casual networking sessions
+// Waitlist Status (added May 2026 — Join Waitlist UX)
+export const WAITLIST_STATUS = {
+    WAITING: 'waiting',         // User is on the waitlist
+    PROMOTED: 'promoted',       // Trainer promoted them to a confirmed registration
+    LEFT: 'left',               // User left voluntarily
 };
 
-// Community Session Recurrence
+// --- COMMUNITY HUB COLLECTIONS (DEPRECATED — May 2026 events merge) ---
+// These are kept as aliases to the unified coaching collections so legacy
+// imports continue to read the right data while we finish the cleanup.
+// New code should import COACHING_* / SESSION_TYPES directly.
+export const COMMUNITY_SESSIONS_COLLECTION = COACHING_SESSIONS_COLLECTION;
+export const COMMUNITY_SESSION_TYPES_COLLECTION = COACHING_SESSION_TYPES_COLLECTION;
+export const COMMUNITY_REGISTRATIONS_COLLECTION = COACHING_REGISTRATIONS_COLLECTION;
+export const COMMUNITY_WAITLIST_COLLECTION = COACHING_WAITLIST_COLLECTION;
+
+// Community Session Types — now part of the unified SESSION_TYPES enum.
+// Re-exported here for back-compat with existing imports.
+export const COMMUNITY_SESSION_TYPES = {
+    LEADER_CIRCLE: SESSION_TYPES.LEADER_CIRCLE,
+    COMMUNITY_EVENT: SESSION_TYPES.COMMUNITY_EVENT,
+    ACCOUNTABILITY_POD: SESSION_TYPES.ACCOUNTABILITY_POD,
+    MASTERMIND: SESSION_TYPES.MASTERMIND,
+    NETWORKING: SESSION_TYPES.NETWORKING
+};
+
+// Community Session Recurrence (still a per-instance string field)
 export const COMMUNITY_RECURRENCE = {
     NONE: 'none',           // One-time session
     WEEKLY: 'weekly',       // Every week on same day

@@ -51,6 +51,7 @@ import UpdateNotification from './components/ui/UpdateNotification.jsx';
 import { NotificationProvider } from './providers/NotificationProvider.jsx';
 import { TimeProvider } from './providers/TimeProvider.jsx';
 import { AccessControlProvider } from './providers/AccessControlProvider.jsx';
+import { EventsProvider } from './providers/EventsProvider.jsx';
 import { ThemeProvider } from './providers/ThemeProvider.jsx';
 import { UIVersionProvider } from './providers/UIVersionProvider.jsx';
 import { RepTypeProvider } from './providers/RepTypeProvider.jsx';
@@ -312,17 +313,19 @@ function MainApp() {
                     <OfflineBanner position="top" />
                     
                     <NotificationProvider>
-                      <AppContent
-                        currentScreen={currentScreen}
-                        user={user}
-                        navParams={navParams}
-                        isMobileOpen={isMobileOpen}
-                        setIsMobileOpen={setIsMobileOpen}
-                        isAuthRequired={isAuthRequired}
-                        auth={firebaseServices.auth}
-                        goBack={goBack}
-                        canGoBack={canGoBack}
-                      />
+                      <EventsProvider>
+                        <AppContent
+                          currentScreen={currentScreen}
+                          user={user}
+                          navParams={navParams}
+                          isMobileOpen={isMobileOpen}
+                          setIsMobileOpen={setIsMobileOpen}
+                          isAuthRequired={isAuthRequired}
+                          auth={firebaseServices.auth}
+                          goBack={goBack}
+                          canGoBack={canGoBack}
+                        />
+                      </EventsProvider>
                     </NotificationProvider>
                 </AccessControlProvider>
               </LayoutProvider>

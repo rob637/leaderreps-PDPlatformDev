@@ -92,6 +92,31 @@ const SESSION_TYPE_CONFIG = {
     color: 'bg-green-100 dark:bg-green-900/30 text-green-800 border-green-300',
     icon: '👤',
     defaultMaxAttendees: 1
+  },
+  // Community-origin types — merged into Events May 2026
+  community_event: {
+    label: 'Community Event',
+    color: 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 border-orange-300',
+    icon: '🎉',
+    defaultMaxAttendees: 50
+  },
+  accountability_pod: {
+    label: 'Accountability Pod',
+    color: 'bg-teal-100 dark:bg-teal-900/30 text-teal-800 border-teal-300',
+    icon: '🤝',
+    defaultMaxAttendees: 8
+  },
+  mastermind: {
+    label: 'Mastermind',
+    color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 border-blue-300',
+    icon: '🧠',
+    defaultMaxAttendees: 12
+  },
+  networking: {
+    label: 'Networking',
+    color: 'bg-green-100 dark:bg-green-900/30 text-green-800 border-green-300',
+    icon: '🌐',
+    defaultMaxAttendees: 30
   }
 };
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { PlayCircle, CheckCircle, X, Bell, BookOpen, FileText, Trophy } from 'lucide-react';
+import FocusTrap from '../accessibility/FocusTrap';
 
 /**
  * PrepCompleteModal - Shows milestone celebrations for prep phase completion
@@ -15,7 +16,14 @@ const PrepCompleteModal = ({ isOpen, onClose, milestone = 'all-prep' }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full">
+      <FocusTrap
+        active={isOpen}
+        onEscape={onClose}
+        className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="prep-complete-title"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-700">
           <div className="flex items-center gap-3">
@@ -30,7 +38,7 @@ const PrepCompleteModal = ({ isOpen, onClose, milestone = 'all-prep' }) => {
               }
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
+              <h2 id="prep-complete-title" className="text-lg font-semibold text-slate-800 dark:text-slate-200">
                 {isOnboarding ? 'Onboarding Complete!' : 'You\'re All Set!'}
               </h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -42,9 +50,10 @@ const PrepCompleteModal = ({ isOpen, onClose, milestone = 'all-prep' }) => {
           </div>
           <button 
             onClick={onClose}
+            aria-label="Close"
             className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
           >
-            <X className="w-4 h-4 text-slate-400" />
+            <X className="w-4 h-4 text-slate-400" aria-hidden="true" />
           </button>
         </div>
 
@@ -128,7 +137,7 @@ const PrepCompleteModal = ({ isOpen, onClose, milestone = 'all-prep' }) => {
             {isOnboarding ? 'Let\u0027s Go' : 'Got It'}
           </button>
         </div>
-      </div>
+      </FocusTrap>
     </div>
   );
 };

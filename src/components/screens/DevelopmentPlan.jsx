@@ -15,6 +15,7 @@ import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 import BaselineAssessmentSimple from './developmentplan/BaselineAssessmentSimple';
 import PlanTracker from './developmentplan/PlanTracker';
 import ProgressScan from './developmentplan/ProgressScan';
+import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
 // Lazy: DetailedPlanView pulls recharts (~134 KB). Keep it off the eager
 // devplan critical path so recharts only loads when this view is opened.
 const DetailedPlanView = lazy(() => import('./developmentplan/DetailedPlanView'));
@@ -572,6 +573,9 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
     if (view === 'baseline') {
       return [...base, { label: 'Leadership Skills Baseline', path: null }];
     }
+    if (view === 'leader-profile') {
+      return [...base, { label: 'Leader Profile', path: null }];
+    }
     if (view === 'scan') {
       return [...base, { label: 'Progress Scan', path: null }];
     }
@@ -624,6 +628,14 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
           onComplete={handleCompleteBaseline}
           isLoading={isSaving}
           initialData={latestAssessment}
+        />
+      )}
+
+      {view === 'leader-profile' && (
+        <LeaderProfileFormSimple
+          isModal={false}
+          onComplete={() => setView('dashboard')}
+          onClose={() => setView('dashboard')}
         />
       )}
 

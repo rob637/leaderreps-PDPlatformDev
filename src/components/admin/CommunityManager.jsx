@@ -13,8 +13,7 @@ import {
   MessageSquare,
   Heart,
   Share2,
-  Loader,
-  Calendar
+  Loader
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
@@ -26,11 +25,12 @@ import {
   CONTENT_COLLECTIONS 
 } from '../../services/contentService';
 import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
-import CommunitySessionManager from './CommunitySessionManager';
 
 const CommunityManager = ({ embedded = false }) => {
   const { db, navigate, user } = useAppServices();
-  const [activeTab, setActiveTab] = useState('sessions'); // 'sessions', 'posts'
+  // Sessions/events live in the Events admin now (May 2026 consolidation).
+  // This screen manages Community feed/forum posts only.
+  const [activeTab, setActiveTab] = useState('posts');
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState(null);
@@ -189,12 +189,6 @@ const CommunityManager = ({ embedded = false }) => {
         {/* Tabs */}
         <div className="flex border-b border-slate-200 dark:border-slate-700 mb-6">
           <TabButton 
-            active={activeTab === 'sessions'} 
-            onClick={() => setActiveTab('sessions')} 
-            icon={Calendar} 
-            label="Sessions & Events" 
-          />
-          <TabButton 
             active={activeTab === 'posts'} 
             onClick={() => setActiveTab('posts')} 
             icon={MessageSquare} 
@@ -203,11 +197,6 @@ const CommunityManager = ({ embedded = false }) => {
           />
         </div>
       </div>
-
-      {/* Sessions Tab */}
-      {activeTab === 'sessions' && (
-        <CommunitySessionManager />
-      )}
 
       {/* Posts Tab */}
       {activeTab === 'posts' && (

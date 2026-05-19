@@ -1,12 +1,13 @@
 // src/services/eventsService.js
 //
-// Ascent Revamp WS-2 — Unified Events service.
+// Unified Events service — single source of truth.
 //
-// READ-ONLY aggregator over existing `coaching_sessions` and
-// `community_sessions` collections. No new collections; no migration.
-// Writes for register/cancel are routed through the existing per-source
-// services so legacy Cloud Function triggers (calendar invites, etc.)
-// keep working unchanged.
+// May 2026 events consolidation: community_sessions and coaching_sessions
+// were merged into a single `coaching_sessions` collection (see
+// scripts/migrations/merge-community-into-coaching-sessions.cjs). Legacy
+// docs may still carry old field names (`host`/`meetingLink`/`topicFocus`)
+// alongside the unified `coach`/`zoomLink`/`skillFocus` fields; the
+// normalizer prefers the new names and falls back to the legacy ones.
 //
 // Public API (consumed by Events.jsx):
 //   - subscribeUpcomingEvents(db, userId, callback) -> unsubscribe
@@ -15,53 +16,96 @@
 //
 // Normalized Event shape:
 //   {
-//     id,                 // stable composite: `${sourceType}:${sourceId}`
-//     sourceType,         // 'coaching' | 'community'
+//     id,                 // stable composite: `coaching:${sourceId}`
+//     sourceType,         // always 'coaching' (kept for back-compat)
 //     sourceId,           // original Firestore doc id
 //     title, description,
-//     hostName,           // 'coach' or 'host' field
+//     hostName,
 //     sessionType,
 //     startsAt,           // Date object (combined date+time, best-effort)
 //     date, time, timezone,
 //     durationMinutes,
 //     status,             // 'scheduled' | 'live' | 'completed' | 'cancelled'
 //     spotsLeft,
-//     link,               // zoomLink (coaching) or meetingLink (community)
+//     link,               // zoomLink (preferred) or legacy meetingLink
 //     replayUrl,
 //     isRegistered,       // computed from user's registration docs
 //   }
 
 import {
   collection,
-  doc,
-  getDoc,
   onSnapshot,
   query,
   where,
+  getDoc,
 } from 'firebase/firestore';
 
 import {
   COACHING_SESSIONS_COLLECTION,
   COACHING_REGISTRATIONS_COLLECTION,
-  COMMUNITY_SESSIONS_COLLECTION,
-  COMMUNITY_REGISTRATIONS_COLLECTION,
+  COACHING_WAITLIST_COLLECTION,
   REGISTRATION_STATUS,
+  WAITLIST_STATUS,
 } from '../data/Constants';
-
-import {
-  registerForCommunitySession,
-  cancelCommunityRegistration,
-} from './communityService';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 /**
- * Best-effort parse of "12:00 PM" / "2:30 pm" / "14:00" plus a "YYYY-MM-DD"
- * date string into a Date. Returns null if either piece is missing.
+ * Convert a wall-clock time in a named IANA timezone to a UTC Date.
+ * Zero-dependency Intl-based implementation (handles DST correctly).
+ *
+ * @param {number} year - 4-digit year
+ * @param {number} month - 1-12
+ * @param {number} day - 1-31
+ * @param {number} hour - 0-23
+ * @param {number} minute - 0-59
+ * @param {string} tz - IANA timezone (e.g. 'America/New_York'); falsy = local
+ * @returns {Date}
  */
-const parseStartsAt = (dateStr, timeStr, _timezone) => {
+const zonedWallClockToUtc = (year, month, day, hour, minute, tz) => {
+  // Local-time fallback when timezone is missing/invalid.
+  if (!tz) return new Date(year, month - 1, day, hour, minute, 0, 0);
+  try {
+    // Step 1: assume the wall-clock numbers are UTC and get a probe instant.
+    const probeUtcMs = Date.UTC(year, month - 1, day, hour, minute);
+    // Step 2: render that instant in the target zone — gives us "what would
+    // it look like in tz". The diff between that and our intended wall-clock
+    // is the timezone offset at this instant (DST-aware).
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+    });
+    const parts = fmt.formatToParts(new Date(probeUtcMs)).reduce((acc, p) => {
+      if (p.type !== 'literal') acc[p.type] = p.value;
+      return acc;
+    }, {});
+    const asZoned = Date.UTC(
+      Number(parts.year),
+      Number(parts.month) - 1,
+      Number(parts.day),
+      Number(parts.hour) === 24 ? 0 : Number(parts.hour),
+      Number(parts.minute),
+      Number(parts.second),
+    );
+    const offsetMs = asZoned - probeUtcMs;
+    return new Date(probeUtcMs - offsetMs);
+  } catch (_) {
+    // Invalid timezone string — fall back to local.
+    return new Date(year, month - 1, day, hour, minute, 0, 0);
+  }
+};
+
+/**
+ * Best-effort parse of "12:00 PM" / "2:30 pm" / "14:00" plus a "YYYY-MM-DD"
+ * date string into a Date. Honors the event's IANA timezone so the resulting
+ * UTC instant is correct regardless of the viewer's local zone (important for
+ * the "join 15 min before start" gating logic). Returns null if either piece
+ * is missing.
+ */
+const parseStartsAt = (dateStr, timeStr, timezone) => {
   if (!dateStr) return null;
   const t = (timeStr || '12:00').trim();
   let hour = 12;
@@ -74,19 +118,18 @@ const parseStartsAt = (dateStr, timeStr, _timezone) => {
     if (meridian === 'pm' && hour < 12) hour += 12;
     if (meridian === 'am' && hour === 12) hour = 0;
   }
-  // Treat YYYY-MM-DD as local date.
   const [y, mo, d] = dateStr.split('-').map((s) => parseInt(s, 10));
   if (!y || !mo || !d) return null;
-  return new Date(y, mo - 1, d, hour, minute, 0, 0);
+  return zonedWallClockToUtc(y, mo, d, hour, minute, timezone);
 };
 
-const normalizeCoachingSession = (raw, isRegistered) => ({
+const normalizeEvent = (raw, isRegistered, isWaitlisted) => ({
   id: `coaching:${raw.id}`,
   sourceType: 'coaching',
   sourceId: raw.id,
-  title: raw.title || 'Coaching Session',
+  title: raw.title || 'Event',
   description: raw.description || '',
-  hostName: raw.coach || '',
+  hostName: raw.coach || raw.host || '',
   sessionType: raw.sessionType || 'coaching',
   startsAt: parseStartsAt(raw.date, raw.time, raw.timezone),
   date: raw.date || '',
@@ -95,29 +138,10 @@ const normalizeCoachingSession = (raw, isRegistered) => ({
   durationMinutes: raw.durationMinutes || 60,
   status: raw.status || 'scheduled',
   spotsLeft: typeof raw.spotsLeft === 'number' ? raw.spotsLeft : null,
-  link: raw.zoomLink || null,
+  link: raw.zoomLink || raw.meetingLink || null,
   replayUrl: raw.replayUrl || null,
   isRegistered: !!isRegistered,
-});
-
-const normalizeCommunitySession = (raw, isRegistered) => ({
-  id: `community:${raw.id}`,
-  sourceType: 'community',
-  sourceId: raw.id,
-  title: raw.title || 'Community Event',
-  description: raw.description || '',
-  hostName: raw.host || '',
-  sessionType: raw.sessionType || 'community',
-  startsAt: parseStartsAt(raw.date, raw.time, raw.timezone),
-  date: raw.date || '',
-  time: raw.time || '',
-  timezone: raw.timezone || '',
-  durationMinutes: raw.durationMinutes || 60,
-  status: raw.status || 'scheduled',
-  spotsLeft: typeof raw.spotsLeft === 'number' ? raw.spotsLeft : null,
-  link: raw.meetingLink || null,
-  replayUrl: raw.replayUrl || null,
-  isRegistered: !!isRegistered,
+  isWaitlisted: !!isWaitlisted,
 });
 
 // ---------------------------------------------------------------------------
@@ -139,21 +163,15 @@ export const subscribeUpcomingEvents = (db, userId, callback) => {
   if (!userId) throw new Error('userId required');
 
   const state = {
-    coaching: new Map(),
-    community: new Map(),
-    coachingRegs: new Set(),
-    communityRegs: new Set(),
+    sessions: new Map(),
+    regs: new Set(),
+    waitlist: new Set(),
   };
 
   const emit = () => {
     const all = [];
-    state.coaching.forEach((raw) => {
-      all.push(normalizeCoachingSession(raw, state.coachingRegs.has(raw.id)));
-    });
-    state.community.forEach((raw) => {
-      all.push(
-        normalizeCommunitySession(raw, state.communityRegs.has(raw.id))
-      );
+    state.sessions.forEach((raw) => {
+      all.push(normalizeEvent(raw, state.regs.has(raw.id), state.waitlist.has(raw.id)));
     });
 
     // Sort: events with parseable startsAt first (chronological),
@@ -170,45 +188,26 @@ export const subscribeUpcomingEvents = (db, userId, callback) => {
 
   const unsubs = [];
 
-  // Coaching sessions
+  // All event sessions (coaching_sessions is now the single source).
   unsubs.push(
     onSnapshot(
       collection(db, COACHING_SESSIONS_COLLECTION),
       (snap) => {
-        state.coaching.clear();
+        state.sessions.clear();
         snap.forEach((d) => {
           const data = { id: d.id, ...d.data() };
-          state.coaching.set(d.id, data);
+          state.sessions.set(d.id, data);
         });
         emit();
       },
       (err) => {
         // eslint-disable-next-line no-console
-        console.warn('[eventsService] coaching subscription error', err);
+        console.warn('[eventsService] sessions subscription error', err);
       }
     )
   );
 
-  // Community sessions
-  unsubs.push(
-    onSnapshot(
-      collection(db, COMMUNITY_SESSIONS_COLLECTION),
-      (snap) => {
-        state.community.clear();
-        snap.forEach((d) => {
-          const data = { id: d.id, ...d.data() };
-          state.community.set(d.id, data);
-        });
-        emit();
-      },
-      (err) => {
-        // eslint-disable-next-line no-console
-        console.warn('[eventsService] community subscription error', err);
-      }
-    )
-  );
-
-  // Coaching registrations for this user
+  // Registrations for this user.
   unsubs.push(
     onSnapshot(
       query(
@@ -216,48 +215,48 @@ export const subscribeUpcomingEvents = (db, userId, callback) => {
         where('userId', '==', userId)
       ),
       (snap) => {
-        state.coachingRegs.clear();
+        state.regs.clear();
         snap.forEach((d) => {
           const data = d.data();
           if (
             data.sessionId &&
             data.status !== REGISTRATION_STATUS.CANCELLED
           ) {
-            state.coachingRegs.add(data.sessionId);
+            state.regs.add(data.sessionId);
           }
         });
         emit();
       },
       (err) => {
         // eslint-disable-next-line no-console
-        console.warn('[eventsService] coaching reg subscription error', err);
+        console.warn('[eventsService] registrations subscription error', err);
       }
     )
   );
 
-  // Community registrations for this user
+  // Waitlist entries for this user (added May 2026).
   unsubs.push(
     onSnapshot(
       query(
-        collection(db, COMMUNITY_REGISTRATIONS_COLLECTION),
+        collection(db, COACHING_WAITLIST_COLLECTION),
         where('userId', '==', userId)
       ),
       (snap) => {
-        state.communityRegs.clear();
+        state.waitlist.clear();
         snap.forEach((d) => {
           const data = d.data();
           if (
             data.sessionId &&
-            data.status !== REGISTRATION_STATUS.CANCELLED
+            data.status === WAITLIST_STATUS.WAITING
           ) {
-            state.communityRegs.add(data.sessionId);
+            state.waitlist.add(data.sessionId);
           }
         });
         emit();
       },
       (err) => {
         // eslint-disable-next-line no-console
-        console.warn('[eventsService] community reg subscription error', err);
+        console.warn('[eventsService] waitlist subscription error', err);
       }
     )
   );
@@ -406,38 +405,45 @@ const cancelCoachingRegistration = async (db, userId, event) => {
 
 export const registerForEvent = async (db, userId, event) => {
   if (!db || !userId || !event) throw new Error('Missing args');
-
-  if (event.sourceType === 'coaching') {
-    return registerForCoachingSession(db, userId, event);
-  }
-
-  if (event.sourceType === 'community') {
-    // Pull current spotsLeft so the helper can decrement.
-    const ref = doc(db, COMMUNITY_SESSIONS_COLLECTION, event.sourceId);
-    const snap = await getDoc(ref);
-    const sessionData = snap.exists()
-      ? { ...snap.data(), spotsLeft: snap.data().spotsLeft }
-      : { title: event.title, date: event.date, time: event.time, sessionType: event.sessionType };
-    return registerForCommunitySession(db, userId, event.sourceId, sessionData);
-  }
-
-  throw new Error(`Unknown event sourceType: ${event.sourceType}`);
+  // Post-consolidation, every event is a coaching_sessions doc. The
+  // legacy 'community' sourceType is still accepted for back-compat with
+  // any cached/persisted event objects.
+  return registerForCoachingSession(db, userId, event);
 };
 
 export const cancelRegistrationForEvent = async (db, userId, event) => {
   if (!db || !userId || !event) throw new Error('Missing args');
+  return cancelCoachingRegistration(db, userId, event);
+};
 
-  if (event.sourceType === 'coaching') {
-    return cancelCoachingRegistration(db, userId, event);
-  }
-  if (event.sourceType === 'community') {
-    return cancelCommunityRegistration(db, userId, event.sourceId);
-  }
-  throw new Error(`Unknown event sourceType: ${event.sourceType}`);
+// ---------------------------------------------------------------------------
+// Waitlist — thin wrappers around the communityService primitives. Added
+// May 2026 so a full session can offer "Join Waitlist" instead of a dead
+// disabled button. The trainer-side promote action lives in
+// TrainerSessionsPanel.
+// ---------------------------------------------------------------------------
+export const joinWaitlistForEvent = async (db, userId, event) => {
+  if (!db || !userId || !event) throw new Error('Missing args');
+  const { joinWaitlist } = await import('./communityService');
+  return joinWaitlist(db, userId, event.sourceId, {
+    title: event.title,
+    date: event.date,
+    time: event.time,
+    sessionType: event.sessionType,
+    host: event.hostName,
+  });
+};
+
+export const leaveWaitlistForEvent = async (db, userId, event) => {
+  if (!db || !userId || !event) throw new Error('Missing args');
+  const { leaveWaitlist } = await import('./communityService');
+  return leaveWaitlist(db, userId, event.sourceId);
 };
 
 export default {
   subscribeUpcomingEvents,
   registerForEvent,
   cancelRegistrationForEvent,
+  joinWaitlistForEvent,
+  leaveWaitlistForEvent,
 };

@@ -104,7 +104,7 @@ const LeaderRepsLab = () => {
 
       {/* Tool Cards */}
       <div className="flex-1 overflow-y-auto p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-5xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 w-full">
           {/* Tool 1 — SMS Tool (Live) */}
           <ToolCard icon={MessageSquare} title="SMS Tool" status="Live">
             <p>

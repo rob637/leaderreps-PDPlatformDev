@@ -3201,6 +3201,25 @@ render(<RepsHistoryWidget />);
   };
 
 export const FEATURE_METADATA = {
+  // ─── UI Polish ─────────────────────────────────────────────────────────
+  // Behavior flag (NOT a widget). When ON, supported dashboard cards morph
+  // into a centered detail view via shared-element transition instead of
+  // popping a modal or expanding inline. When OFF, every supported widget
+  // falls back to its prior behavior. Defaults to ON (because it's listed in
+  // FEATURE_METADATA) — toggle off in Widget Lab → "Dashboard" group.
+  // Currently wired into: DailyPlanWidget, AskTrainerWidget, MyEventsWidget,
+  // UpcomingEventsWidget.
+  'dashboard-card-morph': {
+    core: false,
+    category: 'UI Polish',
+    name: 'Dashboard Card Morph',
+    description: 'Cards morph into detail view (vs modal/accordion)',
+    purpose: 'Behavior flag — enable iOS-style shared-element transitions on supported dashboard cards.',
+    extendedDescription: 'When enabled, clicking a supported row (Today\'s Plan resource, Ask a Trainer answered question, My Events, Upcoming Events) animates the row itself into a centered detail card instead of opening a separate modal or inline accordion. Respects prefers-reduced-motion.',
+    inputs: [],
+    outputs: [],
+    behaviorFlag: true,
+  },
   'program-status-debug': {
     core: true,
     category: 'System',

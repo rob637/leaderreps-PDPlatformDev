@@ -1,14 +1,14 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Settings, User, Bell, CheckCircle, Edit2, Zap, Mail, Smartphone, VolumeX, Shield,
   Download, LogOut, AlertTriangle, Sun, Moon, Monitor, ChevronRight, KeyRound,
-  ClipboardList, ArrowRight, Compass, Sparkles
+  ClipboardList, ArrowRight, Compass
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
 import { useAppServices } from '../../services/useAppServices';
 import { useTheme } from '../../providers/ThemeProvider';
-import { useUIVersion } from '../../providers/UIVersionProvider';
 import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
 import NotificationPreferencesWidget from './NotificationPreferencesWidget';
 import BaselineAssessmentSimple from '../screens/developmentplan/BaselineAssessmentSimple';
@@ -47,8 +47,8 @@ const MySettingsWidget = () => {
   // Theme
   const { theme, setTheme } = useTheme();
 
-  // UI Version (Classic v1 vs Next v2 — "State of the Art" preview)
-  const { uiVersion, setUIVersion, isV2 } = useUIVersion();
+  // UI Style + Card Animation toggles were retired May 2026. The app now
+  // locks to v2 ("Next") + dashboard-card-morph ON. See UIVersionProvider.
   
   // Use stored isComplete flag - profile is complete once user saves it
   const isProfileComplete = profileComplete;
@@ -68,11 +68,20 @@ const MySettingsWidget = () => {
       })
     : null;
 
-  // Leadership Identity Statement status
+  // Leadership Identity Statement status.
+  // May 2026: a non-empty statement (from either the manual-entry path or
+  // the legacy `identityAnchor` field, OR the full three-exercise builder)
+  // counts as complete. We no longer require qualities.length >= 3 \u2014 that
+  // gated leaders who completed the reflection offline and only entered
+  // the final statement here.
   const lisData = dailyPracticeData?.leadershipIdentity || null;
-  const lisStatement = (lisData?.statement || lisData?.anchor?.statement || '').trim();
-  const lisQualities = Array.isArray(lisData?.qualities) ? lisData.qualities.filter(Boolean) : [];
-  const hasLIS = !!lisStatement && lisQualities.length >= 3;
+  const lisStatement = (
+    lisData?.statement ||
+    lisData?.anchor?.statement ||
+    dailyPracticeData?.identityAnchor ||
+    ''
+  ).trim();
+  const hasLIS = !!lisStatement;
   const lisDate = lisData?.updatedAt
     ? new Date(lisData.updatedAt).toLocaleDateString(undefined, {
         year: 'numeric',
@@ -320,48 +329,6 @@ const MySettingsWidget = () => {
             </div>
           </div>
 
-          {/* UI Style Row — Classic vs Next ("State of the Art" preview) */}
-          <div className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isV2 ? 'bg-gradient-to-br from-corporate-teal/20 to-corporate-orange/20' : 'bg-slate-100 dark:bg-slate-700'}`}>
-                <Sparkles className={`w-4 h-4 ${isV2 ? 'text-corporate-teal-ink' : 'text-slate-400'}`} />
-              </div>
-              <div className="text-left">
-                <h4 className="font-medium text-corporate-navy dark:text-white text-sm">UI Style</h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {isV2 ? 'Next — glass, motion, modern' : 'Classic — solid, familiar'}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center bg-slate-100 dark:bg-slate-700 rounded-lg p-0.5">
-              <button
-                onClick={() => setUIVersion('v1')}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-200 ${
-                  !isV2
-                    ? 'bg-white dark:bg-slate-600 shadow-sm text-corporate-navy dark:text-white'
-                    : 'bg-transparent text-slate-500 hover:text-slate-700'
-                }`}
-                aria-label="Use classic UI"
-                aria-pressed={!isV2}
-              >
-                Classic
-              </button>
-              <button
-                onClick={() => setUIVersion('v2')}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-200 inline-flex items-center gap-1 ${
-                  isV2
-                    ? 'bg-gradient-to-r from-corporate-teal to-corporate-teal-dark text-white shadow-sm'
-                    : 'bg-transparent text-slate-500 hover:text-slate-700'
-                }`}
-                aria-label="Use next-generation UI"
-                aria-pressed={isV2}
-              >
-                <Sparkles className="w-3 h-3" />
-                Next
-              </button>
-            </div>
-          </div>
-
           {/* Install App & Sign Out - Mobile Only (hidden on desktop since they're in the sidebar) */}
           <div className="md:hidden space-y-2">
             {/* Install App Row - Uses PWAInstall component (only shows if not installed) */}
@@ -415,21 +382,22 @@ const MySettingsWidget = () => {
       </Card>
 
       {/* Profile Form Modal */}
-      {showProfileForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto">
+      {showProfileForm && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[1000] flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-xl my-auto">
             <LeaderProfileFormSimple 
               onComplete={() => setShowProfileForm(false)}
               onClose={() => setShowProfileForm(false)}
             />
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* Baseline Assessment Modal */}
-      {showBaselineForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto">
+      {showBaselineForm && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[1000] flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-xl my-auto">
             <BaselineAssessmentSimple
               onComplete={async (assessment) => {
                 try {
@@ -455,29 +423,32 @@ const MySettingsWidget = () => {
               initialData={latestAssessment}
             />
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* Leadership Identity Modal */}
-      {showIdentityForm && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
+      {showIdentityForm && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[1000] flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
           <div className="relative w-full max-w-2xl my-auto">
             <Suspense fallback={<div className="bg-white rounded-2xl p-8 text-center text-slate-500">Loading…</div>}>
               <IdentityStatement embedded onClose={() => setShowIdentityForm(false)} />
             </Suspense>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* Notification Settings Modal */}
-      {showNotificationSettings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      {showNotificationSettings && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[1000] flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-lg my-auto">
             <NotificationPreferencesWidget 
               onClose={() => setShowNotificationSettings(false)}
             />
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* Sign Out Confirmation Dialog */}

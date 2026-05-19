@@ -5,6 +5,7 @@ import { useSequenceStore } from '../../stores/sequenceStore';
 import { getStageInfo, TEAM_MEMBERS, PIPELINE_STAGES } from '../../config/team';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
+import { useConfirm } from '../ConfirmDialog';
 import {
   Building2,
   Mail,
@@ -31,6 +32,7 @@ const ProspectsList = ({ prospects }) => {
   const { setSelectedProspect, selectedProspect, updateProspect, deleteProspect } = useProspectsStore();
   const { openPushModal, hasLinkedInUrl } = useLinkedHelperStore();
   const { sequences, initialize: initSequences } = useSequenceStore();
+  const confirm = useConfirm();
   const [sortBy, setSortBy] = useState('lastName');
   const [sortDirection, setSortDirection] = useState('asc');
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -199,9 +201,13 @@ const ProspectsList = ({ prospects }) => {
 
   // Bulk delete
   const handleBulkDelete = async () => {
-    if (!window.confirm(`Are you sure you want to delete ${selectedProspects.length} prospects? This cannot be undone.`)) {
-      return;
-    }
+    const ok = await confirm({
+      title: `Delete ${selectedProspects.length} prospect${selectedProspects.length === 1 ? '' : 's'}?`,
+      message: 'This cannot be undone.',
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
+    if (!ok) return;
     
     setBulkActionLoading(true);
     try {

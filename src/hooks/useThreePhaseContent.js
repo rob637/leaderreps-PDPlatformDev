@@ -61,6 +61,7 @@ const useThreePhaseContent = () => {
         merged.push({
           ...it,
           required: false,
+          isRequiredContent: false,
           inheritedFrom: 'foundation',
           order: ascentMaxOrder + 1 + idx,
         });

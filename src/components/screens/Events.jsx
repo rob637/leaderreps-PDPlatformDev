@@ -10,20 +10,16 @@
 //   - Show source badge (Coaching | Community) so users can tell origin.
 //   - "Join" link button when within 15min of start (or session is live).
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Calendar, Clock, ExternalLink, Loader2, Users, Video,
   CheckCircle2, AlertCircle, ChevronLeft, ChevronRight,
-  X,
+  X, ListPlus,
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
+import { useEvents } from '../../providers/EventsProvider.jsx';
 import { PageLayout } from '../ui/PageLayout';
 import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
-import {
-  subscribeUpcomingEvents,
-  registerForEvent,
-  cancelRegistrationForEvent,
-} from '../../services/eventsService';
 
 const VIEW_TABS = [
   { key: 'upcoming', label: 'Upcoming' },
@@ -162,7 +158,7 @@ const buildCalendarCells = (monthDate) => {
   return cells;
 };
 
-const EventCard = ({ event, onRegister, onCancel, onOpenDetails, busy }) => {
+const EventCard = ({ event, onRegister, onCancel, onJoinWaitlist, onLeaveWaitlist, onOpenDetails, busy }) => {
   const badge = sessionTypeBadge(event.sessionType);
   const joinable = isJoinable(event);
   const past = event.startsAt && event.startsAt.getTime() + (event.durationMinutes || 60) * 60 * 1000 < Date.now();
@@ -202,6 +198,11 @@ const EventCard = ({ event, onRegister, onCancel, onOpenDetails, busy }) => {
           {event.isRegistered && !cancelled && (
             <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200 inline-flex items-center gap-1">
               <CheckCircle2 className="w-3 h-3" /> Registered
+            </span>
+          )}
+          {event.isWaitlisted && !event.isRegistered && !cancelled && (
+            <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200 inline-flex items-center gap-1">
+              <ListPlus className="w-3 h-3" /> Waitlisted
             </span>
           )}
         </div>
@@ -262,15 +263,39 @@ const EventCard = ({ event, onRegister, onCancel, onOpenDetails, busy }) => {
           </a>
         )}
 
-        {!past && !cancelled && !event.isRegistered && (
+        {!past && !cancelled && !event.isRegistered && event.spotsLeft !== 0 && (
           <button
             type="button"
             onClick={() => onRegister(event)}
-            disabled={busy || (event.spotsLeft === 0)}
+            disabled={busy}
             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-semibold bg-corporate-teal text-white hover:bg-corporate-teal/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
             Register
+          </button>
+        )}
+
+        {!past && !cancelled && !event.isRegistered && event.spotsLeft === 0 && !event.isWaitlisted && (
+          <button
+            type="button"
+            onClick={() => onJoinWaitlist(event)}
+            disabled={busy}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-semibold bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ListPlus className="w-3.5 h-3.5" />}
+            Join Waitlist
+          </button>
+        )}
+
+        {!past && !cancelled && !event.isRegistered && event.isWaitlisted && (
+          <button
+            type="button"
+            onClick={() => onLeaveWaitlist(event)}
+            disabled={busy}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium border border-amber-300 text-amber-700 hover:bg-amber-50 disabled:opacity-50"
+          >
+            {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+            Leave Waitlist
           </button>
         )}
 
@@ -293,7 +318,7 @@ const EventCard = ({ event, onRegister, onCancel, onOpenDetails, busy }) => {
 // ---------- Event detail modal ----------
 // Lightweight read-only-ish detail view. Register/Cancel/Join still routed
 // through the parent's handlers so the underlying state stays in one place.
-const EventDetailModal = ({ event, onClose, onRegister, onCancel, busy }) => {
+const EventDetailModal = ({ event, onClose, onRegister, onCancel, onJoinWaitlist, onLeaveWaitlist, busy }) => {
   if (!event) return null;
   const badge = sessionTypeBadge(event.sessionType);
   const past = event.startsAt && event.startsAt.getTime() + (event.durationMinutes || 60) * 60 * 1000 < Date.now();
@@ -328,6 +353,11 @@ const EventDetailModal = ({ event, onClose, onRegister, onCancel, busy }) => {
               {event.isRegistered && !cancelled && (
                 <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200 inline-flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" /> Registered
+                </span>
+              )}
+              {event.isWaitlisted && !event.isRegistered && !cancelled && (
+                <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200 inline-flex items-center gap-1">
+                  <ListPlus className="w-3 h-3" /> Waitlisted
                 </span>
               )}
             </div>
@@ -447,15 +477,37 @@ const EventDetailModal = ({ event, onClose, onRegister, onCancel, busy }) => {
               <ExternalLink className="w-3.5 h-3.5" /> Join Now
             </a>
           )}
-          {!past && !cancelled && !event.isRegistered && (
+          {!past && !cancelled && !event.isRegistered && event.spotsLeft !== 0 && (
             <button
               type="button"
               onClick={() => onRegister(event)}
-              disabled={busy || (event.spotsLeft === 0)}
+              disabled={busy}
               className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-semibold bg-corporate-teal text-white hover:bg-corporate-teal/90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
               Register
+            </button>
+          )}
+          {!past && !cancelled && !event.isRegistered && event.spotsLeft === 0 && !event.isWaitlisted && (
+            <button
+              type="button"
+              onClick={() => onJoinWaitlist(event)}
+              disabled={busy}
+              className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-semibold bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ListPlus className="w-3.5 h-3.5" />}
+              Join Waitlist
+            </button>
+          )}
+          {!past && !cancelled && !event.isRegistered && event.isWaitlisted && (
+            <button
+              type="button"
+              onClick={() => onLeaveWaitlist(event)}
+              disabled={busy}
+              className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium border border-amber-300 text-amber-700 hover:bg-amber-50 disabled:opacity-50"
+            >
+              {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+              Leave Waitlist
             </button>
           )}
           {!past && !cancelled && event.isRegistered && (
@@ -476,11 +528,10 @@ const EventDetailModal = ({ event, onClose, onRegister, onCancel, busy }) => {
 };
 
 const Events = () => {
-  const { db, user, navigate } = useAppServices();
+  const { user, navigate } = useAppServices();
   const userId = user?.uid;
+  const { events, loading, register, cancel, joinWaitlist, leaveWaitlist } = useEvents();
 
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [view, setView] = useState('upcoming');
   const [upcomingFilter, setUpcomingFilter] = useState('all');
   const [myRange, setMyRange] = useState('upcoming');
@@ -492,16 +543,6 @@ const Events = () => {
   });
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [detailEvent, setDetailEvent] = useState(null);
-
-  useEffect(() => {
-    if (!db || !userId) return undefined;
-    setLoading(true);
-    const unsub = subscribeUpcomingEvents(db, userId, (list) => {
-      setEvents(list);
-      setLoading(false);
-    });
-    return unsub;
-  }, [db, userId]);
 
   const now = useMemo(() => Date.now(), [events]);
   const startOfToday = useMemo(() => {
@@ -593,7 +634,7 @@ const Events = () => {
     setBusyId(event.id);
     setError(null);
     try {
-      await registerForEvent(db, userId, event);
+      await register(event);
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('[Events] register failed', {
@@ -628,7 +669,7 @@ const Events = () => {
     setBusyId(event.id);
     setError(null);
     try {
-      await cancelRegistrationForEvent(db, userId, event);
+      await cancel(event);
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('cancel failed', err);
@@ -638,11 +679,39 @@ const Events = () => {
     }
   };
 
+  const handleJoinWaitlist = async (event) => {
+    setBusyId(event.id);
+    setError(null);
+    try {
+      await joinWaitlist(event);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[Events] joinWaitlist failed', err);
+      setError(err?.message || 'Could not join waitlist. Try again.');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleLeaveWaitlist = async (event) => {
+    setBusyId(event.id);
+    setError(null);
+    try {
+      await leaveWaitlist(event);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[Events] leaveWaitlist failed', err);
+      setError(err?.message || 'Could not leave waitlist. Try again.');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   return (
     <PageLayout
       title="Events"
       icon={Calendar}
-      subtitle="Live coaching, leader circles, and community sessions — all in one place."
+      subtitle="Live coaching, leader circles, and community events — all in one place."
       navigate={navigate}
       breadcrumbs={getBreadcrumbs('events')}
       maxWidth="max-w-[1080px]"
@@ -724,6 +793,8 @@ const Events = () => {
                         event={event}
                         onRegister={handleRegister}
                         onCancel={handleCancel}
+                        onJoinWaitlist={handleJoinWaitlist}
+                        onLeaveWaitlist={handleLeaveWaitlist}
                         onOpenDetails={setDetailEvent}
                         busy={busyId === event.id}
                         />
@@ -755,6 +826,8 @@ const Events = () => {
                         event={event}
                         onRegister={handleRegister}
                         onCancel={handleCancel}
+                        onJoinWaitlist={handleJoinWaitlist}
+                        onLeaveWaitlist={handleLeaveWaitlist}
                         onOpenDetails={setDetailEvent}
                         busy={busyId === event.id}
                         />
@@ -807,6 +880,8 @@ const Events = () => {
                       event={event}
                       onRegister={handleRegister}
                       onCancel={handleCancel}
+                      onJoinWaitlist={handleJoinWaitlist}
+                      onLeaveWaitlist={handleLeaveWaitlist}
                       onOpenDetails={setDetailEvent}
                       busy={busyId === event.id}
                       />
@@ -909,6 +984,8 @@ const Events = () => {
                     event={event}
                     onRegister={handleRegister}
                     onCancel={handleCancel}
+                    onJoinWaitlist={handleJoinWaitlist}
+                    onLeaveWaitlist={handleLeaveWaitlist}
                     onOpenDetails={setDetailEvent}
                     busy={busyId === event.id}
                     />
@@ -926,6 +1003,8 @@ const Events = () => {
         onClose={() => setDetailEvent(null)}
         onRegister={handleRegister}
         onCancel={handleCancel}
+        onJoinWaitlist={handleJoinWaitlist}
+        onLeaveWaitlist={handleLeaveWaitlist}
         busy={detailEvent && busyId === detailEvent.id}
       />
     </PageLayout>

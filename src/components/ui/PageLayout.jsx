@@ -84,7 +84,7 @@ export const PageLayout = ({
   ] : []);
 
   return (
-    <div className="min-h-screen bg-[#FAFBFC] dark:bg-slate-900">
+    <div className="min-h-full bg-[#FAFBFC] dark:bg-slate-900">
       <div className={`${maxWidth} mx-auto p-5 sm:p-8 lg:p-10`}>
         
         {/* Navigation - Replaces old Back Button */}
@@ -108,7 +108,7 @@ export const PageLayout = ({
               </div>
               
               {sub && (
-                <p className={`text-slate-500 dark:text-slate-400 text-base sm:text-lg mt-2 leading-relaxed ${centerHeader ? 'max-w-2xl mx-auto' : ''}`} style={{ fontFamily: 'var(--font-body)' }}>
+                <p className={`text-slate-600 dark:text-slate-300 mt-2 leading-relaxed ${centerHeader ? 'max-w-2xl mx-auto' : ''}`} style={{ fontFamily: 'var(--font-body)' }}>
                   {sub}
                 </p>
               )}

@@ -819,6 +819,79 @@ const Exercise3Intentions = ({
 };
 
 // ---------------------------------------------------------------------------
+// MANUAL ENTRY — primary entry point (added May 2026 per product direction).
+// For leaders who completed the exercise offline and just want to type in
+// their Leadership Identity Statement without walking through the full
+// three-exercise builder. The builder remains one click away.
+// ---------------------------------------------------------------------------
+const ManualEntry = ({
+  statement, setStatement,
+  onSave, onWalkThrough,
+  saving, saveError,
+}) => {
+  const canSave = statement.trim().length > 0;
+  return (
+    <div className="space-y-5">
+      <div className="space-y-2">
+        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-corporate-teal/10 text-corporate-teal-ink text-[10px] font-bold uppercase tracking-wider">
+          <Compass className="w-3 h-3" />
+          Leadership Identity Statement
+        </div>
+        <h2 className="text-xl font-bold text-corporate-navy dark:text-white">
+          I completed this offline — enter my LIS
+        </h2>
+        <p className="text-sm text-slate-600 dark:text-slate-300">
+          If you've already done the reflection on paper or in another tool,
+          just type your statement here. You can refine it any time.
+        </p>
+      </div>
+
+      <div>
+        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+          I am the type of leader who…
+        </label>
+        <VoiceTextarea
+          value={statement}
+          onChange={(v) => setStatement(String(v || '').slice(0, 500))}
+          rows={6}
+          placeholder="I am the type of leader who…"
+          maxLength={500}
+        />
+        <div className="mt-1 text-right text-[10px] text-slate-400">
+          {statement.length}/500
+        </div>
+      </div>
+
+      {saveError && (
+        <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 text-sm text-rose-700 dark:text-rose-300">
+          {saveError}
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={!canSave || saving}
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-corporate-teal hover:bg-corporate-teal-dark disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {saving ? 'Saving…' : 'Save my LIS'}
+        </button>
+        <button
+          type="button"
+          onClick={onWalkThrough}
+          className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-corporate-navy dark:text-corporate-teal hover:underline"
+        >
+          Or walk through the three-exercise builder
+          <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
 // VIEW MODE — show the saved artifact
 // ---------------------------------------------------------------------------
 const ViewMode = ({ data, onEdit, onStartOver }) => (
@@ -993,11 +1066,15 @@ const IdentityStatement = ({ embedded = false, onClose } = {}) => {
 
   // Modes:
   //   'view'   — saved artifact display
+  //   'manual' — quick text-only entry for leaders who completed the exercise
+  //              offline (added May 2026 per product direction; this is now the
+  //              default entry point for new users — the three-exercise builder
+  //              is one click away from the manual screen).
   //   'ex1' / 'ex2' / 'ex3' — the three exercises
   // The legacy 'intro' splash was removed (May 2026) — leaders already see
   // the explainer on the kickoff tile and Locker card, so this screen now
   // jumps straight into the work.
-  const initialMode = isComplete(existing) ? 'view' : 'ex1';
+  const initialMode = isComplete(existing) ? 'view' : 'manual';
   const [mode, setMode] = useState(initialMode);
 
   // Editable state — seeded from existing
@@ -1015,7 +1092,12 @@ const IdentityStatement = ({ embedded = false, onClose } = {}) => {
   // while the user is at Exercise 1 with a blank slate (i.e. they haven't
   // started typing), drop them back into the saved view.
   useEffect(() => {
-    if (isComplete(existing) && mode === 'ex1' && !statement && qualities.length === 0) {
+    if (
+      isComplete(existing) &&
+      (mode === 'ex1' || mode === 'manual') &&
+      !statement &&
+      qualities.length === 0
+    ) {
       setAdmiredLeaders(existing.admiredLeaders);
       setQualities(existing.qualities);
       setStatement(existing.statement);
@@ -1126,6 +1208,61 @@ const IdentityStatement = ({ embedded = false, onClose } = {}) => {
     }
   };
 
+  // Manual save — for leaders who completed the exercise offline and just
+  // want to enter their statement. Skips the qualities/intentions minimums
+  // (those stay whatever was previously saved, if anything). Mirrors the
+  // statement into legacy `anchor.statement` and `identityAnchor` so the
+  // Grounding Rep widget and Locker card pick it up.
+  const saveManual = async () => {
+    if (!updateDailyPracticeData) {
+      setSaveError('Not connected. Refresh and try again.');
+      return;
+    }
+    const cleanStatement = statement.trim();
+    if (!cleanStatement) {
+      setSaveError('Type your Leadership Identity Statement before saving.');
+      return;
+    }
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const now = new Date().toISOString();
+      const prevStatement = safeStr(existing?.statement).trim();
+      const nextVersions = Array.isArray(existing?.versions) ? [...existing.versions] : [];
+      if (prevStatement && prevStatement !== cleanStatement) {
+        nextVersions.push({ statement: prevStatement, savedAt: now });
+      }
+
+      const payload = {
+        leadershipIdentity: {
+          admiredLeaders: existing?.admiredLeaders || [],
+          qualities: Array.isArray(existing?.qualities) ? existing.qualities : [],
+          statement: cleanStatement,
+          intentions: Array.isArray(existing?.intentions) ? existing.intentions : [],
+          anchor: { word: '', statement: cleanStatement },
+          source: 'manual',
+          versions: nextVersions,
+          updatedAt: now,
+          createdAt: existing?.createdAt || now,
+        },
+        identityAnchor: cleanStatement,
+      };
+
+      const ok = await updateDailyPracticeData(payload);
+      if (!ok) throw new Error('Save failed');
+      setMode('view');
+      if (embedded && typeof onClose === 'function') {
+        onClose();
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('[LIS] manual save failed', e);
+      setSaveError('Could not save. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Map mode → step index for progress bar
   const stepIndex = mode === 'ex1' ? 0 : mode === 'ex2' ? 1 : mode === 'ex3' ? 2 : -1;
 
@@ -1136,6 +1273,17 @@ const IdentityStatement = ({ embedded = false, onClose } = {}) => {
           data={existing}
           onEdit={startEdit}
           onStartOver={startOver}
+        />
+      )}
+
+      {mode === 'manual' && (
+        <ManualEntry
+          statement={statement}
+          setStatement={setStatement}
+          onSave={saveManual}
+          onWalkThrough={() => { setSaveError(null); setMode('ex1'); }}
+          saving={saving}
+          saveError={saveError}
         />
       )}
 
@@ -1230,7 +1378,7 @@ const IdentityStatement = ({ embedded = false, onClose } = {}) => {
         { label: 'Locker', path: 'locker' },
         { label: 'Leadership Identity', path: null },
       ]}
-      maxWidth="max-w-3xl"
+      maxWidth="max-w-[860px]"
     >
       {body}
     </PageLayout>

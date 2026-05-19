@@ -21,6 +21,7 @@ const UIVersionFloatingToggle = () => {
     >
       <div
         className={[
+          'ui-version-floating-toggle',
           'pointer-events-auto group relative flex items-center gap-2 pl-3 pr-2 py-2 rounded-full',
           'transition-all duration-300',
           isV2

@@ -26,20 +26,23 @@ import {
   COMMUNITY_SESSIONS_COLLECTION,
   COMMUNITY_SESSION_TYPES_COLLECTION,
   COMMUNITY_REGISTRATIONS_COLLECTION,
+  COMMUNITY_WAITLIST_COLLECTION,
   COMMUNITY_SESSION_TYPES,
   COMMUNITY_RECURRENCE,
   SESSION_STATUS,
-  REGISTRATION_STATUS
+  REGISTRATION_STATUS,
+  WAITLIST_STATUS
 } from '../data/Constants';
 
 // Re-export for convenience
-export { COMMUNITY_SESSION_TYPES, COMMUNITY_RECURRENCE, SESSION_STATUS, REGISTRATION_STATUS };
+export { COMMUNITY_SESSION_TYPES, COMMUNITY_RECURRENCE, SESSION_STATUS, REGISTRATION_STATUS, WAITLIST_STATUS };
 
 // Collection references
 export const COMMUNITY_COLLECTIONS = {
   SESSION_TYPES: COMMUNITY_SESSION_TYPES_COLLECTION,
   SESSIONS: COMMUNITY_SESSIONS_COLLECTION,
-  REGISTRATIONS: COMMUNITY_REGISTRATIONS_COLLECTION
+  REGISTRATIONS: COMMUNITY_REGISTRATIONS_COLLECTION,
+  WAITLIST: COMMUNITY_WAITLIST_COLLECTION
 };
 
 // Session Type Configurations for display
@@ -536,6 +539,170 @@ export const seedCommunitySessions = async (db) => {
   return sampleSessions.map(s => s.id);
 };
 
+// ===========================================================================
+// WAITLIST — added May 2026 per boss feedback.
+// "Rather than 'Register,' how about we create a 'Join Waitlist' option.
+//  Then in Trainer Operations, My Sessions, give me a way to access the
+//  Waitlist."
+//
+// Doc id pattern: `${sessionId}_${userId}` (matches firestore.rules wildcard).
+// Storage: top-level `coaching_waitlist` collection (aliased as
+// COMMUNITY_WAITLIST_COLLECTION). Each entry tracks userId/sessionId, name +
+// email so trainer email handoff is easy, and a status field. Promoting a
+// waitlist entry flips its status to PROMOTED and calls the normal
+// registerForCommunitySession transaction so spot-counts stay consistent.
+// ===========================================================================
+
+/**
+ * Add a user to a session's waitlist. Idempotent — if the user already has
+ * a WAITING entry we return its id without writing again.
+ */
+export const joinWaitlist = async (db, userId, sessionId, sessionData = {}) => {
+  if (!db) throw new Error('Database not initialized');
+  if (!userId || !sessionId) throw new Error('userId and sessionId required');
+
+  const entryId = `${sessionId}_${userId}`;
+  const entryRef = doc(db, COMMUNITY_COLLECTIONS.WAITLIST, entryId);
+
+  // Best-effort user lookup so trainers can email the waitlister directly.
+  let userEmail = null;
+  let userName = null;
+  try {
+    const userSnap = await getDoc(doc(db, 'users', userId));
+    const userData = userSnap.exists() ? userSnap.data() : {};
+    const authUser = getAuth().currentUser;
+    userEmail = userData.email || userData.primaryEmail || authUser?.email || null;
+    userName =
+      userData.displayName ||
+      userData.name ||
+      userData.fullName ||
+      authUser?.displayName ||
+      null;
+  } catch (e) {
+    console.warn('[communityService] could not load user profile for waitlist:', e?.message);
+  }
+
+  const existingSnap = await getDoc(entryRef);
+  if (existingSnap.exists() && existingSnap.data()?.status === WAITLIST_STATUS.WAITING) {
+    return entryId;
+  }
+
+  await setDoc(entryRef, {
+    id: entryId,
+    userId,
+    userEmail,
+    userName,
+    sessionId,
+    sessionTitle: sessionData.title || '',
+    sessionDate: sessionData.date || '',
+    sessionTime: sessionData.time || '',
+    sessionType: sessionData.sessionType || '',
+    host: sessionData.host || null,
+    status: WAITLIST_STATUS.WAITING,
+    joinedAt: existingSnap.exists() ? (existingSnap.data().joinedAt || serverTimestamp()) : serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
+
+  console.log('[communityService] User joined waitlist:', entryId);
+  return entryId;
+};
+
+/**
+ * Remove a user from a session's waitlist (mark LEFT, keep audit trail).
+ */
+export const leaveWaitlist = async (db, userId, sessionId) => {
+  if (!db) throw new Error('Database not initialized');
+  const entryId = `${sessionId}_${userId}`;
+  const entryRef = doc(db, COMMUNITY_COLLECTIONS.WAITLIST, entryId);
+  const snap = await getDoc(entryRef);
+  if (!snap.exists()) return;
+  await updateDoc(entryRef, {
+    status: WAITLIST_STATUS.LEFT,
+    leftAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  console.log('[communityService] User left waitlist:', entryId);
+};
+
+/**
+ * Get all WAITING entries for a session, oldest first.
+ */
+export const getSessionWaitlist = async (db, sessionId) => {
+  if (!db) throw new Error('Database not initialized');
+  const q = query(
+    collection(db, COMMUNITY_COLLECTIONS.WAITLIST),
+    where('sessionId', '==', sessionId),
+    where('status', '==', WAITLIST_STATUS.WAITING)
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => {
+      const at = a.joinedAt?.toMillis?.() || 0;
+      const bt = b.joinedAt?.toMillis?.() || 0;
+      return at - bt;
+    });
+};
+
+/**
+ * Get all WAITING entries for a user across sessions.
+ */
+export const getUserWaitlistEntries = async (db, userId) => {
+  if (!db) throw new Error('Database not initialized');
+  const q = query(
+    collection(db, COMMUNITY_COLLECTIONS.WAITLIST),
+    where('userId', '==', userId),
+    where('status', '==', WAITLIST_STATUS.WAITING)
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+};
+
+/**
+ * Promote a waitlist entry to a confirmed registration.
+ *   1) Bump session.maxAttendees by +1 so the registration txn doesn't fail
+ *      on SESSION_FULL.
+ *   2) Call registerForCommunitySession (reuses email/notification path).
+ *   3) Flip the waitlist entry to PROMOTED.
+ * Admin-only in practice (the UI lives in TrainerSessionsPanel).
+ */
+export const promoteFromWaitlist = async (db, userId, sessionId) => {
+  if (!db) throw new Error('Database not initialized');
+
+  const entryId = `${sessionId}_${userId}`;
+  const entryRef = doc(db, COMMUNITY_COLLECTIONS.WAITLIST, entryId);
+  const sessionRef = doc(db, COMMUNITY_COLLECTIONS.SESSIONS, sessionId);
+
+  const sessionSnap = await getDoc(sessionRef);
+  if (!sessionSnap.exists()) throw new Error('SESSION_NOT_FOUND');
+  const session = sessionSnap.data();
+
+  // Raise capacity by 1 so the seat is available.
+  const newMax =
+    typeof session.maxAttendees === 'number' ? session.maxAttendees + 1 : null;
+  const newSpots =
+    typeof session.spotsLeft === 'number' ? session.spotsLeft + 1 : null;
+  await updateDoc(sessionRef, {
+    ...(newMax !== null ? { maxAttendees: newMax } : {}),
+    ...(newSpots !== null ? { spotsLeft: newSpots } : {}),
+    updatedAt: serverTimestamp(),
+  });
+
+  // Register through the standard transactional path so spotsLeft is
+  // decremented and the registration doc is shaped correctly.
+  await registerForCommunitySession(db, userId, sessionId, session);
+
+  // Flip the waitlist entry.
+  await updateDoc(entryRef, {
+    status: WAITLIST_STATUS.PROMOTED,
+    promotedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  console.log('[communityService] Promoted from waitlist:', entryId);
+  return entryId;
+};
+
 export default {
   COMMUNITY_COLLECTIONS,
   COMMUNITY_SESSION_TYPE_CONFIG,
@@ -550,5 +717,10 @@ export default {
   getSessionRegistrations,
   getUserCommunityRegistrations,
   duplicateCommunitySession,
-  seedCommunitySessions
+  seedCommunitySessions,
+  joinWaitlist,
+  leaveWaitlist,
+  getSessionWaitlist,
+  getUserWaitlistEntries,
+  promoteFromWaitlist
 };

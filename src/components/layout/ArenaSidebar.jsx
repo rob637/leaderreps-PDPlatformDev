@@ -22,7 +22,7 @@ import {
 import { CommunityIcon, LockerIcon } from '../icons';
 import PWAInstall from '../ui/PWAInstall.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { useDailyPlan } from '../../hooks/useDailyPlan';
+import { useDailyPlan, isFoundationPhase as resolveIsFoundation, isAscentPhase as resolveIsAscent } from '../../hooks/useDailyPlan';
 import { useDayBasedAccessControl } from '../../hooks/useDayBasedAccessControl';
 import { useRevampFlag } from '../../hooks/useRevampFlag';
 
@@ -38,14 +38,15 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
   const isPrepComplete = prepRequirementsComplete?.allComplete === true;
   
   // Conditioning and Coaching are only available during Foundation phase (not during Prep)
-  // Available once user enters Level 1, regardless of prep completion status
-  const isFoundationPhase = currentPhase?.id === 'start' || currentPhase?.id === 'post-start';
+  // Available once user enters Level 1, regardless of prep completion status.
+  // Note: "isFoundationPhase" historically meant "in Foundation OR Ascent" here.
+  const isFoundationPhase = resolveIsFoundation(currentPhase) || resolveIsAscent(currentPhase);
   const isContentAvailable = isPrepComplete || isFoundationPhase;
   const isConditioningAvailable = isFoundationPhase;
   const isCoachingAvailable = isFoundationPhase;
   
   // Community is only available during Ascent phase (post-start)
-  const isAscent = currentPhase?.id === 'post-start';
+  const isAscent = resolveIsAscent(currentPhase);
 
   // Developer Mode State
   const [isDeveloperMode, setIsDeveloperMode] = useState(() => {

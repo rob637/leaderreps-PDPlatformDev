@@ -5,6 +5,7 @@ import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { useAccessControlContext } from '../../providers/AccessControlProvider';
 import { useCoachingSessions, SESSION_TYPES } from '../../hooks/useCoachingSessions';
 import { useCoachingRegistrations, REGISTRATION_STATUS } from '../../hooks/useCoachingRegistrations';
+import { useCoachingWaitlist } from '../../hooks/useCoachingWaitlist';
 import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp } from '../../services/firebaseUtils';
 import { 
   Loader, Users, Calendar, MessageSquare, Video, 
@@ -752,6 +753,13 @@ const CoachingHub = ({ initialTab, sessionTypeFilter: initialSessionTypeFilter, 
     // getPastRegistrations,
     loading: registrationsLoading
   } = useCoachingRegistrations();
+
+  // Waitlist (May 2026): users can join a queue when a session is full.
+  const {
+    waitlistedIds,
+    joinWaitlist: joinWaitlistEntry,
+    leaveWaitlist: leaveWaitlistEntry,
+  } = useCoachingWaitlist();
   
   // Also fetch legacy sessions from content collection for backward compatibility
   const [legacySessions, setLegacySessions] = useState([]);
@@ -989,6 +997,25 @@ const CoachingHub = ({ initialTab, sessionTypeFilter: initialSessionTypeFilter, 
     }
   };
 
+  const handleJoinWaitlist = async (session) => {
+    if (!user?.uid) {
+      alert('Please log in to join the waitlist.');
+      return;
+    }
+    const result = await joinWaitlistEntry(session);
+    if (!result.success) {
+      alert(result.error || 'Could not join waitlist. Try again.');
+    }
+  };
+
+  const handleLeaveWaitlist = async (session) => {
+    if (!user?.uid) return;
+    const result = await leaveWaitlistEntry(session);
+    if (!result.success) {
+      alert(result.error || 'Could not leave waitlist. Try again.');
+    }
+  };
+
   const handleMarkAttended = async (session) => {
     if (!user?.uid || !session?.id) return;
     const result = await markAttended(session.id);
@@ -1007,6 +1034,9 @@ const CoachingHub = ({ initialTab, sessionTypeFilter: initialSessionTypeFilter, 
     handleRegister,
     handleCancel,
     handleMarkAttended,
+    handleJoinWaitlist,
+    handleLeaveWaitlist,
+    waitlistedIds,
     navigate,
     viewMode,
     setViewMode,

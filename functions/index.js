@@ -270,17 +270,68 @@ exports.acceptInvitation = onCall({ cors: true, region: "us-central1" }, async (
     });
     
     // If admin role, add email to adminemails list in metadata/config
-    // This must be done server-side because new users don't have admin permissions yet
+    // This must be done server-side because new users don't have admin permissions yet.
+    //
+    // Hardening: verify the invitation was created by a user who is currently
+    // an admin. Firestore rules already restrict invitation writes to admins,
+    // but we re-check here as defense-in-depth (in case rules drift) and log
+    // every promotion to an audit collection for traceability.
     if (inviteData.role === 'admin' && inviteData.email) {
         try {
             const configRef = db.collection('metadata').doc('config');
-            // Always store admin emails as lowercase for consistent matching
-            await configRef.update({
-                adminemails: admin.firestore.FieldValue.arrayUnion(inviteData.email.toLowerCase())
-            });
-            logger.info("Added admin email to config", { email: inviteData.email });
+            const configDoc = await configRef.get();
+            const currentAdmins = (configDoc.exists && configDoc.data().adminemails) || [];
+            const currentAdminsLower = currentAdmins.map(e => String(e).toLowerCase());
+
+            // Verify inviter is still an admin. createdByEmail is preferred;
+            // fall back to looking up createdBy uid -> users/{uid}.email.
+            let inviterEmail = inviteData.createdByEmail
+                ? String(inviteData.createdByEmail).toLowerCase()
+                : null;
+            if (!inviterEmail && inviteData.createdBy) {
+                try {
+                    const inviterDoc = await db.collection('users').doc(inviteData.createdBy).get();
+                    if (inviterDoc.exists && inviterDoc.data().email) {
+                        inviterEmail = String(inviterDoc.data().email).toLowerCase();
+                    }
+                } catch (_) { /* ignore */ }
+            }
+
+            const inviterIsAdmin = inviterEmail && currentAdminsLower.includes(inviterEmail);
+
+            if (!inviterIsAdmin) {
+                logger.warn("Admin invitation accepted but inviter is not a current admin; skipping promotion", {
+                    inviteId,
+                    inviterEmail,
+                    inviteEmail: inviteData.email,
+                });
+                // Record a pending promotion that an existing admin can approve manually.
+                await db.collection('pending_admin_promotions').add({
+                    email: String(inviteData.email).toLowerCase(),
+                    uid,
+                    inviteId,
+                    inviterEmail: inviterEmail || null,
+                    requestedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    status: 'pending',
+                });
+            } else {
+                // Always store admin emails as lowercase for consistent matching
+                await configRef.update({
+                    adminemails: admin.firestore.FieldValue.arrayUnion(String(inviteData.email).toLowerCase())
+                });
+                // Audit log
+                await db.collection('admin_promotion_audit').add({
+                    email: String(inviteData.email).toLowerCase(),
+                    promotedUid: uid,
+                    inviteId,
+                    inviterEmail,
+                    promotedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    via: 'acceptInvitation',
+                });
+                logger.info("Added admin email to config", { email: inviteData.email, inviterEmail });
+            }
         } catch (adminErr) {
-            logger.error("Failed to add admin email to config", adminErr);
+            logger.error("Failed to process admin role on invitation", adminErr);
             // Don't fail the whole operation if this fails
         }
     }
@@ -320,6 +371,39 @@ exports.acceptInvitation = onCall({ cors: true, region: "us-central1" }, async (
     }
 
     return { success: true, role: inviteData.role };
+});
+
+/**
+ * AUDIT: ADMIN CONFIG CHANGES (Firestore Trigger)
+ * Watches `metadata/config` for changes to the `adminemails` allowlist and
+ * writes an immutable diff entry to `admin_promotion_audit`. Captures
+ * out-of-band edits made directly via the Firebase console or any code path
+ * that bypasses the normal invitation flow (defense-in-depth for Item 4).
+ */
+exports.auditAdminConfigChange = require("firebase-functions/v2/firestore").onDocumentUpdated("metadata/config", async (event) => {
+  try {
+    const before = event.data?.before?.data() || {};
+    const after = event.data?.after?.data() || {};
+    const beforeList = Array.isArray(before.adminemails) ? before.adminemails.map(e => String(e).toLowerCase()) : [];
+    const afterList = Array.isArray(after.adminemails) ? after.adminemails.map(e => String(e).toLowerCase()) : [];
+    const beforeSet = new Set(beforeList);
+    const afterSet = new Set(afterList);
+    const added = afterList.filter(e => !beforeSet.has(e));
+    const removed = beforeList.filter(e => !afterSet.has(e));
+    if (added.length === 0 && removed.length === 0) return; // nothing relevant changed
+    await db.collection('admin_promotion_audit').add({
+      email: null,
+      added,
+      removed,
+      beforeCount: beforeList.length,
+      afterCount: afterList.length,
+      auditedAt: admin.firestore.FieldValue.serverTimestamp(),
+      via: 'auditAdminConfigChange',
+    });
+    logger.info("Audited adminemails change", { added, removed });
+  } catch (err) {
+    logger.error("auditAdminConfigChange failed", err);
+  }
 });
 
 /**
@@ -658,6 +742,13 @@ exports.onCoachingRegistrationEvent = require("firebase-functions/v2/firestore")
 
   if (!isNowRegistered || wasRegistered) {
     return; // Not a new registration event (either cancelling, or already registered and just updating other fields)
+  }
+
+  // May 2026: skip docs created by the community→coaching migration so we
+  // don't blast confirmation emails to every legacy registrant on backfill.
+  if (registration.migratedFrom && !beforeRegistration) {
+    logger.info("Skipping migrated registration (no email):", { id: event.params.registrationId, migratedFrom: registration.migratedFrom });
+    return;
   }
 
   logger.info("New coaching registration (or switch):", { id: event.params.registrationId, sessionId: registration.sessionId });
@@ -2034,11 +2125,13 @@ exports.evaluateRep = onCall(
       transcript,
       scores: scorerResult.scores,
       lowConfidence: scorerResult.lowConfidence,
+      stakes: scorerResult.stakes,
+      courageSignals: scorerResult.courageSignals,
       recentReps,
       recentlyUsedTemplates,
     });
 
-    // Persist
+    // Persist (stakes + courage stay internal — hidden from UI return)
     const repDoc = {
       rrType,
       transcript,
@@ -2047,12 +2140,18 @@ exports.evaluateRep = onCall(
       result: evaluation.result,
       validity: evaluation.validity,
       case: evaluation.case,
+      mode: evaluation.mode || null,
+      stakes: evaluation.stakes || null,
+      stakesRationale: scorerResult.stakesRationale || '',
+      courageSignals: evaluation.courageSignals || null,
+      courageEvidence: scorerResult.courageEvidence || null,
       observation: evaluation.observation,
       question: evaluation.question,
       patternKey: evaluation.patternKey || null,
       coachingTarget: evaluation.coachingTarget || null,
       failReason: evaluation.failReason || null,
       evidenceNotes: scorerResult.evidenceNotes || {},
+      rubricVersion: scorerResult.rubricVersion || null,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     };
     const ref = await db
@@ -10839,29 +10938,33 @@ const generateROIInsights = async (inputs, results) => {
 
   const prompt = `You are a strategic business consultant helping a ${inputs.title || 'business leader'} at ${inputs.company || 'their organization'} build the business case for leadership development investment.
 
-ROI Calculation Results:
+Manager Effectiveness ROI Results:
+- Department: ${results.departmentName || inputs.department || 'General'}
 - Industry: ${inputs.industry || 'General'}
-- Number of Leaders: ${inputs.numLeaders || 10}
-- Employees Impacted: ${(inputs.numLeaders || 10) * (inputs.teamSize || 8)}
-- Current Turnover Rate: ${inputs.turnoverRate || 15}%
+- Number of Leaders: ${inputs.numLeaders || 1}
+- Direct Reports per Leader: ${inputs.avgTeamSize || inputs.teamSize || 1}
+- Total Turnover Rate: ${inputs.currentTurnover ?? inputs.turnoverRate ?? 'n/a'}%
+- Regretted Attrition (the kicker): ${results.regrettedAttrition ?? inputs.regrettedAttrition ?? 'n/a'}%
 - Total Investment: $${totalInvestment.toLocaleString()}
-- Projected Annual Savings: $${(results.totalAnnualSavings || 0).toLocaleString()}
-- ROI: ${results.roiPercentage || 0}%
+- Conservative Annual Value (per leader): $${(results.perLeader?.conservativeValue || 0).toLocaleString()}
+- Headline ROI: ${results.roiPercentage || 0}%
 - Payback Period: ${results.paybackMonths || 0} months
 
-Breakdown:
-- Turnover Savings: $${(results.turnoverSavings || 0).toLocaleString()}
-- Productivity Gains: $${(results.productivityGains || 0).toLocaleString()}
-- Absenteeism Reduction: $${(results.absenteeismSavings || 0).toLocaleString()}
-- Engagement Value: $${(results.engagementValue || 0).toLocaleString()}
+Three "verbal ROI" scenarios used:
+${(results.scenarios || []).map((s, i) => `  ${i + 1}. ${s.title} — $${(s.value || 0).toLocaleString()}${s.illustrative ? ' (illustrative)' : ''}`).join('\n')}
+
+Frame this as MANAGER EFFECTIVENESS ROI, not generic "savings."
+Emphasize that REGRETTED ATTRITION (people you didn't want to lose) is the line that
+matters — total turnover is noise. A great manager may even raise total turnover by
+moving out underperformers while lowering regretted attrition.
 
 Write a personalized executive summary (200-250 words) that:
-1. Highlights the most compelling ROI insight for their specific industry
-2. Provides 2-3 key talking points they can use to present this to stakeholders
-3. Identifies the biggest risk of NOT investing in leadership development
+1. Highlights the most compelling insight for their specific department + industry
+2. Provides 2-3 talking points they can use to present this to a CFO
+3. Identifies the biggest risk of NOT investing in leadership development (regretted attrition is the strongest hook)
 4. Ends with a clear next step recommendation
 
-Use confident, professional language appropriate for a boardroom presentation. Be specific with numbers. Make them feel confident presenting this case.`;
+Use confident, professional language appropriate for a boardroom. Be specific with numbers.`;
 
   try {
     const result = await model.generateContent(prompt);
@@ -10876,11 +10979,17 @@ Use confident, professional language appropriate for a boardroom presentation. B
  * Build beautiful HTML email for ROI Calculator results
  */
 const buildROIEmail = (firstName, inputs, results, aiInsights) => {
-  const formatCurrency = (num) => 
+  const formatCurrency = (num) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(num || 0);
 
   // Calculate totalInvestment from results or derive from inputs
   const totalInvestment = results.totalInvestment || (inputs.investmentPerLeader * inputs.numLeaders) || 0;
+  const conservativeValue = (results.perLeader && results.perLeader.conservativeValue) || results.totalAnnualSavings || 0;
+  const scenarios = Array.isArray(results.scenarios) ? results.scenarios : [];
+  const scenarioColors = ['#10B981', '#06B6D4', '#E04E1B'];
+  const teamSize = inputs.avgTeamSize || inputs.teamSize || 1;
+  const turnoverDisplay = inputs.currentTurnover ?? inputs.turnoverRate;
+  const regrettedDisplay = results.regrettedAttrition ?? inputs.regrettedAttrition;
 
   return `<!DOCTYPE html>
 <html>
@@ -10894,42 +11003,47 @@ const buildROIEmail = (firstName, inputs, results, aiInsights) => {
     <div style="background: linear-gradient(135deg, #002E47 0%, #003d5c 100%); padding: 40px 30px; text-align: center;">
       <img src="https://leaderreps.com/logo-white.png" alt="LeaderReps" style="height: 40px; margin-bottom: 20px;">
       <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">
-        Your Leadership ROI Report
+        Your Manager Effectiveness ROI
       </h1>
       <p style="color: rgba(255,255,255,0.8); margin: 10px 0 0; font-size: 16px;">
-        ${firstName ? `${firstName}, here's` : "Here's"} your personalized ROI analysis
+        ${firstName ? `${firstName}, here's` : "Here's"} your personalized analysis
       </p>
     </div>
 
-    <!-- Main Stats -->
+    <!-- Headline tile: Manager Effectiveness ROI -->
     <div style="padding: 30px;">
-      <div style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); border-radius: 16px; padding: 30px; text-align: center; margin-bottom: 20px;">
-        <p style="color: rgba(255,255,255,0.8); margin: 0 0 5px; font-size: 14px;">Projected Annual Savings</p>
-        <p style="color: #ffffff; margin: 0; font-size: 42px; font-weight: 700;">${formatCurrency(results.totalAnnualSavings)}</p>
-        <p style="color: rgba(255,255,255,0.7); margin: 10px 0 0; font-size: 13px;">
-          Range: ${formatCurrency(results.savingsRange.conservative)} – ${formatCurrency(results.savingsRange.optimistic)}
+      <div style="background: linear-gradient(135deg, #47A88D 0%, #002E47 100%); border-radius: 16px; padding: 30px; text-align: center; margin-bottom: 20px;">
+        <p style="color: rgba(255,255,255,0.85); margin: 0 0 5px; font-size: 14px; letter-spacing: 0.5px;">MANAGER EFFECTIVENESS ROI</p>
+        <p style="color: #ffffff; margin: 0; font-size: 42px; font-weight: 700;">${formatCurrency(conservativeValue)}</p>
+        <p style="color: rgba(255,255,255,0.8); margin: 10px 0 0; font-size: 13px;">
+          Conservative annual value, per leader — the picture that holds up under scrutiny
         </p>
       </div>
 
       <div style="display: flex; gap: 15px;">
         <div style="flex: 1; background: #f1f5f9; border-radius: 12px; padding: 20px; text-align: center;">
           <p style="color: #64748b; margin: 0 0 5px; font-size: 12px;">ROI</p>
-          <p style="color: #002E47; margin: 0; font-size: 28px; font-weight: 700;">${results.roiPercentage}%</p>
+          <p style="color: #002E47; margin: 0; font-size: 28px; font-weight: 700;">${results.roiPercentage || 0}%</p>
         </div>
         <div style="flex: 1; background: #f1f5f9; border-radius: 12px; padding: 20px; text-align: center;">
           <p style="color: #64748b; margin: 0 0 5px; font-size: 12px;">Payback</p>
-          <p style="color: #002E47; margin: 0; font-size: 28px; font-weight: 700;">${results.paybackMonths} mo</p>
+          <p style="color: #002E47; margin: 0; font-size: 28px; font-weight: 700;">${results.paybackMonths != null ? results.paybackMonths : '—'} ${results.paybackMonths != null ? 'mo' : ''}</p>
         </div>
       </div>
     </div>
 
-    <!-- Details -->
+    <!-- Input Summary -->
     <div style="padding: 0 30px 30px;">
       <h3 style="color: #002E47; margin: 0 0 15px; font-size: 18px;">Your Input Summary</h3>
       <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        ${results.departmentName ? `
+        <tr>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Department</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; text-align: right; color: #002E47; font-weight: 500;">${results.departmentName}</td>
+        </tr>` : ''}
         <tr>
           <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Industry</td>
-          <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; text-align: right; color: #002E47; font-weight: 500;">${inputs.industry}</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; text-align: right; color: #002E47; font-weight: 500;">${results.industry || inputs.industry}</td>
         </tr>
         <tr>
           <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Leaders in Program</td>
@@ -10937,12 +11051,18 @@ const buildROIEmail = (firstName, inputs, results, aiInsights) => {
         </tr>
         <tr>
           <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Employees Impacted</td>
-          <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; text-align: right; color: #002E47; font-weight: 500;">${inputs.numLeaders * inputs.teamSize}</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; text-align: right; color: #002E47; font-weight: 500;">${inputs.numLeaders * teamSize}</td>
         </tr>
+        ${turnoverDisplay != null ? `
         <tr>
-          <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Current Turnover</td>
-          <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; text-align: right; color: #002E47; font-weight: 500;">${inputs.turnoverRate}%</td>
-        </tr>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Total Turnover</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; text-align: right; color: #002E47; font-weight: 500;">${turnoverDisplay}%</td>
+        </tr>` : ''}
+        ${regrettedDisplay != null ? `
+        <tr>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; color: #64748b;">Regretted Attrition <span style="color:#94a3b8; font-size:11px;">(the kicker)</span></td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; text-align: right; color: #002E47; font-weight: 500;">${regrettedDisplay}%</td>
+        </tr>` : ''}
         <tr>
           <td style="padding: 10px 0; color: #64748b;">Investment</td>
           <td style="padding: 10px 0; text-align: right; color: #002E47; font-weight: 500;">${formatCurrency(totalInvestment)}</td>
@@ -10950,35 +11070,28 @@ const buildROIEmail = (firstName, inputs, results, aiInsights) => {
       </table>
     </div>
 
-    <!-- Breakdown -->
+    <!-- Three scenarios -->
     <div style="padding: 0 30px 30px;">
-      <h3 style="color: #002E47; margin: 0 0 15px; font-size: 18px;">Savings Breakdown</h3>
+      <h3 style="color: #002E47; margin: 0 0 8px; font-size: 18px;">Three ways one better leader pays back</h3>
+      <p style="color: #64748b; margin: 0 0 15px; font-size: 13px;">Conservative, defensible scenarios — not big-number projections.</p>
       <div style="background: #002E47; border-radius: 12px; padding: 20px;">
-        <div style="margin-bottom: 15px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-            <span style="color: rgba(255,255,255,0.7); font-size: 13px;">Turnover Cost Savings</span>
-            <span style="color: #10B981; font-weight: 600;">${formatCurrency(results.turnoverSavings)}</span>
+        ${scenarios.length > 0 ? scenarios.map((s, i) => `
+          <div style="margin-bottom: ${i === scenarios.length - 1 ? '0' : '18px'}; padding-bottom: ${i === scenarios.length - 1 ? '0' : '18px'}; ${i === scenarios.length - 1 ? '' : 'border-bottom: 1px solid rgba(255,255,255,0.1);'}">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+              <span style="color: #ffffff; font-weight: 600; font-size: 14px;">${i + 1}. ${s.title}</span>
+              <span style="color: ${scenarioColors[i] || '#10B981'}; font-weight: 700; font-size: 16px; white-space: nowrap; padding-left: 10px;">${formatCurrency(s.value)}</span>
+            </div>
+            <div style="color: rgba(255,255,255,0.7); font-size: 12px; margin-bottom: 4px;">${s.premise}</div>
+            <div style="color: rgba(255,255,255,0.5); font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;">${s.math}${s.illustrative ? ' &nbsp;·&nbsp; <em>illustrative</em>' : ''}</div>
           </div>
-        </div>
-        <div style="margin-bottom: 15px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-            <span style="color: rgba(255,255,255,0.7); font-size: 13px;">Productivity Gains</span>
-            <span style="color: #06B6D4; font-weight: 600;">${formatCurrency(results.productivityGains)}</span>
-          </div>
-        </div>
-        <div style="margin-bottom: 15px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-            <span style="color: rgba(255,255,255,0.7); font-size: 13px;">Absenteeism Reduction</span>
-            <span style="color: #fbbf24; font-weight: 600;">${formatCurrency(results.absenteeismSavings)}</span>
-          </div>
-        </div>
-        <div>
-          <div style="display: flex; justify-content: space-between;">
-            <span style="color: rgba(255,255,255,0.7); font-size: 13px;">Engagement Value</span>
-            <span style="color: #E04E1B; font-weight: 600;">${formatCurrency(results.engagementValue)}</span>
-          </div>
-        </div>
+        `).join('') : `
+          <div style="color: rgba(255,255,255,0.7); font-size: 13px;">Detailed scenarios available on the web report.</div>
+        `}
       </div>
+      <p style="color: #94a3b8; margin: 12px 0 0; font-size: 12px; line-height: 1.5;">
+        Headline ROI is computed off the conservative scenarios only (retain one regretted departure + reclaim leader capacity).
+        The third scenario is treated as upside.
+      </p>
     </div>
 
     ${aiInsights ? `
@@ -11074,7 +11187,7 @@ exports.processROICalculator = onRequest(
         await transporter.sendMail({
           from: `"LeaderReps" <arena@leaderreps.com>`,
           to: email,
-          subject: `📊 ${firstName ? firstName + ', your' : 'Your'} Leadership ROI Report: ${results.roiPercentage}% Return`,
+          subject: `📊 ${firstName ? firstName + ', your' : 'Your'} Manager Effectiveness ROI: ${results.roiPercentage}% Return`,
           html: htmlEmail,
         });
         
@@ -11095,13 +11208,22 @@ exports.processROICalculator = onRequest(
           inputs: inputs,
           results: {
             totalAnnualSavings: results.totalAnnualSavings,
+            conservativeValue: results.perLeader?.conservativeValue || null,
             roiPercentage: results.roiPercentage,
             paybackMonths: results.paybackMonths,
-            turnoverSavings: results.turnoverSavings,
-            productivityGains: results.productivityGains,
-            absenteeismSavings: results.absenteeismSavings,
-            engagementValue: results.engagementValue,
             totalInvestment: results.totalInvestment,
+            departmentName: results.departmentName || null,
+            regrettedAttrition: results.regrettedAttrition ?? null,
+            regrettedAttritionProvided: !!results.regrettedAttritionProvided,
+            totalTurnover: results.totalTurnover ?? null,
+            scenarios: Array.isArray(results.scenarios)
+              ? results.scenarios.map(s => ({
+                  id: s.id,
+                  title: s.title,
+                  value: s.value,
+                  illustrative: !!s.illustrative,
+                }))
+              : null,
           },
           aiInsights: aiInsights || null,
           source: 'roi-calculator',
@@ -24778,6 +24900,341 @@ exports.labSetSmsStatus = functionsV1.https.onCall(
     } catch (err) {
       logger.error("labSetSmsStatus failed", { memberId, error: err.message });
       throw new functionsV1.https.HttpsError("internal", err.message);
+    }
+  }
+);
+
+// ============================================================================
+// CRM Audit Log
+// ----------------------------------------------------------------------------
+// Triggers on writes to the CRM core collections (corporate_prospects,
+// crm_accounts, crm_deals) and writes a diff entry to crm_audit_logs/{auto}.
+// ============================================================================
+
+const { onDocumentWritten } = require("firebase-functions/v2/firestore");
+
+const AUDIT_IGNORE_FIELDS = new Set(["updatedAt"]);
+
+function diffObjects(before, after) {
+  const changes = {};
+  const keys = new Set([
+    ...Object.keys(before || {}),
+    ...Object.keys(after || {}),
+  ]);
+  for (const k of keys) {
+    if (AUDIT_IGNORE_FIELDS.has(k)) continue;
+    const b = before ? before[k] : undefined;
+    const a = after ? after[k] : undefined;
+    const bs = JSON.stringify(b);
+    const as = JSON.stringify(a);
+    if (bs !== as) changes[k] = { before: b ?? null, after: a ?? null };
+  }
+  return changes;
+}
+
+function makeCrmAuditTrigger(collectionName, entityType) {
+  return onDocumentWritten(`${collectionName}/{docId}`, async (event) => {
+    try {
+      const docId = event.params.docId;
+      const before = event.data?.before?.data() || null;
+      const after = event.data?.after?.data() || null;
+
+      let action;
+      if (!before && after) action = "create";
+      else if (before && !after) action = "delete";
+      else action = "update";
+
+      let changes = {};
+      if (action === "update") {
+        changes = diffObjects(before, after);
+        if (Object.keys(changes).length === 0) return; // nothing meaningful
+      }
+
+      const actor =
+        (after && (after.updatedBy || after.ownerEmail || after.createdBy)) ||
+        (before && (before.ownerEmail || before.createdBy)) ||
+        "system";
+
+      await db.collection("crm_audit_logs").add({
+        entityType,
+        entityId: docId,
+        action,
+        actor,
+        changes,
+        snapshot: action === "delete" ? before : after,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    } catch (err) {
+      logger.error(`crmAudit_${collectionName} failed`, {
+        docId: event.params.docId,
+        error: err.message,
+      });
+    }
+  });
+}
+
+exports.crmAuditProspects = makeCrmAuditTrigger("corporate_prospects", "prospect");
+exports.crmAuditAccounts = makeCrmAuditTrigger("crm_accounts", "account");
+exports.crmAuditDeals = makeCrmAuditTrigger("crm_deals", "deal");
+
+// ============================================================================
+// CRM Account Rollups
+// ----------------------------------------------------------------------------
+// Whenever a deal is created/updated/deleted, recompute openDealCount /
+// openDealValue / lastActivityAt on the linked account.
+// ============================================================================
+
+const OPEN_CRM_DEAL_STAGES = ["prospect", "qualified", "proposal", "negotiation"];
+
+async function recomputeAccountRollup(accountId) {
+  if (!accountId) return;
+  const dealsSnap = await db
+    .collection("crm_deals")
+    .where("accountId", "==", accountId)
+    .get();
+  let openCount = 0;
+  let openValue = 0;
+  let totalCount = 0;
+  for (const d of dealsSnap.docs) {
+    const deal = d.data();
+    totalCount++;
+    if (OPEN_CRM_DEAL_STAGES.includes(deal.stage)) {
+      openCount++;
+      openValue += Number(deal.amount) || 0;
+    }
+  }
+  await db.collection("crm_accounts").doc(accountId).set(
+    {
+      openDealCount: openCount,
+      openDealValue: openValue,
+      totalDealCount: totalCount,
+      updatedAt: new Date().toISOString(),
+    },
+    { merge: true }
+  );
+}
+
+exports.onCrmDealWritten = onDocumentWritten(
+  "crm_deals/{dealId}",
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    const accountIds = new Set();
+    if (before?.accountId) accountIds.add(before.accountId);
+    if (after?.accountId) accountIds.add(after.accountId);
+    for (const id of accountIds) {
+      try {
+        await recomputeAccountRollup(id);
+      } catch (err) {
+        logger.error("recomputeAccountRollup failed", { id, error: err.message });
+      }
+    }
+  }
+);
+
+// ============================================================================
+// CRM Workflow Dispatcher
+// ----------------------------------------------------------------------------
+// Listens to writes on crm_deals (and corporate_prospects) and evaluates
+// active rules in crm_workflows. Supported triggers:
+//   - on_deal_created
+//   - on_stage_change (params: fromStage?, toStage?)
+// Supported actions:
+//   - notify (params: message, recipientField defaults to 'ownerEmail')
+//   - create_task (params: title, dueInDays, assignToOwner)
+//   - set_field (params: field, value)
+// The on_no_activity trigger runs on a daily schedule below.
+// ============================================================================
+
+async function loadActiveWorkflows() {
+  const snap = await db
+    .collection("crm_workflows")
+    .where("enabled", "==", true)
+    .get();
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+async function executeAction(rule, ctx) {
+  const action = rule.action || {};
+  const params = action.params || {};
+  const { entityType, entityId, after } = ctx;
+
+  if (action.type === "notify") {
+    const recipientField = params.recipientField || "ownerEmail";
+    const recipient = (after && after[recipientField]) || params.recipient;
+    if (!recipient) return;
+    await db.collection("crm_notifications").add({
+      recipientEmail: String(recipient).toLowerCase().trim(),
+      type: "workflow",
+      title: rule.name || "Workflow notification",
+      message: params.message || "",
+      link: { tab: entityType === "deal" ? "prospects" : "prospects", entityId },
+      read: false,
+      createdAt: new Date().toISOString(),
+      createdBy: "system",
+      workflowId: rule.id,
+    });
+  } else if (action.type === "create_task") {
+    const dueInDays = Number(params.dueInDays) || 0;
+    const dueDate = new Date(Date.now() + dueInDays * 24 * 60 * 60 * 1000);
+    await db.collection("team_tasks").add({
+      title: params.title || rule.name || "Workflow task",
+      description: `Auto-created by workflow "${rule.name || rule.id}".`,
+      assignedTo:
+        params.assignToOwner && after?.ownerEmail
+          ? String(after.ownerEmail).toLowerCase().trim()
+          : null,
+      relatedEntityType: entityType,
+      relatedEntityId: entityId,
+      dueDate: dueDate.toISOString(),
+      completed: false,
+      createdAt: new Date().toISOString(),
+      createdBy: "system",
+      workflowId: rule.id,
+    });
+  } else if (action.type === "set_field") {
+    if (!params.field) return;
+    await db
+      .collection(entityType === "deal" ? "crm_deals" : "corporate_prospects")
+      .doc(entityId)
+      .set(
+        {
+          [params.field]: params.value,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+  }
+}
+
+function triggerMatches(rule, ctx) {
+  const trigger = rule.trigger || {};
+  const params = trigger.params || {};
+  const { isCreate, entityType, before, after } = ctx;
+
+  if (trigger.type === "on_deal_created") {
+    return entityType === "deal" && isCreate;
+  }
+  if (trigger.type === "on_stage_change") {
+    if (!before || !after) return false;
+    if (before.stage === after.stage) return false;
+    if (params.fromStage && before.stage !== params.fromStage) return false;
+    if (params.toStage && after.stage !== params.toStage) return false;
+    return true;
+  }
+  return false;
+}
+
+async function runWorkflows(ctx) {
+  let rules;
+  try {
+    rules = await loadActiveWorkflows();
+  } catch (err) {
+    logger.error("workflow load failed", { error: err.message });
+    return;
+  }
+  for (const rule of rules) {
+    try {
+      if (!triggerMatches(rule, ctx)) continue;
+      await executeAction(rule, ctx);
+    } catch (err) {
+      logger.error("workflow action failed", {
+        ruleId: rule.id,
+        error: err.message,
+      });
+    }
+  }
+}
+
+exports.crmWorkflowOnDealWritten = onDocumentWritten(
+  "crm_deals/{dealId}",
+  async (event) => {
+    const before = event.data?.before?.data() || null;
+    const after = event.data?.after?.data() || null;
+    if (!before && !after) return;
+    await runWorkflows({
+      entityType: "deal",
+      entityId: event.params.dealId,
+      isCreate: !before && !!after,
+      isUpdate: !!before && !!after,
+      isDelete: !!before && !after,
+      before,
+      after,
+    });
+  }
+);
+
+// ============================================================================
+// CRM No-Activity Sweep (daily)
+// ----------------------------------------------------------------------------
+// Walks active deals, checks the most recent activity timestamp, and runs
+// any "on_no_activity" workflow rules whose threshold is met.
+// ============================================================================
+
+exports.crmNoActivitySweep = onSchedule(
+  { schedule: "every day 09:00", timeZone: "America/New_York" },
+  async () => {
+    const rules = (await loadActiveWorkflows()).filter(
+      (r) => r.trigger?.type === "on_no_activity"
+    );
+    if (!rules.length) return;
+
+    const dealsSnap = await db
+      .collection("crm_deals")
+      .where("stage", "in", ["prospect", "qualified", "proposal", "negotiation"])
+      .get();
+
+    for (const dealDoc of dealsSnap.docs) {
+      const deal = dealDoc.data();
+      const dealId = dealDoc.id;
+      const actSnap = await db
+        .collection("outreach_activities")
+        .where("dealId", "==", dealId)
+        .orderBy("createdAt", "desc")
+        .limit(1)
+        .get();
+      const lastActivityAt =
+        actSnap.docs[0]?.data()?.createdAt || deal.updatedAt || deal.createdAt;
+      if (!lastActivityAt) continue;
+
+      const ageMs = Date.now() - new Date(lastActivityAt).getTime();
+      const ageDays = ageMs / (1000 * 60 * 60 * 24);
+
+      for (const rule of rules) {
+        const threshold = Number(rule.trigger?.params?.daysSinceActivity) || 7;
+        if (ageDays < threshold) continue;
+        // Skip if we already notified for this rule+deal recently (within 1 day).
+        const recentSnap = await db
+          .collection("crm_notifications")
+          .where("workflowId", "==", rule.id)
+          .where("link.entityId", "==", dealId)
+          .orderBy("createdAt", "desc")
+          .limit(1)
+          .get();
+        const recent = recentSnap.docs[0]?.data();
+        if (recent?.createdAt) {
+          const recentAgeDays =
+            (Date.now() - new Date(recent.createdAt).getTime()) /
+            (1000 * 60 * 60 * 24);
+          if (recentAgeDays < 1) continue;
+        }
+        try {
+          await executeAction(rule, {
+            entityType: "deal",
+            entityId: dealId,
+            isCreate: false,
+            isUpdate: false,
+            after: deal,
+            before: null,
+          });
+        } catch (err) {
+          logger.error("noActivity action failed", {
+            ruleId: rule.id,
+            dealId,
+            error: err.message,
+          });
+        }
+      }
     }
   }
 );

@@ -184,7 +184,7 @@ const ASSESSMENT_CONFIG = {
 
 const AssessmentLeadsManager = () => {
   const { db } = useAppServices();
-  const [activeTab, setActiveTab] = useState('leadership');
+  const [activeTab, setActiveTab] = useState('accountability');
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -381,17 +381,6 @@ const AssessmentLeadsManager = () => {
       <div className="border-b border-slate-200 dark:border-slate-700">
         <div className="flex gap-4 overflow-x-auto">
           <button
-            onClick={() => setActiveTab('leadership')}
-            className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
-              activeTab === 'leadership'
-                ? 'border-purple-600 text-purple-600'
-                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-            }`}
-          >
-            <Dna className="w-4 h-4" />
-            Leadership DNA
-          </button>
-          <button
             onClick={() => setActiveTab('accountability')}
             className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
               activeTab === 'accountability'
@@ -401,6 +390,23 @@ const AssessmentLeadsManager = () => {
           >
             <ShieldCheck className="w-4 h-4" />
             Accountability
+            <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 uppercase tracking-wide">
+              Live
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('leadership')}
+            className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
+              activeTab === 'leadership'
+                ? 'border-purple-600 text-purple-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+          >
+            <Dna className="w-4 h-4" />
+            Leadership DNA
+            <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 uppercase tracking-wide">
+              Test
+            </span>
           </button>
           <button
             onClick={() => setActiveTab('roi')}
@@ -412,6 +418,9 @@ const AssessmentLeadsManager = () => {
           >
             <Calculator className="w-4 h-4" />
             ROI Calculator
+            <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 uppercase tracking-wide">
+              Test
+            </span>
           </button>
           <button
             onClick={() => setActiveTab('readiness')}
@@ -423,6 +432,9 @@ const AssessmentLeadsManager = () => {
           >
             <Compass className="w-4 h-4" />
             Leadership Readiness
+            <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 uppercase tracking-wide">
+              Test
+            </span>
           </button>
         </div>
       </div>

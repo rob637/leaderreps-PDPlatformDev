@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { confirmDestructive } from './utils/confirmDestructive';
 import { 
   Users, 
   UserPlus, 
@@ -661,7 +662,13 @@ const UserManagement = () => {
   };
 
   const handleDeleteCohort = async (cohortId) => {
-    if (!window.confirm("Are you sure you want to delete this cohort? This action cannot be undone.")) return;
+    const cohort = cohorts.find(c => c.id === cohortId);
+    const label = cohort?.name || cohortId;
+    if (!confirmDestructive({
+      summary: `Permanently delete cohort "${label}"?\n\nThis cannot be undone. Members assigned to this cohort will be unlinked.`,
+      typeToken: 'DELETE',
+      cancelMessage: 'Confirmation text did not match. Cohort deletion cancelled.',
+    })) return;
     try {
       await deleteDoc(doc(db, 'cohorts', cohortId));
       setCohorts(cohorts.filter(c => c.id !== cohortId));
@@ -860,7 +867,13 @@ const UserManagement = () => {
   };
 
   const handleDeleteFacilitator = async (facilitatorId) => {
-    if (!window.confirm("Are you sure you want to delete this trainer? This cannot be undone.")) return;
+    const facilitator = facilitators.find(f => f.id === facilitatorId);
+    const label = facilitator?.name || facilitator?.email || facilitatorId;
+    if (!confirmDestructive({
+      summary: `Permanently delete trainer "${label}"?\n\nThis cannot be undone.`,
+      typeToken: 'DELETE',
+      cancelMessage: 'Confirmation text did not match. Trainer deletion cancelled.',
+    })) return;
     
     try {
       await deleteDoc(doc(db, 'facilitators', facilitatorId));

@@ -30,6 +30,48 @@ const ANNOUNCEMENT_TYPES = [
   { id: 'alert', label: 'Important Alert', icon: AlertTriangle, color: 'red' }
 ];
 
+// Phase targeting options. Empty value = broadcast to all phases.
+const PHASE_OPTIONS = [
+  { id: '', label: 'All Phases' },
+  { id: 'onboarding', label: 'Onboarding' },
+  { id: 'foundation', label: 'Foundation' },
+  { id: 'ascent', label: 'Ascent' },
+];
+
+// Link target options. Notifications can deep-link into the app rather than
+// only opening an external URL. The `linkTarget` object is read by
+// NotificationsWidget when rendering the CTA; the legacy `link` string is
+// preserved when kind === 'external' for backward compatibility.
+const LINK_KIND_OPTIONS = [
+  { id: 'none', label: 'No link' },
+  { id: 'external', label: 'External URL' },
+  { id: 'screen', label: 'App Screen' },
+  { id: 'content', label: 'Content Item' },
+  { id: 'event', label: 'Event / Session' },
+];
+
+// Curated subset of screen keys that make sense as notification deep-links.
+// Mirror of entries in src/routing/ScreenRouter.jsx.
+const SCREEN_LINK_OPTIONS = [
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'community-hub', label: 'Community / Events' },
+  { id: 'community-feed', label: 'Community Feed' },
+  { id: 'library', label: 'Library (all content)' },
+  { id: 'leadership-videos', label: 'Leadership Videos' },
+  { id: 'business-readings', label: 'Business Readings' },
+  { id: 'applied-leadership', label: 'Applied Leadership' },
+  { id: 'daily-practice', label: 'Daily Practice' },
+  { id: 'conditioning', label: 'Conditioning' },
+  { id: 'coaching-hub', label: 'Coaching Hub' },
+  { id: 'ask-coach', label: 'Ask Coach' },
+  { id: 'rep-coach', label: 'Rep AI Coach' },
+  { id: 'development-plan', label: 'Development Plan' },
+  { id: 'identity-statement', label: 'Identity Statement' },
+  { id: 'locker', label: 'Locker' },
+  { id: 'ascent-arena', label: 'Ascent Arena' },
+  { id: 'app-settings', label: 'App Settings' },
+];
+
 const AnnouncementsManager = () => {
   const { db } = useAppServices();
   const [announcements, setAnnouncements] = useState([]);
@@ -47,9 +89,14 @@ const AnnouncementsManager = () => {
     active: true,
     dismissible: true,
     link: '',
+    linkKind: 'none', // 'none' | 'external' | 'screen' | 'content' | 'event'
+    linkScreen: '',
+    linkTargetId: '',
+    linkLabel: '',
     startDate: '',
     endDate: '',
     targetCohortId: '',
+    targetPhase: '',
     targetUserIds: [],
   });
   const [saving, setSaving] = useState(false);
@@ -136,9 +183,14 @@ const AnnouncementsManager = () => {
       active: true,
       dismissible: true,
       link: '',
+      linkKind: 'none',
+      linkScreen: '',
+      linkTargetId: '',
+      linkLabel: '',
       startDate: '',
       endDate: '',
       targetCohortId: '',
+      targetPhase: '',
       targetUserIds: [],
     });
     setEditingId(null);
@@ -148,6 +200,22 @@ const AnnouncementsManager = () => {
 
   const handleEdit = (announcement) => {
     setEditingId(announcement.id);
+    // Hydrate linkKind from saved linkTarget; fall back to legacy `link` string.
+    const lt = announcement.linkTarget || null;
+    let linkKind = 'none';
+    let linkScreen = '';
+    let linkTargetId = '';
+    let linkLabel = '';
+    let legacyLink = announcement.link || '';
+    if (lt && lt.kind) {
+      linkKind = lt.kind;
+      linkScreen = lt.screen || '';
+      linkTargetId = lt.targetId || '';
+      linkLabel = lt.label || '';
+      if (lt.kind === 'external') legacyLink = lt.url || legacyLink;
+    } else if (legacyLink) {
+      linkKind = 'external';
+    }
     setFormData({
       title: announcement.title || '',
       message: announcement.message || '',
@@ -155,10 +223,15 @@ const AnnouncementsManager = () => {
       priority: announcement.priority || 0,
       active: announcement.active !== false,
       dismissible: announcement.dismissible !== false,
-      link: announcement.link || '',
+      link: legacyLink,
+      linkKind,
+      linkScreen,
+      linkTargetId,
+      linkLabel,
       startDate: announcement.startDate ? new Date(announcement.startDate).toISOString().split('T')[0] : '',
       endDate: announcement.endDate ? new Date(announcement.endDate).toISOString().split('T')[0] : '',
       targetCohortId: announcement.targetCohortId || '',
+      targetPhase: announcement.targetPhase || '',
       targetUserIds: Array.isArray(announcement.targetUserIds) ? announcement.targetUserIds : [],
     });
   };
@@ -168,6 +241,28 @@ const AnnouncementsManager = () => {
 
     setSaving(true);
     try {
+      // Build linkTarget from the kind selector. Keep legacy `link` (string)
+      // populated when kind === 'external' so older clients still render the
+      // CTA correctly.
+      const kind = formData.linkKind || 'none';
+      const trimmedUrl = (formData.link || '').trim();
+      const trimmedTargetId = (formData.linkTargetId || '').trim();
+      const trimmedLabel = (formData.linkLabel || '').trim();
+      let linkTarget = null;
+      let legacyLinkStr = null;
+      if (kind === 'external' && trimmedUrl) {
+        linkTarget = { kind: 'external', url: trimmedUrl };
+        legacyLinkStr = trimmedUrl;
+      } else if (kind === 'screen' && formData.linkScreen) {
+        linkTarget = { kind: 'screen', screen: formData.linkScreen };
+        if (trimmedTargetId) linkTarget.targetId = trimmedTargetId;
+      } else if (kind === 'content' && trimmedTargetId) {
+        linkTarget = { kind: 'content', targetId: trimmedTargetId };
+      } else if (kind === 'event' && trimmedTargetId) {
+        linkTarget = { kind: 'event', targetId: trimmedTargetId };
+      }
+      if (linkTarget && trimmedLabel) linkTarget.label = trimmedLabel;
+
       const data = {
         title: formData.title.trim(),
         message: formData.message.trim(),
@@ -175,10 +270,12 @@ const AnnouncementsManager = () => {
         priority: parseInt(formData.priority) || 0,
         active: formData.active,
         dismissible: formData.dismissible,
-        link: formData.link.trim() || null,
+        link: legacyLinkStr,
+        linkTarget,
         startDate: formData.startDate ? new Date(formData.startDate) : null,
         endDate: formData.endDate ? new Date(formData.endDate) : null,
         targetCohortId: formData.targetCohortId || null,
+        targetPhase: formData.targetPhase || null,
         targetUserIds: Array.isArray(formData.targetUserIds) && formData.targetUserIds.length > 0
           ? formData.targetUserIds
           : null,
@@ -350,6 +447,27 @@ const AnnouncementsManager = () => {
             </div>
           </div>
 
+          {/* Target Phase */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Target Phase
+            </label>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+              Limit this notification to users in a specific program phase. Combined with cohort/user targeting using AND.
+            </p>
+            <select
+              value={formData.targetPhase}
+              onChange={(e) => setFormData(prev => ({ ...prev, targetPhase: e.target.value }))}
+              className="w-full sm:w-64 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg 
+                       bg-white dark:bg-slate-900 text-slate-800 dark:text-white
+                       focus:ring-2 focus:ring-corporate-teal focus:border-transparent"
+            >
+              {PHASE_OPTIONS.map(opt => (
+                <option key={opt.id || 'all'} value={opt.id}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Date Range Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -492,20 +610,124 @@ const AnnouncementsManager = () => {
             )}
           </div>
 
-          {/* Link */}
-          <div>
+          {/* Link target */}
+          <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-slate-50 dark:bg-slate-900/30">
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Link URL (optional)
+              Link Target (optional)
             </label>
-            <input
-              type="url"
-              value={formData.link}
-              onChange={(e) => setFormData(prev => ({ ...prev, link: e.target.value }))}
-              placeholder="https://..."
-              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg 
-                       bg-white dark:bg-slate-900 text-slate-800 dark:text-white
-                       focus:ring-2 focus:ring-corporate-teal focus:border-transparent"
-            />
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+              Where the &ldquo;Learn more&rdquo; CTA should send the user. App
+              screens stay in-app; content/event open the related item.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Link type
+                </label>
+                <select
+                  value={formData.linkKind}
+                  onChange={(e) => setFormData(prev => ({ ...prev, linkKind: e.target.value }))}
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg
+                           bg-white dark:bg-slate-900 text-slate-800 dark:text-white
+                           focus:ring-2 focus:ring-corporate-teal focus:border-transparent"
+                >
+                  {LINK_KIND_OPTIONS.map(opt => (
+                    <option key={opt.id} value={opt.id}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+              {formData.linkKind !== 'none' && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                    CTA label (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.linkLabel}
+                    onChange={(e) => setFormData(prev => ({ ...prev, linkLabel: e.target.value }))}
+                    placeholder="Learn more"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg
+                             bg-white dark:bg-slate-900 text-slate-800 dark:text-white
+                             focus:ring-2 focus:ring-corporate-teal focus:border-transparent"
+                  />
+                </div>
+              )}
+            </div>
+
+            {formData.linkKind === 'external' && (
+              <div className="mt-3">
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  URL
+                </label>
+                <input
+                  type="url"
+                  value={formData.link}
+                  onChange={(e) => setFormData(prev => ({ ...prev, link: e.target.value }))}
+                  placeholder="https://..."
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg
+                           bg-white dark:bg-slate-900 text-slate-800 dark:text-white
+                           focus:ring-2 focus:ring-corporate-teal focus:border-transparent"
+                />
+              </div>
+            )}
+
+            {formData.linkKind === 'screen' && (
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                    Screen
+                  </label>
+                  <select
+                    value={formData.linkScreen}
+                    onChange={(e) => setFormData(prev => ({ ...prev, linkScreen: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg
+                             bg-white dark:bg-slate-900 text-slate-800 dark:text-white
+                             focus:ring-2 focus:ring-corporate-teal focus:border-transparent"
+                  >
+                    <option value="">— Select a screen —</option>
+                    {SCREEN_LINK_OPTIONS.map(opt => (
+                      <option key={opt.id} value={opt.id}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                    Target ID (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.linkTargetId}
+                    onChange={(e) => setFormData(prev => ({ ...prev, linkTargetId: e.target.value }))}
+                    placeholder="passed as ?targetId="
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg
+                             bg-white dark:bg-slate-900 text-slate-800 dark:text-white
+                             focus:ring-2 focus:ring-corporate-teal focus:border-transparent"
+                  />
+                </div>
+              </div>
+            )}
+
+            {(formData.linkKind === 'content' || formData.linkKind === 'event') && (
+              <div className="mt-3">
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  {formData.linkKind === 'content' ? 'Content item ID' : 'Event / Session ID'}
+                </label>
+                <input
+                  type="text"
+                  value={formData.linkTargetId}
+                  onChange={(e) => setFormData(prev => ({ ...prev, linkTargetId: e.target.value }))}
+                  placeholder={formData.linkKind === 'content' ? 'e.g. unified-content/foundation-week1' : 'community_sessions document id'}
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg
+                           bg-white dark:bg-slate-900 text-slate-800 dark:text-white
+                           focus:ring-2 focus:ring-corporate-teal focus:border-transparent"
+                />
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                  {formData.linkKind === 'content'
+                    ? 'Opens the Library and surfaces this content item.'
+                    : 'Opens the Events screen and highlights this session.'}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Toggles */}
@@ -609,6 +831,11 @@ const AnnouncementsManager = () => {
                             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 flex items-center gap-1">
                               <Users className="w-3 h-3" />
                               {cohorts.find(c => c.id === announcement.targetCohortId)?.name || announcement.targetCohortId}
+                            </span>
+                          )}
+                          {announcement.targetPhase && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 uppercase">
+                              {announcement.targetPhase}
                             </span>
                           )}
                           {Array.isArray(announcement.targetUserIds) && announcement.targetUserIds.length > 0 && (

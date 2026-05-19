@@ -38,6 +38,7 @@ import {
 import { useSequenceStore, STATUS_CONFIG } from '../../stores/sequenceStore';
 import { useOutreachStore } from '../../stores/outreachStore';
 import { formatDistanceToNow, format } from 'date-fns';
+import { useConfirm } from '../ConfirmDialog';
 
 // Status icons mapping
 const STATUS_ICONS = {
@@ -63,6 +64,7 @@ export default function SequenceEnrollmentsDashboard() {
   } = useSequenceStore();
   
   const { sequences } = useOutreachStore();
+  const confirm = useConfirm();
   
   const [statusFilter, setStatusFilter] = useState('all');
   const [sequenceFilter, setSequenceFilter] = useState('all');
@@ -157,7 +159,14 @@ export default function SequenceEnrollmentsDashboard() {
   };
   
   const handleCancel = async (enrollment) => {
-    if (confirm(`Cancel sequence for ${enrollment.prospectName}?`)) {
+    const ok = await confirm({
+      title: 'Cancel sequence?',
+      message: `Stop sending to ${enrollment.prospectName}.`,
+      confirmLabel: 'Cancel sequence',
+      cancelLabel: 'Keep active',
+      tone: 'warning',
+    });
+    if (ok) {
       await cancelEnrollment(enrollment.id, enrollment.sequenceId);
     }
     setShowActions(null);

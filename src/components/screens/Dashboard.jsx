@@ -4,16 +4,44 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { 
-  CheckSquare, Square, Plus, Save, X, Trophy, Flame, 
-  MessageSquare, Bell, Calendar, ChevronRight, ArrowRight,
-  Edit3, Loader, LayoutDashboard, Target, Layers, Sun, Moon, Clipboard, Zap, TrendingUp,
-  Dumbbell, CheckCircle, PenTool, Quote, User, AlertTriangle, Coffee
+import {
+  CheckSquare,
+  Square,
+  Plus,
+  Save,
+  X,
+  Trophy,
+  Flame,
+  MessageSquare,
+  Bell,
+  Calendar,
+  ChevronRight,
+  ArrowRight,
+  Edit3,
+  Loader,
+  LayoutDashboard,
+  Target,
+  Layers,
+  Sun,
+  Moon,
+  Clipboard,
+  Zap,
+  TrendingUp,
+  Dumbbell,
+  CheckCircle,
+  PenTool,
+  Quote,
+  User,
+  AlertTriangle,
+  Coffee,
 } from 'lucide-react';
 import { useDashboard } from './dashboard/DashboardHooks.jsx';
-import { useDailyPlan } from '../../hooks/useDailyPlan';
+import { useDailyPlan, isAscentApproved, isFoundationPhase, isAscentPhase } from '../../hooks/useDailyPlan';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
-import { UnifiedAnchorEditorModal, CalendarSyncModal } from './dashboard/DashboardComponents.jsx';
+import {
+  UnifiedAnchorEditorModal,
+  CalendarSyncModal,
+} from './dashboard/DashboardComponents.jsx';
 import { MissedDaysModal } from './dashboard/MissedDaysModal';
 import { useFeatures } from '../../providers/FeatureProvider';
 import { useRevampFlag } from '../../hooks/useRevampFlag';
@@ -30,19 +58,20 @@ import ProgramStatusWidget from '../widgets/ProgramStatusWidget';
 import ConditioningWidget from '../widgets/ConditioningWidget';
 import NotificationsWidget from '../widgets/NotificationsWidget';
 import ConditioningTutorialWidget from '../widgets/ConditioningTutorialWidget';
-import AscentMyEventsWidget from '../widgets/AscentMyEventsWidget';
-import AscentUpcomingEventsWidget from '../widgets/AscentUpcomingEventsWidget';
-import AscentAskTrainerWidget from '../widgets/AscentAskTrainerWidget';
-import KickoffToDoWidget from '../widgets/KickoffToDoWidget';
+import MyEventsWidget from '../widgets/MyEventsWidget';
+import UpcomingEventsWidget from '../widgets/UpcomingEventsWidget';
+import AskTrainerWidget from '../widgets/AskTrainerWidget';
+// KickoffToDoWidget retired May 2026 — kickoff onboarding now flows through
+// NotificationsWidget (admin-composed announcements with internal links).
 import PrepCompleteModal from '../modals/PrepCompleteModal';
 import AscentWelcomeModal from '../modals/AscentWelcomeModal';
 import { doc, updateDoc } from 'firebase/firestore';
-// NOTE: LeaderProfileWidget and BaselineAssessmentWidget removed - now handled as 
+// NOTE: LeaderProfileWidget and BaselineAssessmentWidget removed - now handled as
 // INTERACTIVE content items in ThisWeeksActionsWidget
 
 const DASHBOARD_FEATURES = [
   'program-status-debug',
-  'prep-welcome-banner',  // Moved to top - welcome banner should be first in Prep Phase
+  'prep-welcome-banner', // Moved to top - welcome banner should be first in Prep Phase
   // 'leader-profile',      // REMOVED - now in ThisWeeksActionsWidget as INTERACTIVE
   // 'baseline-assessment', // REMOVED - now in ThisWeeksActionsWidget as INTERACTIVE
   'welcome-message',
@@ -54,57 +83,58 @@ const DASHBOARD_FEATURES = [
   'daily-plan',
   // 'daily-leader-reps', // REMOVED - replaced by conditioning widget
   // 'this-weeks-actions', // RETIRED May 2026 — replaced by 'my-actions' (three-phase model)
-  'kickoff-todo',
+  // 'kickoff-todo', // RETIRED May 2026 — onboarding now flows through 'notifications'
   'my-actions',
   'notifications',
   'pm-bookend-header',
   'progress-feedback',
   'pm-bookend',
-  'scorecard'
+  'scorecard',
 ];
 
 const Dashboard = () => {
-  const { 
-    user, 
-    dailyPracticeData, 
+  const {
+    user,
+    dailyPracticeData,
     updateDailyPracticeData,
     developmentPlanData,
     updateDevelopmentPlanData,
     globalMetadata,
     navigate,
-    db // <--- Added db here
+    db, // <--- Added db here
   } = useAppServices();
 
-  const { isFeatureEnabled, getFeatureOrder, getWidgetHelpText } = useFeatures();
+  const { isFeatureEnabled, getFeatureOrder, getWidgetHelpText } =
+    useFeatures();
   const revampEnabled = useRevampFlag();
-  
+
   // Day-based Access Control hook - useAccessControlContext() available if needed
 
   // 2. Daily Plan (New Architecture - Three Phase System)
-  const { 
+  const {
     loading: dailyPlanLoading,
-    dailyPlan,          // Full daily plan array (needed for explore-config)
-    currentDayData, 
+    dailyPlan, // Full daily plan array (needed for explore-config)
+    currentDayData,
     currentDayNumber,
-    currentPhase,       // NEW: Phase info { id, name, displayName, trackMissedDays }
-    phaseDayNumber,     // NEW: Day within current phase
+    currentPhase, // NEW: Phase info { id, name, displayName, trackMissedDays }
+    phaseDayNumber, // NEW: Day within current phase
     missedDays,
-    missedWeeks,        // NEW: Unique week numbers with missed items
+    missedWeeks, // NEW: Unique week numbers with missed items
     simulatedNow,
     toggleItemComplete,
-    prepRequirementsComplete  // Dynamic prep completion check (loaded from Firestore)
+    prepRequirementsComplete, // Dynamic prep completion check (loaded from Firestore)
   } = useDailyPlan();
 
   // Get explore-config for widget visibility after prep completion
   const exploreConfig = useMemo(() => {
-    return dailyPlan?.find(d => d.id === 'explore-config');
+    return dailyPlan?.find((d) => d.id === 'explore-config');
   }, [dailyPlan]);
 
   // Widget visibility for scorecard calculation
   // This determines which widgets are counted in the scorecard tally
   const widgetVisibility = useMemo(() => {
     const dashboard = currentDayData?.dashboard || {};
-    
+
     // Helper to check widget visibility (same logic as shouldShow but for scorecard)
     const checkVisibility = (widgetId, legacyKey, defaultVal = true) => {
       // During prep phase
@@ -125,14 +155,23 @@ const Dashboard = () => {
       }
       // Post prep: use day's dashboard config
       if (dashboard[widgetId] !== undefined) return dashboard[widgetId];
-      if (legacyKey && dashboard[legacyKey] !== undefined) return dashboard[legacyKey];
+      if (legacyKey && dashboard[legacyKey] !== undefined)
+        return dashboard[legacyKey];
       return defaultVal;
     };
-    
+
     return {
-      showGroundingRep: checkVisibility('grounding-rep', 'showGroundingRep', true),
-      showDailyReps: checkVisibility('daily-leader-reps', 'showDailyReps', true),
-      showWinTheDay: checkVisibility('win-the-day', 'showWinTheDay', true)
+      showGroundingRep: checkVisibility(
+        'grounding-rep',
+        'showGroundingRep',
+        true,
+      ),
+      showDailyReps: checkVisibility(
+        'daily-leader-reps',
+        'showDailyReps',
+        true,
+      ),
+      showWinTheDay: checkVisibility('win-the-day', 'showWinTheDay', true),
     };
   }, [currentDayData, currentPhase, prepRequirementsComplete, exploreConfig]);
 
@@ -144,14 +183,15 @@ const Dashboard = () => {
       // Map 'actions' to 'dailyReps' for legacy widgets
       // FIXED: Only map items that are actually daily reps (type === 'daily_rep')
       dailyReps: (currentDayData.actions || [])
-        .filter(a => a.type === 'daily_rep')
-        .map(a => ({
+        .filter((a) => a.type === 'daily_rep')
+        .map((a) => ({
           id: a.id,
           text: a.label,
-          isCompleted: a.isCompleted
+          isCompleted: a.isCompleted,
         })),
       // Ensure weekNumber exists (fallback to math if not in doc)
-      weekNumber: currentDayData.weekNumber || Math.ceil(currentDayData.dayNumber / 7)
+      weekNumber:
+        currentDayData.weekNumber || Math.ceil(currentDayData.dayNumber / 7),
     };
   }, [currentDayData]);
 
@@ -167,7 +207,7 @@ const Dashboard = () => {
     handleSaveIdentity,
     handleSaveHabit,
     handleSaveWhy,
-    
+
     // AM Bookend (Win the Day)
     morningWIN,
     setMorningWIN,
@@ -184,7 +224,7 @@ const Dashboard = () => {
     handleSaveWIN,
     isSavingWIN,
     amWinCompleted,
-    
+
     // PM Bookend (Reflection)
     reflectionGood,
     setReflectionGood,
@@ -194,15 +234,15 @@ const Dashboard = () => {
     setReflectionBest,
     handleSaveEveningBookend,
     isSavingBookend,
-    
+
     // Habits / Reps
     habitsCompleted,
     handleHabitToggle,
-    
+
     // Streak
     streakCount,
     repStreak, // Daily Rep specific streak (excludes weekends/holidays)
-    
+
     // Additional Reps
     additionalCommitments,
     handleToggleAdditionalRep,
@@ -213,16 +253,16 @@ const Dashboard = () => {
     scorecard,
     handleSaveScorecard,
     isSavingScorecard,
-    
+
     // Grounding Rep (click-to-reveal)
     groundingRepCompleted,
     groundingRepRevealed,
     groundingRepConfetti,
     handleGroundingRepComplete,
     handleGroundingRepClose,
-    
+
     // Conditioning Status (weekly tracking)
-    conditioningStatus
+    conditioningStatus,
   } = useDashboard({
     dailyPracticeData,
     updateDailyPracticeData,
@@ -231,13 +271,13 @@ const Dashboard = () => {
     widgetVisibility, // Pass widget visibility to control scorecard tally
     db,
     userId: user?.uid,
-    userEmail: user?.email
+    userEmail: user?.email,
   });
 
   // --- LOCAL STATE ---
   const [isAnchorModalOpen, setIsAnchorModalOpen] = useState(false);
   const [isCatchUpModalOpen, setIsCatchUpModalOpen] = useState(false);
-// ...existing code...
+  // ...existing code...
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
   // const [showTaskInput, setShowTaskInput] = useState(false);
@@ -249,7 +289,7 @@ const Dashboard = () => {
   const [prepMilestone, setPrepMilestone] = useState('all-prep'); // 'onboarding' or 'all-prep'
   const hasShownOnboardingModal = useRef(false);
   const hasShownAllPrepModal = useRef(false);
-  
+
   // Show milestone modals when onboarding or all prep is complete
   // ONLY during pre-start phase (before Session 1 begins)
   useEffect(() => {
@@ -258,16 +298,16 @@ const Dashboard = () => {
     if (!currentPhase?.id || currentPhase?.id !== 'pre-start') {
       return;
     }
-    
+
     // Need user ID for logging
     const userId = user?.uid;
     if (!userId) return;
-    
+
     // Read modal seen flags from Firestore (syncs across devices)
     const modalsSeen = developmentPlanData?.uiState?.modalsSeen || {};
     const hasSeenOnboarding = modalsSeen.onboardingComplete === true;
     const hasSeenAllPrep = modalsSeen.prepComplete === true;
-    
+
     console.log('[PrepCompleteModal] Check:', {
       phase: currentPhase?.id,
       onboardingComplete: prepRequirementsComplete?.onboardingComplete,
@@ -276,9 +316,13 @@ const Dashboard = () => {
       hasSeenOnboarding,
       hasSeenAllPrep,
     });
-    
+
     // Priority: Show "all prep complete" modal if everything is done
-    if (prepRequirementsComplete?.allComplete && !hasSeenAllPrep && !hasShownAllPrepModal.current) {
+    if (
+      prepRequirementsComplete?.allComplete &&
+      !hasSeenAllPrep &&
+      !hasShownAllPrepModal.current
+    ) {
       console.log('[PrepCompleteModal] 🎉 All prep complete!');
       hasShownAllPrepModal.current = true;
       setPrepMilestone('all-prep');
@@ -286,23 +330,37 @@ const Dashboard = () => {
       setShowPrepCompleteModal(true);
       return;
     }
-    
+
     // Show "onboarding complete" modal when onboarding is done but session 1 isn't
-    if (prepRequirementsComplete?.onboardingComplete && !prepRequirementsComplete?.allComplete 
-        && !hasSeenOnboarding && !hasShownOnboardingModal.current) {
+    if (
+      prepRequirementsComplete?.onboardingComplete &&
+      !prepRequirementsComplete?.allComplete &&
+      !hasSeenOnboarding &&
+      !hasShownOnboardingModal.current
+    ) {
       console.log('[PrepCompleteModal] 🎉 Onboarding complete!');
       hasShownOnboardingModal.current = true;
       setPrepMilestone('onboarding');
       window.scrollTo({ top: 0, behavior: 'instant' });
       setShowPrepCompleteModal(true);
     }
-  }, [prepRequirementsComplete?.onboardingComplete, prepRequirementsComplete?.allComplete, prepRequirementsComplete?.completedCount, prepRequirementsComplete?.session1Complete, currentPhase?.id, user?.uid, developmentPlanData?.uiState?.modalsSeen]);
-  
+  }, [
+    prepRequirementsComplete?.onboardingComplete,
+    prepRequirementsComplete?.allComplete,
+    prepRequirementsComplete?.completedCount,
+    prepRequirementsComplete?.session1Complete,
+    currentPhase?.id,
+    user?.uid,
+    developmentPlanData?.uiState?.modalsSeen,
+  ]);
+
   // Handle modal dismissal - persist to Firestore (syncs across devices)
   const handlePrepCompleteModalClose = () => {
     setShowPrepCompleteModal(false);
     if (prepMilestone === 'onboarding') {
-      updateDevelopmentPlanData({ 'uiState.modalsSeen.onboardingComplete': true });
+      updateDevelopmentPlanData({
+        'uiState.modalsSeen.onboardingComplete': true,
+      });
     } else {
       updateDevelopmentPlanData({ 'uiState.modalsSeen.prepComplete': true });
     }
@@ -315,44 +373,84 @@ const Dashboard = () => {
   // - Shows a welcome message pointing them to the Content section
   // - Clears Foundation carry-over artifacts from the dashboard
   // - Persists `ascentWelcomeShown: true` so it only fires once
+  //
+  // Idempotency: gating relies SOLELY on `user.ascentWelcomeShown` from
+  // Firestore (synced across devices). We optimistically write that flag the
+  // moment the modal opens — not on close — so a remount, refresh, or
+  // close-failure cannot re-trigger the modal. We also guard the carryover
+  // clear with `ascentCarryoverClearedAt` so it only runs once per user.
   const [showAscentWelcomeModal, setShowAscentWelcomeModal] = useState(false);
-  const hasHandledAscentWelcome = useRef(false);
 
   useEffect(() => {
     if (!user?.uid || !db) return;
-    if (currentPhase?.id !== 'post-start') return;
-    // Only auto-trigger when Foundation completion was the cause (not natural cohort end)
-    const foundationCompleted = user?.foundationCompleted === true || user?.graduated === true;
-    if (!foundationCompleted) return;
+    // Accept either the legacy phase id ('post-start') or the new phaseKey
+    // ('ascent'). Both are valid representations of the Ascent phase.
+    const inAscent = isAscentPhase(currentPhase);
+    if (!inAscent) return;
+    // Require explicit Ascent approval (foundationCompleted + ascentApproved,
+    // or legacy `graduated`). Foundation-completed users without trainer
+    // approval should NOT see the Ascent welcome modal.
+    if (!isAscentApproved(user)) return;
     if (user?.ascentWelcomeShown === true) return;
-    if (hasHandledAscentWelcome.current) return;
 
-    hasHandledAscentWelcome.current = true;
     setShowAscentWelcomeModal(true);
+
+    // Optimistically persist `ascentWelcomeShown: true` immediately so the
+    // modal cannot re-fire on remount / refresh while the modal is still open.
+    // Also stamp `ascentCarryoverClearedAt` to gate the carryover wipe below.
+    const userRef = doc(db, 'users', user.uid);
+    updateDoc(userRef, {
+      ascentWelcomeShown: true,
+      ascentEnteredAt: new Date(),
+    }).catch((err) => {
+      console.warn(
+        '[Ascent] Could not persist ascentWelcomeShown:',
+        err?.message || err,
+      );
+    });
 
     // Clear Foundation carry-over artifacts from the dashboard.
     // We wipe the full items list (both incomplete and completed) so the
     // dashboard is clean for the start of Ascent. Foundation history and
     // certificates remain available elsewhere (Locker, Content).
-    const carryoverRef = doc(db, 'users', user.uid, 'action_progress', '_carryover');
-    updateDoc(carryoverRef, {
-      items: [],
-      ascentClearedAt: new Date()
-    }).catch(err => {
-      // Non-fatal — doc may not exist yet, which is fine.
-      console.warn('[Ascent] Could not clear carry-over items:', err?.message || err);
-    });
-  }, [currentPhase?.id, user?.uid, user?.foundationCompleted, user?.graduated, user?.ascentWelcomeShown, db]);
+    if (!user?.ascentCarryoverClearedAt) {
+      const carryoverRef = doc(
+        db,
+        'users',
+        user.uid,
+        'action_progress',
+        '_carryover',
+      );
+      const clearedAt = new Date();
+      Promise.all([
+        updateDoc(carryoverRef, {
+          items: [],
+          ascentClearedAt: clearedAt,
+        }),
+        updateDoc(userRef, { ascentCarryoverClearedAt: clearedAt }),
+      ]).catch((err) => {
+        // Non-fatal — doc may not exist yet, which is fine.
+        console.warn(
+          '[Ascent] Could not clear carry-over items:',
+          err?.message || err,
+        );
+      });
+    }
+  }, [
+    currentPhase?.id,
+    user?.uid,
+    user?.foundationCompleted,
+    user?.ascentApproved,
+    user?.graduated,
+    user?.ascentWelcomeShown,
+    user?.ascentCarryoverClearedAt,
+    db,
+  ]);
 
   const handleAscentWelcomeClose = async () => {
+    // Local close. Firestore flag was already persisted when the modal opened
+    // (see effect above), so this is a pure UI dismissal — no async needed.
     setShowAscentWelcomeModal(false);
-    if (db && user?.uid) {
-      try {
-        await updateDoc(doc(db, 'users', user.uid), { ascentWelcomeShown: true });
-      } catch (err) {
-        console.warn('[Ascent] Could not persist ascentWelcomeShown:', err?.message || err);
-      }
-    }
   };
 
   const handleAscentGoToContent = async () => {
@@ -373,14 +471,14 @@ const Dashboard = () => {
   const handleHabitCheck = async (key, value) => {
     // 1. Update local state immediately for UI responsiveness
     handleHabitToggle(key, value);
-    
+
     // 2. Save to Firestore
     // We construct the new object manually because state update might lag
     const newHabits = { ...habitsCompleted, [key]: value };
-    
+
     try {
       await updateDailyPracticeData({
-        'eveningBookend.habits': newHabits
+        'eveningBookend.habits': newHabits,
       });
     } catch (error) {
       console.error('Error auto-saving habit:', error);
@@ -390,14 +488,15 @@ const Dashboard = () => {
   };
 
   // --- DERIVED DATA ---
-  
+
   // 1. Greeting & Quote - prefer leader profile firstName over displayName
   const { profile: leaderProfile } = useLeaderProfile();
-  const firstName = leaderProfile?.firstName || user?.displayName?.split(' ')[0] || 'Leader';
+  const firstName =
+    leaderProfile?.firstName || user?.displayName?.split(' ')[0] || 'Leader';
   const greeting = `Hi ${firstName}!`;
   const dailyQuote = useMemo(() => {
     const quotes = globalMetadata?.SYSTEM_QUOTES || [];
-    if (quotes.length === 0) return "Leadership is a practice, not a position.";
+    if (quotes.length === 0) return 'Leadership is a practice, not a position.';
     // Simple random quote based on date to keep it consistent for the day
     const today = new Date().getDate();
     return quotes[today % quotes.length];
@@ -421,21 +520,24 @@ const Dashboard = () => {
     // Default
     return 'Leadership Identity';
   }, [devPlanCurrentWeek, globalMetadata, developmentPlanData]);
-  
+
   // Also expose the current week number for the weekly-focus widget
-  const currentWeekNumber = currentDayData?.weekNumber || Math.ceil(currentDayNumber / 7);
+  const currentWeekNumber =
+    currentDayData?.weekNumber || Math.ceil(currentDayNumber / 7);
 
   // 3. Daily Reps Logic
   const hasLIS = !!identityStatement;
   const lisRead = habitsCompleted?.readLIS || false;
-  
+
   // Get the "Daily Rep" name (Target Rep)
   const dailyRepName = useMemo(() => {
     const repId = dailyPracticeData?.dailyTargetRepId;
     if (!repId) return null;
     // Try to find name in catalog if available, else use ID
-    const catalog = Array.isArray(globalMetadata?.REP_LIBRARY) ? globalMetadata.REP_LIBRARY : [];
-    const rep = catalog.find(r => r.id === repId);
+    const catalog = Array.isArray(globalMetadata?.REP_LIBRARY)
+      ? globalMetadata.REP_LIBRARY
+      : [];
+    const rep = catalog.find((r) => r.id === repId);
     return rep ? rep.name : repId;
   }, [dailyPracticeData, globalMetadata]);
 
@@ -460,28 +562,31 @@ const Dashboard = () => {
   };
 
   // --- RENDER HELPERS ---
-  
+
   const Checkbox = ({ checked, onChange, label, subLabel, disabled }) => (
-    <div 
+    <div
       onClick={!disabled ? onChange : undefined}
       className={`flex items-start gap-3 p-4 rounded-xl transition-all cursor-pointer ${
-        checked 
-          ? 'bg-teal-50/80 shadow-sm border border-teal-200' 
+        checked
+          ? 'bg-teal-50/80 shadow-sm border border-teal-200'
           : 'bg-white shadow-sm hover:shadow-md border border-slate-100'
       } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
-      <div className={`mt-0.5 w-5 h-5 rounded-lg flex items-center justify-center transition-colors ${
-        checked ? 'bg-corporate-teal' : 'bg-slate-100 border border-slate-200'
-      }`}>
+      <div
+        className={`mt-0.5 w-5 h-5 rounded-lg flex items-center justify-center transition-colors ${
+          checked ? 'bg-corporate-teal' : 'bg-slate-100 border border-slate-200'
+        }`}
+      >
         {checked && <CheckSquare className="w-3.5 h-3.5 text-white" />}
       </div>
       <div className="flex-1">
-        <p className={`font-medium ${checked ? 'text-teal-900' : 'text-slate-700'}`} style={{ fontFamily: 'var(--font-body)' }}>
+        <p
+          className={`font-medium ${checked ? 'text-teal-900' : 'text-slate-700'}`}
+          style={{ fontFamily: 'var(--font-body)' }}
+        >
           {label}
         </p>
-        {subLabel && (
-          <p className="text-xs text-slate-600 mt-1">{subLabel}</p>
-        )}
+        {subLabel && <p className="text-xs text-slate-600 mt-1">{subLabel}</p>}
       </div>
     </div>
   );
@@ -489,31 +594,57 @@ const Dashboard = () => {
   // --- DYNAMIC FEATURE RENDERING ---
 
   const sortedFeatures = useMemo(() => {
-    return DASHBOARD_FEATURES
-      .filter(id => isFeatureEnabled(id))
-      .sort((a, b) => {
+    return DASHBOARD_FEATURES.filter((id) => isFeatureEnabled(id)).sort(
+      (a, b) => {
         const orderA = getFeatureOrder(a);
         const orderB = getFeatureOrder(b);
-        if (orderA === orderB) return DASHBOARD_FEATURES.indexOf(a) - DASHBOARD_FEATURES.indexOf(b);
+        if (orderA === orderB)
+          return DASHBOARD_FEATURES.indexOf(a) - DASHBOARD_FEATURES.indexOf(b);
         return orderA - orderB;
-      });
+      },
+    );
   }, [isFeatureEnabled, getFeatureOrder]);
 
-  const sdk = useMemo(() => createWidgetSDK({ navigate, user }), [navigate, user]);
+  const sdk = useMemo(
+    () => createWidgetSDK({ navigate, user }),
+    [navigate, user],
+  );
 
   const scope = {
     // SDK (New Standard)
     sdk,
 
     // Icons
-    CheckSquare, Square, Plus, Save, X, Trophy, Flame, 
-    MessageSquare, Bell, Calendar, ChevronRight, ArrowRight,
-    Edit3, Loader, Sun, Moon, Zap, TrendingUp, Dumbbell, CheckCircle, PenTool, Quote, User, AlertTriangle, Coffee,
-    
+    CheckSquare,
+    Square,
+    Plus,
+    Save,
+    X,
+    Trophy,
+    Flame,
+    MessageSquare,
+    Bell,
+    Calendar,
+    ChevronRight,
+    ArrowRight,
+    Edit3,
+    Loader,
+    Sun,
+    Moon,
+    Zap,
+    TrendingUp,
+    Dumbbell,
+    CheckCircle,
+    PenTool,
+    Quote,
+    User,
+    AlertTriangle,
+    Coffee,
+
     // Components
     Card,
     Checkbox,
-    
+
     // Functions
     navigate,
     isFeatureEnabled,
@@ -535,7 +666,7 @@ const Dashboard = () => {
     setReflectionGood,
     setReflectionBetter,
     handleSaveEveningBookend,
-    
+
     // Identity & Anchors Handlers
     setIdentityStatement,
     handleSaveIdentity,
@@ -543,13 +674,13 @@ const Dashboard = () => {
     handleSaveHabit,
     setWhyStatement,
     handleSaveWhy,
-    
+
     // New Win Functions
     handleUpdateWin,
     handleSaveSingleWin,
     handleSaveAllWins,
     handleToggleWinComplete,
-    
+
     // State
     weeklyFocus,
     currentWeekNumber,
@@ -586,51 +717,55 @@ const Dashboard = () => {
     reflectionBest,
     setReflectionBest,
     isSavingBookend,
-    
+
     // Grounding Rep (click-to-reveal)
     groundingRepCompleted,
     groundingRepRevealed,
     groundingRepConfetti,
     handleGroundingRepComplete,
     handleGroundingRepClose,
-    
+
     // Conditioning Status (weekly tracking)
     conditioningStatus,
-    
+
     // Identity & Anchors State
     identityStatement,
     habitAnchor,
     whyStatement,
-    
+
     // Development Plan Data
     developmentPlanData,
     handleResetPlanStartDate: async () => {
       if (updateDevelopmentPlanData) {
         try {
           await updateDevelopmentPlanData({ startDate: serverTimestamp() });
-          alert("Plan Start Date reset to NOW. Time travel will be relative to this moment.");
+          alert(
+            'Plan Start Date reset to NOW. Time travel will be relative to this moment.',
+          );
           window.location.reload();
         } catch (error) {
           console.error('[Dashboard] Error setting startDate:', error);
-          alert("Error setting start date: " + error.message);
+          alert('Error setting start date: ' + error.message);
         }
       } else {
         console.error('[Dashboard] updateDevelopmentPlanData is not available');
-        alert("Error: updateDevelopmentPlanData function not available");
+        alert('Error: updateDevelopmentPlanData function not available');
       }
     },
-    
+
     // User Data
-    user: user ? {
-      uid: user.uid,
-      displayName: user.displayName,
-      email: user.email,
-      photoURL: user.photoURL
-    } : null,
+    user: user
+      ? {
+          uid: user.uid,
+          displayName: user.displayName,
+          email: user.email,
+          photoURL: user.photoURL,
+        }
+      : null,
     greeting,
     dailyQuote,
     allQuotes: globalMetadata?.SYSTEM_QUOTES || [],
-    dailyPracticeData // Pass dailyPracticeData to scope for widgets
+    dailyPracticeData, // Pass dailyPracticeData to scope for widgets
   };
 
   // Helper to check visibility based on Daily Plan config
@@ -651,10 +786,10 @@ const Dashboard = () => {
       'grounding-rep': 'showGroundingRep',
       'win-the-day': 'showWinTheDay',
       'daily-leader-reps': 'showDailyReps',
-      'notifications': 'showNotifications',
-      'pm-bookend-header': 'showPMBookendHeader',  // Separate from PM Reflection
+      notifications: 'showNotifications',
+      'pm-bookend-header': 'showPMBookendHeader', // Separate from PM Reflection
       'pm-bookend': 'showPMReflection',
-      'scorecard': 'showScorecard'
+      scorecard: 'showScorecard',
     };
 
     // PREP PHASE FEATURE GATING - PROGRESS BASED, NOT DAY BASED
@@ -671,11 +806,14 @@ const Dashboard = () => {
       'pm-bookend',
       'scorecard',
       // 'notifications', // Announcements should show in all phases
-      'conditioning-tutorial'
+      'conditioning-tutorial',
     ];
 
     // If in pre-start phase and this is a gated widget, check prep completion
-    if (currentPhase?.id === 'pre-start' && PREP_GATED_WIDGETS.includes(widgetId)) {
+    if (
+      currentPhase?.id === 'pre-start' &&
+      PREP_GATED_WIDGETS.includes(widgetId)
+    ) {
       // Special case: Conditioning is COMPLETELY HIDDEN during prep phase
       // It only appears once Foundation starts (currentPhase !== 'pre-start')
       if (widgetId === 'conditioning' || widgetId === 'conditioning-tutorial') {
@@ -705,54 +843,123 @@ const Dashboard = () => {
 
     // 1. Check for direct Widget ID match (New System)
     if (currentDayData.dashboard[widgetId] !== undefined) {
-        return currentDayData.dashboard[widgetId];
+      return currentDayData.dashboard[widgetId];
     }
 
     // 2. Check for Legacy Key match
     const legacyKey = LEGACY_WIDGET_MAP[widgetId];
     if (legacyKey && currentDayData.dashboard[legacyKey] !== undefined) {
-        return currentDayData.dashboard[legacyKey];
+      return currentDayData.dashboard[legacyKey];
     }
 
     return defaultVal;
   };
 
   const renderers = {
-    'dashboard-header': () => <WidgetRenderer widgetId="dashboard-header" scope={scope} />,
+    'dashboard-header': () => (
+      <WidgetRenderer widgetId="dashboard-header" scope={scope} />
+    ),
     'program-status-debug': () => <ProgramStatusWidget />,
-    'leader-profile': () => shouldShow('leader-profile', true) ? <LeaderProfileWidget /> : null,
-    'baseline-assessment': () => shouldShow('baseline-assessment', true) ? <BaselineAssessmentWidget /> : null,
-    'prep-welcome-banner': () => shouldShow('prep-welcome-banner', true) ? <WidgetRenderer widgetId="prep-welcome-banner" scope={scope} /> : null,
-    'welcome-message': () => shouldShow('welcome-message', true) ? <WidgetRenderer widgetId="welcome-message" scope={scope} /> : null,
-    'daily-quote': () => shouldShow('daily-quote', true) ? <WidgetRenderer widgetId="daily-quote" scope={scope} /> : null,
-    'am-bookend-header': () => shouldShow('am-bookend-header', true) ? <WidgetRenderer widgetId="am-bookend-header" scope={scope} /> : null,
-    'weekly-focus': () => shouldShow('weekly-focus', true) ? <WidgetRenderer widgetId="weekly-focus" scope={scope} /> : null,
-    'lis-maker': () => shouldShow('lis-maker', false) ? <WidgetRenderer widgetId="lis-maker" scope={scope} /> : null,
-    'grounding-rep': () => shouldShow('grounding-rep', false) ? <WidgetRenderer widgetId="grounding-rep" scope={scope} /> : null,
-    'win-the-day': () => shouldShow('win-the-day', true) ? <div data-repup-step="win-the-day"><WidgetRenderer widgetId="win-the-day" scope={scope} /></div> : null,
-    'daily-plan': () => currentDayNumber >= 1 ? <WidgetRenderer widgetId="daily-plan" scope={scope} /> : null,
-    'conditioning': () => shouldShow('conditioning', true) ? <ConditioningWidget helpText={getWidgetHelpText('conditioning')} /> : null,  // Gated until Foundation starts
-    'daily-leader-reps': () => null,  // DISABLED - replaced by conditioning widget
-    'this-weeks-actions': () => shouldShow('this-weeks-actions', true) ? <div data-repup-step="this-weeks-actions"><WidgetRenderer widgetId="this-weeks-actions" scope={scope} /></div> : null,
-    'notifications': () => shouldShow('notifications', true) ? <NotificationsWidget /> : null,
-    'conditioning-tutorial': () => shouldShow('conditioning-tutorial', true) ? <ConditioningTutorialWidget /> : null,
-    'pm-bookend-header': () => shouldShow('pm-bookend-header', true) ? <WidgetRenderer widgetId="pm-bookend-header" scope={scope} /> : null,
-    'progress-feedback': () => shouldShow('progress-feedback', true) ? <WidgetRenderer widgetId="progress-feedback" scope={scope} /> : null,
-    'pm-bookend': () => shouldShow('pm-bookend', true) ? <div data-repup-step="pm-bookend"><WidgetRenderer widgetId="pm-bookend" scope={scope} /></div> : null,
-    'scorecard': () => shouldShow('scorecard', true) ? <WidgetRenderer widgetId="scorecard" scope={scope} /> : null,
-    
+    'leader-profile': () =>
+      shouldShow('leader-profile', true) ? <LeaderProfileWidget /> : null,
+    'baseline-assessment': () =>
+      shouldShow('baseline-assessment', true) ? (
+        <BaselineAssessmentWidget />
+      ) : null,
+    'prep-welcome-banner': () =>
+      shouldShow('prep-welcome-banner', true) ? (
+        <WidgetRenderer widgetId="prep-welcome-banner" scope={scope} />
+      ) : null,
+    'welcome-message': () =>
+      shouldShow('welcome-message', true) ? (
+        <WidgetRenderer widgetId="welcome-message" scope={scope} />
+      ) : null,
+    'daily-quote': () =>
+      shouldShow('daily-quote', true) ? (
+        <WidgetRenderer widgetId="daily-quote" scope={scope} />
+      ) : null,
+    'am-bookend-header': () =>
+      shouldShow('am-bookend-header', true) ? (
+        <WidgetRenderer widgetId="am-bookend-header" scope={scope} />
+      ) : null,
+    'weekly-focus': () =>
+      shouldShow('weekly-focus', true) ? (
+        <WidgetRenderer widgetId="weekly-focus" scope={scope} />
+      ) : null,
+    'lis-maker': () =>
+      shouldShow('lis-maker', false) ? (
+        <WidgetRenderer widgetId="lis-maker" scope={scope} />
+      ) : null,
+    'grounding-rep': () =>
+      shouldShow('grounding-rep', false) ? (
+        <WidgetRenderer widgetId="grounding-rep" scope={scope} />
+      ) : null,
+    'win-the-day': () =>
+      shouldShow('win-the-day', true) ? (
+        <div data-repup-step="win-the-day">
+          <WidgetRenderer widgetId="win-the-day" scope={scope} />
+        </div>
+      ) : null,
+    'daily-plan': () =>
+      currentDayNumber >= 1 ? (
+        <WidgetRenderer widgetId="daily-plan" scope={scope} />
+      ) : null,
+    conditioning: () =>
+      shouldShow('conditioning', true) ? (
+        <ConditioningWidget helpText={getWidgetHelpText('conditioning')} />
+      ) : null, // Gated until Foundation starts
+    'daily-leader-reps': () => null, // DISABLED - replaced by conditioning widget
+    'this-weeks-actions': () =>
+      shouldShow('this-weeks-actions', true) ? (
+        <div data-repup-step="this-weeks-actions">
+          <WidgetRenderer widgetId="this-weeks-actions" scope={scope} />
+        </div>
+      ) : null,
+    notifications: () =>
+      shouldShow('notifications', true) ? <NotificationsWidget /> : null,
+    'conditioning-tutorial': () =>
+      shouldShow('conditioning-tutorial', true) ? (
+        <ConditioningTutorialWidget />
+      ) : null,
+    'pm-bookend-header': () =>
+      shouldShow('pm-bookend-header', true) ? (
+        <WidgetRenderer widgetId="pm-bookend-header" scope={scope} />
+      ) : null,
+    'progress-feedback': () =>
+      shouldShow('progress-feedback', true) ? (
+        <WidgetRenderer widgetId="progress-feedback" scope={scope} />
+      ) : null,
+    'pm-bookend': () =>
+      shouldShow('pm-bookend', true) ? (
+        <div data-repup-step="pm-bookend">
+          <WidgetRenderer widgetId="pm-bookend" scope={scope} />
+        </div>
+      ) : null,
+    scorecard: () =>
+      shouldShow('scorecard', true) ? (
+        <WidgetRenderer widgetId="scorecard" scope={scope} />
+      ) : null,
+
     // Legacy / Optional
-    'gamification': () => <WidgetRenderer widgetId="gamification" scope={scope} />,
-    'exec-summary': () => <WidgetRenderer widgetId="exec-summary" scope={scope} />,
-    'identity-builder': () => <WidgetRenderer widgetId="identity-builder" scope={scope} />,
-    'habit-stack': () => <WidgetRenderer widgetId="habit-stack" scope={scope} />,
+    gamification: () => (
+      <WidgetRenderer widgetId="gamification" scope={scope} />
+    ),
+    'exec-summary': () => (
+      <WidgetRenderer widgetId="exec-summary" scope={scope} />
+    ),
+    'identity-builder': () => (
+      <WidgetRenderer widgetId="identity-builder" scope={scope} />
+    ),
+    'habit-stack': () => (
+      <WidgetRenderer widgetId="habit-stack" scope={scope} />
+    ),
   };
 
   const handleSaveAnchors = async (data) => {
     await Promise.all([
       handleSaveIdentity(data.identity),
       handleSaveHabit(data.habit),
-      handleSaveWhy(data.why)
+      handleSaveWhy(data.why),
     ]);
     setIsAnchorModalOpen(false);
   };
@@ -784,102 +991,110 @@ const Dashboard = () => {
   return (
     <div className="p-5 sm:p-6 lg:p-8 space-y-5 bg-[#FAFBFC] dark:bg-slate-900 min-h-screen relative">
       <div className="max-w-[860px] mx-auto">
-      {/* Prep Gate Removed - incomplete prep items now carry over as past due */}
-      <>
-      {/* Layout Toggle - Desktop Only - COMMENTED OUT FOR NOW
+        {/* Prep Gate Removed - incomplete prep items now carry over as past due */}
+        <>
+          {/* Layout Toggle - Desktop Only - COMMENTED OUT FOR NOW
       <div className="absolute top-6 right-6 z-10 hidden lg:block">
         <LayoutToggle />
       </div>
       */}
 
-      <header className="mb-8 text-center">
-        <FadeIn delay={0.1}>
-          {(currentPhase?.id === 'start' || currentPhase?.id === 'foundation') && (
-            <div className="flex justify-center mb-3">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-corporate-teal/15 text-[#1F6B59] dark:text-corporate-teal-ink text-xs font-semibold uppercase tracking-widest">
-                Foundation
-              </span>
-            </div>
+          <header className="mb-8 text-center">
+            <FadeIn delay={0.1}>
+              {isFoundationPhase(currentPhase) && (
+                <div className="flex justify-center mb-3">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-corporate-teal/15 text-[#1F6B59] dark:text-corporate-teal-ink text-xs font-semibold uppercase tracking-widest">
+                    Foundation
+                  </span>
+                </div>
+              )}
+              {revampEnabled && isAscentPhase(currentPhase) && (
+                <div className="flex justify-center mb-3">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-corporate-teal/15 text-[#1F6B59] dark:text-corporate-teal-ink text-xs font-semibold uppercase tracking-widest">
+                    Ascent
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center justify-center gap-4 mb-3">
+                <LayoutDashboard className="w-7 h-7 text-corporate-teal" />
+                <h1
+                  className="text-2xl sm:text-3xl font-semibold text-corporate-navy dark:text-white tracking-tight"
+                  style={{ fontFamily: 'var(--font-heading)' }}
+                >
+                  Dashboard
+                </h1>
+              </div>
+              <p
+                className="text-slate-600 dark:text-slate-300 mt-2 leading-relaxed"
+                style={{ fontFamily: 'var(--font-body)' }}
+              >
+                {greeting} Welcome to the Arena.
+              </p>
+            </FadeIn>
+          </header>
+
+          {/* Forced 1-col layout for now - with staggered animation */}
+          <h2 className="sr-only">Dashboard widgets</h2>
+          {revampEnabled &&
+          (isFoundationPhase(currentPhase) || isAscentPhase(currentPhase)) ? (
+            <Stagger staggerDelay={0.08} className="grid gap-5 grid-cols-1">
+              {/* Foundation + Ascent share the same 4-widget dashboard.
+              Onboarding (formerly the Kickoff To-Do box) now flows through
+              NotificationsWidget — trainers post per-cohort announcements
+              with internal links to the relevant Locker artifact or
+              content item (see AnnouncementsManager). */}
+              <NotificationsWidget />
+              <MyEventsWidget />
+              <UpcomingEventsWidget />
+              <AskTrainerWidget />
+            </Stagger>
+          ) : (
+            <Stagger staggerDelay={0.08} className="grid gap-5 grid-cols-1">
+              {/* DYNAMIC FEATURES */}
+              {sortedFeatures.map((featureId) => (
+                <React.Fragment key={featureId}>
+                  {renderers[featureId] ? renderers[featureId]() : null}
+                </React.Fragment>
+              ))}
+            </Stagger>
           )}
-          {revampEnabled && currentPhase?.id === 'post-start' && (
-            <div className="flex justify-center mb-3">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-corporate-teal/15 text-[#1F6B59] dark:text-corporate-teal-ink text-xs font-semibold uppercase tracking-widest">
-                Ascent
-              </span>
-            </div>
-          )}
-          <div className="flex items-center justify-center gap-4 mb-3">
-            <LayoutDashboard className="w-7 h-7 text-corporate-teal" />
-            <h1 className="text-2xl sm:text-3xl font-semibold text-corporate-navy dark:text-white tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
-              Dashboard
-            </h1>
-          </div>
-          <p className="text-slate-600 dark:text-slate-300 mt-2 leading-relaxed" style={{ fontFamily: 'var(--font-body)' }}>
-            {greeting} Welcome to the Arena.
-          </p>
-        </FadeIn>
-      </header>
 
-      {/* Forced 1-col layout for now - with staggered animation */}
-      <h2 className="sr-only">Dashboard widgets</h2>
-      {revampEnabled && (currentPhase?.id === 'post-start' || currentPhase?.id === 'start' || currentPhase?.id === 'foundation') ? (
-        <Stagger staggerDelay={0.08} className="grid gap-5 grid-cols-1">
-          {/* Foundation + Ascent share the same 4-widget dashboard.
-              KickoffToDo auto-hides until required items exist / are
-              incomplete, so it slots cleanly on top. */}
-          <KickoffToDoWidget />
-          <NotificationsWidget />
-          <AscentMyEventsWidget />
-          <AscentUpcomingEventsWidget />
-          <AscentAskTrainerWidget />
-        </Stagger>
-      ) : (
-        <Stagger staggerDelay={0.08} className="grid gap-5 grid-cols-1">
-          {/* DYNAMIC FEATURES */}
-          {sortedFeatures.map(featureId => (
-            <React.Fragment key={featureId}>
-              {renderers[featureId] ? renderers[featureId]() : null}
-            </React.Fragment>
-          ))}
-        </Stagger>
-      )}
+          {/* Anchor Editor Modal */}
+          <UnifiedAnchorEditorModal
+            isOpen={isAnchorModalOpen}
+            initialIdentity={identityStatement}
+            initialHabit={habitAnchor}
+            initialWhy={whyStatement}
+            onSave={handleSaveAnchors}
+            onClose={() => setIsAnchorModalOpen(false)}
+          />
 
-      {/* Anchor Editor Modal */}
-      <UnifiedAnchorEditorModal
-        isOpen={isAnchorModalOpen}
-        initialIdentity={identityStatement}
-        initialHabit={habitAnchor}
-        initialWhy={whyStatement}
-        onSave={handleSaveAnchors}
-        onClose={() => setIsAnchorModalOpen(false)}
-      />
+          <CalendarSyncModal
+            isOpen={isCalendarModalOpen}
+            onClose={() => setIsCalendarModalOpen(false)}
+          />
 
-      <CalendarSyncModal 
-        isOpen={isCalendarModalOpen}
-        onClose={() => setIsCalendarModalOpen(false)}
-      />
+          <MissedDaysModal
+            isOpen={isCatchUpModalOpen}
+            onClose={() => setIsCatchUpModalOpen(false)}
+            missedDays={missedDays}
+            missedWeeks={missedWeeks}
+            onToggleAction={toggleItemComplete}
+          />
 
-      <MissedDaysModal 
-        isOpen={isCatchUpModalOpen}
-        onClose={() => setIsCatchUpModalOpen(false)}
-        missedDays={missedDays}
-        missedWeeks={missedWeeks}
-        onToggleAction={toggleItemComplete}
-      />
+          <PrepCompleteModal
+            isOpen={showPrepCompleteModal}
+            onClose={handlePrepCompleteModalClose}
+            milestone={prepMilestone}
+          />
 
-      <PrepCompleteModal 
-        isOpen={showPrepCompleteModal}
-        onClose={handlePrepCompleteModalClose}
-        milestone={prepMilestone}
-      />
-
-      <AscentWelcomeModal
-        isOpen={showAscentWelcomeModal}
-        onClose={handleAscentWelcomeClose}
-        onGoToContent={handleAscentGoToContent}
-        onOpenAscentArena={handleAscentGoToArena}
-        userName={user?.displayName || user?.firstName}
-      />
+          <AscentWelcomeModal
+            isOpen={showAscentWelcomeModal}
+            onClose={handleAscentWelcomeClose}
+            onGoToContent={handleAscentGoToContent}
+            onOpenAscentArena={handleAscentGoToArena}
+            userName={user?.displayName || user?.firstName}
+          />
         </>
       </div>
     </div>

@@ -1,12 +1,13 @@
 // src/providers/UIVersionProvider.jsx
-// Side-by-side UI version toggle. Lets users (and your boss) preview the
-// next-generation "v2" surface treatment alongside the existing classic
-// (v1) UI. Applies a `ui-v2` class to <html> so Tailwind's `ui-v2:` variant
-// (registered via tailwind.config.cjs) can scope new styles without touching
-// any existing utility class.
+// Locks the app to the "Next" (v2) UI treatment. The Classic (v1) preview
+// toggle was retired May 2026 per product direction — Next is the chosen
+// surface. The `?ui=v1` URL override is preserved as an emergency kill
+// switch for admins/QA if a v2-only regression appears.
 //
-// Persistence: localStorage key `leaderreps-ui-version` (light by default).
-// URL override: `?ui=v2` or `?ui=v1` — useful for sharing demo links.
+// History: This file used to expose a user-facing toggle (persisted in
+// localStorage under `leaderreps-ui-version`). The toggle UI was removed
+// from MySettingsWidget; we now ignore any stored value so all users land
+// on v2 by default.
 
 import React, {
   createContext,
@@ -17,12 +18,11 @@ import React, {
   useMemo,
 } from 'react';
 
-const STORAGE_KEY = 'leaderreps-ui-version';
 const VERSIONS = { CLASSIC: 'v1', NEXT: 'v2' };
 
 const UIVersionContext = createContext({
-  uiVersion: VERSIONS.CLASSIC,
-  isV2: false,
+  uiVersion: VERSIONS.NEXT,
+  isV2: true,
   setUIVersion: () => {},
   toggleUIVersion: () => {},
 });
@@ -39,17 +39,6 @@ const readUrlOverride = () => {
   return null;
 };
 
-const readStoredVersion = () => {
-  if (typeof window === 'undefined') return VERSIONS.CLASSIC;
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'v2' || stored === 'v1') return stored;
-  } catch {
-    // ignore
-  }
-  return VERSIONS.CLASSIC;
-};
-
 const applyUIVersion = (version) => {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
@@ -61,9 +50,10 @@ const applyUIVersion = (version) => {
 };
 
 export const UIVersionProvider = ({ children }) => {
+  // Default is now NEXT. Only the URL override can flip back to CLASSIC.
   const [uiVersion, setVersionState] = useState(() => {
     const override = readUrlOverride();
-    return override || readStoredVersion();
+    return override || VERSIONS.NEXT;
   });
 
   // Apply class on mount + whenever version changes
@@ -74,11 +64,6 @@ export const UIVersionProvider = ({ children }) => {
   const setUIVersion = useCallback((next) => {
     const normalized = next === VERSIONS.NEXT ? VERSIONS.NEXT : VERSIONS.CLASSIC;
     setVersionState(normalized);
-    try {
-      localStorage.setItem(STORAGE_KEY, normalized);
-    } catch {
-      // ignore
-    }
   }, []);
 
   const toggleUIVersion = useCallback(() => {

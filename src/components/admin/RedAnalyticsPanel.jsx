@@ -204,7 +204,7 @@ const RedAnalyticsPanel = ({ cohortId = null }) => {
       <Card className="p-6">
         <div className="flex items-center gap-3 mb-4">
           <BarChart3 className="w-5 h-5 text-corporate-teal" />
-          <h3 className="font-semibold text-corporate-navy dark:text-white">RED Analytics (Admin)</h3>
+          <h3 className="font-semibold text-corporate-navy dark:text-white">Feedback Analytics</h3>
         </div>
         <div className="flex items-center justify-center py-8">
           <RefreshCw className="w-6 h-6 animate-spin text-corporate-teal" />
@@ -220,7 +220,7 @@ const RedAnalyticsPanel = ({ cohortId = null }) => {
       <Card className="p-6">
         <div className="flex items-center gap-3 mb-4">
           <BarChart3 className="w-5 h-5 text-corporate-teal" />
-          <h3 className="font-semibold text-corporate-navy dark:text-white">RED Analytics (Admin)</h3>
+          <h3 className="font-semibold text-corporate-navy dark:text-white">Feedback Analytics</h3>
         </div>
         <div className="text-center py-6 text-red-500">
           <AlertTriangle className="w-10 h-10 mx-auto mb-3" />
@@ -242,7 +242,10 @@ const RedAnalyticsPanel = ({ cohortId = null }) => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <BarChart3 className="w-5 h-5 text-corporate-teal" />
-          <h3 className="font-semibold text-corporate-navy dark:text-white">RED Analytics (Admin)</h3>
+          <div>
+            <h3 className="font-semibold text-corporate-navy dark:text-white">Feedback Analytics</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Redirecting Feedback (RED) reps &middot; Close-the-Loop completion &middot; behavior change</p>
+          </div>
         </div>
         <button 
           onClick={loadAnalytics}
@@ -253,7 +256,19 @@ const RedAnalyticsPanel = ({ cohortId = null }) => {
         </button>
       </div>
 
-      {/* Tabs */}
+      {/* Empty state when no RED data exists in this cohort */}
+      {aggregateStats && aggregateStats.totalReds === 0 && (
+        <div className="py-10 text-center">
+          <MessageSquare className="w-10 h-10 mx-auto mb-3 text-slate-300" />
+          <p className="text-slate-600 dark:text-slate-300 font-medium">No Redirecting Feedback reps yet</p>
+          <p className="text-sm text-slate-400 mt-1">
+            Analytics will appear here once leaders in this cohort log RED reps.
+          </p>
+        </div>
+      )}
+
+      {/* Tabs (only when there's data) */}
+      {aggregateStats && aggregateStats.totalReds > 0 && (
       <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
         {[
           { id: 'overview', label: 'Overview', icon: BarChart3 },
@@ -275,9 +290,10 @@ const RedAnalyticsPanel = ({ cohortId = null }) => {
           </button>
         ))}
       </div>
+      )}
 
       {/* Overview Tab */}
-      {selectedTab === 'overview' && aggregateStats && (
+      {selectedTab === 'overview' && aggregateStats && aggregateStats.totalReds > 0 && (
         <div className="space-y-6">
           {/* Key Metrics */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

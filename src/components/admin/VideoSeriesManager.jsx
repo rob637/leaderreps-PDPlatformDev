@@ -34,6 +34,7 @@ import {
   formatDuration
 } from '../../services/videoSeriesService';
 import { getMediaAssets, MEDIA_TYPES } from '../../services/mediaService';
+import { confirmDestructive } from './utils/confirmDestructive';
 
 // Duration helpers - convert between MM:SS string and total seconds
 const parseDurationString = (str) => {
@@ -179,9 +180,11 @@ const VideoSeriesManager = () => {
 
   // Delete series
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this video series? This cannot be undone.')) {
-      return;
-    }
+    if (!confirmDestructive({
+      summary: 'Permanently delete this video series?\n\nThis cannot be undone.',
+      typeToken: 'DELETE',
+      cancelMessage: 'Confirmation text did not match. Series deletion cancelled.',
+    })) return;
 
     try {
       await deleteSeries(db, id);

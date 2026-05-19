@@ -44,6 +44,7 @@ import { sendEmailAsTeamAccount } from '../../lib/gmail';
 import { checkAllAccountsForReplies } from '../../services/replyDetectionService';
 import { formatDistanceToNow, format, isToday, isTomorrow, isPast, addDays } from 'date-fns';
 import toast from 'react-hot-toast';
+import { useConfirm } from '../ConfirmDialog';
 import { 
   collection, 
   doc, 
@@ -55,6 +56,7 @@ import {
 import { db } from '../../lib/firebase';
 
 export default function EmailQueue() {
+  const confirm = useConfirm();
   const { 
     enrollments, 
     enrollmentsLoading,
@@ -383,7 +385,13 @@ export default function EmailQueue() {
       return;
     }
     
-    if (!confirm(`Send ${pastDueEmails.length} email(s)?`)) return;
+    const ok = await confirm({
+      title: `Send ${pastDueEmails.length} email${pastDueEmails.length === 1 ? '' : 's'}?`,
+      message: 'These will be delivered immediately to the connected account.',
+      confirmLabel: 'Send all',
+      tone: 'info',
+    });
+    if (!ok) return;
     
     for (const email of pastDueEmails) {
       await handleSend(email);

@@ -401,6 +401,24 @@ service cloud.firestore {
       );
     }
 
+    // Coaching Waitlist (added May 2026 — Join Waitlist UX)
+    // Doc id pattern: `${sessionId}_${userId}` (see communityService.js
+    // joinWaitlist). Users can own their entry; trainers/admins can promote.
+    match /coaching_waitlist/{document} {
+      allow read: if request.auth != null && (
+        resource == null
+        || ('userId' in resource.data && request.auth.uid == resource.data.userId)
+        || document.matches('.+_' + request.auth.uid)
+        || isAdmin()
+      );
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if request.auth != null && (
+        ('userId' in resource.data && request.auth.uid == resource.data.userId)
+        || document.matches('.+_' + request.auth.uid)
+        || isAdmin()
+      );
+    }
+
     // Community Session Types (Templates)
     match /community_session_types/{document} {
       allow read: if request.auth != null;
@@ -636,6 +654,20 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Pending admin promotions — written by Cloud Functions when an invited
+    // admin user accepts but the inviter is no longer an admin. Admins read
+    // and approve manually.
+    match /pending_admin_promotions/{document} {
+      allow read, write: if isAdmin();
+    }
+
+    // Admin promotion audit trail — append-only via Cloud Functions; admins
+    // can read for traceability. Client writes are blocked.
+    match /admin_promotion_audit/{document} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     // Corporate Prospects (Sales Enablement)
     // Only admins can access prospects for sales pipeline management
     match /corporate_prospects/{document} {
@@ -664,6 +696,40 @@ service cloud.firestore {
     
     // Outreach Activities (Sales Team activity logs)
     match /outreach_activities/{document} {
+      allow read, write: if isAdmin();
+    }
+
+    // CRM Accounts (company-level records)
+    match /crm_accounts/{document} {
+      allow read, write: if isAdmin();
+    }
+
+    // CRM Deals (revenue opportunities)
+    match /crm_deals/{document} {
+      allow read, write: if isAdmin();
+    }
+
+    // CRM Audit Logs (server-written via Cloud Functions, read-only for admins)
+    match /crm_audit_logs/{document} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // CRM Notifications (per-user inbox; users read their own; CFs/admins write)
+    match /crm_notifications/{document} {
+      allow read: if request.auth != null && (
+        isAdmin() ||
+        request.auth.token.email.lower() == resource.data.recipientEmail.lower()
+      );
+      allow update: if request.auth != null && (
+        isAdmin() ||
+        request.auth.token.email.lower() == resource.data.recipientEmail.lower()
+      );
+      allow create, delete: if isAdmin();
+    }
+
+    // CRM Workflows (admin-only automation rules)
+    match /crm_workflows/{document} {
       allow read, write: if isAdmin();
     }
     

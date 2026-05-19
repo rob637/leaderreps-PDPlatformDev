@@ -2,6 +2,7 @@
 // Sales & Marketing Center — full CRM, lead generation, marketing tools
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Megaphone, Globe, Users, BarChart3,
   ShieldAlert, ExternalLink, Sparkles, BookOpen,
@@ -125,9 +126,13 @@ const SalesMarketingCenter = () => {
     );
   }
   
-  // Show full CRM overlay
+  // Show full CRM overlay (portaled to body so it escapes the page-transition
+  // stacking context created by Framer Motion's will-change: transform)
   if (showFullCRM) {
-    return <CRMApp user={user} onClose={() => setShowFullCRM(false)} />;
+    return createPortal(
+      <CRMApp user={user} onClose={() => setShowFullCRM(false)} />,
+      document.body
+    );
   }
 
   const renderContent = () => {

@@ -1,8 +1,15 @@
-// src/components/layout/AppContent.jsx 
+// src/components/layout/AppContent.jsx
 
 import React, { Suspense, useState, useEffect, useRef, lazy } from 'react';
 import { signOut } from 'firebase/auth';
-import { LogOut, Loader, Settings, ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
+import {
+  LogOut,
+  Loader,
+  Settings,
+  ChevronDown,
+  ChevronUp,
+  ArrowLeft,
+} from 'lucide-react';
 import ScreenRouter from '../../routing/ScreenRouter.jsx';
 import MobileBottomNav from './MobileBottomNav.jsx';
 import ArenaSidebar from './ArenaSidebar.jsx';
@@ -18,7 +25,7 @@ import MobilePWABanner from '../ui/MobilePWABanner.jsx';
 // import RepFloatingButton from '../rep/RepFloatingButton.jsx'; // RepUp temporarily disabled — may bring back later
 import BugReportModal from '../modals/BugReportModal.jsx';
 import AscentLaunchAnnouncementModal from '../modals/AscentLaunchAnnouncementModal.jsx';
-import UIVersionFloatingToggle from '../ui/UIVersionFloatingToggle.jsx';
+// UIVersionFloatingToggle removed May 2026 — app locked to v2.
 
 const AppContent = ({
   currentScreen,
@@ -38,13 +45,13 @@ const AppContent = ({
   const [isDeveloperMode, setIsDeveloperMode] = useState(() => {
     return localStorage.getItem('arena-developer-mode') === 'true';
   });
-  
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isBugReportModalOpen, setIsBugReportModalOpen] = useState(false);
-  
+
   // Ref for main scrollable content area - used for scroll-to-top on navigation
   const mainContentRef = useRef(null);
-  
+
   // Scroll to top when screen changes
   useEffect(() => {
     if (mainContentRef.current) {
@@ -55,7 +62,9 @@ const AppContent = ({
   // Listen for developer mode changes
   useEffect(() => {
     const handleStorageChange = () => {
-      setIsDeveloperMode(localStorage.getItem('arena-developer-mode') === 'true');
+      setIsDeveloperMode(
+        localStorage.getItem('arena-developer-mode') === 'true',
+      );
     };
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
@@ -79,11 +88,11 @@ const AppContent = ({
       localStorage.removeItem('lastScreen');
       localStorage.removeItem('lastNavParams');
       localStorage.removeItem('arena-developer-mode');
-      
+
       // Clear AI Coach session authentication
       sessionStorage.removeItem('ai-coach-authenticated');
       window.dispatchEvent(new CustomEvent('ai-coach-logout'));
-      
+
       if (logout) {
         await logout();
       } else if (auth) {
@@ -98,9 +107,16 @@ const AppContent = ({
 
   const currentYear = new Date().getFullYear();
 
-  const isFullWidthScreen = currentScreen.startsWith('admin-') || 
-                           ['data-maintenance', 'debug-data', 'config-center', 'facilitator-center', 'system-center', 'marketing-center'].includes(currentScreen);
-
+  const isFullWidthScreen =
+    currentScreen.startsWith('admin-') ||
+    [
+      'data-maintenance',
+      'debug-data',
+      'config-center',
+      'facilitator-center',
+      'system-center',
+      'marketing-center',
+    ].includes(currentScreen);
 
   return (
     <NavigationProvider
@@ -111,29 +127,29 @@ const AppContent = ({
       navParams={navParams}
     >
       {/* Skip Links for keyboard accessibility */}
-      <SkipLinks 
+      <SkipLinks
         links={[
           { id: 'main-content', label: 'Skip to main content' },
-          { id: 'main-nav', label: 'Skip to navigation' }
-        ]} 
+          { id: 'main-nav', label: 'Skip to navigation' },
+        ]}
       />
-      
+
       {/* Time Travel Banner - visible to admins when active (lazy-loaded) */}
       {isAdmin && (
         <Suspense fallback={null}>
           <TimeTravelBanner isAdmin={isAdmin} />
         </Suspense>
       )}
-      
+
       <div className="relative min-h-screen flex justify-center font-sans antialiased bg-corporate-navy overflow-hidden">
-        
         {/* Centered App Container */}
-        <div className={`flex w-full ${isFullWidthScreen ? 'max-w-full' : 'max-w-[1000px]'} h-screen relative`}>
-          
+        <div
+          className={`flex w-full ${isFullWidthScreen ? 'max-w-full' : 'max-w-[1000px]'} h-screen relative`}
+        >
           {/* New Sidebar */}
           <nav id="main-nav" aria-label="Main navigation">
-            <ArenaSidebar 
-              isOpen={isSidebarOpen} 
+            <ArenaSidebar
+              isOpen={isSidebarOpen}
               toggle={() => setIsSidebarOpen(!isSidebarOpen)}
               currentScreen={currentScreen}
               navigate={navigate}
@@ -144,9 +160,14 @@ const AppContent = ({
           </nav>
 
           {/* Main Content Area */}
-          <div className="flex-1 flex flex-col h-screen md:h-[calc(100vh-16px)] overflow-hidden relative transition-all duration-300 bg-[#FAFBFC] dark:bg-slate-900 md:rounded-3xl md:shadow-2xl md:my-2 md:mr-2" role="main">
-            
-            <main className="flex-1 flex flex-col overflow-hidden relative md:rounded-3xl" aria-label="Page content">
+          <div
+            className="no-glass flex-1 flex flex-col h-screen md:h-[calc(100vh-16px)] overflow-hidden relative transition-all duration-300 bg-[#FAFBFC] dark:bg-slate-900 md:rounded-3xl md:shadow-2xl md:my-2 md:mr-2"
+            role="main"
+          >
+            <main
+              className="no-glass flex-1 flex flex-col overflow-hidden relative md:rounded-3xl"
+              aria-label="Page content"
+            >
               {/* Global Back Button Header - REMOVED to save whitespace */}
               {/* {canGoBack && (
                 <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center shadow-sm z-10 shrink-0">
@@ -160,7 +181,10 @@ const AppContent = ({
                 </div>
               )} */}
 
-              <div ref={mainContentRef} className="flex-1 overflow-y-auto pb-20 md:pb-0">
+              <div
+                ref={mainContentRef}
+                className="flex-1 overflow-y-auto pb-20 md:pb-0"
+              >
                 <Suspense
                   fallback={
                     <div className="min-h-full flex items-center justify-center gradient-corporate-hero">
@@ -184,89 +208,112 @@ const AppContent = ({
                       />
                     </div>
                   </PageTransition>
-              </Suspense>
-            </div>
-
-            {/* Footer - Hidden on mobile to save space, visible on desktop */}
-            <footer className="hidden md:block w-full text-center mt-auto border-t bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border-slate-100 dark:border-slate-700 p-4">
-              {/* Sync Status Indicator */}
-              <div className="flex justify-center mb-3">
-                <SyncIndicator variant="badge" showWhenSynced={false} />
+                </Suspense>
               </div>
-              <p className="text-slate-600 dark:text-slate-300 text-sm" style={{ fontFamily: 'var(--font-body)' }}>
-                © {currentYear} LeaderReps. All rights reserved.
-              </p>
-              <nav className="mt-3 flex flex-wrap justify-center gap-2 text-xs text-slate-700 dark:text-slate-300" aria-label="Footer navigation">
-                <button
-                  onClick={() => navigate('privacy-policy')}
-                  className="hover:text-corporate-teal-ink focus:text-corporate-teal-ink transition-colors duration-200 text-slate-700 dark:text-slate-300 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
-                  aria-label="View privacy policy"
+
+              {/* Footer - Hidden on mobile to save space, visible on desktop */}
+              <footer className="hidden md:block w-full text-center mt-auto bg-transparent dark:bg-transparent p-4">
+                {/* Sync Status Indicator */}
+                <div className="flex justify-center mb-3">
+                  <SyncIndicator variant="badge" showWhenSynced={false} />
+                </div>
+                <p
+                  className="text-slate-600 dark:text-slate-300 text-sm"
+                  style={{ fontFamily: 'var(--font-body)' }}
                 >
-                  Privacy Policy
-                </button>
-                <span className="text-slate-300 dark:text-slate-600 self-center" aria-hidden="true">·</span>
-                <button
-                  onClick={() => navigate('terms-of-service')}
-                  className="hover:text-corporate-teal-ink focus:text-corporate-teal-ink transition-colors duration-200 text-slate-700 dark:text-slate-300 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
-                  aria-label="View terms and conditions"
+                  © {currentYear} LeaderReps. All rights reserved.
+                </p>
+                <nav
+                  className="mt-3 flex flex-wrap justify-center gap-2 text-xs text-slate-700 dark:text-slate-300"
+                  aria-label="Footer navigation"
                 >
-                  Terms & Conditions
-                </button>
-                <span className="text-slate-300 dark:text-slate-600 self-center" aria-hidden="true">·</span>
-                <button
-                  onClick={() => navigate('contact-us')}
-                  className="hover:text-corporate-teal-ink focus:text-corporate-teal-ink transition-colors duration-200 text-slate-700 dark:text-slate-300 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
-                  aria-label="Contact us"
-                >
-                  Contact Us
-                </button>
-                <span className="text-slate-300 dark:text-slate-600 self-center" aria-hidden="true">·</span>
-                <button
-                  onClick={() => navigate('help-center')}
-                  className="hover:text-corporate-teal-ink focus:text-corporate-teal-ink transition-colors duration-200 text-slate-700 dark:text-slate-300 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
-                  aria-label="Visit help center"
-                >
-                  Help Center
-                </button>
-                <span className="text-slate-300 dark:text-slate-600 self-center" aria-hidden="true">·</span>
-                <button
-                  onClick={() => setIsBugReportModalOpen(true)}
-                  className="hover:text-corporate-teal-ink focus:text-corporate-teal-ink transition-colors duration-200 text-slate-700 dark:text-slate-300 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
-                  aria-label="Report a bug"
-                >
-                  Report Bug
-                </button>
-              </nav>
-            </footer>
-            
-            {/* Mobile Bottom Navigation - Only show on small screens */}
-            <div className="md:hidden">
-              <MobileBottomNav 
-                currentScreen={currentScreen} 
+                  <button
+                    onClick={() => navigate('privacy-policy')}
+                    className="hover:text-corporate-teal-ink focus:text-corporate-teal-ink transition-colors duration-200 text-slate-700 dark:text-slate-300 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
+                    aria-label="View privacy policy"
+                  >
+                    Privacy Policy
+                  </button>
+                  <span
+                    className="text-slate-300 dark:text-slate-600 self-center"
+                    aria-hidden="true"
+                  >
+                    ·
+                  </span>
+                  <button
+                    onClick={() => navigate('terms-of-service')}
+                    className="hover:text-corporate-teal-ink focus:text-corporate-teal-ink transition-colors duration-200 text-slate-700 dark:text-slate-300 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
+                    aria-label="View terms and conditions"
+                  >
+                    Terms & Conditions
+                  </button>
+                  <span
+                    className="text-slate-300 dark:text-slate-600 self-center"
+                    aria-hidden="true"
+                  >
+                    ·
+                  </span>
+                  <button
+                    onClick={() => navigate('contact-us')}
+                    className="hover:text-corporate-teal-ink focus:text-corporate-teal-ink transition-colors duration-200 text-slate-700 dark:text-slate-300 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
+                    aria-label="Contact us"
+                  >
+                    Contact Us
+                  </button>
+                  <span
+                    className="text-slate-300 dark:text-slate-600 self-center"
+                    aria-hidden="true"
+                  >
+                    ·
+                  </span>
+                  <button
+                    onClick={() => navigate('help-center')}
+                    className="hover:text-corporate-teal-ink focus:text-corporate-teal-ink transition-colors duration-200 text-slate-700 dark:text-slate-300 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
+                    aria-label="Visit help center"
+                  >
+                    Help Center
+                  </button>
+                  <span
+                    className="text-slate-300 dark:text-slate-600 self-center"
+                    aria-hidden="true"
+                  >
+                    ·
+                  </span>
+                  <button
+                    onClick={() => setIsBugReportModalOpen(true)}
+                    className="hover:text-corporate-teal-ink focus:text-corporate-teal-ink transition-colors duration-200 text-slate-700 dark:text-slate-300 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
+                    aria-label="Report a bug"
+                  >
+                    Report Bug
+                  </button>
+                </nav>
+              </footer>
+
+              {/* Mobile Bottom Navigation - Only show on small screens */}
+              <div className="md:hidden">
+                <MobileBottomNav currentScreen={currentScreen} />
+              </div>
+
+              {/* Mobile PWA Install Banner */}
+              <MobilePWABanner />
+
+              {/* Rep Coach Floating Button — temporarily disabled. May bring back later. */}
+              {/* <RepFloatingButton /> */}
+
+              {/* Global Bug Report Modal */}
+              <BugReportModal
+                isOpen={isBugReportModalOpen}
+                onClose={() => setIsBugReportModalOpen(false)}
+                currentScreen={currentScreen}
               />
-            </div>
 
-            {/* Mobile PWA Install Banner */}
-            <MobilePWABanner />
-            
-            {/* Rep Coach Floating Button — temporarily disabled. May bring back later. */}
-            {/* <RepFloatingButton /> */}
-
-            {/* Global Bug Report Modal */}
-            <BugReportModal 
-              isOpen={isBugReportModalOpen} 
-              onClose={() => setIsBugReportModalOpen(false)}
-              currentScreen={currentScreen}
-            />
-
-            {/* Ascent Revamp launch announcement (one-time per user) */}
-            <AscentLaunchAnnouncementModal />
-          </main>
+              {/* Ascent Revamp launch announcement (one-time per user) */}
+              <AscentLaunchAnnouncementModal />
+            </main>
+          </div>
         </div>
       </div>
-      </div>
-      {/* Floating UI Version toggle — lets anyone preview the next-gen UI */}
-      <UIVersionFloatingToggle />
+      {/* UIVersionFloatingToggle removed May 2026 — app is locked to v2 (Next). */}
     </NavigationProvider>
   );
 };

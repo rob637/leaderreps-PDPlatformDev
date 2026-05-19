@@ -1168,12 +1168,21 @@ body {
     linear-gradient(180deg, #001E2F 0%, #002E47 100%) !important;
 }
 
-/* Inner main panel: stay solid + crisp white. NO glass mush. Just modern. */
-.ui-v2 .bg-\[\#FAFBFC\] {
+/* Inner main panel: stay solid + crisp white. NO glass mush. Just modern.
+ * Only the OUTERMOST panel gets the heavy drop shadow — inner page wrappers
+ * (PageLayout's `min-h-full` div, screen-level `min-h-screen` divs) must NOT
+ * carry the shadow, otherwise their bottom edge casts a dark seam across the
+ * middle of the visible panel area on short-content pages. */
+.ui-v2 .bg-\[\#FAFBFC\]:not(.min-h-full):not(.min-h-screen) {
   background: #FFFFFF !important;
   box-shadow:
     0 50px 100px -30px rgba(0, 0, 0, 0.5),
     0 20px 40px -20px rgba(0, 0, 0, 0.3) !important;
+}
+.ui-v2 .bg-\[\#FAFBFC\].min-h-full,
+.ui-v2 .bg-\[\#FAFBFC\].min-h-screen {
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 /* Typography — Apple-grade crispness */
@@ -1498,13 +1507,15 @@ body {
  * border on hover, shimmer sweep, 3D lift, gradient text, bento layout hints.
  * ======================================================================= */
 
-/* ---- ATMOSPHERE: floating gradient orbs behind the inner panel ---- */
-.ui-v2 .bg-\[\#FAFBFC\] {
+/* ---- ATMOSPHERE: floating gradient orbs behind the inner panel ----
+ * Scoped to the OUTERMOST panel only (excludes inner page wrappers that use
+ * min-h-full / min-h-screen), so the orb anchors to one stable container. */
+.ui-v2 .bg-\[\#FAFBFC\]:not(.min-h-full):not(.min-h-screen) {
   position: relative;
   isolation: isolate;
-  overflow-x: hidden;
+  overflow: hidden; /* clip orbs on all sides — was overflow-x only, caused 2nd scrollbar */
 }
-.ui-v2 .bg-\[\#FAFBFC\]::before {
+.ui-v2 .bg-\[\#FAFBFC\]:not(.min-h-full):not(.min-h-screen)::before {
   content: '';
   position: absolute;
   top: -200px;
@@ -1519,30 +1530,17 @@ body {
   filter: blur(20px);
 }
 .ui-v2 .bg-\[\#FAFBFC\]::after {
-  content: '';
-  position: absolute;
-  bottom: -300px;
-  left: -250px;
-  width: 900px;
-  height: 900px;
-  background: radial-gradient(circle, rgba(224, 78, 27, 0.10) 0%, transparent 70%);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 0;
-  animation: v2-orb-drift-b 28s ease-in-out infinite;
-  filter: blur(20px);
+  /* Bottom-left orange ambient orb removed — was leaking peach into empty
+   * lower half on short pages. Top-right teal orb is enough atmosphere. */
+  content: none;
 }
 @keyframes v2-orb-drift-a {
   0%, 100% { transform: translate(0, 0) scale(1); }
   33%      { transform: translate(-120px, 80px) scale(1.15); }
   66%      { transform: translate(60px, 180px) scale(0.9); }
 }
-@keyframes v2-orb-drift-b {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50%      { transform: translate(180px, -140px) scale(1.1); }
-}
 /* keep the actual content above the orbs */
-.ui-v2 .bg-\[\#FAFBFC\] > * {
+.ui-v2 .bg-\[\#FAFBFC\]:not(.min-h-full):not(.min-h-screen) > * {
   position: relative;
   z-index: 1;
 }
@@ -1568,18 +1566,11 @@ body {
   50%      { opacity: 0.7; }
 }
 
-/* ---- CARD ENTRANCE: stagger fade-up on every card ---- */
+/* ---- CARD ENTRANCE: gentle fade (no transform — would create a containing
+   block for position:fixed descendants and break inline modals) ---- */
 @keyframes v2-card-enter {
-  from {
-    opacity: 0;
-    transform: translateY(16px) scale(0.985);
-    filter: blur(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
-  }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 .ui-v2 [class*="rounded-2xl"].bg-white:not(button),
 .ui-v2 [class*="rounded-xl"].bg-white:not(button),
@@ -1657,16 +1648,18 @@ body {
   animation: v2-rotate-angle 4s linear infinite;
 }
 
-/* ---- SUBTLE HOVER LIFT — perspective tilt feel ---- */
+/* ---- SUBTLE HOVER LIFT — perspective tilt feel ----
+   NOTE: We intentionally do NOT set `will-change: transform` or
+   `transform-style: preserve-3d` here. Either creates a containing block for
+   `position: fixed` descendants, which breaks any inline-rendered modals
+   (e.g. LeaderProfileWidget's update modal) by trapping them inside the card. */
 .ui-v2 [class*="rounded-2xl"].bg-white:not(button),
 .ui-v2 [class*="rounded-xl"].bg-white:not(button) {
-  transform-style: preserve-3d;
   transition:
     transform 320ms cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 320ms cubic-bezier(0.16, 1, 0.3, 1),
     border-color 240ms ease,
     background-color 240ms ease;
-  will-change: transform;
 }
 .ui-v2 [class*="rounded-2xl"].bg-white:not(button):hover,
 .ui-v2 [class*="rounded-xl"].bg-white:not(button):hover {
@@ -1805,7 +1798,7 @@ body {
 }
 
 /* ---- FLOATING TOGGLE ITSELF — make it pop in v2 ---- */
-.ui-v2 [aria-label*="UI"] {
+.ui-v2 .ui-version-floating-toggle {
   background: linear-gradient(135deg, #002E47 0%, #1F7864 100%) !important;
   box-shadow:
     0 8px 24px -8px rgba(71, 168, 141, 0.6),
@@ -1937,6 +1930,124 @@ body {
   clip: auto;
 }
 
+/* =======================================================================
+ * UI-V2 × DARK MODE
+ * The ui-v2 skin hardcodes light surfaces with !important to defeat the
+ * v1 styles. In dark mode we need equally specific overrides
+ * (.dark.ui-v2 = specificity 0,2,1 > .ui-v2 = 0,1,1) plus !important.
+ * ======================================================================= */
+
+/* Inner main panel: dark slate instead of forced white.
+ * Split to match light-rule specificity (which uses :not() boosters).
+ * Outer panel rule must be (>= 0,4,0) to beat light (0,4,0).
+ * Inner page wrapper rule must be (>= 0,3,0) to beat light (0,3,0). */
+.dark.ui-v2 .bg-\[\#FAFBFC\]:not(.min-h-full):not(.min-h-screen) {
+  background: #0F172A !important;
+  box-shadow:
+    0 50px 100px -30px rgba(0, 0, 0, 0.7),
+    0 20px 40px -20px rgba(0, 0, 0, 0.5) !important;
+}
+.dark.ui-v2 .bg-\[\#FAFBFC\].min-h-full,
+.dark.ui-v2 .bg-\[\#FAFBFC\].min-h-screen {
+  background: #0F172A !important;
+  box-shadow: none !important;
+}
+
+/* Cards: dark slate surfaces with subtle light border */
+.dark.ui-v2 .bg-white:not(button):not(input):not(select):not(textarea):not(.no-glass),
+.dark.ui-v2 .shadow-sm:not(button):not(input):not(.no-glass),
+.dark.ui-v2 .shadow-md:not(button):not(input):not(.no-glass),
+.dark.ui-v2 .shadow-lg:not(button):not(input):not(.no-glass),
+.dark.ui-v2 .shadow-xl:not(button):not(input):not(.no-glass),
+.dark.ui-v2 .shadow-2xl:not(button):not(input):not(.no-glass),
+.dark.ui-v2 .shadow-card:not(.no-glass),
+.dark.ui-v2 .shadow-elevated:not(.no-glass),
+.dark.ui-v2 .shadow-pop:not(.no-glass) {
+  background-color: #1E293B !important;
+  border-color: rgba(148, 163, 184, 0.12) !important;
+  box-shadow:
+    0 0 0 1px rgba(148, 163, 184, 0.06),
+    0 2px 4px -1px rgba(0, 0, 0, 0.3),
+    0 8px 16px -4px rgba(0, 0, 0, 0.35),
+    0 24px 48px -12px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Brand-accent gradient cards: keep the brand wash but on a dark base */
+.dark.ui-v2 [class*="border-l-corporate-orange"][class*="rounded-2xl"],
+.dark.ui-v2 [class*="border-l-corporate-orange"][class*="rounded-xl"] {
+  background:
+    linear-gradient(135deg, rgba(224, 78, 27, 0.10) 0%, transparent 35%),
+    linear-gradient(180deg, #1E293B 0%, #1E293B 100%) !important;
+}
+.dark.ui-v2 [class*="border-l-corporate-teal"][class*="rounded-2xl"],
+.dark.ui-v2 [class*="border-l-corporate-teal"][class*="rounded-xl"] {
+  background:
+    linear-gradient(135deg, rgba(71, 168, 141, 0.10) 0%, transparent 35%),
+    linear-gradient(180deg, #1E293B 0%, #1E293B 100%) !important;
+}
+.dark.ui-v2 [class*="border-l-corporate-navy"][class*="rounded-2xl"],
+.dark.ui-v2 [class*="border-l-corporate-navy"][class*="rounded-xl"] {
+  background:
+    linear-gradient(135deg, rgba(71, 168, 141, 0.08) 0%, transparent 35%),
+    linear-gradient(180deg, #1E293B 0%, #1E293B 100%) !important;
+}
+
+/* Brand-accent shadows softer on dark (no jarring colored halos) */
+.dark.ui-v2 [class*="border-l-corporate-teal"] {
+  box-shadow:
+    0 0 0 1px rgba(148, 163, 184, 0.06),
+    0 8px 16px -4px rgba(0, 0, 0, 0.35),
+    0 24px 48px -12px rgba(0, 0, 0, 0.5),
+    -8px 0 24px -8px rgba(71, 168, 141, 0.25) !important;
+}
+.dark.ui-v2 [class*="border-l-corporate-navy"] {
+  box-shadow:
+    0 0 0 1px rgba(148, 163, 184, 0.06),
+    0 8px 16px -4px rgba(0, 0, 0, 0.35),
+    0 24px 48px -12px rgba(0, 0, 0, 0.5),
+    -8px 0 24px -8px rgba(15, 23, 42, 0.6) !important;
+}
+.dark.ui-v2 [class*="border-l-corporate-orange"] {
+  box-shadow:
+    0 0 0 1px rgba(148, 163, 184, 0.06),
+    0 8px 16px -4px rgba(0, 0, 0, 0.35),
+    0 24px 48px -12px rgba(0, 0, 0, 0.5),
+    -8px 0 24px -8px rgba(224, 78, 27, 0.30) !important;
+}
+
+/* Hover state: dark-friendly lift */
+.dark.ui-v2 .hover\:shadow-md:hover,
+.dark.ui-v2 .hover\:shadow-lg:hover,
+.dark.ui-v2 .hover\:shadow-xl:hover,
+.dark.ui-v2 .hover\:shadow-card-hover:hover,
+.dark.ui-v2 .hover\:shadow-pop:hover,
+.dark.ui-v2 [class*="hover:shadow"]:hover {
+  border-color: rgba(71, 168, 141, 0.45) !important;
+  box-shadow:
+    0 0 0 1px rgba(71, 168, 141, 0.25),
+    0 4px 8px -2px rgba(0, 0, 0, 0.4),
+    0 16px 32px -8px rgba(0, 0, 0, 0.5),
+    0 40px 80px -20px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Sidebar: dark right edge */
+.dark.ui-v2 nav[aria-label="Main navigation"] {
+  border-right: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+/* Top accent line on cards: dim it on dark so it's subtle */
+.dark.ui-v2 [class*="rounded-2xl"].bg-white:not(button)::before,
+.dark.ui-v2 [class*="rounded-xl"].bg-white:not(button)::before {
+  background: linear-gradient(90deg, transparent 0%, rgba(71, 168, 141, 0.25) 50%, transparent 100%);
+}
+
+/* Decorative ambient orbs: softer + cooler in dark mode */
+.dark.ui-v2 .bg-\[\#FAFBFC\]::before,
+.dark.ui-v2 .bg-\[\#FAFBFC\]::after {
+  opacity: 0.45;
+  filter: blur(50px);
+}
+
 /* === GOOGLE-STYLE POP ENHANCEMENTS === */
 /* Using ORIGINAL brand colors with pop techniques */
 
@@ -1991,4 +2102,174 @@ button.bg-corporate-navy:hover {
 [class*="rounded-xl"][class*="border"][class*="bg-white"],
 [class*="rounded-2xl"][class*="border"][class*="bg-white"] {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* ===========================================================================
+ * UI v2 — DARK MODE OVERRIDES
+ * The ui-v2 layer hardcodes #FFFFFF on most surfaces with !important, which
+ * overrides every dark:bg-* utility downstream. This block restores dark
+ * surfaces when <html> has the .dark class.
+ * ======================================================================= */
+
+/* Inner main panel — was forced #FFFFFF.
+ * IMPORTANT: The light-mode rule at line ~1176 uses
+ * `.ui-v2 .bg-[#FAFBFC]:not(.min-h-full):not(.min-h-screen)` which has
+ * specificity (0,4,0). The plain `.dark .ui-v2 .bg-[#FAFBFC]` form is
+ * only (0,3,0) and LOSES to it, leaving the panel forced white in dark
+ * mode (visible as a white footer band at the bottom of every page).
+ * We split into two rules below so dark-mode specificity meets/exceeds
+ * the light-mode rule for both the outer panel and the inner page wrappers. */
+
+/* Outer panel: match the `:not(.min-h-full):not(.min-h-screen)` specificity.
+ * Selector below is (0,5,0) which beats the light (0,4,0) override. */
+.dark.ui-v2 .bg-\[\#FAFBFC\]:not(.min-h-full):not(.min-h-screen),
+.dark .ui-v2 .bg-\[\#FAFBFC\]:not(.min-h-full):not(.min-h-screen) {
+  background: #0B1220 !important;
+  box-shadow:
+    0 50px 100px -30px rgba(0, 0, 0, 0.7),
+    0 20px 40px -20px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Inner page wrappers (PageLayout / screen-level min-h-screen divs).
+ * Light rule sets these to `transparent` (0,3,0); we need >= (0,3,0) and
+ * a later source position. Selector below is (0,4,0). */
+.dark.ui-v2 .bg-\[\#FAFBFC\].min-h-full,
+.dark.ui-v2 .bg-\[\#FAFBFC\].min-h-screen,
+.dark .ui-v2 .bg-\[\#FAFBFC\].min-h-full,
+.dark .ui-v2 .bg-\[\#FAFBFC\].min-h-screen {
+  background: #0F172A !important;
+  box-shadow: none !important;
+}
+
+/* Card surfaces — was forced #FFFFFF + light border */
+.dark .ui-v2 .bg-white:not(button):not(input):not(select):not(textarea):not(.no-glass),
+.dark .ui-v2 .shadow-sm:not(button):not(input):not(.no-glass),
+.dark .ui-v2 .shadow-md:not(button):not(input):not(.no-glass),
+.dark .ui-v2 .shadow-lg:not(button):not(input):not(.no-glass),
+.dark .ui-v2 .shadow-xl:not(button):not(input):not(.no-glass),
+.dark .ui-v2 .shadow-2xl:not(button):not(input):not(.no-glass),
+.dark .ui-v2 .shadow-card:not(.no-glass),
+.dark .ui-v2 .shadow-elevated:not(.no-glass),
+.dark .ui-v2 .shadow-pop:not(.no-glass) {
+  background-color: #111827 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 2px 4px -1px rgba(0, 0, 0, 0.4),
+    0 8px 16px -4px rgba(0, 0, 0, 0.5),
+    0 24px 48px -12px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Hover lift in dark — keep the teal ring but darker shadow */
+.dark .ui-v2 .hover\:shadow-md:hover,
+.dark .ui-v2 .hover\:shadow-lg:hover,
+.dark .ui-v2 .hover\:shadow-xl:hover,
+.dark .ui-v2 .hover\:shadow-card-hover:hover,
+.dark .ui-v2 .hover\:shadow-pop:hover,
+.dark .ui-v2 [class*="hover:shadow"]:hover {
+  border-color: rgba(71, 168, 141, 0.45) !important;
+  box-shadow:
+    0 0 0 1px rgba(71, 168, 141, 0.25),
+    0 4px 8px -2px rgba(0, 0, 0, 0.5),
+    0 16px 32px -8px rgba(0, 0, 0, 0.6),
+    0 40px 80px -20px rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Border-l accent cards — gradient washes were forced to white */
+.dark .ui-v2 [class*="border-l-corporate-orange"][class*="rounded-2xl"],
+.dark .ui-v2 [class*="border-l-corporate-orange"][class*="rounded-xl"] {
+  background:
+    linear-gradient(135deg, rgba(224, 78, 27, 0.10) 0%, transparent 30%),
+    linear-gradient(180deg, #111827 0%, #111827 100%) !important;
+}
+.dark .ui-v2 [class*="border-l-corporate-teal"][class*="rounded-2xl"],
+.dark .ui-v2 [class*="border-l-corporate-teal"][class*="rounded-xl"] {
+  background:
+    linear-gradient(135deg, rgba(71, 168, 141, 0.10) 0%, transparent 30%),
+    linear-gradient(180deg, #111827 0%, #111827 100%) !important;
+}
+.dark .ui-v2 [class*="border-l-corporate-navy"][class*="rounded-2xl"],
+.dark .ui-v2 [class*="border-l-corporate-navy"][class*="rounded-xl"] {
+  background:
+    linear-gradient(135deg, rgba(0, 119, 184, 0.12) 0%, transparent 30%),
+    linear-gradient(180deg, #111827 0%, #111827 100%) !important;
+}
+
+/* Top accent line on cards — invisible on dark white-tinted line; lift it */
+.dark .ui-v2 [class*="rounded-2xl"].bg-white:not(button)::before,
+.dark .ui-v2 [class*="rounded-xl"].bg-white:not(button)::before {
+  background: linear-gradient(90deg, transparent 0%, rgba(71, 168, 141, 0.6) 50%, transparent 100%);
+}
+
+/* Sidebar right edge */
+.dark .ui-v2 nav[aria-label="Main navigation"] {
+  border-right-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Inputs — light borders/bg unreadable on dark */
+.dark .ui-v2 input[type="text"],
+.dark .ui-v2 input[type="email"],
+.dark .ui-v2 input[type="password"],
+.dark .ui-v2 input[type="search"],
+.dark .ui-v2 input[type="tel"],
+.dark .ui-v2 input[type="number"],
+.dark .ui-v2 textarea,
+.dark .ui-v2 select {
+  background-color: #0F172A !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #E2E8F0 !important;
+}
+.dark .ui-v2 input::placeholder,
+.dark .ui-v2 textarea::placeholder {
+  color: rgba(226, 232, 240, 0.4) !important;
+}
+.dark .ui-v2 input:focus,
+.dark .ui-v2 textarea:focus,
+.dark .ui-v2 select:focus {
+  border-color: #47A88D !important;
+  box-shadow: 0 0 0 4px rgba(71, 168, 141, 0.25) !important;
+}
+
+/* Atmosphere orbs — turn down opacity so they don't glow through dark cards */
+.dark .ui-v2 .bg-\[\#FAFBFC\]::before {
+  background: radial-gradient(circle, rgba(71, 168, 141, 0.10) 0%, transparent 70%);
+}
+.dark .ui-v2 .bg-\[\#FAFBFC\]::after {
+  background: radial-gradient(circle, rgba(224, 78, 27, 0.04) 0%, transparent 55%);
+}
+
+/* Icon bubbles — dim the tints in dark so they don't blow out */
+.dark .ui-v2 .bg-green-100,
+.dark .ui-v2 .bg-green-50 {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.18) 0%, rgba(34, 197, 94, 0.28) 100%) !important;
+  box-shadow: 0 4px 12px -4px rgba(34, 197, 94, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.08) !important;
+}
+.dark .ui-v2 .bg-corporate-orange\/10,
+.dark .ui-v2 .bg-corporate-orange\/20 {
+  background: linear-gradient(135deg, rgba(224, 78, 27, 0.20) 0%, rgba(224, 78, 27, 0.30) 100%) !important;
+  box-shadow: 0 4px 12px -4px rgba(224, 78, 27, 0.30), inset 0 1px 0 0 rgba(255, 255, 255, 0.08) !important;
+}
+.dark .ui-v2 .bg-corporate-teal\/10,
+.dark .ui-v2 .bg-corporate-teal\/20 {
+  background: linear-gradient(135deg, rgba(71, 168, 141, 0.20) 0%, rgba(71, 168, 141, 0.30) 100%) !important;
+  box-shadow: 0 4px 12px -4px rgba(71, 168, 141, 0.30), inset 0 1px 0 0 rgba(255, 255, 255, 0.08) !important;
+}
+.dark .ui-v2 .bg-corporate-navy\/10,
+.dark .ui-v2 .bg-corporate-navy\/20 {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.16) 0%, rgba(56, 189, 248, 0.24) 100%) !important;
+  box-shadow: 0 4px 12px -4px rgba(56, 189, 248, 0.30), inset 0 1px 0 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+/* v2-hero opt-in surface */
+.dark .ui-v2 .v2-hero {
+  background: #111827;
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.04),
+    0 24px 48px -12px rgba(0, 0, 0, 0.6);
+}
+
+/* Modal scrim — already dark, just deepen */
+.dark .ui-v2 .bg-black\/50 {
+  background-color: rgba(0, 0, 0, 0.7) !important;
 }

@@ -1,14 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Calendar, Megaphone, Info, AlertTriangle, CheckCircle, X, ExternalLink } from 'lucide-react';
+import { Bell, Calendar, Megaphone, Info, AlertTriangle, CheckCircle, X, ExternalLink, ArrowRight } from 'lucide-react';
 import { Card } from '../ui';
 import { useAppServices } from '../../services/useAppServices';
+import { useDailyPlan, phaseKey } from '../../hooks/useDailyPlan';
+import { useSafeNavigation } from '../../providers/NavigationProvider';
 import { collection, query, where, orderBy, limit, onSnapshot, doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import KickoffNotifications from './KickoffNotifications';
 
 const NotificationsWidget = () => {
   const { db, user } = useAppServices();
+  const { currentPhase } = useDailyPlan();
+  const userPhaseKey = phaseKey(currentPhase);
+  const nav = useSafeNavigation();
+  const navigate = nav?.navigate;
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dismissedIds, setDismissedIds] = useState([]);
+  const [kickoffCount, setKickoffCount] = useState(0);
 
   // Fetch active announcements
   useEffect(() => {
@@ -49,7 +57,11 @@ const NotificationsWidget = () => {
           const userMatch = hasUserTarget && userId && data.targetUserIds.includes(userId);
           if (!cohortMatch && !userMatch) return;
         }
-        
+
+        // Phase targeting (AND with cohort/user filter above). Missing
+        // targetPhase = broadcast to all phases.
+        if (data.targetPhase && data.targetPhase !== userPhaseKey) return;
+
         items.push({
           id: docSnap.id,
           ...data,
@@ -64,7 +76,7 @@ const NotificationsWidget = () => {
     });
 
     return () => unsubscribe();
-  }, [db, user?.cohortId, user?.uid]);
+  }, [db, user?.cohortId, user?.uid, userPhaseKey]);
 
   // Load dismissed announcements from user doc
   useEffect(() => {
@@ -145,83 +157,113 @@ const NotificationsWidget = () => {
   };
 
   return (
-    <Card className="shadow-pop bg-white dark:bg-slate-800 border-l-4 border-l-corporate-orange relative overflow-hidden">
-      <div className="p-5 sm:p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-corporate-orange/10 flex items-center justify-center text-corporate-orange">
-            <Bell size={20} />
-          </div>
-          <div>
-            <h3 className="font-semibold text-slate-800 dark:text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-              Notifications
-            </h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Updates from your trainers</p>
-          </div>
-        </div>
+    <Card className="shadow-pop bg-white dark:bg-slate-800 border-l-4 border-l-corporate-orange relative overflow-hidden p-4 sm:p-5">
+      <header className="flex items-center gap-2 mb-3">
+        <Bell className="w-5 h-5 text-corporate-orange flex-shrink-0" aria-hidden="true" />
+        <h2 className="text-base font-semibold text-corporate-navy dark:text-white">
+          Notifications
+        </h2>
+      </header>
 
-        <div className="space-y-3">
-          {loading ? (
-            <div className="flex items-center justify-center py-4">
-              <div className="animate-pulse flex items-center gap-2 text-slate-400">
-                <div className="w-4 h-4 bg-slate-200 dark:bg-slate-700 rounded"></div>
-                <div className="h-3 w-32 bg-slate-200 dark:bg-slate-700 rounded"></div>
-              </div>
+      <div className="space-y-3">
+        <KickoffNotifications onCountChange={setKickoffCount} />
+        {loading ? (
+          <div className="flex items-center justify-center py-4">
+            <div className="animate-pulse flex items-center gap-2 text-slate-400">
+              <div className="w-4 h-4 bg-slate-200 dark:bg-slate-700 rounded"></div>
+              <div className="h-3 w-32 bg-slate-200 dark:bg-slate-700 rounded"></div>
             </div>
-          ) : visibleAnnouncements.length === 0 ? (
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-100 dark:border-slate-700">
-              <div className="mt-0.5 text-slate-400">
-                <Calendar size={16} />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">No notifications</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">You're all caught up!</p>
-              </div>
+          </div>
+        ) : visibleAnnouncements.length === 0 && kickoffCount === 0 ? (
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-100 dark:border-slate-700">
+            <div className="mt-0.5 text-slate-400">
+              <Calendar size={16} />
             </div>
-          ) : (
-            visibleAnnouncements.map((announcement) => {
-              const TypeIcon = getTypeIcon(announcement.type);
-              const colors = getTypeColors(announcement.type);
-              
-              return (
-                <div 
-                  key={announcement.id}
-                  className={`relative p-3 rounded-lg border ${colors.bg} ${colors.border}`}
-                >
-                  {announcement.dismissible && (
-                    <button 
-                      onClick={() => handleDismiss(announcement.id)}
-                      className="absolute top-2 right-2 p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-                      title="Dismiss"
-                    >
-                      <X size={14} className="text-slate-400" />
-                    </button>
-                  )}
-                  
-                  <div className="flex items-start gap-3 pr-6">
-                    <div className={`mt-0.5 ${colors.icon}`}>
-                      <TypeIcon size={16} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium ${colors.text}`}>
-                        {announcement.title}
+            <div>
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-300">No notifications</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">You&apos;re all caught up!</p>
+            </div>
+          </div>
+        ) : (
+          visibleAnnouncements.map((announcement) => {
+            const TypeIcon = getTypeIcon(announcement.type);
+            const colors = getTypeColors(announcement.type);
+
+            return (
+              <div
+                key={announcement.id}
+                className={`relative p-3 rounded-lg border ${colors.bg} ${colors.border}`}
+              >
+                {announcement.dismissible && (
+                  <button
+                    onClick={() => handleDismiss(announcement.id)}
+                    className="absolute top-2 right-2 p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                    title="Dismiss"
+                    aria-label={`Dismiss notification: ${announcement.title || 'announcement'}`}
+                  >
+                    <X size={14} className="text-slate-500 dark:text-slate-300" aria-hidden="true" />
+                  </button>
+                )}
+
+                <div className="flex items-start gap-3 pr-6">
+                  <div className={`mt-0.5 ${colors.icon}`}>
+                    <TypeIcon size={16} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${colors.text}`}>
+                      {announcement.title}
+                    </p>
+                    {announcement.message && (
+                      <p className="text-xs text-slate-700 dark:text-slate-300 mt-1">
+                        {announcement.message}
                       </p>
-                      {announcement.message && (
-                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                          {announcement.message}
-                        </p>
-                      )}
-                      {announcement.link && (
-                        <a 
-                          href={announcement.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                    )}
+                    {(() => {
+                      // Resolve link: prefer structured linkTarget; fall back to
+                      // legacy `link` string (always treated as external URL).
+                      const lt = announcement.linkTarget;
+                      const legacy = typeof announcement.link === 'string' ? announcement.link.trim() : '';
+                      const kind = lt?.kind || (legacy ? 'external' : null);
+                      if (!kind) return null;
+                      const label = lt?.label || 'Learn more';
+                      if (kind === 'external') {
+                        const url = lt?.url || legacy;
+                        if (!url) return null;
+                        return (
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-corporate-teal-ink hover:underline mt-2"
+                          >
+                            {label} <ExternalLink size={12} />
+                          </a>
+                        );
+                      }
+                      // Internal nav (screen | content | event)
+                      const handleInternal = () => {
+                        if (!navigate) return;
+                        if (kind === 'screen' && lt.screen) {
+                          const params = lt.targetId ? { targetId: lt.targetId } : {};
+                          navigate(lt.screen, params);
+                        } else if (kind === 'content' && lt.targetId) {
+                          navigate('library', { contentItemId: lt.targetId });
+                        } else if (kind === 'event' && lt.targetId) {
+                          navigate('community-hub', { sessionId: lt.targetId });
+                        }
+                      };
+                      return (
+                        <button
+                          type="button"
+                          onClick={handleInternal}
                           className="inline-flex items-center gap-1 text-xs text-corporate-teal-ink hover:underline mt-2"
                         >
-                          Learn more <ExternalLink size={12} />
-                        </a>
-                      )}
+                          {label} <ArrowRight size={12} />
+                        </button>
+                      );
+                    })()}
                       {announcement.createdAt && (
-                        <p className="text-[10px] text-slate-400 mt-1.5">
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1.5">
                           {new Date(announcement.createdAt).toLocaleDateString('en-US', { 
                             month: 'short', 
                             day: 'numeric'
@@ -235,9 +277,8 @@ const NotificationsWidget = () => {
             })
           )}
         </div>
-      </div>
     </Card>
   );
 };
 
-export default NotificationsWidget;
+export default React.memo(NotificationsWidget);

@@ -17,10 +17,13 @@ import {
 import {
   COACHING_SESSIONS_COLLECTION,
   COACHING_REGISTRATIONS_COLLECTION,
+  COACHING_WAITLIST_COLLECTION,
   SESSION_STATUS,
-  REGISTRATION_STATUS
+  REGISTRATION_STATUS,
+  WAITLIST_STATUS,
 } from '../../data/Constants';
 import { generateFacilitatorCalendarUrl } from '../../services/calendarUtils';
+import { promoteFromWaitlist as promoteFromWaitlistService } from '../../services/communityService';
 
 // ============================================
 // SESSION TYPE CONFIG
@@ -110,7 +113,7 @@ const isUpcoming = (dateString) => {
 // ============================================
 // SESSION CARD COMPONENT
 // ============================================
-const SessionCard = ({ session, registrations, expanded, onToggle }) => {
+const SessionCard = ({ session, registrations, waitlist, expanded, onToggle, onPromote }) => {
   const typeConfig = SESSION_TYPE_CONFIG[session.sessionType] || SESSION_TYPE_CONFIG.workshop;
   const maxAttendees = session.maxAttendees || getDefaultMaxAttendees(session.sessionType);
   const registeredCount = registrations.filter(r => 
@@ -264,6 +267,46 @@ const SessionCard = ({ session, registrations, expanded, onToggle }) => {
                 ))}
             </div>
           )}
+
+          {/* Waitlist (May 2026) */}
+          {waitlist && waitlist.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <h4 className="font-medium text-sm text-slate-700 dark:text-slate-200 mb-2 inline-flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[11px] font-semibold uppercase tracking-wider">
+                  Waitlist ({waitlist.length})
+                </span>
+              </h4>
+              <div className="grid gap-2">
+                {waitlist.map((entry, idx) => (
+                  <div
+                    key={entry.id}
+                    className="flex items-center justify-between p-2 bg-white dark:bg-slate-700 rounded-lg border border-amber-200 dark:border-amber-700"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 flex items-center justify-center text-xs font-bold">
+                        {idx + 1}
+                      </div>
+                      <div>
+                        <div className="font-medium text-sm text-slate-700 dark:text-slate-200">
+                          {entry.userName || entry.userEmail?.split('@')[0] || 'Unknown'}
+                        </div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                          {entry.userEmail}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onPromote?.(entry)}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-corporate-teal text-white hover:bg-teal-700 transition-colors"
+                    >
+                      Promote to registered
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -274,14 +317,31 @@ const SessionCard = ({ session, registrations, expanded, onToggle }) => {
 // MAIN COMPONENT
 // ============================================
 const TrainerSessionsPanel = () => {
-  const { db } = useAppServices();
+  const { db, user } = useAppServices();
+  const trainerEmail = (user?.email || '').toLowerCase();
+  const trainerDisplayName = user?.displayName || '';
   const [loading, setLoading] = useState(true);
   const [sessions, setSessions] = useState([]);
   const [registrationsBySession, setRegistrationsBySession] = useState({});
+  const [waitlistBySession, setWaitlistBySession] = useState({});
   const [expandedSession, setExpandedSession] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [view, setView] = useState('with-attendees'); // 'with-attendees', 'open-sessions', 'all'
+  const [scope, setScope] = useState('mine'); // 'mine' | 'all-trainers'
   const [refreshing, setRefreshing] = useState(false);
+
+  // Identify whether a session belongs to the current trainer.
+  // Primary key: coachEmail (case-insensitive). Fallback: coach display name match
+  // for legacy/seeded sessions that only have the display-name field.
+  const isMine = useCallback((session) => {
+    if (!session) return false;
+    const sCoachEmail = (session.coachEmail || '').toLowerCase();
+    if (sCoachEmail && trainerEmail) return sCoachEmail === trainerEmail;
+    const sCoach = (session.coach || '').trim().toLowerCase();
+    const myFirstName = trainerDisplayName.trim().split(/\s+/)[0]?.toLowerCase() || '';
+    if (sCoach && myFirstName && sCoach === myFirstName) return true;
+    return false;
+  }, [trainerEmail, trainerDisplayName]);
 
   // Fetch sessions and registrations
   const fetchData = useCallback(async () => {
@@ -309,9 +369,29 @@ const TrainerSessionsPanel = () => {
         }
         regsBySession[reg.sessionId].push(reg);
       });
-      
+
+      // Waitlist entries (May 2026)
+      const waitlistRef = collection(db, COACHING_WAITLIST_COLLECTION);
+      const waitlistSnap = await getDocs(waitlistRef);
+      const waitlistMap = {};
+      waitlistSnap.docs.forEach((d) => {
+        const entry = { id: d.id, ...d.data() };
+        if (entry.status !== WAITLIST_STATUS.WAITING) return;
+        if (!waitlistMap[entry.sessionId]) waitlistMap[entry.sessionId] = [];
+        waitlistMap[entry.sessionId].push(entry);
+      });
+      // Sort each waitlist FIFO by joinedAt
+      Object.keys(waitlistMap).forEach((sid) => {
+        waitlistMap[sid].sort((a, b) => {
+          const ta = a.joinedAt?.toDate?.()?.getTime?.() || 0;
+          const tb = b.joinedAt?.toDate?.()?.getTime?.() || 0;
+          return ta - tb;
+        });
+      });
+
       setSessions(sessionList);
       setRegistrationsBySession(regsBySession);
+      setWaitlistBySession(waitlistMap);
     } catch (error) {
       console.error('Error fetching sessions:', error);
     } finally {
@@ -329,10 +409,32 @@ const TrainerSessionsPanel = () => {
     fetchData();
   };
 
+  const handlePromote = useCallback(async (entry) => {
+    if (!db || !entry?.userId || !entry?.sessionId) return;
+    const confirmed = window.confirm(
+      `Promote ${entry.userName || entry.userEmail || 'this user'} from the waitlist into a confirmed registration? ` +
+      'This will bump the session capacity by one and send the standard registration confirmation.'
+    );
+    if (!confirmed) return;
+    try {
+      await promoteFromWaitlistService(db, entry.userId, entry.sessionId);
+      await fetchData();
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[TrainerSessionsPanel] promote failed', err);
+      alert(err?.message || 'Failed to promote from waitlist.');
+    }
+  }, [db, fetchData]);
+
   // Filter sessions based on view and search
   const filteredSessions = useMemo(() => {
     let result = sessions;
-    
+
+    // Filter by trainer scope first
+    if (scope === 'mine') {
+      result = result.filter(isMine);
+    }
+
     // Filter by view
     switch (view) {
       case 'with-attendees':
@@ -387,11 +489,12 @@ const TrainerSessionsPanel = () => {
     });
     
     return result;
-  }, [sessions, view, searchTerm, registrationsBySession]);
+  }, [sessions, view, searchTerm, registrationsBySession, scope, isMine]);
 
-  // Stats
+  // Stats — always reflect the current scope (mine vs all)
   const stats = useMemo(() => {
-    const upcoming = sessions.filter(s => isUpcoming(s.date));
+    const scoped = scope === 'mine' ? sessions.filter(isMine) : sessions;
+    const upcoming = scoped.filter(s => isUpcoming(s.date));
     
     // Sessions with at least 1 registered attendee
     const sessionsWithAttendees = upcoming.filter(s => {
@@ -413,17 +516,24 @@ const TrainerSessionsPanel = () => {
       return activeRegs === 0;
     });
     
-    const totalRegistrations = Object.values(registrationsBySession)
-      .flat()
+    // Total registrations across the scoped session set
+    const scopedSessionIds = new Set(scoped.map(s => s.id));
+    const totalRegistrations = Object.entries(registrationsBySession)
+      .filter(([sid]) => scopedSessionIds.has(sid))
+      .flatMap(([, regs]) => regs)
       .filter(r => r.status !== REGISTRATION_STATUS.CANCELLED).length;
-    
+
     return {
       totalUpcoming: upcoming.length,
       sessionsWithAttendees: sessionsWithAttendees.length,
       openSessions: openSessions.length,
       totalRegistrations
     };
-  }, [sessions, registrationsBySession]);
+  }, [sessions, registrationsBySession, scope, isMine]);
+
+  // Counts for the scope toggle pills
+  const mineCount = useMemo(() => sessions.filter(isMine).length, [sessions, isMine]);
+  const allCount = sessions.length;
 
   if (loading) {
     return (
@@ -436,23 +546,52 @@ const TrainerSessionsPanel = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-xl font-bold text-corporate-navy dark:text-white">
-            Session Management
+            {scope === 'mine' ? 'My Sessions' : 'All Sessions'}
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            View sessions by registration status • Click any session to see attendee details
+            {scope === 'mine'
+              ? 'Sessions you are coaching • Click any session to see attendee details'
+              : 'All trainer sessions across the platform • Click any session to see attendee details'}
           </p>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-        >
-          <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Scope toggle: Mine / All Trainers */}
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
+            <button
+              onClick={() => setScope('mine')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                scope === 'mine'
+                  ? 'bg-white dark:bg-slate-600 text-corporate-navy dark:text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-corporate-navy'
+              }`}
+            >
+              <User className="w-4 h-4 inline mr-1" />
+              Mine ({mineCount})
+            </button>
+            <button
+              onClick={() => setScope('all-trainers')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                scope === 'all-trainers'
+                  ? 'bg-white dark:bg-slate-600 text-corporate-navy dark:text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-corporate-navy'
+              }`}
+            >
+              <Users className="w-4 h-4 inline mr-1" />
+              All Trainers ({allCount})
+            </button>
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -551,14 +690,27 @@ const TrainerSessionsPanel = () => {
           <Card className="p-8 text-center">
             <CalendarDays className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <h3 className="font-medium text-slate-600 dark:text-slate-300 mb-1">
-              No Sessions Found
+              {scope === 'mine' && mineCount === 0 ? 'No sessions assigned to you' : 'No Sessions Found'}
             </h3>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              {view === 'with-attendees' 
-                ? 'No sessions have registered attendees yet.'
-                : view === 'open-sessions'
-                  ? 'All sessions have at least one registration.'
-                  : 'No sessions match your search.'}
+              {scope === 'mine' && mineCount === 0 ? (
+                <>
+                  You&rsquo;re not listed as the coach on any sessions. Switch to{' '}
+                  <button
+                    onClick={() => setScope('all-trainers')}
+                    className="underline text-corporate-teal-ink"
+                  >
+                    All Trainers
+                  </button>{' '}
+                  to see everyone&rsquo;s sessions.
+                </>
+              ) : view === 'with-attendees' ? (
+                'No sessions have registered attendees yet.'
+              ) : view === 'open-sessions' ? (
+                'All sessions have at least one registration.'
+              ) : (
+                'No sessions match your search.'
+              )}
             </p>
           </Card>
         ) : (
@@ -567,10 +719,12 @@ const TrainerSessionsPanel = () => {
               key={session.id}
               session={session}
               registrations={registrationsBySession[session.id] || []}
+              waitlist={waitlistBySession[session.id] || []}
               expanded={expandedSession === session.id}
               onToggle={() => setExpandedSession(
                 expandedSession === session.id ? null : session.id
               )}
+              onPromote={handlePromote}
             />
           ))
         )}

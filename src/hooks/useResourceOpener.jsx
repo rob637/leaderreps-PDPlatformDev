@@ -18,6 +18,7 @@
 // the hook stays decoupled from any particular item shape.
 
 import React, { useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import UniversalResourceViewer from '../components/ui/UniversalResourceViewer';
 import { VideoSeriesPlayer } from '../components/video';
@@ -31,6 +32,7 @@ const useResourceOpener = ({ completeItem, idResolver, phaseKey } = {}) => {
   const { db } = useAppServices();
   const [viewingResource, setViewingResource] = useState(null);
   const [viewingSeriesId, setViewingSeriesId] = useState(null);
+  const [viewingSeriesItem, setViewingSeriesItem] = useState(null);
   const [loadingResource, setLoadingResource] = useState(null);
 
   const markComplete = useCallback((item, extras = {}) => {
@@ -67,6 +69,7 @@ const useResourceOpener = ({ completeItem, idResolver, phaseKey } = {}) => {
     const resourceId = cleanId(item.resourceId) || cleanId(item.contentItemId);
 
     if (item.resourceType === 'video_series' && resourceId) {
+      setViewingSeriesItem(item);
       setViewingSeriesId(resourceId);
       return;
     }
@@ -156,16 +159,23 @@ const useResourceOpener = ({ completeItem, idResolver, phaseKey } = {}) => {
           onVideoComplete={handleVideoComplete}
         />
       )}
-      {viewingSeriesId && (
+      {viewingSeriesId && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="relative w-full max-w-4xl max-h-[90vh] bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden">
             <VideoSeriesPlayer
               seriesId={viewingSeriesId}
-              onClose={() => setViewingSeriesId(null)}
+              onClose={() => {
+                setViewingSeriesId(null);
+                setViewingSeriesItem(null);
+              }}
+              onComplete={() => {
+                if (viewingSeriesItem) markComplete(viewingSeriesItem);
+              }}
               showHeader={true}
             />
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

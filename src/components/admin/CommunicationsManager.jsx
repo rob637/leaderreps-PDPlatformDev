@@ -17,10 +17,9 @@ import {
 
 const CATEGORIES = [
   { id: 'invitation', label: 'Platform Invitations', icon: Mail },
-  { id: 'coaching', label: 'Coaching Sessions', icon: MessageSquare },
+  { id: 'coaching', label: 'Events', icon: MessageSquare },
   { id: 'community', label: 'Community Events', icon: Bell },
   { id: 'notification', label: 'Scheduled Notifications', icon: Bell },
-  { id: 'milestone', label: 'Milestones & Capstone', icon: CheckCircle },
   { id: 'general', label: 'General / Test', icon: Send }
 ];
 

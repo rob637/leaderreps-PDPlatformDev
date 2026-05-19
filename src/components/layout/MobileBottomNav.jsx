@@ -3,7 +3,7 @@ import React from 'react';
 import { LayoutDashboard, BookOpen, Megaphone, Zap, Calendar } from 'lucide-react';
 import { LockerIcon } from '../icons';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { useDailyPlan } from '../../hooks/useDailyPlan';
+import { useDailyPlan, isFoundationPhase as resolveIsFoundation, isAscentPhase as resolveIsAscent } from '../../hooks/useDailyPlan';
 import { useRevampFlag } from '../../hooks/useRevampFlag';
 
 const MobileBottomNav = ({ currentScreen }) => {
@@ -12,8 +12,9 @@ const MobileBottomNav = ({ currentScreen }) => {
   const revampEnabled = useRevampFlag();
 
   // Conditioning and Coaching are only available during Foundation phase (not during Prep)
-  // Available once user enters Level 1, regardless of prep completion status
-  const isFoundationPhase = currentPhase?.id === 'start' || currentPhase?.id === 'post-start';
+  // Available once user enters Level 1, regardless of prep completion status.
+  // Historical name retained: covers both Foundation and Ascent here.
+  const isFoundationPhase = resolveIsFoundation(currentPhase) || resolveIsAscent(currentPhase);
 
   // Revamp nav: 5 items in bottom bar (Locker accessed via header avatar)
   // Order: Dashboard, Events, Content, Conditioning, Ask a Trainer

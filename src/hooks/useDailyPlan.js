@@ -140,6 +140,16 @@ export const phaseKey = (phaseOrId) => {
 };
 
 /**
+ * Convenience predicates that resolve a phase object/id/key to the new
+ * canonical phase key and compare. Prefer these over hand-rolled
+ * `currentPhase?.id === 'post-start' || currentPhase?.id === 'ascent'`
+ * patterns — they handle both legacy ids and new keys in one call.
+ */
+export const isOnboardingPhase = (phaseOrId) => phaseKey(phaseOrId) === PHASE_KEYS.ONBOARDING;
+export const isFoundationPhase = (phaseOrId) => phaseKey(phaseOrId) === PHASE_KEYS.FOUNDATION;
+export const isAscentPhase = (phaseOrId) => phaseKey(phaseOrId) === PHASE_KEYS.ASCENT;
+
+/**
  * Determine whether a user has been approved to enter Ascent.
  * Three-phase model rule: foundationCompleted is necessary but no longer sufficient —
  * an explicit trainer approval (ascentApproved) is required.
@@ -1037,55 +1047,75 @@ export const useDailyPlan = () => {
     return diffDays;
   }, [userState.startDate, cohortData?.startDate, cohortData?.timezone, simulatedNow]);
 
-  // 4. Map to DB Day Number and get Phase Info
+  // 4. Resolve Current Phase (FLAG-DRIVEN, three-phase model)
+  //
+  // Phase is determined by the user record only — NOT by calendar/days/weeks.
+  // Calendar-based dbDay is still computed for legacy callers that show
+  // "Day N" / Prep visit counts, but it does NOT influence the phase decision.
+  //
+  // Resolution order:
+  //   1. Onboarding   — user has not yet started (cohort start in the future
+  //                     OR explicit user.currentPhase === 'onboarding')
+  //   2. Ascent       — isAscentApproved(user) === true
+  //                     (foundationCompleted && ascentApproved, or legacy graduated)
+  //                     OR explicit user.currentPhase === 'ascent'
+  //   3. Foundation   — DEFAULT for everyone else (no day/week math anywhere)
   const { dbDayNumber, currentPhase, phaseDayNumber } = useMemo(() => {
-    // Default to calendar-based calculation
+    // Calendar dbDay is informational only (used by Prep visit counter and
+    // legacy "Day N" labels). It does NOT pick the phase.
     let dbDay = getDbDayNumber(daysFromStart);
-    
-    // OVERRIDE FOR PREP PHASE (12/18/25):
-    // Prep Phase is now LOGIN-DRIVEN (Visit Count), not Calendar-Driven.
-    // If we are in the calendar window for Prep Phase (daysFromStart < 0),
-    // we use the journeyDay (visit count) to determine which content to show.
     if (daysFromStart < 0) {
-      // Use journeyDay, but cap at 14 (end of Prep Phase content)
-      // This ensures that on the 15th visit (or more), they still see the last Prep Day content
-      // until the actual Start Date arrives.
       dbDay = Math.min(journeyDay, 14);
-      
-      console.log('[useDailyPlan] Using Visit-Based Prep Day:', {
-        calendarDaysFromStart: daysFromStart,
-        visitCount: journeyDay,
-        assignedDbDay: dbDay
-      });
     }
 
-    let phase = getPhaseFromDbDay(dbDay);
-    let phaseDay = getPhaseDayNumber(dbDay);
+    // Default → Foundation (per product: flags are source of truth, fallback = Foundation)
+    let phase = PHASES.START;
 
-    // FOUNDATION COMPLETION OVERRIDE:
-    // Three-phase model: a user enters Ascent only when isAscentApproved(user) is true,
-    // which requires foundationCompleted + an explicit trainer approval (ascentApproved),
-    // OR the legacy `graduated` flag for users from the old milestone-based system.
-    if (isAscentApproved(user)) {
+    // Explicit override on the user record wins over derived flags
+    const explicit = phaseKey(user?.currentPhase);
+
+    if (explicit === PHASE_KEYS.ONBOARDING || (daysFromStart < 0 && !explicit)) {
+      // Onboarding: explicit, OR cohort hasn't started yet and no explicit override
+      phase = PHASES.PRE_START;
+    } else if (explicit === PHASE_KEYS.ASCENT || isAscentApproved(user)) {
       phase = PHASES.POST_START;
-      // Use day 71 (start of Ascent) as the effective dbDay so phase-day
-      // calculations still produce a sensible "Ascent Day 1+"
-      const effectiveDbDay = Math.max(dbDay, PHASES.POST_START.dbDayStart);
-      phaseDay = getPhaseDayNumber(effectiveDbDay);
-      dbDay = effectiveDbDay;
+    } else {
+      // explicit === 'foundation' OR no flags set → Foundation
+      phase = PHASES.START;
     }
 
-    console.log('[useDailyPlan] Phase Info:', {
-      daysFromStart,
-      dbDayNumber: dbDay,
+    // phaseDay is a label aid only — anchor it to the start of each phase.
+    let phaseDay;
+    if (phase === PHASES.PRE_START) {
+      phaseDay = Math.max(1, Math.min(journeyDay, 14));
+    } else if (phase === PHASES.START) {
+      // Day 1 of Foundation by default; if calendar already past start, show calendar day
+      phaseDay = daysFromStart >= 0 ? Math.max(1, daysFromStart + 1) : 1;
+    } else {
+      // Ascent: day 1 of Ascent by default
+      phaseDay = daysFromStart > 55 ? daysFromStart - 55 : 1;
+    }
+
+    console.log('[useDailyPlan] Phase Info (flag-driven):', {
       phase: phase.name,
       phaseDayNumber: phaseDay,
-      isVisitBased: daysFromStart < 0,
-      foundationCompleted: !!(user?.foundationCompleted || user?.graduated)
+      dbDayNumber: dbDay,
+      explicitPhase: user?.currentPhase || null,
+      foundationCompleted: !!user?.foundationCompleted,
+      ascentApproved: !!user?.ascentApproved,
+      graduated: !!user?.graduated,
+      daysFromStart,
     });
 
     return { dbDayNumber: dbDay, currentPhase: phase, phaseDayNumber: phaseDay };
-  }, [daysFromStart, journeyDay, user?.foundationCompleted, user?.graduated]);
+  }, [
+    daysFromStart,
+    journeyDay,
+    user?.currentPhase,
+    user?.foundationCompleted,
+    user?.ascentApproved,
+    user?.graduated,
+  ]);
 
   // 5. Get Current Day Data, Missed Weeks & Unlocked Content
   const { currentDayData, missedDays, missedWeeks, unlockedContentIds, unlockedResources, prepPhaseInfo } = useMemo(() => {
