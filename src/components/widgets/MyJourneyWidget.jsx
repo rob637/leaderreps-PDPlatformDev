@@ -1,10 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  Compass, Calendar, User, Users, Rocket, 
-  Clock, ChevronRight, Shield, Info, Zap, UserCog
-} from 'lucide-react';
+import { Compass, Calendar, Users, Shield, Info, Zap } from 'lucide-react';
 import { Card } from '../ui';
-import { useDailyPlan, PHASES } from '../../hooks/useDailyPlan';
+import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { useDevPlan } from '../../hooks/useDevPlan';
 import { timeService } from '../../services/timeService';
 import FacilitatorProfileModal from './FacilitatorProfileModal';
@@ -32,11 +29,10 @@ const LEVEL_NAMES = {
  * @param {boolean} showPrepProgress - Whether to show prep progress section (default true)
  */
 const MyJourneyWidget = ({ showPrepProgress = true }) => {
-  const { 
-    cohortData, 
-    currentPhase, 
-    phaseDayNumber, 
-    currentDayData,
+  const {
+    cohortData,
+    currentPhase,
+    phaseDayNumber,
     // journeyDay - available if needed
     daysFromStart,
     prepRequirementsComplete
@@ -115,39 +111,6 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
   // Check if time travel is active
   const isTimeTravelActive = timeService.isActive();
 
-  // Calculate days until or since start
-  const getDaysDisplay = () => {
-    if (daysFromStart < 0) {
-      const daysUntil = Math.abs(daysFromStart);
-      return {
-        label: 'Days Until Start',
-        value: daysUntil,
-        color: 'text-corporate-teal-ink',
-        bgColor: 'bg-corporate-teal/10',
-        icon: Calendar
-      };
-    }
-    if (daysFromStart === 0) {
-      return {
-        label: 'Day 1!',
-        value: '🚀',
-        color: 'text-emerald-600',
-        bgColor: 'bg-emerald-50',
-        icon: Rocket
-      };
-    }
-    return {
-      label: 'Program Day',
-      value: daysFromStart + 1,
-      color: 'text-corporate-navy',
-      bgColor: 'bg-corporate-navy/10',
-      icon: Clock
-    };
-  };
-
-  const daysDisplay = getDaysDisplay();
-  const DaysIcon = daysDisplay.icon;
-
   // Format start date
   const formatStartDate = (timestamp) => {
     if (!timestamp) return 'Not set';
@@ -173,86 +136,142 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
     });
   };
 
+  // Phase pill label/colour. Foundation/Ascent get the brand teal pill; prep
+  // stays neutral slate. Mirrors the dashboard header pill so the surfaces
+  // tell the same story.
+  const phasePill = useMemo(() => {
+    const id = currentPhase?.id;
+    if (id === 'start') return { label: 'Foundation', tone: 'teal' };
+    if (id === 'post-start') return { label: 'Ascent', tone: 'teal' };
+    if (id === 'pre-start') return { label: 'Prep', tone: 'slate' };
+    return { label: currentPhase?.displayName || 'Unknown', tone: 'slate' };
+  }, [currentPhase]);
+
+  // Program day label — same math the rest of the app uses: daysFromStart is
+  // 0 on the cohort start date, so display = daysFromStart + 1 once started.
+  // Before start we show "Starts in N day(s)".
+  const programDayText = useMemo(() => {
+    if (daysFromStart === null || daysFromStart === undefined) return null;
+    if (daysFromStart < 0) {
+      const n = Math.abs(daysFromStart);
+      return `Starts in ${n} day${n === 1 ? '' : 's'}`;
+    }
+    return `Day ${daysFromStart + 1} of program`;
+  }, [daysFromStart]);
+
   return (
-    <Card 
-      title="My Journey" 
-      icon={Compass} 
+    <Card
+      title="My Journey"
+      icon={Compass}
       accent="TEAL"
     >
-      <div className="space-y-4">
-        {/* Cohort Info */}
+      <div className="space-y-2">
+        {/* Cohort row — informational. Hidden click target on the icon for the
+            secret time-traveler unlock (5 taps) preserves the dev-only escape
+            hatch without leaking it into the UI. */}
         {cohortData ? (
-          <div className="bg-gradient-to-br from-corporate-navy/5 to-corporate-teal/5 dark:from-corporate-navy/30 dark:to-corporate-teal/20 rounded-xl p-4 border border-corporate-teal/10 dark:border-corporate-teal/30">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-1">
-                  <Users className="w-3 h-3" />
-                  <span 
-                    onClick={handleSecretClick}
-                    className="cursor-default select-none"
-                    title=""
-                  >
-                    Your Cohort
-                  </span>
-                  {/* Secret time travel indicator */}
-                  {isTimeTravelActive && (
-                    <span className="ml-1 text-[10px] text-amber-600 bg-amber-100 px-1 rounded">⚡</span>
-                  )}
-                </div>
-                <h3 className="font-bold text-corporate-navy dark:text-white text-lg">{cohortData.name}</h3>
-                {cohortData.description && (
-                  <p className="text-slate-600 dark:text-slate-300 text-sm mt-1">{cohortData.description}</p>
-                )}
-              </div>
-              <div className={`flex flex-col items-center justify-center w-16 h-16 rounded-xl ${daysDisplay.bgColor}`}>
-                <span className={`text-2xl font-bold ${daysDisplay.color}`}>{daysDisplay.value}</span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400">{daysDisplay.label}</span>
+          <div className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <button
+                type="button"
+                onClick={handleSecretClick}
+                aria-label="Cohort"
+                className="w-8 h-8 rounded-full flex items-center justify-center bg-corporate-teal/10 dark:bg-corporate-teal/20 cursor-default"
+              >
+                <Users className="w-4 h-4 text-corporate-teal-ink" />
+              </button>
+              <div className="text-left min-w-0">
+                <h4 className="font-medium text-corporate-navy dark:text-white text-sm truncate">{cohortData.name}</h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                  {programDayText || 'Your cohort'}
+                </p>
               </div>
             </div>
-            
-            {/* Start Date */}
-            <div className="flex items-center gap-2 mt-3 text-sm text-slate-600 dark:text-slate-300">
-              <Calendar className="w-4 h-4 text-corporate-teal" />
-              <span>Starts: <strong>{formatStartDate(cohortData.startDate)}</strong></span>
-            </div>
-            
-            {/* Facilitator/Trainers Info - inline in cohort card */}
-            {trainers.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-600/60">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <UserCog className="w-3 h-3 text-slate-400 dark:text-slate-500" />
-                  <span className="text-xs text-slate-500 dark:text-slate-400">
-                    {trainers.length === 1 ? 'Your Trainer' : 'Your Trainers'}
-                  </span>
-                </div>
-                <div className="space-y-1">
-                  {trainers.map((trainer, idx) => (
-                    <button
-                      key={trainer.id || idx}
-                      onClick={() => handleTrainerClick(trainer)}
-                      className="w-full flex items-center gap-3 bg-transparent hover:bg-corporate-teal/5 dark:hover:bg-corporate-teal/10 rounded-lg p-2 -mx-2 transition-all group text-left"
-                    >
-                      <FacilitatorAvatar name={trainer.name} photoUrl={trainer.photoUrl} size="sm" />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-slate-800 dark:text-white group-hover:text-corporate-teal-ink transition-colors truncate text-sm">{trainer.name}</p>
-                        {trainer.title && (
-                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{trainer.title}</p>
-                        )}
-                      </div>
-                      <Info className="w-4 h-4 text-slate-300 dark:text-slate-500 group-hover:text-corporate-teal transition-colors flex-shrink-0" />
-                    </button>
-                  ))}
-                </div>
-              </div>
+            {isTimeTravelActive && (
+              <span className="text-[10px] text-amber-700 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-300 px-1.5 py-0.5 rounded">⚡ time travel</span>
             )}
           </div>
         ) : (
-          <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 text-center">
-            <Users className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
-            <p className="text-slate-500 dark:text-slate-400 text-sm">No cohort assigned yet</p>
-            <p className="text-slate-400 dark:text-slate-500 text-xs mt-1">Contact your administrator</p>
+          <div className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
+              <Users className="w-4 h-4 text-slate-400" />
+            </div>
+            <div className="text-left">
+              <h4 className="font-medium text-corporate-navy dark:text-white text-sm">No cohort assigned</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Contact your administrator</p>
+            </div>
           </div>
         )}
+
+        {/* Program Start row */}
+        {cohortData?.startDate && (
+          <div className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-corporate-teal/10 dark:bg-corporate-teal/20">
+                <Calendar className="w-4 h-4 text-corporate-teal-ink" />
+              </div>
+              <div className="text-left min-w-0">
+                <h4 className="font-medium text-corporate-navy dark:text-white text-sm">Program Start</h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                  {formatStartDate(cohortData.startDate)}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Current Phase row — pill matches dashboard header. Phase day uses
+            phaseDayNumber from useDailyPlan (e.g. Foundation Day 12, Ascent
+            Day 27). */}
+        <div className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-corporate-teal/10 dark:bg-corporate-teal/20">
+              <Shield className="w-4 h-4 text-corporate-teal-ink" />
+            </div>
+            <div className="text-left min-w-0">
+              <h4 className="font-medium text-corporate-navy dark:text-white text-sm">Current Phase</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                {phaseDayNumber ? `Day ${phaseDayNumber}` : '—'}
+                {currentLevelName ? ` · ${currentLevelName}` : ''}
+              </p>
+            </div>
+          </div>
+          <span
+            className={
+              phasePill.tone === 'teal'
+                ? 'inline-flex items-center px-2.5 py-1 rounded-full bg-corporate-teal/15 text-[#1F6B59] dark:text-corporate-teal-ink text-[11px] font-semibold uppercase tracking-wider'
+                : 'inline-flex items-center px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px] font-semibold uppercase tracking-wider'
+            }
+          >
+            {phasePill.label}
+          </span>
+        </div>
+
+        {/* Trainer row(s) — clickable, opens FacilitatorProfileModal. Same
+            row chrome as the others, with the avatar replacing the icon
+            disc. */}
+        {trainers.map((trainer, idx) => (
+          <button
+            key={trainer.id || idx}
+            type="button"
+            onClick={() => handleTrainerClick(trainer)}
+            className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-corporate-teal/30 transition-colors text-left"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <FacilitatorAvatar name={trainer.name} photoUrl={trainer.photoUrl} size="sm" />
+              <div className="text-left min-w-0">
+                <h4 className="font-medium text-corporate-navy dark:text-white text-sm truncate">{trainer.name}</h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                  {trainer.title || (trainers.length === 1 ? 'Your Trainer' : 'Your Trainer')}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 text-corporate-teal-ink">
+              <span className="text-xs font-medium">View</span>
+              <Info className="w-3.5 h-3.5" />
+            </div>
+          </button>
+        ))}
 
         {/* Prep Progress (only in Prep Phase) - COMPLETION-BASED */}
         {showPrepProgress && currentPhase?.id === 'pre-start' && prepRequirementsComplete && (
@@ -344,35 +363,6 @@ const MyJourneyWidget = ({ showPrepProgress = true }) => {
             setSelectedTrainer(null);
           }}
         />
-
-        {/* Current Phase */}
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-xl px-4 py-3 border border-slate-200 dark:border-slate-700">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-              <span className="text-sm text-slate-600 dark:text-slate-300">Current Phase</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-corporate-navy dark:text-white">
-                {currentPhase?.displayName || 'Unknown'}
-              </span>
-              {phaseDayNumber && (
-                <span className="text-xs text-slate-500 dark:text-slate-400">
-                  (Day {phaseDayNumber})
-                </span>
-              )}
-            </div>
-          </div>
-          {/* Current Focus - show current level name to match Dev Plan journey */}
-          {currentLevelName && (
-            <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-              <span className="text-xs text-slate-500 dark:text-slate-400">Current Focus</span>
-              <span className="text-xs font-medium text-corporate-teal-ink">
-                {currentLevelName}
-              </span>
-            </div>
-          )}
-        </div>
 
         {/* Secret Time Traveler Panel */}
         {showTimeTraveler && (
