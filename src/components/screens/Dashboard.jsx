@@ -59,8 +59,7 @@ import ConditioningWidget from '../widgets/ConditioningWidget';
 import NotificationsWidget from '../widgets/NotificationsWidget';
 import KickoffProgressCard from '../widgets/KickoffProgressCard';
 import ConditioningTutorialWidget from '../widgets/ConditioningTutorialWidget';
-import MyEventsWidget from '../widgets/MyEventsWidget';
-import UpcomingEventsWidget from '../widgets/UpcomingEventsWidget';
+import EventsWidget from '../widgets/EventsWidget';
 import AskTrainerWidget from '../widgets/AskTrainerWidget';
 // KickoffToDoWidget retired May 2026 — kickoff onboarding now flows through
 // NotificationsWidget (admin-composed announcements with internal links).
@@ -1052,8 +1051,7 @@ const Dashboard = () => {
               Notifications. It self-hides when there's nothing pending. */}
               <KickoffProgressCard />
               <NotificationsWidget />
-              <MyEventsWidget />
-              <UpcomingEventsWidget />
+              <EventsWidget />
               <AskTrainerWidget />
             </Stagger>
           ) : (
