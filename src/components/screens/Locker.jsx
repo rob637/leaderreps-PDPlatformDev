@@ -7,7 +7,7 @@ import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../shared/WidgetRenderer';
 import { useNotifications } from '../../providers/NotificationProvider';
 import { Settings, Clock, User, Bell, AlertTriangle } from 'lucide-react';
-import MyJourneyWidget from '../widgets/MyJourneyWidget';
+import YourCohortWidget from '../widgets/YourCohortWidget';
 import MySettingsWidget from '../widgets/MySettingsWidget';
 // May-11 #4: ConditioningHistoryWidget retired from Locker. PracticeRepsHistoryWidget
 // now uses the same week-grouped collapsible UI. Widget file kept dormant for
@@ -208,9 +208,9 @@ const Locker = () => {
         <MySettingsWidget />
       </div>
 
-      {/* My Journey Widget - shows cohort and journey info, hide prep progress (shown on Dashboard) */}
+      {/* Your Cohort Widget - cohort name + trainer contact */}
       <div className="mb-6">
-        <MyJourneyWidget showPrepProgress={false} />
+        <YourCohortWidget />
       </div>
 
       <WidgetRenderer widgetId="locker-controller" scope={scope} />

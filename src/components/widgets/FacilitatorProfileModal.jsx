@@ -41,7 +41,7 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with gradient */}
-        <div className="relative bg-gradient-to-br from-corporate-navy via-corporate-navy/95 to-corporate-teal pt-8 pb-16 px-6">
+        <div className="relative bg-gradient-to-br from-corporate-navy via-corporate-navy/95 to-corporate-teal pt-8 pb-20 px-6">
           {/* Close button */}
           <button 
             onClick={onClose}
@@ -59,10 +59,10 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
         </div>
 
         {/* Profile Card - overlaps header */}
-        <div className="relative -mt-12 px-6">
+        <div className="relative -mt-10 px-6">
           <div className="bg-white dark:bg-slate-700 rounded-xl shadow-lg p-6 border border-slate-100 dark:border-slate-600">
             {/* Avatar */}
-            <div className="flex justify-center -mt-14 mb-4">
+            <div className="flex justify-center -mt-12 mb-4">
               <FacilitatorAvatar name={name} photoUrl={photoUrl} size="lg" />
             </div>
 
