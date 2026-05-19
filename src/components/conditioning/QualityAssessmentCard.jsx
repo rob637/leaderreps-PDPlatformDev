@@ -1,4 +1,10 @@
 // src/components/conditioning/QualityAssessmentCard.jsx
+//
+// @deprecated 2026-05-19 — Legacy Conditioning rubric. The active engine is
+// functions/conditioning/* surfaced via ConditioningLight.jsx and
+// PracticeRepsHistoryWidget.jsx. Do not extend this file; changes belong in
+// the new engine. Slated for removal once the v2 rollout is complete.
+//
 // Phase 2: Displays quality assessment results after evidence submission
 // V3: Enhanced with scoring transparency, improvement hints, and trends
 

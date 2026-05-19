@@ -298,6 +298,11 @@ const PracticeRepsHistoryWidget = ({ helpText }) => {
                                   >
                                     {isPass ? 'Pass' : 'Not Yet'}
                                   </span>
+                                  {rep.patternKey && (
+                                    <span className="text-[10px] font-semibold uppercase tracking-wide text-corporate-orange bg-corporate-orange/10 px-1.5 py-0.5 rounded">
+                                      Tendency surfaced
+                                    </span>
+                                  )}
                                 </div>
                                 <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
                                   {formatDateTime(rep.createdAt)}

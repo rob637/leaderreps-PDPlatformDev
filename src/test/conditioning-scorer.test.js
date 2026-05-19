@@ -241,3 +241,81 @@ describe('ablation \u2014 dropping a condition lowers its score', () => {
     expect(ablated.scores.Reinforcement).toBe(full.scores.Reinforcement);
   });
 });
+
+// ---------------------------------------------------------------------------
+// V2 — stakes + courage signals
+// ---------------------------------------------------------------------------
+describe('v2 — stakes & courage signals', () => {
+  it('system instruction documents stakes inference', () => {
+    const sys = buildSystemInstruction();
+    expect(sys).toContain('STAKES');
+    expect(sys).toContain('low');
+    expect(sys).toContain('moderate');
+    expect(sys).toContain('high');
+  });
+
+  it('RED prompt includes courage signals block; others do not', () => {
+    const redPrompt = buildUserPrompt('RED', 'test');
+    const drfPrompt = buildUserPrompt('DRF', 'test');
+    expect(redPrompt).toContain('COURAGE SIGNALS');
+    expect(redPrompt).toContain('retreatedToDiscussion');
+    expect(drfPrompt).not.toContain('COURAGE SIGNALS');
+  });
+
+  it('normalizeScorerOutput clamps stakes to a valid band', () => {
+    expect(normalizeScorerOutput('DRF', { scores: {}, stakes: 'nuclear' }).stakes).toBe('moderate');
+    expect(normalizeScorerOutput('DRF', { scores: {}, stakes: 'high' }).stakes).toBe('high');
+    expect(normalizeScorerOutput('DRF', { scores: {} }).stakes).toBe('moderate');
+  });
+
+  it('normalizeScorerOutput coerces RED courage signals to booleans', () => {
+    const out = normalizeScorerOutput('RED', {
+      scores: {},
+      courageSignals: { retreatedToDiscussion: 1, softenedUnderTension: 'yes', backedOffAfterDefensiveness: false },
+    });
+    expect(out.courageSignals.retreatedToDiscussion).toBe(true);
+    expect(out.courageSignals.softenedUnderTension).toBe(true);
+    expect(out.courageSignals.backedOffAfterDefensiveness).toBe(false);
+    // Any unspecified signal defaults to false
+    expect(out.courageSignals.overCollaboration).toBe(false);
+  });
+
+  it('non-RED rrTypes get null courageSignals', () => {
+    const out = normalizeScorerOutput('DRF', { scores: {} });
+    expect(out.courageSignals).toBeNull();
+  });
+
+  it('combineRuns majority-votes stakes', () => {
+    const baseRun = (stakes) => ({
+      scores: { Behavior: 2, Impact: 2, Reinforcement: 2 },
+      evidenceNotes: {},
+      lowConfidence: false,
+      stakes,
+    });
+    expect(combineRuns('DRF', [baseRun('low'), baseRun('low'), baseRun('moderate')]).stakes).toBe('low');
+    expect(combineRuns('DRF', [baseRun('high'), baseRun('high'), baseRun('moderate')]).stakes).toBe('high');
+  });
+
+  it('combineRuns majority-votes courage signals (RED)', () => {
+    const baseRun = (sigs) => ({
+      scores: { Behavior: 2, Impact: 2, Request: 2, DirectDelivery: 2, DeliveryDiscipline: 2 },
+      evidenceNotes: {},
+      lowConfidence: false,
+      stakes: 'moderate',
+      courageSignals: sigs,
+    });
+    const out = combineRuns('RED', [
+      baseRun({ retreatedToDiscussion: true }),
+      baseRun({ retreatedToDiscussion: true }),
+      baseRun({ retreatedToDiscussion: false }),
+    ]);
+    expect(out.courageSignals.retreatedToDiscussion).toBe(true);
+
+    const out2 = combineRuns('RED', [
+      baseRun({ retreatedToDiscussion: true }),
+      baseRun({ retreatedToDiscussion: false }),
+      baseRun({ retreatedToDiscussion: false }),
+    ]);
+    expect(out2.courageSignals.retreatedToDiscussion).toBe(false);
+  });
+});

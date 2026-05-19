@@ -62,15 +62,36 @@ const RR_TYPES = [
   },
 ];
 
-const tierClass = (tier) => {
+// LABEL_TIER maps every v2 label (Specific, Concrete, Vague, Implied, ...) to
+// one of four tiers: strong | adequate | weak | missing. Kept inline so the
+// UI bundle doesn’t pull from the functions/ directory.
+const LABEL_TIER = {
+  // strong
+  Specific: 'strong', Concrete: 'strong', Explicit: 'strong', Clear: 'strong',
+  Direct: 'strong', Clean: 'strong', Anchored: 'strong', Visible: 'strong',
+  Named: 'strong', Defined: 'strong', Observable: 'strong', Confirmed: 'strong',
+  Strong: 'strong',
+  // adequate
+  Present: 'adequate', Implicit: 'adequate', Partial: 'adequate',
+  'In-group': 'adequate', Mixed: 'adequate', General: 'adequate',
+  Soft: 'adequate', Acknowledged: 'adequate', Adequate: 'adequate',
+  // weak
+  Vague: 'weak', Generic: 'weak', Async: 'weak', Hedged: 'weak',
+  Weak: 'weak', Sentiment: 'weak', Implied: 'weak', Assumed: 'weak',
+  // missing
+  Missing: 'missing', Indirect: 'missing', Avoided: 'missing',
+};
+
+const tierClass = (label) => {
+  const tier = LABEL_TIER[label] || 'missing';
   switch (tier) {
-    case 'Strong':
+    case 'strong':
       return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800';
-    case 'Adequate':
+    case 'adequate':
       return 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-800';
-    case 'Weak':
+    case 'weak':
       return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800';
-    case 'Missing':
+    case 'missing':
     default:
       return 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800';
   }
@@ -302,8 +323,13 @@ const ConditioningLight = () => {
       {verdict?.observation && (
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 mb-4">
           <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">
-            Observation
+            {verdict?.patternTriggered ? 'Leadership Tendency' : 'Observation'}
           </h2>
+          {verdict?.patternTriggered && (
+            <p className="text-xs text-corporate-orange mb-2 font-medium">
+              A pattern is showing up across your recent reps.
+            </p>
+          )}
           <p className="text-slate-900 dark:text-slate-100">{verdict.observation}</p>
         </div>
       )}

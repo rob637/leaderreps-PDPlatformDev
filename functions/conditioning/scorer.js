@@ -12,11 +12,12 @@
 
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const Anthropic = require('@anthropic-ai/sdk');
-const { getRrConfig, getConditionDefsForRr } = require('./rrConfig');
+const { getRrConfig, getConditionDefsForRr, COURAGE_SIGNALS, COURAGE_SIGNAL_HINTS, normalizeStakes, VALID_STAKES } = require('./rrConfig');
 
 // Try Gemini models in order; if one is quota-exhausted (429), fall back to
 // the next. If all Gemini models fail, fall back to Anthropic Claude.
-const SCORER_MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+// Note: gemini-1.5-flash was retired in early 2026 and now returns 404.
+const SCORER_MODELS = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-flash-latest'];
 const ANTHROPIC_MODEL = 'claude-haiku-4-5';
 const MAX_SCORER_ATTEMPTS = 2;
 const BASE_RETRY_DELAY_MS = 700;
@@ -54,10 +55,21 @@ LOW-CONFIDENCE FLAG:
   treat the rep as Invalid and ask the leader for clarification — DO NOT
   try to score in that case (still output zeros).
 
+STAKES (hidden, internal):
+  Infer a stakes band that reflects how high-leverage this interaction
+  was. This is NEVER shown to the user; it tunes coaching intensity only.
+    low      — quick appreciation, minor follow-up, routine touch.
+    moderate — standard coaching, baseline accountability moment.
+    high     — accountability breakdown, repeated issue, strategic,
+               high-visibility, behavioral standards, executive context.
+  Provide a short "stakesRationale" (one phrase, internal only).
+
 OUTPUT SCHEMA (JSON):
   {
     "scores": { "<ConditionName>": 0|1|2|3, ... },
     "lowConfidence": boolean,
+    "stakes": "low" | "moderate" | "high",
+    "stakesRationale": "short internal phrase",
     "evidenceNotes": { "<ConditionName>": "short quote or brief note", ... }
   }
 
@@ -91,6 +103,31 @@ const buildUserPrompt = (rrType, transcript) => {
     })
     .join('\n\n');
 
+  // RED-only: courage signals (Phase 4). Hidden behind-the-scenes flags
+  // that surface retreat / softening / over-collaboration patterns and
+  // force the engine into a sharpen (gap) case.
+  const courageBlock =
+    rrType === 'RED'
+      ? `\n\nCOURAGE SIGNALS (RED only, internal — boolean per signal):\n` +
+        COURAGE_SIGNALS.map(
+          (s) => `  - ${s}: ${COURAGE_SIGNAL_HINTS[s]}`
+        ).join('\n') +
+        `\n\nRULES FOR COURAGE SIGNALS:\n` +
+        `  1. DEFAULT is false for every signal. Most reps will have ALL signals false.\n` +
+        `  2. A signal fires ONLY when the transcript literally shows BOTH halves of its\n` +
+        `     definition (the triggering moment AND the leader's response).\n` +
+        `  3. If the leader was direct, named the behavior, and held the standard —\n` +
+        `     ALL signals stay false, regardless of how the conversation ended.\n` +
+        `  4. A polite, measured, or empathetic tone is NOT a courage signal.\n` +
+        `  5. A weak score on Behavior, Request, or Impact is NOT itself a courage\n` +
+        `     signal — those are already captured by the condition scores.\n` +
+        `  6. When uncertain, the signal is false.\n\n` +
+        `Add a "courageSignals" object to the JSON output with each signal as a\n` +
+        `boolean. Add a "courageEvidence" object mapping each FLAGGED signal to a\n` +
+        `short verbatim phrase from the transcript that proves BOTH halves of the\n` +
+        `definition. If you cannot produce that verbatim evidence, the signal is false.`
+      : '';
+
   return `
 RR Type: ${cfg.code} (${cfg.name})
 Rubric version: ${cfg.version || 'unversioned'}
@@ -98,6 +135,7 @@ Rubric version: ${cfg.version || 'unversioned'}
 Conditions to score (apply each anchor strictly):
 
 ${conditionBlocks}
+${courageBlock}
 
 Leader transcript:
 """
@@ -111,6 +149,9 @@ actually meet that tier's criterion. The examples are illustrative only.
 
 Set lowConfidence=true ONLY if the transcript is too short or too vague
 to contain any scorable evidence at all. Otherwise score and return JSON.
+
+Also infer "stakes" (low | moderate | high) and a short "stakesRationale"
+based on how high-leverage this interaction was (see system instruction).
 `;
 };
 
@@ -147,7 +188,35 @@ const normalizeScorerOutput = (rrType, raw) => {
       typeof rawNotes[cond] === 'string' ? rawNotes[cond] : '';
   }
   const lowConfidence = !!(raw && raw.lowConfidence);
-  return { scores, evidenceNotes, lowConfidence };
+
+  // Stakes (Phase 1)
+  const stakes = normalizeStakes(raw && raw.stakes);
+  const stakesRationale =
+    raw && typeof raw.stakesRationale === 'string' ? raw.stakesRationale : '';
+
+  // Courage signals (Phase 4 — RED only)
+  let courageSignals = null;
+  let courageEvidence = null;
+  if (rrType === 'RED') {
+    const rawCS = (raw && raw.courageSignals) || {};
+    const rawCE = (raw && raw.courageEvidence) || {};
+    courageSignals = {};
+    courageEvidence = {};
+    for (const s of COURAGE_SIGNALS) {
+      courageSignals[s] = !!rawCS[s];
+      courageEvidence[s] = typeof rawCE[s] === 'string' ? rawCE[s] : '';
+    }
+  }
+
+  return {
+    scores,
+    evidenceNotes,
+    lowConfidence,
+    stakes,
+    stakesRationale,
+    courageSignals,
+    courageEvidence,
+  };
 };
 
 /**
@@ -237,6 +306,10 @@ const scoreTranscriptOnce = async ({ rrType, transcript, apiKey, anthropicApiKey
       scores: {},
       evidenceNotes: {},
       lowConfidence: true,
+      stakes: 'moderate',
+      stakesRationale: '',
+      courageSignals: rrType === 'RED' ? Object.fromEntries(COURAGE_SIGNALS.map((s) => [s, false])) : null,
+      courageEvidence: rrType === 'RED' ? Object.fromEntries(COURAGE_SIGNALS.map((s) => [s, ''])) : null,
       rawText: text,
       rubricVersion,
     };
@@ -266,7 +339,17 @@ const median = (nums) => {
  */
 const combineRuns = (rrType, runs) => {
   if (!runs.length) {
-    return { scores: {}, evidenceNotes: {}, lowConfidence: true, rawText: '', rubricVersion: null };
+    return {
+      scores: {},
+      evidenceNotes: {},
+      lowConfidence: true,
+      stakes: 'moderate',
+      stakesRationale: '',
+      courageSignals: rrType === 'RED' ? Object.fromEntries(COURAGE_SIGNALS.map((s) => [s, false])) : null,
+      courageEvidence: rrType === 'RED' ? Object.fromEntries(COURAGE_SIGNALS.map((s) => [s, ''])) : null,
+      rawText: '',
+      rubricVersion: null,
+    };
   }
   const cfg = getRrConfig(rrType);
   const consensusScores = {};
@@ -276,8 +359,33 @@ const combineRuns = (rrType, runs) => {
   const lowConfidenceVotes = runs.filter((r) => r.lowConfidence).length;
   const lowConfidence = lowConfidenceVotes > runs.length / 2;
 
-  // Pick the run whose total absolute deviation from the median is smallest;
-  // its evidenceNotes are the most representative.
+  // Stakes consensus: majority vote, ties broken upward (high > moderate > low)
+  // so that the engine errs toward stricter coaching when the model is split.
+  const stakesCounts = { low: 0, moderate: 0, high: 0 };
+  for (const r of runs) stakesCounts[normalizeStakes(r.stakes)] += 1;
+  let consensusStakes = 'moderate';
+  let bestCount = -1;
+  for (const s of ['low', 'moderate', 'high']) {
+    if (stakesCounts[s] >= bestCount) {
+      bestCount = stakesCounts[s];
+      consensusStakes = s;
+    }
+  }
+
+  // Courage signals (RED): a signal fires if a STRICT majority of runs flagged it.
+  let consensusCourage = null;
+  let consensusCourageEvidence = null;
+  if (rrType === 'RED') {
+    consensusCourage = {};
+    consensusCourageEvidence = {};
+    for (const s of COURAGE_SIGNALS) {
+      const votes = runs.filter((r) => r.courageSignals?.[s]).length;
+      consensusCourage[s] = votes > runs.length / 2;
+      const ev = runs.find((r) => r.courageSignals?.[s] && r.courageEvidence?.[s]);
+      consensusCourageEvidence[s] = ev ? ev.courageEvidence[s] : '';
+    }
+  }
+
   let bestRun = runs[0];
   let bestDeviation = Infinity;
   for (const run of runs) {
@@ -295,6 +403,10 @@ const combineRuns = (rrType, runs) => {
     scores: consensusScores,
     evidenceNotes: bestRun.evidenceNotes || {},
     lowConfidence,
+    stakes: consensusStakes,
+    stakesRationale: bestRun.stakesRationale || '',
+    courageSignals: consensusCourage,
+    courageEvidence: consensusCourageEvidence,
     rawText: bestRun.rawText || '',
     rubricVersion: bestRun.rubricVersion || (cfg.version || null),
     samples: runs.length,

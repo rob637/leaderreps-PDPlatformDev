@@ -1,22 +1,32 @@
 // functions/conditioning/engine.js
 //
-// Universal evaluation engine for Conditioning Light reps.
+// Universal evaluation engine for Conditioning Light reps (v2).
 //
-// Strict execution order (Implementation Rules Addendum §1):
+// Strict execution order:
 //   1. Validate Rep
 //   2. Parse & Extract Evidence (caller responsibility — provided as `scores`)
-//   3. Score Conditions (0-3 each) — scores object passed in
-//   4. Apply Fail Logic (IMMEDIATE OVERRIDE)
+//   3. Score Conditions (0-3 each)
+//   4. Apply Fail Logic (IMMEDIATE OVERRIDE) — critical-condition rules
+//      ALWAYS apply regardless of stakes (Phase 6 audit invariant).
 //   5. Determine Result (Pass / Not Yet)
 //   6. Check Pattern Triggers (skipped if fail)
-//   7. Generate Output (template-based observation + question)
+//   7. Determine Mode (reinforce | sharpen | challenge | suppressed)
+//      using the hidden stakes band + courage signals (RED).
+//   8. Generate Output (template-based observation + question)
 //
 // Anti-drift defaults: stricter interpretation always wins. The engine never
 // "helps" a rep pass; it only enforces what the AI scorer extracted.
 
 'use strict';
 
-const { SCORE, SCORE_LABEL, getRrConfig } = require('./rrConfig');
+const {
+  SCORE,
+  getRrConfig,
+  getConditionLabel,
+  STAKES_MODIFIERS,
+  normalizeStakes,
+  COURAGE_SIGNALS,
+} = require('./rrConfig');
 const { detectPattern } = require('./patternDetection');
 const {
   selectTemplate,
@@ -42,7 +52,6 @@ const validateRep = ({ rrType, transcript, scores, lowConfidence }) => {
   if (!scores || typeof scores !== 'object') {
     return { valid: false, reason: 'No scores provided' };
   }
-  // Every required condition must have a numeric score 0-3
   for (const cond of cfg.conditions) {
     const s = scores[cond];
     if (typeof s !== 'number' || s < 0 || s > 3 || !Number.isInteger(s)) {
@@ -52,8 +61,6 @@ const validateRep = ({ rrType, transcript, scores, lowConfidence }) => {
       };
     }
   }
-  // Low-confidence flag from scorer makes the rep invalid (per spec §5
-  // Voice Input Confidence Rule).
   if (lowConfidence) {
     return { valid: false, reason: 'Input too vague to evaluate reliably' };
   }
@@ -61,13 +68,12 @@ const validateRep = ({ rrType, transcript, scores, lowConfidence }) => {
 };
 
 // ---------------------------------------------------------------------------
-// STEP 4 — FAIL LOGIC
+// STEP 4 — FAIL LOGIC (stakes never softens critical conditions — Phase 6)
 // ---------------------------------------------------------------------------
 
 const checkFail = (rrType, scores) => {
   const cfg = getRrConfig(rrType);
 
-  // Critical condition rule: any critical <= 1 → fail
   for (const cond of cfg.critical) {
     if ((scores[cond] ?? 0) <= SCORE.WEAK) {
       return {
@@ -78,7 +84,6 @@ const checkFail = (rrType, scores) => {
     }
   }
 
-  // RR-specific fail rules
   for (const rule of cfg.failRules) {
     const result = rule(scores);
     if (result) {
@@ -108,17 +113,28 @@ const determineResult = (rrType, scores, fail) => {
 };
 
 // ---------------------------------------------------------------------------
-// STEP 7 — OUTPUT GENERATION
+// COURAGE SIGNALS (RED only — Phase 4)
 // ---------------------------------------------------------------------------
 
-/**
- * Identify which condition has the lowest score (highest leverage gap).
- * Critical conditions take precedence over non-critical ties.
- */
+const normalizeCourageSignals = (raw) => {
+  if (!raw || typeof raw !== 'object') return {};
+  const out = {};
+  for (const k of COURAGE_SIGNALS) {
+    out[k] = !!raw[k];
+  }
+  return out;
+};
+
+const firedCourageSignals = (signals) =>
+  Object.entries(signals).filter(([, v]) => v).map(([k]) => k);
+
+// ---------------------------------------------------------------------------
+// COACHING TARGET
+// ---------------------------------------------------------------------------
+
 const findCoachingTarget = (rrType, scores) => {
   const cfg = getRrConfig(rrType);
   const entries = Object.entries(scores);
-  // Sort: critical first, then lowest score, then alphabetical
   entries.sort(([aName, aScore], [bName, bScore]) => {
     const aCrit = cfg.critical.includes(aName) ? 0 : 1;
     const bCrit = cfg.critical.includes(bName) ? 0 : 1;
@@ -129,66 +145,64 @@ const findCoachingTarget = (rrType, scores) => {
   return entries[0]?.[0] || null;
 };
 
-/**
- * Build the user-facing Quick Read object — labels only, no numbers.
- */
+// ---------------------------------------------------------------------------
+// QUICK READ — per-condition v2 labels (Phase 2)
+// ---------------------------------------------------------------------------
+
 const buildQuickRead = (rrType, scores) => {
   const cfg = getRrConfig(rrType);
   const out = {};
   for (const cond of cfg.conditions) {
-    out[cond] = SCORE_LABEL[scores[cond] ?? 0];
+    out[cond] = getConditionLabel(rrType, cond, scores[cond] ?? 0);
   }
   return out;
 };
 
-/**
- * Determine if this rep qualifies as a Strong Rep (suppress question).
- * Per Implementation Rules Addendum §4.
- */
-const isStrongRep = (rrType, scores, fail) => {
+// ---------------------------------------------------------------------------
+// STRONG REP (with stakes modifier — Phase 1)
+// ---------------------------------------------------------------------------
+
+const isStrongRep = (rrType, scores, fail, stakes = 'moderate') => {
   if (fail.failed) return false;
   const cfg = getRrConfig(rrType);
-  // Global eligibility
   if (Object.values(scores).some((s) => s === SCORE.MISSING)) return false;
   for (const cond of cfg.critical) {
     if ((scores[cond] ?? 0) < SCORE.ADEQUATE) return false;
   }
-  // RR-specific extra rule
-  return cfg.strongRepRule(scores);
+  if (!cfg.strongRepRule(scores)) return false;
+
+  // High-stakes tightening
+  const mod = STAKES_MODIFIERS[normalizeStakes(stakes)];
+  if (mod && mod.extraStrongRule && mod.extraStrongRule[rrType]) {
+    if (!mod.extraStrongRule[rrType](scores)) return false;
+  }
+  return true;
 };
 
-/**
- * Generate the user-facing output payload.
- *
- * @param {object} args
- * @param {string} args.rrType
- * @param {object} args.scores
- * @param {object} args.fail        - result of checkFail()
- * @param {string} args.result      - 'pass' | 'notYet'
- * @param {object|null} args.pattern - detectPattern result (or null)
- * @param {string[]} args.recentlyUsedTemplates - last few templates to avoid
- * @param {() => number} [args.rand=Math.random]
- */
+// ---------------------------------------------------------------------------
+// STEP 7 + 8 — MODE SELECTION + OUTPUT GENERATION
+// ---------------------------------------------------------------------------
+
 const generateOutput = ({
   rrType,
   scores,
   fail,
   result,
   pattern,
+  stakes = 'moderate',
+  courageSignals = {},
   recentlyUsedTemplates = [],
   rand = Math.random,
 }) => {
   const quickRead = buildQuickRead(rrType, scores);
-  const strong = !fail.failed && result === 'pass' && isStrongRep(rrType, scores, fail);
+  const safeStakes = normalizeStakes(stakes);
+  const mod = STAKES_MODIFIERS[safeStakes];
+  const strong = !fail.failed && result === 'pass' && isStrongRep(rrType, scores, fail, safeStakes);
 
-  // ---------- FAIL CASE (Case 3) ----------
-  // Per spec §12: 1 clear failure observation + 1 question targeting failure.
-  // No reinforcement, no pattern messaging.
+  // ---------- FAIL → CHALLENGE ----------
   if (fail.failed) {
     const failCondition = fail.condition;
-    const obsKey = failCondition
-      ? `${rrType}.${failCondition}.fail`
-      : null;
+    const obsKey = failCondition ? `${rrType}.${failCondition}.challenge` : null;
     const obsBank = obsKey ? getObservationBank(obsKey) : [];
     const observation =
       selectTemplate(obsBank, recentlyUsedTemplates, rand) || fail.reason;
@@ -206,18 +220,47 @@ const generateOutput = ({
       patternKey: null,
       coachingTarget: failCondition,
       case: 'fail',
+      mode: 'challenge',
+      stakes: safeStakes,
     };
   }
 
-  // ---------- STRONG REP (Case 1) ----------
-  // 1 reinforcing observation, NO question.
+  // ---------- RED COURAGE SIGNAL → forced sharpen ----------
+  // Fires regardless of strong/gap on Pass. Per Phase 4: force `gap` case
+  // with a RED.Courage.<signalName> observation. Only applies on Pass.
+  if (rrType === 'RED' && result === 'pass') {
+    const fired = firedCourageSignals(courageSignals);
+    if (fired.length > 0) {
+      const signal = fired[0]; // first fired wins; order is stable
+      const obsBank = getObservationBank(`RED.Courage.${signal}`);
+      const observation =
+        selectTemplate(obsBank, recentlyUsedTemplates, rand) ||
+        'The conversation drifted from holding the standard.';
+      const question =
+        selectTemplate(getQuestionBank('Request'), recentlyUsedTemplates, rand) ||
+        'What would it look like to hold the standard next time?';
+      return {
+        result,
+        quickRead,
+        observation,
+        question,
+        patternKey: null,
+        coachingTarget: 'Request',
+        case: 'gap',
+        mode: 'sharpen',
+        stakes: safeStakes,
+        courageSignal: signal,
+      };
+    }
+  }
+
+  // ---------- STRONG REP → REINFORCE ----------
   if (strong) {
-    // Find the strongest critical condition for the reinforcing message
     const cfg = getRrConfig(rrType);
     const target =
       cfg.critical.find((c) => (scores[c] ?? 0) >= SCORE.STRONG) ||
       cfg.critical[0];
-    const obsKey = `${rrType}.${target}.strong`;
+    const obsKey = `${rrType}.${target}.reinforce`;
     const obsBank = getObservationBank(obsKey);
     const observation =
       selectTemplate(obsBank, recentlyUsedTemplates, rand) ||
@@ -230,37 +273,69 @@ const generateOutput = ({
       patternKey: null,
       coachingTarget: target,
       case: 'strong',
+      mode: 'reinforce',
+      stakes: safeStakes,
     };
   }
 
   // ---------- PATTERN OVERRIDE ----------
-  // Per spec §10: pattern observation REPLACES standard observation, includes
-  // a question. Does NOT stack with other insights.
+  // Pattern replaces standard observation and adds a question.
+  // Low-stakes guard: suppress non-critical patterns when patternRequiresCritical.
   if (pattern) {
-    const obsKey = `pattern.${pattern.condition}`;
+    const cfg = getRrConfig(rrType);
+    const patternIsCritical = cfg.critical.includes(pattern.condition);
+    const allowPattern = !mod.patternRequiresCritical || patternIsCritical;
+    if (allowPattern) {
+      const obsKey = `pattern.${pattern.condition}`;
+      const obsBank = getObservationBank(obsKey);
+      const observation =
+        selectTemplate(obsBank, recentlyUsedTemplates, rand) ||
+        'You keep landing on the same gap — name it and rep against it.';
+      const questionBank = getQuestionBank(pattern.condition);
+      const question =
+        selectTemplate(questionBank, recentlyUsedTemplates, rand) ||
+        'What would change that next time?';
+      return {
+        result,
+        quickRead,
+        observation,
+        question,
+        patternKey: pattern.key,
+        coachingTarget: pattern.condition,
+        case: 'pattern',
+        mode: 'sharpen',
+        stakes: safeStakes,
+      };
+    }
+  }
+
+  // ---------- PASS, NOT SHARP ----------
+  // Low stakes → suppress the gap question/observation (reinforce only).
+  if (mod.suppressGapOnPass && result === 'pass') {
+    const cfg = getRrConfig(rrType);
+    const target =
+      cfg.critical.find((c) => (scores[c] ?? 0) >= SCORE.ADEQUATE) ||
+      cfg.critical[0];
+    const obsKey = `${rrType}.${target}.reinforce`;
     const obsBank = getObservationBank(obsKey);
     const observation =
       selectTemplate(obsBank, recentlyUsedTemplates, rand) ||
-      `A pattern: ${pattern.condition} keeps coming in low.`;
-    const questionBank = getQuestionBank(pattern.condition);
-    const question =
-      selectTemplate(questionBank, recentlyUsedTemplates, rand) ||
-      'What would change that next time?';
+      'You held the bar on the part that matters most here.';
     return {
       result,
       quickRead,
       observation,
-      question,
-      patternKey: pattern.key,
-      coachingTarget: pattern.condition,
-      case: 'pattern',
+      question: null,
+      patternKey: null,
+      coachingTarget: target,
+      case: 'gap',
+      mode: 'suppressed',
+      stakes: safeStakes,
     };
   }
 
-  // ---------- PASS, NOT SHARP (Case 2) ----------
-  // 1 observation + 1 question on the highest-leverage gap.
   const target = findCoachingTarget(rrType, scores);
-  const obsKey = `${rrType}.${target}.gap`;
+  const obsKey = `${rrType}.${target}.sharpen`;
   const obsBank = getObservationBank(obsKey);
   const observation =
     selectTemplate(obsBank, recentlyUsedTemplates, rand) ||
@@ -277,6 +352,8 @@ const generateOutput = ({
     patternKey: null,
     coachingTarget: target,
     case: 'gap',
+    mode: 'sharpen',
+    stakes: safeStakes,
   };
 };
 
@@ -284,27 +361,9 @@ const generateOutput = ({
 // PUBLIC ENTRY POINT
 // ---------------------------------------------------------------------------
 
-/**
- * Evaluate a single rep. Pure function — no IO. The Cloud Function wrapper
- * is responsible for AI scoring (transcript → scores), Firestore reads
- * (recent reps), and Firestore writes (storing the result).
- *
- * @param {object} args
- * @param {string} args.rrType
- * @param {string} args.transcript          - Raw user input
- * @param {object} args.scores              - { [condition]: 0-3 } from AI scorer
- * @param {boolean} [args.lowConfidence]    - AI scorer's confidence flag
- * @param {Array}  [args.recentReps]        - Newest-first array of prior reps
- * @param {string[]} [args.recentlyUsedTemplates]
- * @param {() => number} [args.rand]
- * @returns {object} Full evaluation result (see test cases for shape)
- */
 const evaluateRep = (args) => {
-  // STEP 1: Validate
   const validation = validateRep(args);
   if (!validation.valid) {
-    // Per spec §12 (Valid vs Invalid): UX-collapsed to Not Yet, but tracked
-    // as `validity: 'invalid'` internally.
     const cfg = (() => {
       try { return getRrConfig(args.rrType); } catch { return null; }
     })();
@@ -323,21 +382,30 @@ const evaluateRep = (args) => {
       patternKey: null,
       coachingTarget: null,
       case: 'invalid',
+      mode: 'challenge',
+      stakes: normalizeStakes(args.stakes),
       failReason: validation.reason,
       conditionScores: args.scores || {},
       totalScore: 0,
     };
   }
 
-  const { rrType, scores, recentReps = [], recentlyUsedTemplates = [], rand } = args;
+  const {
+    rrType,
+    scores,
+    stakes,
+    courageSignals: rawCourage,
+    recentReps = [],
+    recentlyUsedTemplates = [],
+    rand,
+  } = args;
 
-  // STEP 4: Fail logic (immediate override)
+  const courageSignals =
+    rrType === 'RED' ? normalizeCourageSignals(rawCourage) : {};
+
   const fail = checkFail(rrType, scores);
-
-  // STEP 5: Result
   const result = determineResult(rrType, scores, fail);
 
-  // STEP 6: Pattern detection — SKIPPED if fail
   let pattern = null;
   if (!fail.failed) {
     pattern = detectPattern(
@@ -346,13 +414,14 @@ const evaluateRep = (args) => {
     );
   }
 
-  // STEP 7: Generate output
   const output = generateOutput({
     rrType,
     scores,
     fail,
     result,
     pattern,
+    stakes,
+    courageSignals,
     recentlyUsedTemplates,
     rand,
   });
@@ -360,6 +429,7 @@ const evaluateRep = (args) => {
   return {
     validity: 'valid',
     ...output,
+    courageSignals: rrType === 'RED' ? courageSignals : null,
     failReason: fail.failed ? fail.reason : null,
     conditionScores: scores,
     totalScore: totalScore(scores),
@@ -368,7 +438,6 @@ const evaluateRep = (args) => {
 
 module.exports = {
   evaluateRep,
-  // exposed for tests
   validateRep,
   checkFail,
   determineResult,
@@ -376,4 +445,6 @@ module.exports = {
   findCoachingTarget,
   buildQuickRead,
   totalScore,
+  normalizeCourageSignals,
+  firedCourageSignals,
 };

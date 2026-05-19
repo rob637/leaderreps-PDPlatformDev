@@ -244,9 +244,9 @@ describe('SCE — Set Clear Expectations', () => {
 // Quick Read labels
 // ---------------------------------------------------------------------------
 describe('buildQuickRead', () => {
-  it('returns spec-compliant labels (Missing/Weak/Adequate/Strong) per condition', () => {
+  it('returns per-condition v2 labels', () => {
     const qr = buildQuickRead('DRF', { Behavior: 0, Impact: 1, Reinforcement: 3 });
-    expect(qr).toEqual({ Behavior: 'Missing', Impact: 'Weak', Reinforcement: 'Strong' });
+    expect(qr).toEqual({ Behavior: 'Missing', Impact: 'Vague', Reinforcement: 'Explicit' });
   });
 
   it('uses raw camelCase condition names as keys (UI is responsible for prettifying)', () => {
@@ -392,5 +392,117 @@ describe('evaluateRep — output shape', () => {
   it('SCORE constants align with label map', () => {
     expect(SCORE.MISSING).toBe(0);
     expect(SCORE.STRONG).toBe(3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// V2 — Stakes / Mode / Courage signals / Voice & Tone lint
+// ---------------------------------------------------------------------------
+import {
+  MODE_OBSERVATIONS,
+  PATTERN_OBSERVATIONS,
+  MAX_WORDS,
+  BANNED_PHRASES,
+  NUMERIC_PATTERN_RE,
+// eslint-disable-next-line import/no-relative-packages
+} from '../../functions/conditioning/templates.js';
+
+describe('v2 — stakes modifies coaching intensity', () => {
+  it('low stakes suppresses the gap question on a barely-passing rep', () => {
+    const out = evaluateRep(
+      baseArgs({ scores: { Behavior: 2, Impact: 2, Reinforcement: 1 }, stakes: 'low' })
+    );
+    expect(out.result).toBe('pass');
+    expect(out.mode).toBe('suppressed');
+    expect(out.question).toBeNull();
+  });
+
+  it('moderate stakes still surfaces the gap question on a barely-passing rep', () => {
+    const out = evaluateRep(
+      baseArgs({ scores: { Behavior: 2, Impact: 2, Reinforcement: 1 }, stakes: 'moderate' })
+    );
+    expect(out.mode).toBe('sharpen');
+    expect(out.question).toBeTruthy();
+  });
+
+  it('high stakes tightens DRF strong-rep rule (requires Behavior=3)', () => {
+    // Behavior=2, Impact=3, Reinforcement=3 — strong under moderate, NOT under high
+    expect(isStrongRep('DRF', { Behavior: 2, Impact: 3, Reinforcement: 3 }, { failed: false }, 'moderate')).toBe(true);
+    expect(isStrongRep('DRF', { Behavior: 2, Impact: 3, Reinforcement: 3 }, { failed: false }, 'high')).toBe(false);
+  });
+
+  it('engine returns mode for every valid evaluation', () => {
+    const out = evaluateRep(baseArgs());
+    expect(['reinforce', 'sharpen', 'challenge', 'suppressed']).toContain(out.mode);
+  });
+});
+
+describe('v2 — RED courage signals', () => {
+  const redArgs = (overrides = {}) =>
+    baseArgs({
+      rrType: 'RED',
+      scores: { Behavior: 2, Impact: 2, Request: 2, DirectDelivery: 2, DeliveryDiscipline: 2 },
+      ...overrides,
+    });
+
+  it('fired courage signal on a passing RED rep forces sharpen mode', () => {
+    const out = evaluateRep(
+      redArgs({
+        courageSignals: { retreatedToDiscussion: true },
+      })
+    );
+    expect(out.result).toBe('pass');
+    expect(out.mode).toBe('sharpen');
+    expect(out.courageSignal).toBe('retreatedToDiscussion');
+  });
+
+  it('no courage signal leaves passing RED rep on the normal path', () => {
+    const out = evaluateRep(redArgs());
+    expect(out.courageSignal).toBeUndefined();
+  });
+
+  it('courage signals are not applied to non-RED reps', () => {
+    const out = evaluateRep(
+      baseArgs({ courageSignals: { retreatedToDiscussion: true } })
+    );
+    expect(out.courageSignal).toBeUndefined();
+    expect(out.courageSignals).toBeNull();
+  });
+});
+
+describe('v2 — voice & tone lint on templates', () => {
+  const allObservationTexts = () => {
+    const out = [];
+    for (const [, bank] of Object.entries(MODE_OBSERVATIONS)) {
+      for (const t of bank) out.push(t);
+    }
+    for (const [, bank] of Object.entries(PATTERN_OBSERVATIONS)) {
+      for (const t of bank) out.push(t);
+    }
+    return out;
+  };
+
+  it('no observation exceeds MAX_WORDS', () => {
+    for (const t of allObservationTexts()) {
+      const words = t.split(/\s+/).filter(Boolean).length;
+      expect(words, `template too long: "${t}"`).toBeLessThanOrEqual(MAX_WORDS);
+    }
+  });
+
+  it('no observation contains banned phrases', () => {
+    for (const t of allObservationTexts()) {
+      const lower = t.toLowerCase();
+      for (const phrase of BANNED_PHRASES) {
+        expect(lower.includes(phrase.toLowerCase()), `banned phrase "${phrase}" in: "${t}"`).toBe(false);
+      }
+    }
+  });
+
+  it('pattern observations never include numeric "X of Y reps" phrasing', () => {
+    for (const [, bank] of Object.entries(PATTERN_OBSERVATIONS)) {
+      for (const t of bank) {
+        expect(NUMERIC_PATTERN_RE.test(t), `numeric phrasing in pattern template: "${t}"`).toBe(false);
+      }
+    }
   });
 });

@@ -248,4 +248,185 @@ const FIXTURES = [
   },
 ];
 
-module.exports = { FIXTURES };
+// ============================================================================
+// V2 EXPANSION — Phase 7
+//
+// Fixtures below carry `expectedStakes` (low | moderate | high) and, for RED,
+// `expectedCourageSignals` (subset of {retreatedToDiscussion,
+// softenedUnderTension, indirectAccountability, overCollaboration,
+// backedOffAfterDefensiveness}). Run harness treats a missing
+// `expectedStakes` on legacy fixtures as 'moderate' and a missing
+// `expectedCourageSignals` as no signals fired.
+// ============================================================================
+
+const V2_FIXTURES = [
+  // ---------------------- Stakes coverage (low) ----------------------
+  {
+    id: 'drf-low-stakes-quickprops',
+    rrType: 'DRF',
+    transcript:
+      "Quick Slack to Maya: nice catch on the typo in the deck before the all-hands — caught it before it shipped. Keep that eye on the details next time you proofread for me.",
+    expected: { Behavior: 3, Impact: 2, Reinforcement: 2 },
+    expectedResult: 'pass',
+    expectedStrong: false,
+    expectedStakes: 'low',
+    notes: 'Low-stakes appreciation; engine should suppress gap-question even though Reinforcement is only Adequate.',
+  },
+  {
+    id: 'fuw-low-stakes-touch',
+    rrType: 'FUW',
+    transcript:
+      "Pinged Sam in standup on the onboarding doc edits. He's about halfway through, expects to send by EOD. He owns it.",
+    expected: { WorkAnchored: 2, ProgressVisibility: 2, Ownership: 2 },
+    expectedResult: 'pass',
+    expectedStrong: false,
+    expectedStakes: 'low',
+    notes: 'Low-stakes routine touch; mode should be suppressed (reinforce-only).',
+  },
+
+  // ---------------------- Stakes coverage (high) ----------------------
+  {
+    id: 'red-high-stakes-strong',
+    rrType: 'RED',
+    transcript:
+      "Sat down with Aman one-on-one after the board meeting. I said: in front of the board today you spoke over Priya twice while she was answering the chair's question on pricing. The chair noticed and asked me about it after. In the next board prep and the meeting itself, let people finish their answer before you respond. I made the ask once and held the silence.",
+    expected: { Behavior: 3, Impact: 3, Request: 3, DirectDelivery: 3, DeliveryDiscipline: 3 },
+    expectedResult: 'pass',
+    expectedStrong: true,
+    expectedStakes: 'high',
+    notes: 'Board-visible behavior; high-stakes strong rule (Request>=3) satisfied.',
+  },
+  {
+    id: 'drf-high-stakes-needs-behavior-3',
+    rrType: 'DRF',
+    transcript:
+      "After Maya re-scoped the launch plan that the CFO had pushed back on, I told her in our 1:1: that re-scope on the launch plan saved the quarter — keep doing exactly that when execs push back. Thank you.",
+    expected: { Behavior: 2, Impact: 3, Reinforcement: 3 },
+    expectedResult: 'pass',
+    expectedStrong: false,
+    expectedStakes: 'high',
+    notes:
+      'High-stakes context (saved the quarter). Behavior is only Adequate, so the high-stakes extra rule should KEEP this out of strong-rep territory.',
+  },
+  {
+    id: 'sce-high-stakes-strong',
+    rrType: 'SCE',
+    transcript:
+      "Set the expectation with Jordan for the board memo: one page, recommendation up front, three alternatives with trade-offs, by Wednesday at 4. Done means the chair can act on it without follow-up questions. I asked her to walk me through her approach — she said she'd start with the trade-off matrix; she committed to a Wednesday draft. She owns it.",
+    expected: { Expectation: 3, Success: 3, Understanding: 3, Ownership: 3 },
+    expectedResult: 'pass',
+    expectedStrong: true,
+    expectedStakes: 'high',
+    notes: 'High-leverage board-facing expectation; engine should still pass strong (not stricter than DRF/RED).',
+  },
+
+  // ---------------------- Borderlines ----------------------
+  {
+    id: 'drf-borderline-impact-weak',
+    rrType: 'DRF',
+    transcript:
+      "Caught Maya after standup and told her the re-scope decision was sharp. It really helped. Keep doing that.",
+    expected: { Behavior: 2, Impact: 1, Reinforcement: 2 },
+    expectedResult: 'pass',
+    expectedStrong: false,
+    expectedStakes: 'moderate',
+    notes: 'Borderline: Impact vague ("helped") but the rep totals to a pass.',
+  },
+  {
+    id: 'red-borderline-soft-request',
+    rrType: 'RED',
+    transcript:
+      "Pulled Aman aside after the exec meeting. Told him he cut Priya off twice and she went quiet for the rest of the meeting. Asked if he could maybe try to give people more space next time.",
+    expected: { Behavior: 3, Impact: 3, Request: 1, DirectDelivery: 3, DeliveryDiscipline: 2 },
+    expectedResult: 'notYet',
+    expectedStrong: false,
+    expectedStakes: 'moderate',
+    notes: 'Behavior + Impact strong, but the request is so hedged ("could you maybe try") that it scores Weak. Critical condition Weak → notYet.',
+  },
+  {
+    id: 'sce-borderline-understanding-weak',
+    rrType: 'SCE',
+    transcript:
+      "Asked Jordan to draft the pricing memo for the CFO by Wednesday — one page, recommendation plus three options with trade-offs, written so the CFO can act on it without follow-ups. She said got it; she owns the draft.",
+    expected: { Expectation: 3, Success: 3, Understanding: 1, Ownership: 2 },
+    expectedResult: 'pass',
+    expectedStrong: false,
+    expectedStakes: 'moderate',
+    notes: 'Understanding=Weak (verbal "got it" only). Pass but flagged for growth.',
+  },
+  {
+    id: 'fuw-borderline-ownership-soft',
+    rrType: 'FUW',
+    transcript:
+      "Caught up with Sam on the Q2 memo. He said the draft is in legal review and finance reviews Friday. We agreed he'd ping me Thursday with status.",
+    expected: { WorkAnchored: 3, ProgressVisibility: 3, Ownership: 2 },
+    expectedResult: 'pass',
+    expectedStrong: false,
+    expectedStakes: 'moderate',
+    notes: 'Borderline: ownership is collective ("we agreed") rather than explicit.',
+  },
+
+  // ---------------------- RED courage signal fixtures ----------------------
+  {
+    id: 'red-courage-retreated',
+    rrType: 'RED',
+    transcript:
+      "Tried to give Aman feedback about cutting Priya off in the exec review. He pushed back and said he was just trying to keep things moving. I said yeah, I get that, let's table it and talk about the roadmap instead.",
+    expected: { Behavior: 2, Impact: 2, Request: 1, DirectDelivery: 3, DeliveryDiscipline: 1 },
+    expectedResult: 'notYet',
+    expectedStrong: false,
+    expectedStakes: 'high',
+    expectedCourageSignals: { retreatedToDiscussion: true, backedOffAfterDefensiveness: true },
+    notes: 'Leader bailed and pivoted topic when met with pushback — both retreat and backoff apply.',
+  },
+  {
+    id: 'red-courage-softened',
+    rrType: 'RED',
+    transcript:
+      "Pulled Aman aside and told him he cut Priya off twice in the exec review and that wasn't okay. He got tense, so I said look, you do this all the time well, this was just one of those moments, you're a great teammate.",
+    expected: { Behavior: 2, Impact: 1, Request: 0, DirectDelivery: 3, DeliveryDiscipline: 1 },
+    expectedResult: 'notYet',
+    expectedStrong: false,
+    expectedStakes: 'high',
+    expectedCourageSignals: { softenedUnderTension: true, backedOffAfterDefensiveness: true },
+    notes: 'Leader walked it back as soon as Aman tensed up — both softening and backoff apply.',
+  },
+  {
+    id: 'red-courage-indirect',
+    rrType: 'RED',
+    transcript:
+      "Sent the whole exec staff an email saying we all need to be more disciplined about not interrupting in meetings, especially in front of the CFO. Aman knows it's about him.",
+    expected: { Behavior: 1, Impact: 1, Request: 1, DirectDelivery: 0, DeliveryDiscipline: 1 },
+    expectedResult: 'notYet',
+    expectedStrong: false,
+    expectedStakes: 'high',
+    expectedCourageSignals: { indirectAccountability: true },
+    notes: 'Group email instead of direct conversation.',
+  },
+  {
+    id: 'red-courage-overcollab',
+    rrType: 'RED',
+    transcript:
+      "Sat down with Aman about the interruption pattern. Asked him: what do you think is going on, what do you want to do about it, how should we approach this together? We brainstormed options for 30 minutes and landed on him reflecting on it.",
+    expected: { Behavior: 2, Impact: 2, Request: 1, DirectDelivery: 3, DeliveryDiscipline: 1 },
+    expectedResult: 'notYet',
+    expectedStrong: false,
+    expectedStakes: 'high',
+    expectedCourageSignals: { overCollaboration: true },
+    notes: 'Endless co-creation instead of naming the behavior and the standard.',
+  },
+  {
+    id: 'red-courage-backedoff',
+    rrType: 'RED',
+    transcript:
+      "Told Aman directly that he cut Priya off twice in the exec review and the chair noticed. He got defensive and said the chair was looking at him because of his slide. I said, fair enough, maybe I read it wrong, let's not make a big deal of it.",
+    expected: { Behavior: 3, Impact: 2, Request: 0, DirectDelivery: 3, DeliveryDiscipline: 1 },
+    expectedResult: 'notYet',
+    expectedStrong: false,
+    expectedStakes: 'high',
+    expectedCourageSignals: { backedOffAfterDefensiveness: true, softenedUnderTension: true },
+    notes: 'Leader dropped the standard when met with defensiveness — both backoff and softening apply.',
+  },
+];
+
+module.exports = { FIXTURES: [...FIXTURES, ...V2_FIXTURES], LEGACY_FIXTURES: FIXTURES, V2_FIXTURES };

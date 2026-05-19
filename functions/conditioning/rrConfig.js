@@ -32,6 +32,140 @@ const SCORE_LABEL = Object.freeze({
   3: 'Strong',
 });
 
+// ---------------------------------------------------------------------------
+// Per-condition user-facing labels (Phase 2 — v2)
+//
+// Each condition has its own 0-3 → label map so the Quick Read reads like
+// the leadership behavior, not a generic scoring rubric. The numeric scale
+// is unchanged internally. UI maps labels → color tier via LABEL_TIER.
+//
+// Tier mapping: STRONG → 'strong', ADEQUATE → 'adequate',
+// WEAK → 'weak', MISSING → 'missing'.
+// ---------------------------------------------------------------------------
+
+const RR_LABELS_BY_CONDITION = Object.freeze({
+  // DRF
+  'DRF.Behavior':         { 3: 'Specific', 2: 'Present',   1: 'Vague',     0: 'Missing' },
+  'DRF.Impact':           { 3: 'Concrete', 2: 'Named',     1: 'Vague',     0: 'Missing' },
+  'DRF.Reinforcement':    { 3: 'Explicit', 2: 'Implicit',  1: 'Generic',   0: 'Missing' },
+  // RED
+  'RED.Behavior':         { 3: 'Specific', 2: 'Present',   1: 'Vague',     0: 'Missing' },
+  'RED.Impact':           { 3: 'Concrete', 2: 'Named',     1: 'Vague',     0: 'Missing' },
+  'RED.Request':          { 3: 'Clear',    2: 'Partial',   1: 'Vague',     0: 'Missing' },
+  'RED.DirectDelivery':   { 3: 'Direct',   2: 'In-group',  1: 'Async',     0: 'Indirect' },
+  'RED.DeliveryDiscipline': { 3: 'Clean',  2: 'Mixed',     1: 'Hedged',    0: 'Avoided' },
+  // FUW
+  'FUW.WorkAnchored':     { 3: 'Anchored', 2: 'General',   1: 'Weak',      0: 'Missing' },
+  'FUW.ProgressVisibility': { 3: 'Visible', 2: 'Partial',  1: 'Sentiment', 0: 'Missing' },
+  'FUW.Ownership':        { 3: 'Named',    2: 'Soft',      1: 'Implied',   0: 'Missing' },
+  // SCE
+  'SCE.Expectation':      { 3: 'Defined',  2: 'Partial',   1: 'Vague',     0: 'Missing' },
+  'SCE.Success':          { 3: 'Observable', 2: 'Partial', 1: 'Vague',     0: 'Missing' },
+  'SCE.Understanding':    { 3: 'Confirmed', 2: 'Acknowledged', 1: 'Assumed', 0: 'Missing' },
+  'SCE.Ownership':        { 3: 'Named',    2: 'Soft',      1: 'Implied',   0: 'Missing' },
+});
+
+// Map every label string (across all conditions) to its tier so UI can color
+// pills without needing to know which condition produced the label.
+const LABEL_TIER = Object.freeze({
+  // strong tier
+  Specific: 'strong', Concrete: 'strong', Explicit: 'strong', Clear: 'strong',
+  Direct: 'strong', Clean: 'strong', Anchored: 'strong', Visible: 'strong',
+  Named: 'strong', Defined: 'strong', Observable: 'strong', Confirmed: 'strong',
+  // adequate tier
+  Present: 'adequate', Implicit: 'adequate', Partial: 'adequate',
+  'In-group': 'adequate', Mixed: 'adequate', General: 'adequate',
+  Soft: 'adequate', Acknowledged: 'adequate',
+  // weak tier
+  Vague: 'weak', Generic: 'weak', Async: 'weak', Hedged: 'weak',
+  Weak: 'weak', Sentiment: 'weak', Implied: 'weak', Assumed: 'weak',
+  // missing tier
+  Missing: 'missing', Indirect: 'missing', Avoided: 'missing',
+});
+
+const getConditionLabel = (rrType, condition, score) => {
+  const map = RR_LABELS_BY_CONDITION[`${rrType}.${condition}`];
+  if (!map) return SCORE_LABEL[score ?? 0] || 'Missing';
+  return map[score ?? 0] || 'Missing';
+};
+
+// ---------------------------------------------------------------------------
+// Stakes modifiers (Phase 1 — v2)
+//
+// Stakes is an internal "intensity band" the scorer infers from the
+// transcript. It modulates coaching intensity but never changes visible
+// verdicts. Critical-condition fail rules always still apply (Phase 6 audit).
+//
+// Behavior summary:
+//   low      \u2192 on Pass with a gap, suppress the gap observation/question
+//              (reinforce only); pattern detection is short-circuited unless
+//              the pattern targets a critical condition.
+//   moderate \u2192 baseline behavior (no modification).
+//   high     \u2192 raise the strong-rep bar:
+//                RED: Request must be STRONG to qualify as strong rep.
+//                DRF: if Behavior is only ADEQUATE, suppress strong label
+//                     (downgrade to gap so the rep gets sharpened).
+// ---------------------------------------------------------------------------
+
+const VALID_STAKES = Object.freeze(['low', 'moderate', 'high']);
+
+const STAKES_MODIFIERS = Object.freeze({
+  low: {
+    suppressGapOnPass: true,
+    patternRequiresCritical: true,
+  },
+  moderate: {
+    suppressGapOnPass: false,
+    patternRequiresCritical: false,
+  },
+  high: {
+    suppressGapOnPass: false,
+    patternRequiresCritical: false,
+    // Per-RR strong-rep tightening applied in engine.isStrongRep
+    extraStrongRule: {
+      RED: (scores) => (scores.Request ?? 0) >= SCORE.STRONG,
+      DRF: (scores) => (scores.Behavior ?? 0) >= SCORE.STRONG,
+    },
+  },
+});
+
+const normalizeStakes = (s) =>
+  VALID_STAKES.includes(s) ? s : 'moderate';
+
+// ---------------------------------------------------------------------------
+// Courage signals (Phase 4 \u2014 v2). RED only.
+// Returned by scorer as a boolean map; engine forces a `gap` case if any
+// fire and selects an observation from the RED.Courage.<signal> bank.
+// ---------------------------------------------------------------------------
+
+const COURAGE_SIGNALS = Object.freeze([
+  'retreatedToDiscussion',
+  'softenedUnderTension',
+  'indirectAccountability',
+  'overCollaboration',
+  'backedOffAfterDefensiveness',
+]);
+
+// COURAGE SIGNAL HINTS
+//
+// Each hint MUST describe a two-part movement: (1) a triggering moment in
+// the conversation and (2) an observable leader behavior in response.
+// Both halves must be present in the transcript for the signal to fire.
+// If either half is absent, the signal stays false. Do NOT infer from tone,
+// politeness, or a soft choice of words alone.
+const COURAGE_SIGNAL_HINTS = Object.freeze({
+  retreatedToDiscussion:
+    'Leader first stated a clear ask, then — after resistance was visible in the transcript — abandoned the ask and reopened it as a discussion. Fires only if you can quote both the original ask and the pivot.',
+  softenedUnderTension:
+    'Leader explicitly walked back, hedged, qualified, or apologized for the standard after the other person pushed back. Fires only if you can quote (a) the pushback or visible tension and (b) the leader\'s softening words. Choosing measured language up front is NOT this signal.',
+  indirectAccountability:
+    'Leader avoided naming the person or the specific behavior directly. Examples: using "we" / "the team" / passive voice in a 1:1 about that person\'s conduct, OR addressing the issue via a group message / broadcast email / team-wide announcement when a direct conversation was available. Fires whenever the leader had a chance to address the person directly and used a diffused or indirect channel instead.',
+  overCollaboration:
+    'Leader turned a redirect into joint problem-solving BEFORE holding the standard — e.g. jumped straight to "let\'s brainstorm" instead of first naming the behavior + request. Fires only if the collaboration replaces (not follows) the redirect.',
+  backedOffAfterDefensiveness:
+    'Other person pushed back / got defensive AND the leader then dropped, weakened, or qualified the original request. Fires only if the transcript shows both the defensiveness and the leader\'s retreat. Holding the standard under pressure is NOT this signal.',
+});
+
 // Helper used inside strongRepRule callbacks
 const countAtLeast = (scores, threshold) =>
   Object.values(scores).filter((s) => s >= threshold).length;
@@ -264,7 +398,7 @@ const RR_CONFIG = Object.freeze({
   DRF: {
     code: 'DRF',
     name: 'Reinforcing Feedback',
-    version: '2026-05-09',
+    version: '2026-05-19-v2',
     conditions: ['Behavior', 'Impact', 'Reinforcement'],
     critical: ['Behavior'],
     passThreshold: 5,
@@ -291,7 +425,7 @@ const RR_CONFIG = Object.freeze({
   RED: {
     code: 'RED',
     name: 'Redirecting Feedback',
-    version: '2026-05-09',
+    version: '2026-05-19-v2',
     conditions: [
       'Behavior',
       'Impact',
@@ -328,7 +462,7 @@ const RR_CONFIG = Object.freeze({
   FUW: {
     code: 'FUW',
     name: 'Follow-Up on Work',
-    version: '2026-05-09',
+    version: '2026-05-19-v2',
     conditions: ['WorkAnchored', 'ProgressVisibility', 'Ownership'],
     critical: ['WorkAnchored'],
     passThreshold: 5,
@@ -352,7 +486,7 @@ const RR_CONFIG = Object.freeze({
   SCE: {
     code: 'SCE',
     name: 'Set Clear Expectations',
-    version: '2026-05-09',
+    version: '2026-05-19-v2',
     conditions: ['Expectation', 'Success', 'Understanding', 'Ownership'],
     critical: ['Expectation', 'Success'],
     passThreshold: 6,
@@ -412,10 +546,18 @@ const getConditionDefsForRr = (rrType) => {
 module.exports = {
   SCORE,
   SCORE_LABEL,
+  RR_LABELS_BY_CONDITION,
+  LABEL_TIER,
   RR_CONFIG,
   CONDITION_DEFS,
+  STAKES_MODIFIERS,
+  VALID_STAKES,
+  COURAGE_SIGNALS,
+  COURAGE_SIGNAL_HINTS,
   isValidRrType,
   getRrConfig,
   getConditionDef,
   getConditionDefsForRr,
+  getConditionLabel,
+  normalizeStakes,
 };

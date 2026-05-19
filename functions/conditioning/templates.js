@@ -1,162 +1,252 @@
 // functions/conditioning/templates.js
 //
-// Template-based language system for the Conditioning Light engine.
-// Per spec §9 + §17: controlled variation, never freeform.
+// Template-based language system for the Conditioning Light engine (v2).
 //
-// Tone: direct, concise, neutral. Max 1-2 sentences per observation.
-// Selection: random within set; caller is responsible for avoiding repeats
-// within the user's last 2-3 reps (see selectTemplate below).
+// Tone guardrails (Phase 8):
+//   - No therapy language, no academic framework explanations.
+//   - reinforce → 1 sentence + name the repeatable behavior.
+//   - sharpen   → 1 observation + caller adds 1 specific question.
+//   - challenge → 1 sentence that names the real issue.
+//   - pattern   → identity language, 1–2 sentences. Never numeric.
+//
+// A lint test in src/test/conditioning-engine.test.js enforces a max word
+// count and a list of banned phrases (see BANNED_PHRASES / MAX_WORDS below).
+// Update the lint constants here whenever copy guardrails change.
 
 'use strict';
 
 // ---------------------------------------------------------------------------
-// OBSERVATION TEMPLATES
-// Keyed by `${rrType}.${condition}.${tier}` where tier is one of:
-//   'fail'      → critical condition missing or weak; rep failed on this gap
-//   'gap'       → condition Adequate or below but not the failure point
-//   'pattern'   → recurring weakness across recent reps
-//   'strong'    → reinforcing observation for a Strong Rep
+// OBSERVATION TEMPLATES — keyed by `${rrType}.${condition}.${mode}` where
+// mode is one of:
+//   'reinforce' → strong rep, name the repeatable behavior
+//   'sharpen'   → pass with a gap worth surfacing
+//   'challenge' → fail, name the real issue
+//
+// Legacy keys ('fail', 'gap', 'strong') remain available as aliases so the
+// engine and any old fixtures keep working during rollout.
+// Pattern keys ('pattern.<condition>') sit alongside in identity voice.
+// RED courage signals use `RED.Courage.<signalName>` (Phase 4).
 // ---------------------------------------------------------------------------
 
-const OBSERVATIONS = {
+const MODE_OBSERVATIONS = {
   // ============================ DRF ============================
-  'DRF.Behavior.fail': [
-    'The behavior you described is too general — a peer wouldn\'t know exactly what they did right.',
-    'You named the outcome but not the action. The leader needs to hear the specific behavior to repeat it.',
-    'The feedback could apply to almost anyone. Reinforcement only sticks when the behavior is observable.',
+  'DRF.Behavior.reinforce': [
+    'You named the exact action — that is what makes it repeatable.',
+    'Sharp behavior call-out. The leader knows precisely what to do again.',
   ],
-  'DRF.Behavior.gap': [
-    'The behavior is described but could be sharper — what would a camera have captured?',
-    'Get one level more specific on the behavior so the leader knows precisely what to repeat.',
+  'DRF.Behavior.sharpen': [
+    'The behavior is there, but not specific enough to easily repeat.',
+    'Get one level more concrete on the behavior so the leader can run it back.',
   ],
-  'DRF.Impact.gap': [
-    'The impact is implied but not named. Make it explicit so the reinforcement carries weight.',
-    'Connect the behavior to a clear outcome — without it the praise feels generic.',
+  'DRF.Behavior.challenge': [
+    'The behavior is too general — a peer would not know what they did right.',
+    'You named an outcome, not an action. Reinforcement only sticks on observable behavior.',
+    'This could apply to almost anyone. Without a specific behavior, the leader cannot repeat it.',
   ],
-  'DRF.Impact.fail': [
-    'You named the behavior but not the impact. Without impact, this reads as praise, not reinforcement.',
-    'Reinforcement only sticks when the leader knows what their behavior actually changed.',
+  'DRF.Impact.reinforce': [
+    'You tied the behavior to a concrete effect — that is what makes the reinforcement land.',
   ],
-  'DRF.Reinforcement.gap': [
-    'The reinforcement is present but soft. Be direct about wanting more of this behavior.',
-    'Make the ask explicit: "do this again" lands harder than "nice job."',
+  'DRF.Impact.sharpen': [
+    'The impact is implied. Name it so the reinforcement carries weight.',
+    'Connect the behavior to a clear outcome so the praise is not generic.',
   ],
-  'DRF.Behavior.strong': [
-    'Sharp, specific behavior call-out — that\'s what makes reinforcement repeatable.',
-    'You captured the exact action and tied it to impact. Model rep.',
+  'DRF.Impact.challenge': [
+    'You named the behavior but not the impact. Without impact, this is praise, not reinforcement.',
+    'Reinforcement only sticks when the leader knows what changed because of them.',
+  ],
+  'DRF.Reinforcement.reinforce': [
+    'You made the "do this again" message explicit. That is the bar.',
+  ],
+  'DRF.Reinforcement.sharpen': [
+    'The reinforcement is soft. Be direct about wanting more of this behavior.',
+    'Make the ask explicit — "do this again" lands harder than vague praise.',
+  ],
+  'DRF.Reinforcement.challenge': [
+    'There is no "do it again" signal. Without it, this is acknowledgment, not reinforcement.',
   ],
 
   // ============================ RED ============================
-  'RED.Behavior.fail': [
-    'The behavior is described too broadly — without specifics, the redirect can\'t land.',
-    'The leader can\'t change what they can\'t see. Name the specific action.',
+  'RED.Behavior.reinforce': [
+    'You named the action with enough detail that the leader cannot dispute it.',
   ],
-  'RED.Request.fail': [
-    'You stopped short of asking for a change. Without a clear request, this is just commentary.',
-    'There\'s no explicit ask. The leader needs to know exactly what to do differently.',
-    'Collaboration without a defined ask isn\'t a redirect — it\'s a conversation.',
+  'RED.Behavior.sharpen': [
+    'The behavior is identified but could be more observable.',
+    'Tighten the behavior to a single instance — what would a camera have seen?',
   ],
-  'RED.Impact.fail': [
+  'RED.Behavior.challenge': [
+    'The behavior is too broad to redirect. Name the specific action.',
+    'The leader cannot change what they cannot see. Make the behavior observable.',
+  ],
+  'RED.Impact.reinforce': [
+    'You named a real, visible cost — that is what gives the redirect its weight.',
+  ],
+  'RED.Impact.sharpen': [
+    'The impact is named but not specific enough. What changed because of this?',
+  ],
+  'RED.Impact.challenge': [
     'You named the behavior but not why it matters. Impact is what makes a redirect stick.',
   ],
-  'RED.Behavior.gap': [
-    'Behavior is identified but could be more observable.',
+  'RED.Request.reinforce': [
+    'The ask is clear and actionable. The leader knows exactly what to do tomorrow.',
   ],
-  'RED.Request.gap': [
+  'RED.Request.sharpen': [
     'The request is present but soft. Be direct about what should change next time.',
   ],
-  'RED.Impact.gap': [
-    'Impact is named but not specific enough — what changed because of this?',
+  'RED.Request.challenge': [
+    'You stopped short of asking for a change. Without an explicit ask, this is commentary.',
+    'There is no clear request. The leader needs to know exactly what to do differently.',
+    'Collaboration without a defined ask is not a redirect — it is a conversation.',
   ],
-  'RED.DirectDelivery.gap': [
+  'RED.DirectDelivery.sharpen': [
     'The delivery is indirect. A redirect lands harder when you own it as your standard.',
   ],
-  'RED.Behavior.strong': [
-    'Specific, observable, and tied to clear impact — that\'s a clean redirect.',
-    'You stayed direct without losing the relationship. That\'s the rep.',
+  'RED.DirectDelivery.challenge': [
+    'You routed this through a third party. A redirect only counts when you deliver it yourself.',
+  ],
+  'RED.DeliveryDiscipline.sharpen': [
+    'The point was there but you wrapped it in over-explanation. Land it once and let it sit.',
+  ],
+  'RED.DeliveryDiscipline.challenge': [
+    'You drifted from the point. A redirect is one clear message, not three stacked on top of each other.',
+  ],
+
+  // RED courage signals (Phase 4) — fired regardless of pass/fail when the
+  // scorer flags a retreat pattern. Forces the rep into a `gap` case.
+  'RED.Courage.retreatedToDiscussion': [
+    'The conversation shifted toward discussion rather than holding the standard.',
+    'You opened a debate instead of making the ask. Lead with the request, then discuss.',
+  ],
+  'RED.Courage.softenedUnderTension': [
+    'You walked the standard back when the moment got tense. Hold the line; the discomfort is the work.',
+    'The request softened mid-conversation. The leader needs to hear the same standard at the end as at the start.',
+  ],
+  'RED.Courage.indirectAccountability': [
+    'You routed accountability through "we" instead of naming the person. Direct ownership is what makes it stick.',
+  ],
+  'RED.Courage.overCollaboration': [
+    'You moved into problem-solving before the standard was clear. Set the bar first, then build the plan together.',
+  ],
+  'RED.Courage.backedOffAfterDefensiveness': [
+    'The request shrank after pushback. The redirect only works if you hold it through resistance.',
   ],
 
   // ============================ FUW ============================
-  'FUW.WorkAnchored.fail': [
-    'Your follow-up isn\'t anchored to a specific piece of work — there\'s nothing for the leader to point to.',
-    'Without naming the work, this becomes a check-in instead of a follow-up.',
+  'FUW.WorkAnchored.reinforce': [
+    'You anchored the follow-up to a specific deliverable — that is what makes the next step traceable.',
   ],
-  'FUW.WorkAnchored.gap': [
+  'FUW.WorkAnchored.sharpen': [
     'You referenced the work but loosely. Name it specifically so progress is traceable.',
   ],
-  'FUW.ProgressVisibility.gap': [
-    'You\'re not making progress visible. What\'s the current state versus the expected state?',
+  'FUW.WorkAnchored.challenge': [
+    'The follow-up is not anchored to specific work — there is nothing for the leader to point to.',
+    'Without naming the work, this is a check-in, not a follow-up.',
   ],
-  'FUW.Ownership.gap': [
+  'FUW.ProgressVisibility.reinforce': [
+    'You surfaced real status — what is done, what is blocked, what is next. That is the rep.',
+  ],
+  'FUW.ProgressVisibility.sharpen': [
+    'You are not making progress visible. What is the current state versus the expected state?',
+  ],
+  'FUW.ProgressVisibility.challenge': [
+    'You took feelings about status as status. Surface the actual state of the work.',
+  ],
+  'FUW.Ownership.reinforce': [
+    'You named the next owner and the next move. That is how follow-up builds accountability.',
+  ],
+  'FUW.Ownership.sharpen': [
     'Ownership is unclear — who is moving this forward, and by when?',
   ],
-  'FUW.Ownership.fail': [
+  'FUW.Ownership.challenge': [
     'No clear next owner. Follow-up without ownership trains the team to expect drift.',
     'You surfaced status but left ownership floating. Name who owns the next step before you close the loop.',
   ],
-  'FUW.WorkAnchored.strong': [
-    'Anchored to specific work with clear ownership — that\'s how follow-up creates accountability.',
-  ],
 
   // ============================ SCE ============================
-  'SCE.Expectation.fail': [
-    'The expectation isn\'t stated specifically enough for someone to act on.',
-    'You described a desire, not an expectation. What exactly should happen, by when?',
+  'SCE.Expectation.reinforce': [
+    'The expectation is concrete enough that a peer could repeat it back. That is the bar.',
   ],
-  'SCE.Success.fail': [
-    'There\'s no definition of success. The leader can meet your words but miss your intent.',
-    'Without success criteria, you and the leader can both feel "done" with different results.',
-  ],
-  'SCE.Expectation.gap': [
+  'SCE.Expectation.sharpen': [
     'The expectation is set but could be more concrete.',
   ],
-  'SCE.Success.gap': [
+  'SCE.Expectation.challenge': [
+    'The expectation is not specific enough for someone to act on.',
+    'You described a desire, not an expectation. What exactly should happen, by when?',
+  ],
+  'SCE.Success.reinforce': [
+    'You defined success in observable terms — both of you will know when it is done right.',
+  ],
+  'SCE.Success.sharpen': [
     'Success criteria are present but soft — what does "good" look like, exactly?',
   ],
-  'SCE.Understanding.gap': [
-    'You set the expectation but didn\'t check for understanding. Confirm the leader heard what you meant.',
+  'SCE.Success.challenge': [
+    'There is no definition of success. The leader can meet your words but miss your intent.',
   ],
-  'SCE.Understanding.fail': [
-    'You delivered the expectation but never confirmed it landed. Setting it isn\'t the same as the leader receiving it.',
-    'Without surfacing their interpretation, you\'re assuming alignment that may not exist.',
+  'SCE.Understanding.reinforce': [
+    'You surfaced their interpretation — that is the difference between setting an expectation and landing one.',
   ],
-  'SCE.Ownership.gap': [
+  'SCE.Understanding.sharpen': [
+    'You set the expectation but did not check for understanding. Confirm the leader heard what you meant.',
+  ],
+  'SCE.Understanding.challenge': [
+    'You delivered the expectation but never confirmed it landed. Setting is not the same as receiving.',
+    'Without surfacing their interpretation, you are assuming alignment that may not exist.',
+  ],
+  'SCE.Ownership.reinforce': [
+    'You named the owner and the cadence — the work has somewhere to live now.',
+  ],
+  'SCE.Ownership.sharpen': [
     'Ownership is implied, not assigned. Name who owns the next step.',
   ],
-  'SCE.Expectation.strong': [
-    'Specific, time-bound, and confirmed — the leader knows exactly what good looks like.',
-  ],
-
-  // ============================ PATTERN ============================
-  // Generic pattern observations (used when same condition is lowest in 3 of 5)
-  'pattern.Behavior': [
-    'You consistently describe behavior broadly. What would a camera capture next time?',
-    'A pattern: behavior stays general across reps. One level more specific changes everything.',
-  ],
-  'pattern.Impact': [
-    'A pattern: you tend to skip impact. Without it, your feedback lands as opinion.',
-  ],
-  'pattern.Request': [
-    'You consistently stop short of an explicit request. What specifically will be different next time?',
-    'A pattern: collaboration without definition. Make the ask.',
-  ],
-  'pattern.Expectation': [
-    'A pattern: expectations stay implicit. Lead with the expectation, then explain the why.',
-  ],
-  'pattern.Success': [
-    'You repeatedly skip defining success. What does "done well" look like, in concrete terms?',
-  ],
-  'pattern.WorkAnchored': [
-    'A pattern: follow-ups drift away from the actual work. Anchor each one to a specific deliverable.',
-  ],
-  'pattern.Ownership': [
-    'Ownership keeps blurring across your reps. Be explicit about who owns the next step.',
+  'SCE.Ownership.challenge': [
+    'There is no named owner. An unowned expectation will not survive the week.',
   ],
 };
 
 // ---------------------------------------------------------------------------
-// QUESTION TEMPLATES
-// Grouped by gap type. Used for Case 2 (pass-not-sharp) and Case 3 (not yet).
+// PATTERN OBSERVATIONS — identity voice (Phase 5).
+// Never numeric, never "X of Y reps." Names the tendency.
+// ---------------------------------------------------------------------------
+
+const PATTERN_OBSERVATIONS = {
+  'pattern.Behavior': [
+    'You consistently describe behavior in broad strokes. The leaders you coach will only repeat what you can point to.',
+    'You tend to stop one level above the actual behavior. The specific action is where the lesson lives.',
+  ],
+  'pattern.Impact': [
+    'You consistently skip the impact. Without it, your feedback reads as opinion rather than coaching.',
+  ],
+  'pattern.Request': [
+    'You consistently stop short of an explicit request. The standard does not exist until you name it.',
+    'You tend to invite collaboration before you define the ask. The redirect needs the ask first.',
+  ],
+  'pattern.Expectation': [
+    'You tend to leave expectations implicit. Lead with the expectation; the why comes after.',
+  ],
+  'pattern.Success': [
+    'You consistently skip defining what success looks like. Without it, you and the leader can both feel done with different results.',
+  ],
+  'pattern.WorkAnchored': [
+    'Your follow-ups consistently drift away from the actual work. Anchor each one to a specific deliverable.',
+  ],
+  'pattern.Ownership': [
+    'You consistently let ownership stay shared. Be explicit about who owns the next step.',
+  ],
+  'pattern.Understanding': [
+    'You consistently set the expectation and stop. The leader receiving it is the rep — surface their interpretation.',
+  ],
+  'pattern.DirectDelivery': [
+    'You consistently route hard messages through softer channels. The hard channel is the rep.',
+  ],
+  'pattern.DeliveryDiscipline': [
+    'You tend to wrap the point in extra context. One clear message, then silence.',
+  ],
+  'pattern.ProgressVisibility': [
+    'You consistently take sentiment as status. Make the actual state of the work visible.',
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// QUESTION TEMPLATES — grouped by condition / gap type.
 // Per spec §8: exactly 1 question, no teaching inside it.
 // ---------------------------------------------------------------------------
 
@@ -179,12 +269,12 @@ const QUESTIONS = {
   Expectation: [
     'What exactly should happen, by when?',
     'How would you describe the expectation in one sentence?',
-    'What\'s the standard you\'re holding to here?',
+    'What is the standard you are holding to here?',
   ],
   Success: [
     'What does "done well" look like, concretely?',
-    'How will you both know it\'s done right?',
-    'What are the two or three measurable signals of success?',
+    'How will you both know it is done right?',
+    'What are the two or three observable signals of success?',
   ],
   Ownership: [
     'Who owns the next step, and by when?',
@@ -193,15 +283,15 @@ const QUESTIONS = {
   ],
   Reinforcement: [
     'How will the leader know you want more of this?',
-    'What\'s the explicit "do this again" message?',
+    'What is the explicit "do this again" message?',
   ],
   WorkAnchored: [
     'Which specific piece of work are you following up on?',
-    'What\'s the deliverable this follow-up is tied to?',
+    'What is the deliverable this follow-up is tied to?',
   ],
   ProgressVisibility: [
     'Where are we now versus where we should be?',
-    'What\'s the visible progress signal?',
+    'What is the visible progress signal?',
   ],
   Understanding: [
     'How did you confirm the leader heard what you meant?',
@@ -210,7 +300,9 @@ const QUESTIONS = {
   DirectDelivery: [
     'How could you own this as your standard, not as a suggestion?',
   ],
-  // Used for Case 3 fallback when input is too vague to extract anything
+  DeliveryDiscipline: [
+    'What would it look like to land the point once and let it sit?',
+  ],
   Clarity: [
     'This is too general to evaluate. What specifically did you say or do?',
     'Walk me through the actual moment — what were the exact words?',
@@ -218,19 +310,42 @@ const QUESTIONS = {
 };
 
 // ---------------------------------------------------------------------------
-// SELECTION
-// Caller passes recently-used template strings (e.g. last 5 reps' observation
-// + question text) so we don't repeat. Falls back to first item if nothing
-// fresh remains.
+// LEGACY ALIAS LAYER — keys 'fail' / 'gap' / 'strong' map to v2 modes.
+// Keeps engine fallback paths working during rollout and lets older test
+// fixtures still resolve to a real bank.
 // ---------------------------------------------------------------------------
 
-/**
- * Pick a template from the bank, avoiding any in `recentlyUsed`.
- * @param {string[]} bank - Array of candidate template strings
- * @param {string[]} [recentlyUsed=[]] - Strings to avoid if possible
- * @param {() => number} [rand=Math.random] - Injectable PRNG (for tests)
- * @returns {string|null} Selected template, or null if bank is empty
- */
+const MODE_ALIASES = {
+  fail: 'challenge',
+  gap: 'sharpen',
+  strong: 'reinforce',
+};
+
+const buildLegacyAliasBank = () => {
+  const out = {};
+  for (const [key, bank] of Object.entries(MODE_OBSERVATIONS)) {
+    const lastDot = key.lastIndexOf('.');
+    const prefix = key.slice(0, lastDot);
+    const mode = key.slice(lastDot + 1);
+    for (const [legacy, canonical] of Object.entries(MODE_ALIASES)) {
+      if (mode === canonical) {
+        out[`${prefix}.${legacy}`] = bank;
+      }
+    }
+  }
+  return out;
+};
+
+const OBSERVATIONS = Object.freeze({
+  ...MODE_OBSERVATIONS,
+  ...PATTERN_OBSERVATIONS,
+  ...buildLegacyAliasBank(),
+});
+
+// ---------------------------------------------------------------------------
+// SELECTION
+// ---------------------------------------------------------------------------
+
 const selectTemplate = (bank, recentlyUsed = [], rand = Math.random) => {
   if (!Array.isArray(bank) || bank.length === 0) return null;
   const fresh = bank.filter((t) => !recentlyUsed.includes(t));
@@ -239,24 +354,40 @@ const selectTemplate = (bank, recentlyUsed = [], rand = Math.random) => {
   return pool[idx];
 };
 
-/**
- * Look up an observation bank by key. Returns [] if not found so callers
- * can fall back gracefully.
- * @param {string} key - e.g. "DRF.Behavior.fail"
- * @returns {string[]}
- */
 const getObservationBank = (key) => OBSERVATIONS[key] || [];
 
-/**
- * Look up a question bank by gap type.
- * @param {string} gapType - e.g. "Behavior"
- * @returns {string[]}
- */
 const getQuestionBank = (gapType) => QUESTIONS[gapType] || [];
+
+// ---------------------------------------------------------------------------
+// VOICE / TONE LINT CONSTANTS (Phase 8)
+// Exposed so a Vitest spec can enforce them.
+// ---------------------------------------------------------------------------
+
+const MAX_WORDS = 35;
+
+const BANNED_PHRASES = Object.freeze([
+  'great job',
+  'remember to',
+  'you should try to',
+  'nice job',
+  'awesome',
+  'amazing',
+  'good luck',
+  'just',
+]);
+
+// Bans any "N of M reps" / "X of Y" numeric phrasing in pattern templates.
+const NUMERIC_PATTERN_RE = /\b\d+\s+of\s+\d+\b/i;
 
 module.exports = {
   OBSERVATIONS,
+  MODE_OBSERVATIONS,
+  PATTERN_OBSERVATIONS,
   QUESTIONS,
+  MODE_ALIASES,
+  MAX_WORDS,
+  BANNED_PHRASES,
+  NUMERIC_PATTERN_RE,
   selectTemplate,
   getObservationBank,
   getQuestionBank,
