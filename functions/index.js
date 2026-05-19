@@ -25512,3 +25512,127 @@ exports.backfillAnnouncementNotifications = onCall(async (request) => {
   return { processed, totalWritten };
 });
 
+// ---------------------------------------------------------------------------
+// Event-sourced notifications — Phase 1: new coaching session
+// ---------------------------------------------------------------------------
+//
+// Generic helper to fan out an arbitrary inbox payload to a list of recipients.
+// Lives next to fanOutAnnouncement so future event triggers (streak milestones,
+// trainer feedback when that lands, etc.) all flow through one code path.
+//
+// `payload` is expected to already contain { source, sourceRefId, tier, title,
+// body, linkTarget, ... }. We fill in tierWeight, timestamps, and read-state.
+
+const enqueueNotification = async (recipientUids, payload) => {
+  if (!Array.isArray(recipientUids) || recipientUids.length === 0) return { written: 0 };
+  if (!payload?.source || !payload?.sourceRefId) {
+    logger.warn("[notifications.enqueue] missing source/sourceRefId, skipping");
+    return { written: 0 };
+  }
+  const docId = `${payload.source}_${payload.sourceRefId}`;
+  const full = {
+    tierWeight: TIER_WEIGHTS[payload.tier] || 100,
+    type: payload.type || payload.tier || "update",
+    title: payload.title || "",
+    body: payload.body || "",
+    link: payload.link || null,
+    linkTarget: payload.linkTarget || null,
+    priority: typeof payload.priority === "number" ? payload.priority : 0,
+    dismissible: payload.dismissible !== false,
+    startAt: payload.startAt || null,
+    expiresAt: payload.expiresAt || null,
+    read: false,
+    readAt: null,
+    snoozedUntil: null,
+    dismissedAt: null,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    ...payload, // allow caller overrides; spread last so tier/source survive
+  };
+  // Chunked batches; create() so we don't accidentally clobber an existing
+  // notification for the same source event (idempotent on retry).
+  let written = 0;
+  for (let i = 0; i < recipientUids.length; i += 400) {
+    const slice = recipientUids.slice(i, i + 400);
+    const batch = db.batch();
+    slice.forEach((uid) => {
+      const ref = db.collection("users").doc(uid).collection("notifications").doc(docId);
+      batch.set(ref, full, { merge: true });
+    });
+    try {
+      await batch.commit();
+      written += slice.length;
+    } catch (err) {
+      logger.error(`[notifications.enqueue] batch failed for ${payload.source}/${payload.sourceRefId}`, err);
+    }
+  }
+  return { written };
+};
+
+// Trigger: a new coaching_sessions doc was created. Notify all users so the
+// session appears in their inbox. Slim by design — see the guards below; if
+// any of these are wrong, the doc just gets skipped (no notifications, no
+// fail) and we tune in V2 once telemetry tells us how the surface lands.
+
+exports.onCoachingSessionCreated = require("firebase-functions/v2/firestore")
+  .onDocumentCreated("coaching_sessions/{sessionId}", async (event) => {
+    const snap = event.data;
+    if (!snap) return;
+    const sessionId = event.params.sessionId;
+    const data = snap.data() || {};
+
+    // Admin escape hatch — bulk template generation passes this to suppress
+    // the notification storm of "4 new sessions" from a single template.
+    if (data.notifyOnCreate === false) {
+      logger.info(`[notifications.session] ${sessionId} suppressed via notifyOnCreate=false`);
+      return;
+    }
+    // Skip cancelled / draft sessions.
+    if (data.status && data.status !== "scheduled") {
+      logger.info(`[notifications.session] ${sessionId} skipped status=${data.status}`);
+      return;
+    }
+    // Skip sessions more than 14 days out — keeps the inbox relevant. Users
+    // can still discover future sessions in the Community Hub.
+    const sessionDate = data.date ? new Date(`${data.date}T00:00:00`) : null;
+    if (sessionDate && Number.isFinite(sessionDate.getTime())) {
+      const daysOut = (sessionDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000);
+      if (daysOut > 14) {
+        logger.info(`[notifications.session] ${sessionId} skipped (${Math.round(daysOut)}d out)`);
+        return;
+      }
+      if (daysOut < -1) {
+        logger.info(`[notifications.session] ${sessionId} skipped (already past)`);
+        return;
+      }
+    }
+
+    // Format a human-friendly body. We intentionally keep this short — the
+    // row is a 1-line preview most of the time.
+    const dayLabel = sessionDate
+      ? sessionDate.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })
+      : "Soon";
+    const timeLabel = data.time ? ` at ${data.time}` : "";
+    const body = `${dayLabel}${timeLabel}${data.coach ? ` · ${data.coach}` : ""}`;
+
+    // Recipients: broadcast to all users. Matches the existing announcement
+    // broadcast pattern. Cohort/phase targeting can come later if needed.
+    const usersSnap = await db.collection("users").select().get();
+    const recipients = usersSnap.docs.map((d) => d.id);
+
+    const result = await enqueueNotification(recipients, {
+      source: "coaching_session",
+      sourceRefId: sessionId,
+      tier: "update",
+      title: `New session: ${data.title || "Coaching session"}`,
+      body,
+      linkTarget: { kind: "screen", screen: "community-hub", targetId: sessionId, label: "Reserve a spot" },
+      // Expire from the inbox the day after the session ends so it auto-cleans.
+      expiresAt: sessionDate
+        ? admin.firestore.Timestamp.fromMillis(sessionDate.getTime() + 36 * 60 * 60 * 1000)
+        : null,
+    });
+
+    logger.info(`[notifications.session] ${sessionId} fanned out to ${result.written} users`);
+  });
+
