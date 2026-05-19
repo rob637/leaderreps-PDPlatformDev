@@ -8,7 +8,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { ExternalLink, ArrowRight, MoreHorizontal, Clock, CheckCheck, X } from 'lucide-react';
 import { useSafeNavigation } from '../../providers/NavigationProvider';
 import { useAppServices } from '../../services/useAppServices';
-import { markRead, snoozeBy, dismiss } from '../../services/notificationActionsService';
+import { markRead, snoozeBy, dismiss, markShown, recordClick, notificationTelemetry } from '../../services/notificationActionsService';
 import { getTier, formatRelative } from './notificationStyles';
 
 const AUTOREAD_MS = 3000; // Read-on-view convention (Gmail/Linear style).
@@ -26,17 +26,24 @@ const NotificationRow = ({
   const tier = getTier(notif);
   const { Icon } = tier;
 
-  // Auto-mark-read after the row has been on screen for AUTOREAD_MS.
+  // Auto-mark-read after the row has been on screen for AUTOREAD_MS,
+  // and stamp shownAt the first time it intersects (regardless of read).
   useEffect(() => {
-    if (!autoReadOnView || notif.read) return undefined;
     if (typeof IntersectionObserver === 'undefined' || !rowRef.current) return undefined;
     let timer = null;
+    let stamped = !!notif.shownAt;
     const obs = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && !timer) {
-        timer = setTimeout(() => {
-          markRead(db, user?.uid, notif.id);
-        }, AUTOREAD_MS);
-      } else if (!entry.isIntersecting && timer) {
+      if (entry.isIntersecting) {
+        if (!stamped) {
+          stamped = true;
+          markShown(db, user?.uid, notif.id, !!notif.shownAt);
+        }
+        if (autoReadOnView && !notif.read && !timer) {
+          timer = setTimeout(() => {
+            markRead(db, user?.uid, notif.id);
+          }, AUTOREAD_MS);
+        }
+      } else if (timer) {
         clearTimeout(timer);
         timer = null;
       }
@@ -46,7 +53,7 @@ const NotificationRow = ({
       if (timer) clearTimeout(timer);
       obs.disconnect();
     };
-  }, [autoReadOnView, notif.id, notif.read, db, user?.uid]);
+  }, [autoReadOnView, notif.id, notif.read, notif.shownAt, db, user?.uid]);
 
   // Close overflow menu on outside click.
   useEffect(() => {
@@ -66,8 +73,9 @@ const NotificationRow = ({
   const linkLabel = linkTarget?.label || (kind === 'external' ? 'Open' : 'View');
 
   const handlePrimary = () => {
-    // Always mark read on explicit click.
+    // Always mark read on explicit click + stamp clickedAt for telemetry.
     if (!notif.read) markRead(db, user?.uid, notif.id);
+    recordClick(db, user?.uid, notif.id, !!notif.clickedAt);
     if (!kind) return;
     if (kind === 'external') {
       const url = linkTarget?.url || legacyHref;
@@ -164,7 +172,7 @@ const NotificationRow = ({
             <button
               type="button"
               role="menuitem"
-              onClick={() => { snoozeBy(db, user?.uid, notif.id, '1h'); setMenuOpen(false); }}
+              onClick={() => { snoozeBy(db, user?.uid, notif.id, '1h'); notificationTelemetry.emit('notification_snoozed', { id: notif.id, preset: '1h' }); setMenuOpen(false); }}
               className="w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
             >
               <Clock size={12} /> Snooze 1 hour
@@ -172,7 +180,7 @@ const NotificationRow = ({
             <button
               type="button"
               role="menuitem"
-              onClick={() => { snoozeBy(db, user?.uid, notif.id, 'tomorrow'); setMenuOpen(false); }}
+              onClick={() => { snoozeBy(db, user?.uid, notif.id, 'tomorrow'); notificationTelemetry.emit('notification_snoozed', { id: notif.id, preset: 'tomorrow' }); setMenuOpen(false); }}
               className="w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
             >
               <Clock size={12} /> Snooze until tomorrow
@@ -181,7 +189,7 @@ const NotificationRow = ({
               <button
                 type="button"
                 role="menuitem"
-                onClick={() => { dismiss(db, user?.uid, notif.id); setMenuOpen(false); }}
+                onClick={() => { dismiss(db, user?.uid, notif.id); notificationTelemetry.emit('notification_dismissed', { id: notif.id, wasRead: !!notif.read }); setMenuOpen(false); }}
                 className="w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-rose-600 dark:text-rose-400"
               >
                 <X size={12} /> Dismiss

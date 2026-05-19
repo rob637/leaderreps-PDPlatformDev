@@ -104,3 +104,43 @@ export const undismiss = async (db, uid, id) => {
     updatedAt: serverTimestamp(),
   }).catch((e) => console.warn('[notif] undismiss failed', e?.message || e));
 };
+
+// ---------------------------------------------------------------------------
+// Lightweight telemetry — stamps first-view and click timestamps on the
+// per-user inbox doc itself so we don't need a new collection or new rules.
+// `shownAt` / `clickedAt` are only ever set once (first occurrence wins) so
+// the same row scrolling in/out of view doesn't double-count.
+// ---------------------------------------------------------------------------
+
+export const markShown = async (db, uid, id, alreadyShown = false) => {
+  if (!db || !uid || !id || alreadyShown) return;
+  await updateDoc(notifRef(db, uid, id), {
+    shownAt: serverTimestamp(),
+  }).catch((e) => console.warn('[notif] markShown failed', e?.message || e));
+  notificationTelemetry.emit('notification_shown', { id });
+};
+
+export const recordClick = async (db, uid, id, alreadyClicked = false) => {
+  if (!db || !uid || !id) return;
+  if (!alreadyClicked) {
+    await updateDoc(notifRef(db, uid, id), {
+      clickedAt: serverTimestamp(),
+    }).catch((e) => console.warn('[notif] recordClick failed', e?.message || e));
+  }
+  notificationTelemetry.emit('notification_clicked', { id });
+};
+
+// Tiny pub/sub so we can wire Google Analytics / Mixpanel later without
+// touching call sites. For now it's a debug-only console log.
+const DEBUG = typeof import.meta !== 'undefined'
+  && import.meta.env?.VITE_ENABLE_DEBUG_MODE === 'true';
+
+export const notificationTelemetry = {
+  _handlers: [],
+  on(handler) { this._handlers.push(handler); return () => { this._handlers = this._handlers.filter((h) => h !== handler); }; },
+  emit(event, payload) {
+    if (DEBUG) console.debug('[telemetry]', event, payload);
+    this._handlers.forEach((h) => { try { h(event, payload); } catch { /* never throw */ } });
+  },
+};
+

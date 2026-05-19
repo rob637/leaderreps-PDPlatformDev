@@ -4,11 +4,13 @@ import {
   collection, query, orderBy, onSnapshot, getDocs,
   doc, setDoc, updateDoc, deleteDoc, serverTimestamp 
 } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { Card, Button } from '../ui';
 import { 
   Megaphone, Plus, Edit2, Trash2, Save, X, 
   AlertTriangle, Info, CheckCircle, Bell,
-  Calendar, Eye, EyeOff, ExternalLink, Users, User as UserIcon
+  Calendar, Eye, EyeOff, ExternalLink, Users, User as UserIcon,
+  RefreshCw
 } from 'lucide-react';
 
 /**
@@ -80,6 +82,60 @@ const SCREEN_LINK_OPTIONS = [
   { id: 'ascent-arena', label: 'Ascent Arena' },
   { id: 'app-settings', label: 'App Settings' },
 ];
+
+// Re-fans out every active announcement to all targeted users' inboxes.
+// Lives at the top of the file so the header can render it inline without
+// dragging extra prop plumbing through the main component.
+const BackfillButton = () => {
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const handleClick = async () => {
+    if (running) return;
+    const ok = window.confirm(
+      'Re-fan out every active announcement to all targeted users? '
+      + "This won't duplicate items (idempotent), but it will refresh content "
+      + 'and recompute targeting for any user/cohort changes.'
+    );
+    if (!ok) return;
+    setRunning(true);
+    setResult(null);
+    try {
+      const fn = httpsCallable(getFunctions(), 'backfillAnnouncementNotifications');
+      const res = await fn({});
+      const data = res?.data || {};
+      setResult({
+        ok: true,
+        text: `Backfill complete — ${data.processed ?? '?'} announcements → ${data.totalWritten ?? '?'} inbox writes.`,
+      });
+    } catch (e) {
+      console.error('[backfill] failed', e);
+      setResult({ ok: false, text: `Backfill failed: ${e?.message || e}` });
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleClick}
+        disabled={running}
+        className="inline-flex items-center gap-2"
+      >
+        <RefreshCw size={14} className={running ? 'animate-spin' : ''} />
+        {running ? 'Backfilling…' : 'Backfill inboxes'}
+      </Button>
+      {result && (
+        <p className={`text-xs ${result.ok ? 'text-corporate-teal-ink dark:text-corporate-teal' : 'text-rose-600 dark:text-rose-400'}`}>
+          {result.text}
+        </p>
+      )}
+    </div>
+  );
+};
 
 const AnnouncementsManager = () => {
   const { db } = useAppServices();
@@ -367,6 +423,7 @@ const AnnouncementsManager = () => {
             </p>
           </div>
         </div>
+        <BackfillButton />
       </div>
 
       {/* Create/Edit Form */}
