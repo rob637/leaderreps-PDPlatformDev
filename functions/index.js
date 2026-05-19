@@ -13949,7 +13949,11 @@ const LL_SECRETS = [
   'TELNYX_PUBLIC_KEY',
   'TELNYX_PHONE_NUMBER',
   'TELNYX_MESSAGING_PROFILE_ID',
-  'LL_TRAINER_PHONE', // optional — if set, trainer gets an SMS alert when a participant goes 21d silent
+  // LL_TRAINER_PHONE is intentionally NOT bound here — it's optional and may
+  // not exist in every project's Secret Manager. The code reads it via
+  // process.env.LL_TRAINER_PHONE and guards with `if (trainerPhone)`, so an
+  // undefined value is safe. To enable trainer SMS alerts in a given
+  // environment, create the secret and add it to this list for that project.
 ];
 
 let _labEnvValidated = false;
