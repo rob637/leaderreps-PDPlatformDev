@@ -68,7 +68,7 @@ const AscentLaunchAnnouncementModal = () => {
         <div className="flex items-center gap-2 mb-2">
           <Sparkles className="w-6 h-6 text-corporate-orange" />
           <span className="text-xs font-semibold uppercase tracking-wider text-corporate-orange">
-            Welcome to Ascent
+            Welcome to Foundation
           </span>
         </div>
         <h2
