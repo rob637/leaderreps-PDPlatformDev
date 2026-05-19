@@ -431,14 +431,28 @@ const KickoffProgressCard = () => {
                   {done.map(({ item, idx }) => {
                     const id = resolveId(item, idx);
                     const label = resolveLabel(item);
+                    const artifact = isArtifactItem(item);
                     return (
-                      <li key={id} className="flex items-center gap-3 px-3 py-1.5">
-                        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-corporate-teal/15 text-corporate-teal flex items-center justify-center" aria-hidden="true">
-                          <Check size={12} />
-                        </div>
-                        <span className="flex-1 text-sm text-slate-500 dark:text-slate-400 line-through">
-                          {label}
-                        </span>
+                      <li key={id}>
+                        <button
+                          type="button"
+                          onClick={() => onClickItem(item, idx)}
+                          className="w-full text-left flex items-center gap-3 px-3 py-1.5 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700/50 border border-transparent hover:border-slate-200 dark:hover:border-slate-600 transition-colors group"
+                          aria-label={`Review ${label}`}
+                          title="Click to review or update"
+                        >
+                          <div className="flex-shrink-0 w-5 h-5 rounded-full bg-corporate-teal/15 text-corporate-teal flex items-center justify-center" aria-hidden="true">
+                            <Check size={12} />
+                          </div>
+                          <span className="flex-1 text-sm text-slate-500 dark:text-slate-400 line-through group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">
+                            {label}
+                          </span>
+                          {artifact && (
+                            <span className="flex-shrink-0 text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                              Locker
+                            </span>
+                          )}
+                        </button>
                       </li>
                     );
                   })}
