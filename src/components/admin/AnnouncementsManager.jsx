@@ -30,6 +30,15 @@ const ANNOUNCEMENT_TYPES = [
   { id: 'alert', label: 'Important Alert', icon: AlertTriangle, color: 'red' }
 ];
 
+// Tier drives sort order + visual treatment in the per-user inbox.
+// Independent of `type` (which is a legacy banner style hint).
+const TIER_OPTIONS = [
+  { id: 'critical', label: 'Critical (orange, top of list)' },
+  { id: 'action', label: 'Action needed (teal)' },
+  { id: 'update', label: 'Update (default)' },
+  { id: 'celebration', label: 'Celebration (amber)' },
+];
+
 // Phase targeting options. Empty value = broadcast to all phases.
 const PHASE_OPTIONS = [
   { id: '', label: 'All Phases' },
@@ -85,6 +94,7 @@ const AnnouncementsManager = () => {
     title: '',
     message: '',
     type: 'announcement',
+    tier: 'update',
     priority: 0,
     active: true,
     dismissible: true,
@@ -179,6 +189,7 @@ const AnnouncementsManager = () => {
       title: '',
       message: '',
       type: 'announcement',
+      tier: 'update',
       priority: 0,
       active: true,
       dismissible: true,
@@ -220,6 +231,7 @@ const AnnouncementsManager = () => {
       title: announcement.title || '',
       message: announcement.message || '',
       type: announcement.type || 'announcement',
+      tier: announcement.tier || 'update',
       priority: announcement.priority || 0,
       active: announcement.active !== false,
       dismissible: announcement.dismissible !== false,
@@ -267,6 +279,7 @@ const AnnouncementsManager = () => {
         title: formData.title.trim(),
         message: formData.message.trim(),
         type: formData.type,
+        tier: formData.tier || 'update',
         priority: parseInt(formData.priority) || 0,
         active: formData.active,
         dismissible: formData.dismissible,
@@ -395,8 +408,8 @@ const AnnouncementsManager = () => {
             />
           </div>
 
-          {/* Type & Priority & Cohort Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Type & Tier & Cohort & Priority Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Type
@@ -410,6 +423,22 @@ const AnnouncementsManager = () => {
               >
                 {ANNOUNCEMENT_TYPES.map(type => (
                   <option key={type.id} value={type.id}>{type.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Tier
+              </label>
+              <select
+                value={formData.tier}
+                onChange={(e) => setFormData(prev => ({ ...prev, tier: e.target.value }))}
+                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg 
+                         bg-white dark:bg-slate-900 text-slate-800 dark:text-white
+                         focus:ring-2 focus:ring-corporate-teal focus:border-transparent"
+              >
+                {TIER_OPTIONS.map(t => (
+                  <option key={t.id} value={t.id}>{t.label}</option>
                 ))}
               </select>
             </div>

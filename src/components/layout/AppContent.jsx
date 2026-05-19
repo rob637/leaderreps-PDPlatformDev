@@ -25,6 +25,7 @@ import MobilePWABanner from '../ui/MobilePWABanner.jsx';
 // import RepFloatingButton from '../rep/RepFloatingButton.jsx'; // RepUp temporarily disabled — may bring back later
 import BugReportModal from '../modals/BugReportModal.jsx';
 import AscentLaunchAnnouncementModal from '../modals/AscentLaunchAnnouncementModal.jsx';
+import NotificationBell from '../notifications/NotificationBell.jsx';
 // UIVersionFloatingToggle removed May 2026 — app locked to v2.
 
 const AppContent = ({
@@ -168,6 +169,12 @@ const AppContent = ({
               className="no-glass flex-1 flex flex-col overflow-hidden relative md:rounded-3xl"
               aria-label="Page content"
             >
+              {/* Floating notifications bell — visible across all screens once signed in. */}
+              {user?.uid && (
+                <div className="absolute top-3 right-3 md:top-4 md:right-4 z-30">
+                  <NotificationBell />
+                </div>
+              )}
               {/* Global Back Button Header - REMOVED to save whitespace */}
               {/* {canGoBack && (
                 <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center shadow-sm z-10 shrink-0">

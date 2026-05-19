@@ -25242,3 +25242,273 @@ exports.crmNoActivitySweep = onSchedule(
     }
   }
 );
+
+// ============================================================================
+// USER NOTIFICATION FAN-OUT (Phase A of the unified notifications redesign)
+// ============================================================================
+//
+// Architecture:
+//   `announcements/{id}` is the admin authoring source-of-truth. Admins post
+//   broadcasts there via AnnouncementsManager. This trigger fans out a per-
+//   user inbox doc to `users/{uid}/notifications/{notifId}` so each user has
+//   their own queue with private read/snooze/dismiss state that syncs across
+//   devices.
+//
+// Why fan-out (vs. client-side filtering)?
+//   • Per-user read/unread state without polluting the source doc.
+//   • Solves the latent `limit(5)` bug — each user only queries their own
+//     subcollection.
+//   • Lets future sources (coaching replies, event reminders, achievements)
+//     write directly into the same inbox shape without a special path.
+//
+// Targeting matches the legacy client-side rules exactly so this is a
+// drop-in upgrade:
+//   1. If targetCohortId or targetUserIds is set → match either (OR).
+//   2. If neither is set → broadcast to all active users.
+//   3. targetPhase further restricts to users in that phase (AND).
+//   4. startDate/endDate gate visibility (handled client-side via
+//      expiresAt + active flag; we still fan out so users see history).
+//
+// Tier mapping: announcements may carry a `tier` field
+// ('critical' | 'action' | 'update' | 'celebration'). When absent we
+// derive from `type`:
+//   - 'alert'        → critical
+//   - 'success'      → celebration
+//   - 'info' | other → update
+// Authoring legacy docs without a tier still work.
+
+const TIER_WEIGHTS = {
+  critical: 1000,
+  action: 500,
+  update: 100,
+  celebration: 50,
+};
+
+const tierFromAnnouncement = (data = {}) => {
+  if (data.tier && TIER_WEIGHTS[data.tier]) return data.tier;
+  if (data.type === "alert") return "critical";
+  if (data.type === "success") return "celebration";
+  return "update";
+};
+
+// Resolve the list of recipient uids for an announcement. Returns null when
+// the announcement is a broadcast (caller should fall back to all users).
+const resolveTargetUids = async (data) => {
+  const userIds = Array.isArray(data.targetUserIds) ? data.targetUserIds.filter(Boolean) : [];
+  const cohortId = data.targetCohortId || null;
+  const phase = data.targetPhase || null;
+
+  // If neither cohort nor user targeting is set, it's a broadcast.
+  if (!cohortId && userIds.length === 0) {
+    let query = db.collection("users");
+    if (phase) {
+      // Phase targeting on a broadcast is rare but supported. We don't
+      // require an index — phase mismatch is filtered post-query below.
+    }
+    const snap = await query.select().get();
+    const all = snap.docs.map((d) => d.id);
+    if (!phase) return all;
+    // Re-fetch with phase filter (small N, OK).
+    const phased = await db.collection("users").where("currentPhaseKey", "==", phase).get();
+    if (!phased.empty) return phased.docs.map((d) => d.id);
+    // Fallback: filter client-side using userProfile.currentPhase if no
+    // dedicated field exists. We keep broadcast scope and let client filter
+    // by phase as a safety net — over-delivery is preferable to silence.
+    return all;
+  }
+
+  const set = new Set();
+  for (const uid of userIds) set.add(uid);
+
+  if (cohortId) {
+    const cohortSnap = await db.collection("users").where("cohortId", "==", cohortId).get();
+    cohortSnap.forEach((d) => set.add(d.id));
+  }
+
+  let uids = Array.from(set);
+  if (phase) {
+    // Apply phase filter as best-effort. Read user docs in batches of 100
+    // and keep only those whose currentPhaseKey matches. If currentPhaseKey
+    // isn't populated, fall back to including the user (over-deliver).
+    const kept = [];
+    for (let i = 0; i < uids.length; i += 100) {
+      const chunk = uids.slice(i, i + 100);
+      const refs = chunk.map((u) => db.collection("users").doc(u));
+      const docs = await db.getAll(...refs);
+      docs.forEach((d) => {
+        if (!d.exists) return;
+        const u = d.data() || {};
+        if (!u.currentPhaseKey || u.currentPhaseKey === phase) kept.push(d.id);
+      });
+    }
+    uids = kept;
+  }
+  return uids;
+};
+
+// Build the per-user inbox payload from an announcement document.
+const buildNotificationPayload = (announcementId, data) => {
+  const tier = tierFromAnnouncement(data);
+  const startMs = data.startDate?.toMillis?.() ?? null;
+  const endMs = data.endDate?.toMillis?.() ?? null;
+  return {
+    source: "announcement",
+    sourceRefId: announcementId,
+    tier,
+    tierWeight: TIER_WEIGHTS[tier] || 100,
+    type: data.type || "announcement",
+    title: data.title || "",
+    body: data.message || "",
+    link: data.link || null,
+    linkTarget: data.linkTarget || null,
+    priority: typeof data.priority === "number" ? data.priority : 0,
+    dismissible: data.dismissible !== false,
+    startAt: startMs ? admin.firestore.Timestamp.fromMillis(startMs) : null,
+    expiresAt: endMs ? admin.firestore.Timestamp.fromMillis(endMs) : null,
+    read: false,
+    readAt: null,
+    snoozedUntil: null,
+    dismissedAt: null,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+};
+
+// Write the inbox docs in chunked batches. Uses (announcementId) as the
+// notification doc id so re-fanout on update is idempotent (an update
+// rewrites the payload but preserves the per-user read/snooze state via
+// merge-with-fieldmask).
+const fanOutAnnouncement = async (announcementId, data, { isUpdate }) => {
+  const recipients = await resolveTargetUids(data);
+  if (!recipients || recipients.length === 0) {
+    logger.info(`[notifications.fanout] announcement=${announcementId} no recipients`);
+    return { written: 0 };
+  }
+  const payload = buildNotificationPayload(announcementId, data);
+  // On update we don't want to clobber per-user state — only refresh content.
+  const mutableFields = [
+    "tier", "tierWeight", "type", "title", "body", "link", "linkTarget",
+    "priority", "dismissible", "startAt", "expiresAt", "updatedAt",
+  ];
+
+  let written = 0;
+  const CHUNK = 400; // Firestore batch limit is 500; leave headroom.
+  for (let i = 0; i < recipients.length; i += CHUNK) {
+    const batch = db.batch();
+    const slice = recipients.slice(i, i + CHUNK);
+    slice.forEach((uid) => {
+      const ref = db.collection("users").doc(uid)
+        .collection("notifications").doc(`announcement_${announcementId}`);
+      if (isUpdate) {
+        const patch = {};
+        mutableFields.forEach((f) => { patch[f] = payload[f]; });
+        batch.set(ref, patch, { merge: true });
+      } else {
+        batch.set(ref, payload);
+      }
+    });
+    await batch.commit();
+    written += slice.length;
+  }
+  logger.info(`[notifications.fanout] announcement=${announcementId} written=${written} update=${isUpdate}`);
+  return { written };
+};
+
+exports.onAnnouncementWritten = require("firebase-functions/v2/firestore")
+  .onDocumentWritten("announcements/{announcementId}", async (event) => {
+    const after = event.data?.after;
+    const before = event.data?.before;
+    const announcementId = event.params.announcementId;
+
+    // Deletion — soft-clear: mark all per-user inbox copies dismissed via a
+    // best-effort sweep. We don't hard-delete user inbox docs because their
+    // per-user read state may have value for analytics.
+    if (!after?.exists) {
+      try {
+        const q = await db.collectionGroup("notifications")
+          .where("source", "==", "announcement")
+          .where("sourceRefId", "==", announcementId)
+          .limit(500).get();
+        if (q.empty) return;
+        const batch = db.batch();
+        q.docs.forEach((d) => batch.update(d.ref, {
+          dismissedAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }));
+        await batch.commit();
+      } catch (err) {
+        logger.warn(`[notifications.fanout] delete sweep failed for ${announcementId}`, err);
+      }
+      return;
+    }
+
+    const data = after.data() || {};
+    // Inactive announcements should not appear in inboxes. If we have a
+    // before-state, clear out existing inbox copies.
+    if (data.active === false) {
+      if (before?.exists) {
+        try {
+          const q = await db.collectionGroup("notifications")
+            .where("source", "==", "announcement")
+            .where("sourceRefId", "==", announcementId)
+            .limit(500).get();
+          const batch = db.batch();
+          q.docs.forEach((d) => batch.update(d.ref, {
+            expiresAt: admin.firestore.Timestamp.fromMillis(Date.now()),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          }));
+          if (q.size > 0) await batch.commit();
+        } catch (err) {
+          logger.warn(`[notifications.fanout] deactivate sweep failed for ${announcementId}`, err);
+        }
+      }
+      return;
+    }
+
+    const isUpdate = !!before?.exists;
+    await fanOutAnnouncement(announcementId, data, { isUpdate });
+  });
+
+/**
+ * One-shot admin callable to (re)fan-out all currently active announcements.
+ * Useful when migrating existing data to the per-user inbox model, or after
+ * a bug fix that requires re-issuing notifications. Idempotent: re-running
+ * just refreshes content fields on existing inbox docs.
+ */
+exports.backfillAnnouncementNotifications = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+  // Light admin check — relies on Firestore rules for the actual writes too.
+  const email = (request.auth.token?.email || "").toLowerCase();
+  const adminEmails = ["rob@sagecg.com", "admin@leaderreps.com", "ryan@leaderreps.com", "cristina@leaderreps.com"];
+  if (!adminEmails.includes(email)) {
+    // Also accept anyone listed in metadata/config.adminemails.
+    try {
+      const cfg = await db.collection("metadata").doc("config").get();
+      const list = (cfg.data()?.adminemails || []).map((e) => String(e).toLowerCase());
+      if (!list.includes(email)) {
+        throw new HttpsError("permission-denied", "Admin only.");
+      }
+    } catch (e) {
+      if (e instanceof HttpsError) throw e;
+      throw new HttpsError("permission-denied", "Admin only.");
+    }
+  }
+
+  const snap = await db.collection("announcements").where("active", "==", true).get();
+  let totalWritten = 0;
+  let processed = 0;
+  for (const doc of snap.docs) {
+    const data = doc.data();
+    try {
+      const r = await fanOutAnnouncement(doc.id, data, { isUpdate: true });
+      totalWritten += r.written;
+      processed += 1;
+    } catch (err) {
+      logger.error(`[notifications.backfill] failed for ${doc.id}`, err);
+    }
+  }
+  return { processed, totalWritten };
+});
+
