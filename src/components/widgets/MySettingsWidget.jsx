@@ -11,6 +11,7 @@ import { useAppServices } from '../../services/useAppServices';
 import { useTheme } from '../../providers/ThemeProvider';
 import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
 import NotificationPreferencesWidget from './NotificationPreferencesWidget';
+import SmsPrefsRow from './SmsPrefsRow';
 import BaselineAssessmentSimple from '../screens/developmentplan/BaselineAssessmentSimple';
 const IdentityStatement = lazy(() => import('../screens/IdentityStatement'));
 import { logActivity, ACTIVITY_TYPES } from '../../services/activityLogger';
@@ -289,6 +290,11 @@ const MySettingsWidget = () => {
               <Edit2 className="w-3.5 h-3.5" />
             </div>
           </button>
+
+          {/* Text Messages (SMS) Row - sibling channel preference. Self-
+              contained: renders its own row + modal, reads/writes via the
+              users/{uid}.profile subtree. */}
+          <SmsPrefsRow />
 
           {/* Appearance / Theme Row - Visible on all devices */}
           <div className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between">

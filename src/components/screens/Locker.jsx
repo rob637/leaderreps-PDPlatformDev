@@ -13,10 +13,8 @@ import MySettingsWidget from '../widgets/MySettingsWidget';
 // now uses the same week-grouped collapsible UI. Widget file kept dormant for
 // one release cycle in case rollback is needed.
 import PracticeRepsHistoryWidget from '../widgets/PracticeRepsHistoryWidget';
-import AscentSmsPrefsWidget from '../widgets/AscentSmsPrefsWidget';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { useDevPlan } from '../../hooks/useDevPlan';
-import { useRevampFlag } from '../../hooks/useRevampFlag';
 
 const LOCKER_FEATURES = [
   'locker-wins-history',
@@ -32,7 +30,6 @@ const Locker = () => {
   const { isFeatureEnabled, getFeatureOrder, getWidgetHelpText } = useFeatures();
   const { currentDayData, prepRequirementsComplete, dailyPlan } = useDailyPlan();
   const { currentWeek: _devPlanCurrentWeek } = useDevPlan();
-  const revampEnabled = useRevampFlag();
 
   // Get explore-config for widget visibility after prep completion (matches Dashboard)
   const exploreConfig = useMemo(() => {
@@ -210,12 +207,6 @@ const Locker = () => {
       <div className="mb-6">
         <MySettingsWidget />
       </div>
-
-      {revampEnabled && (
-        <div className="mb-6">
-          <AscentSmsPrefsWidget />
-        </div>
-      )}
 
       {/* My Journey Widget - shows cohort and journey info, hide prep progress (shown on Dashboard) */}
       <div className="mb-6">
