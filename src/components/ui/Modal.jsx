@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '../../lib/utils';
 import { X } from 'lucide-react';
 
@@ -194,7 +195,12 @@ const Modal = ({ isOpen, onClose, children, className, ariaLabel, ariaDescribedB
 
   if (!isOpen) return null;
 
-  return (
+  // Render into document.body so an ancestor with transform/filter/backdrop-filter
+  // (which turns `position: fixed` into "fixed within that ancestor") can't
+  // pin the modal into a corner of the page panel.
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <>
       <ModalOverlay onClick={onClose} />
       <ModalContent 
@@ -206,7 +212,8 @@ const Modal = ({ isOpen, onClose, children, className, ariaLabel, ariaDescribedB
         <ModalClose onClick={onClose} />
         {children}
       </ModalContent>
-    </>
+    </>,
+    document.body
   );
 };
 
