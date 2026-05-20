@@ -833,6 +833,14 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Rep Calibration L1 — trainer ratings of completed reps against the
+    // engine's automated assessment. Top-level collection, admin-only.
+    // Doc id = `${userId}__${repId}` for idempotent upserts. See
+    // src/services/calibrationService.js for schema.
+    match /rep_calibrations/{calibrationId} {
+      allow read, write: if isAdmin();
+    }
+
     // Deny all other access
     match /{document=**} {
       allow read, write: if false;

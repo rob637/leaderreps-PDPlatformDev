@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Users, Zap, FileText,
   ShieldAlert, ClipboardList, Calendar,
-  Megaphone, BarChart3, Sparkles,
+  Megaphone, BarChart3, Sparkles, ClipboardCheck,
 } from 'lucide-react';
 import ConditioningDashboard from './ConditioningDashboard';
 import LeaderProfileReports from './LeaderProfileReports';
@@ -14,6 +14,7 @@ import BaselineReports from './BaselineReports';
 import IdentityStatementReports from './IdentityStatementReports';
 import TrainerSessionsPanel from './TrainerSessionsPanel';
 import AskTrainerInbox from './AskTrainerInbox';
+const RepCalibrationPanel = React.lazy(() => import('./RepCalibrationPanel'));
 import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
 import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
 import { useAppServices } from '../../services/useAppServices';
@@ -24,6 +25,7 @@ const TABS = [
   { id: 'trainer-sessions', label: 'My Sessions', icon: Calendar, section: null },
   { id: 'ask-trainer-inbox', label: 'Ask a Trainer', icon: Megaphone, section: null },
   { id: 'conditioning', label: 'Conditioning', icon: Zap, section: null },
+  { id: 'rep-calibration', label: 'Rep Calibration', icon: ClipboardCheck, section: null },
   // Reports section
   { id: 'activity-report', label: 'Leader Activity', icon: ClipboardList, section: 'Reports' },
   { id: 'leader-profiles', label: 'Leader Profiles', icon: FileText, section: 'Reports' },
@@ -58,6 +60,11 @@ const FacilitatorCenter = () => {
       case 'identity-reports': return <IdentityStatementReports />;
       case 'trainer-sessions': return <TrainerSessionsPanel />;
       case 'ask-trainer-inbox': return <AskTrainerInbox />;
+      case 'rep-calibration': return (
+        <React.Suspense fallback={<div className="text-sm text-slate-500">Loading…</div>}>
+          <RepCalibrationPanel />
+        </React.Suspense>
+      );
       default: return <TrainerSessionsPanel />;
     }
   };
