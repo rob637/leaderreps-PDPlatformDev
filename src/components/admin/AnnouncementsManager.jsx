@@ -244,11 +244,15 @@ const AnnouncementsManager = () => {
         const items = [];
         snapshot.forEach((docSnap) => {
           const data = docSnap.data();
-          items.push({
-            id: docSnap.id,
-            email: data.email || '',
-            displayName: data.displayName || data.name || '',
-          });
+          const email = data.email || '';
+          const displayName =
+            data.displayName ||
+            data.name ||
+            [data.firstName, data.lastName].filter(Boolean).join(' ');
+          // Skip orphan/incomplete user docs that have neither an email nor a
+          // name — they show up as raw UIDs and aren't useful to target.
+          if (!email && !displayName) return;
+          items.push({ id: docSnap.id, email, displayName });
         });
         items.sort((a, b) =>
           (a.displayName || a.email).localeCompare(b.displayName || b.email)
