@@ -15,7 +15,7 @@ import { Card } from '../ui';
 import { 
   CheckCircle, XCircle, AlertTriangle, Send, RotateCcw,
   MessageSquare, Target, Handshake, Lightbulb, ChevronDown, HelpCircle,
-  ClipboardCheck, Eye, UserCheck, ThumbsUp, Megaphone, X, TrendingUp, TrendingDown, Minus, Info, ArrowRight, User, Shield
+  ClipboardCheck, Eye, UserCheck, ThumbsUp, Megaphone, X, TrendingUp, TrendingDown, Minus, Info, ArrowRight, User, Shield, BadgeCheck
 } from 'lucide-react';
 
 // Dimension icons and labels - use string keys to avoid module initialization order issues
@@ -751,7 +751,7 @@ const _userToggledAssessments = new Map();
 // ============================================
 // MAIN QUALITY CARD
 // ============================================
-const QualityAssessmentCard = ({ qualityAssessment, onPractice, compact = false, defaultExpanded = false, trend = null }) => {
+const QualityAssessmentCard = ({ qualityAssessment, onPractice, compact = false, defaultExpanded = false, trend = null, adminReview = null }) => {
   const isScored = !!SCORED_CONDITION_CONFIGS[qualityAssessment?.evaluationType];
   
   // Use a stable key from the assessment to track user toggle state across remounts
@@ -888,7 +888,39 @@ const QualityAssessmentCard = ({ qualityAssessment, onPractice, compact = false,
             </button>
           </div>
         </div>
-        
+
+        {/* Trainer review banner (Slice 1) — shown when an admin has reviewed
+            this rep and chose to share their review with the leader. */}
+        {adminReview?.reviewed && adminReview.shareWithLeader !== false && (
+          <div className="mt-3 rounded-lg border border-corporate-teal/30 bg-corporate-teal/5 dark:bg-corporate-teal/10 px-3 py-2.5">
+            <div className="flex items-center gap-2 mb-1">
+              <BadgeCheck className="w-4 h-4 text-corporate-teal" />
+              <span className="text-xs font-semibold text-corporate-navy dark:text-white">
+                Reviewed by your coach
+              </span>
+              {adminReview.correctedResult && (
+                <span className={`ml-auto text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                  adminReview.correctedResult === 'pass'
+                    ? 'bg-corporate-teal text-white'
+                    : 'bg-amber-500 text-white'
+                }`}>
+                  Updated to {adminReview.correctedResult === 'pass' ? 'Passed' : 'Not yet'}
+                </span>
+              )}
+              {!adminReview.correctedResult && adminReview.aiAccuracy === 'correct' && (
+                <span className="ml-auto text-[11px] font-medium text-corporate-teal">
+                  AI verdict confirmed
+                </span>
+              )}
+            </div>
+            {adminReview.trainerNote && (
+              <p className="text-xs text-slate-700 dark:text-slate-200 whitespace-pre-wrap">
+                {adminReview.trainerNote}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Score Bar - always visible (hide if not constructive) */}
         {!showWarning && (
           <div className="mt-3">

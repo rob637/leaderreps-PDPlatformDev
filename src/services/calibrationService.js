@@ -15,9 +15,17 @@
 //   1-5), feedback (string), tags (string[]), status ('draft'|'submitted'),
 //   createdAt, updatedAt.
 //
-// L1 is storage + UI only — L2 (few-shot prompt injection into geminiProxy
-// assessors) and L3 (per-dimension bias correction) wait until 10-20
-// calibrations per rep type have accrued.
+// L1 is storage + UI; L2 (few-shot prompt injection into evaluateRep
+// scorer) is gated behind `config/features.calibrationFewShot.enabled` and
+// activates once a rep type has ≥10 submitted calibrations. L3 (per-
+// dimension bias correction) is future work.
+//
+// adminReview block (Slice 1):
+// Whenever a trainer submits a calibration, we ALSO merge a small
+// `adminReview` block onto the rep doc itself (`users/{uid}/conditioning_reps/{repId}`
+// and best-effort `users/{uid}/reps_light/{repId}`). This is what the leader
+// sees in their rep history when a trainer has reviewed their AI verdict
+// and (optionally) overridden it or added a personal note.
 
 import {
   collection,
@@ -34,6 +42,7 @@ import {
 } from 'firebase/firestore';
 
 const COLLECTION = 'rep_calibrations';
+const REP_PATHS = ['conditioning_reps', 'reps_light'];
 
 const calId = (userId, repId) => `${userId}__${repId}`;
 
@@ -108,6 +117,12 @@ export const saveCalibration = async (db, {
   feedback = '',
   tags = [],
   status = 'submitted',
+  // adminReview fields (Slice 1) — written back to the rep doc so leaders
+  // can see when a trainer has reviewed their AI verdict.
+  aiAccuracy = null,            // 'correct' | 'partial' | 'incorrect' | null
+  correctedResult = null,       // 'pass' | 'notYet' | null  (null = AI stands)
+  trainerNote = '',             // public-facing note to the leader
+  shareWithLeader = true,       // if false, adminReview is internal only
 }) => {
   if (!db || !userId || !repId || !trainerId) {
     throw new Error('saveCalibration: missing required ids');
@@ -137,10 +152,46 @@ export const saveCalibration = async (db, {
     feedback,
     tags,
     status,
+    aiAccuracy,
+    correctedResult,
+    trainerNote,
+    shareWithLeader: !!shareWithLeader,
     updatedAt: serverTimestamp(),
     ...(existing.exists() ? {} : { createdAt: serverTimestamp() }),
   };
   await setDoc(ref, payload, { merge: true });
+
+  // Slice 1: merge adminReview onto the rep doc (best-effort across both
+  // possible rep paths). Only written when status === 'submitted' so that
+  // draft calibrations don't leak partial reviews to leaders.
+  if (status === 'submitted') {
+    const adminReview = {
+      reviewed: true,
+      aiAccuracy: aiAccuracy || null,
+      correctedResult: correctedResult || null,
+      trainerNote: typeof trainerNote === 'string' ? trainerNote : '',
+      shareWithLeader: !!shareWithLeader,
+      trainerId,
+      trainerEmail,
+      reviewedAt: serverTimestamp(),
+      calibrationId: id,
+    };
+    await Promise.all(
+      REP_PATHS.map(async (path) => {
+        try {
+          const repRef = doc(db, 'users', userId, path, repId);
+          const repSnap = await getDoc(repRef);
+          if (repSnap.exists()) {
+            await setDoc(repRef, { adminReview }, { merge: true });
+          }
+        } catch (err) {
+          // Best-effort; the calibration row is the source of truth.
+          console.warn(`[calibrationService] adminReview merge failed (${path}):`, err?.message);
+        }
+      })
+    );
+  }
+
   return { id, ...payload };
 };
 
@@ -148,7 +199,8 @@ export const saveCalibration = async (db, {
  * Per-rep-type calibration stats — used to decide when L2 (few-shot prompt
  * injection) is worth turning on. Returns
  *   { [repType]: { count, avgEngine, avgTrainer, avgDelta, passRateEngine,
- *                  passRateTrainer } }
+ *                  passRateTrainer, tagCounts, accuracyCounts, overrideCount,
+ *                  lastUpdated } }
  */
 export const getCalibrationStats = async (db) => {
   if (!db) return {};
@@ -165,6 +217,10 @@ export const getCalibrationStats = async (db) => {
         deltaSum: 0, deltaN: 0,
         engineTrue: 0, engineBoolN: 0,
         trainerTrue: 0, trainerBoolN: 0,
+        tagCounts: {},
+        accuracyCounts: { correct: 0, partial: 0, incorrect: 0 },
+        overrideCount: 0,
+        lastUpdated: null,
       };
     }
     const b = byType[t];
@@ -174,6 +230,15 @@ export const getCalibrationStats = async (db) => {
     if (typeof c.delta === 'number') { b.deltaSum += c.delta; b.deltaN += 1; }
     if (typeof c.enginePassed === 'boolean') { b.engineTrue += c.enginePassed ? 1 : 0; b.engineBoolN += 1; }
     if (typeof c.trainerPassed === 'boolean') { b.trainerTrue += c.trainerPassed ? 1 : 0; b.trainerBoolN += 1; }
+    if (Array.isArray(c.tags)) {
+      c.tags.forEach((tag) => { b.tagCounts[tag] = (b.tagCounts[tag] || 0) + 1; });
+    }
+    if (c.aiAccuracy && b.accuracyCounts[c.aiAccuracy] != null) {
+      b.accuracyCounts[c.aiAccuracy] += 1;
+    }
+    if (c.correctedResult) b.overrideCount += 1;
+    const ts = c.updatedAt?.toMillis ? c.updatedAt.toMillis() : null;
+    if (ts && (!b.lastUpdated || ts > b.lastUpdated)) b.lastUpdated = ts;
   });
   const out = {};
   Object.entries(byType).forEach(([t, b]) => {
@@ -184,9 +249,96 @@ export const getCalibrationStats = async (db) => {
       avgDelta: b.deltaN ? Math.round(b.deltaSum / b.deltaN) : null,
       passRateEngine: b.engineBoolN ? Math.round((b.engineTrue / b.engineBoolN) * 100) : null,
       passRateTrainer: b.trainerBoolN ? Math.round((b.trainerTrue / b.trainerBoolN) * 100) : null,
+      tagCounts: b.tagCounts,
+      accuracyCounts: b.accuracyCounts,
+      overrideCount: b.overrideCount,
+      lastUpdated: b.lastUpdated,
     };
   });
   return out;
+};
+
+/**
+ * Read the few-shot feature flag from `config/features.calibrationFewShot`.
+ * Returns { enabled: boolean, maxExamples: number }.
+ */
+export const getFewShotFlag = async (db) => {
+  if (!db) return { enabled: false, maxExamples: 3 };
+  try {
+    const snap = await getDoc(doc(db, 'config', 'features'));
+    const data = snap.exists() ? snap.data() : null;
+    const f = data && data.calibrationFewShot;
+    return {
+      enabled: !!(f && f.enabled),
+      maxExamples: (f && Number(f.maxExamples)) || 3,
+    };
+  } catch {
+    return { enabled: false, maxExamples: 3 };
+  }
+};
+
+/**
+ * Toggle the few-shot feature flag. Admin-only (enforced by firestore.rules
+ * on the config collection).
+ */
+export const setFewShotFlag = async (db, { enabled, maxExamples = 3 }) => {
+  if (!db) throw new Error('setFewShotFlag: db required');
+  await setDoc(
+    doc(db, 'config', 'features'),
+    {
+      calibrationFewShot: {
+        enabled: !!enabled,
+        maxExamples: Math.max(1, Math.min(5, Number(maxExamples) || 3)),
+        updatedAt: serverTimestamp(),
+      },
+    },
+    { merge: true }
+  );
+  return { enabled: !!enabled, maxExamples };
+};
+
+/**
+ * Admin scorer addendum (Slice 4) — free-form per-rrType rubric guidance
+ * that gets appended to the scorer's user prompt at evaluation time. Stored
+ * at `metadata/conditioning/rrAddendums/{rrType}`. Admin-only writes
+ * (firestore.rules `metadata/{document=**}`), public reads.
+ */
+const ADDENDUM_PATH = (rrType) => ['metadata', 'conditioning', 'rrAddendums', rrType];
+
+export const getRrAddendum = async (db, rrType) => {
+  if (!db || !rrType) return { text: '', updatedAt: null, updatedBy: null };
+  try {
+    const snap = await getDoc(doc(db, ...ADDENDUM_PATH(rrType)));
+    if (!snap.exists()) return { text: '', updatedAt: null, updatedBy: null };
+    const d = snap.data() || {};
+    return {
+      text: typeof d.text === 'string' ? d.text : '',
+      updatedAt: d.updatedAt || null,
+      updatedBy: d.updatedBy || null,
+      version: d.version || 0,
+    };
+  } catch {
+    return { text: '', updatedAt: null, updatedBy: null };
+  }
+};
+
+export const setRrAddendum = async (db, rrType, { text = '', trainerId, trainerEmail }) => {
+  if (!db) throw new Error('setRrAddendum: db required');
+  if (!rrType) throw new Error('setRrAddendum: rrType required');
+  const ref = doc(db, ...ADDENDUM_PATH(rrType));
+  const prev = await getDoc(ref);
+  const version = (prev.exists() && Number(prev.data()?.version)) || 0;
+  await setDoc(
+    ref,
+    {
+      text: String(text || '').slice(0, 4000),
+      updatedAt: serverTimestamp(),
+      updatedBy: trainerEmail || trainerId || null,
+      version: version + 1,
+    },
+    { merge: true }
+  );
+  return { ok: true, version: version + 1 };
 };
 
 export default {
@@ -194,4 +346,8 @@ export default {
   getCalibration,
   saveCalibration,
   getCalibrationStats,
+  getFewShotFlag,
+  setFewShotFlag,
+  getRrAddendum,
+  setRrAddendum,
 };
