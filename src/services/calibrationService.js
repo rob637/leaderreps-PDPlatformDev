@@ -15,9 +15,17 @@
 //   1-5), feedback (string), tags (string[]), status ('draft'|'submitted'),
 //   createdAt, updatedAt.
 //
-// L1 is storage + UI only — L2 (few-shot prompt injection into geminiProxy
-// assessors) and L3 (per-dimension bias correction) wait until 10-20
-// calibrations per rep type have accrued.
+// L1 is storage + UI; L2 (few-shot prompt injection into evaluateRep
+// scorer) is gated behind `config/features.calibrationFewShot.enabled` and
+// activates once a rep type has ≥10 submitted calibrations. L3 (per-
+// dimension bias correction) is future work.
+//
+// adminReview block (Slice 1):
+// Whenever a trainer submits a calibration, we ALSO merge a small
+// `adminReview` block onto the rep doc itself (`users/{uid}/conditioning_reps/{repId}`
+// and best-effort `users/{uid}/reps_light/{repId}`). This is what the leader
+// sees in their rep history when a trainer has reviewed their AI verdict
+// and (optionally) overridden it or added a personal note.
 
 import {
   collection,
@@ -34,6 +42,7 @@ import {
 } from 'firebase/firestore';
 
 const COLLECTION = 'rep_calibrations';
+const REP_PATHS = ['conditioning_reps', 'reps_light'];
 
 const calId = (userId, repId) => `${userId}__${repId}`;
 
@@ -108,6 +117,12 @@ export const saveCalibration = async (db, {
   feedback = '',
   tags = [],
   status = 'submitted',
+  // adminReview fields (Slice 1) — written back to the rep doc so leaders
+  // can see when a trainer has reviewed their AI verdict.
+  aiAccuracy = null,            // 'correct' | 'partial' | 'incorrect' | null
+  correctedResult = null,       // 'pass' | 'notYet' | null  (null = AI stands)
+  trainerNote = '',             // public-facing note to the leader
+  shareWithLeader = true,       // if false, adminReview is internal only
 }) => {
   if (!db || !userId || !repId || !trainerId) {
     throw new Error('saveCalibration: missing required ids');
@@ -137,10 +152,46 @@ export const saveCalibration = async (db, {
     feedback,
     tags,
     status,
+    aiAccuracy,
+    correctedResult,
+    trainerNote,
+    shareWithLeader: !!shareWithLeader,
     updatedAt: serverTimestamp(),
     ...(existing.exists() ? {} : { createdAt: serverTimestamp() }),
   };
   await setDoc(ref, payload, { merge: true });
+
+  // Slice 1: merge adminReview onto the rep doc (best-effort across both
+  // possible rep paths). Only written when status === 'submitted' so that
+  // draft calibrations don't leak partial reviews to leaders.
+  if (status === 'submitted') {
+    const adminReview = {
+      reviewed: true,
+      aiAccuracy: aiAccuracy || null,
+      correctedResult: correctedResult || null,
+      trainerNote: typeof trainerNote === 'string' ? trainerNote : '',
+      shareWithLeader: !!shareWithLeader,
+      trainerId,
+      trainerEmail,
+      reviewedAt: serverTimestamp(),
+      calibrationId: id,
+    };
+    await Promise.all(
+      REP_PATHS.map(async (path) => {
+        try {
+          const repRef = doc(db, 'users', userId, path, repId);
+          const repSnap = await getDoc(repRef);
+          if (repSnap.exists()) {
+            await setDoc(repRef, { adminReview }, { merge: true });
+          }
+        } catch (err) {
+          // Best-effort; the calibration row is the source of truth.
+          console.warn(`[calibrationService] adminReview merge failed (${path}):`, err?.message);
+        }
+      })
+    );
+  }
+
   return { id, ...payload };
 };
 
