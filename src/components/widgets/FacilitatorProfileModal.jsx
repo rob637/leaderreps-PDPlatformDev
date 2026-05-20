@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, User, Mail, Phone, Linkedin, Building2, 
   MessageSquare, Award, Calendar
@@ -41,6 +42,7 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
   }, [isOpen, onClose]);
 
   if (!isOpen || !facilitator) return null;
+  if (typeof document === 'undefined') return null;
 
   const {
     name = 'Your Trainer',
@@ -52,7 +54,7 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
     linkedIn
   } = facilitator;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div 
         className="relative w-full max-w-md max-h-[90vh] bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-y-auto overscroll-contain animate-in fade-in zoom-in-95 duration-200"
@@ -169,7 +171,8 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
