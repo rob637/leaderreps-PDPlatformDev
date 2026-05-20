@@ -1,7 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
 import { Users, Mail, Info } from 'lucide-react';
 import { Card } from '../ui';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
+import { useAppServices } from '../../services/useAppServices';
 import FacilitatorProfileModal from './FacilitatorProfileModal';
 import FacilitatorAvatar from './FacilitatorAvatar';
 
@@ -19,9 +21,11 @@ import FacilitatorAvatar from './FacilitatorAvatar';
  */
 const YourCohortWidget = () => {
   const { cohortData, currentPhase, phaseDayNumber } = useDailyPlan();
+  const { db } = useAppServices();
   const [selectedTrainer, setSelectedTrainer] = useState(null);
+  const [liveTrainersById, setLiveTrainersById] = useState({});
 
-  const trainers = useMemo(() => {
+  const embeddedTrainers = useMemo(() => {
     if (cohortData?.facilitators && Array.isArray(cohortData.facilitators) && cohortData.facilitators.length > 0) {
       return cohortData.facilitators;
     }
@@ -30,6 +34,57 @@ const YourCohortWidget = () => {
     }
     return [];
   }, [cohortData]);
+
+  // Cohort docs embed a snapshot of each trainer's profile at the time the
+  // cohort was saved. That snapshot can go stale when an admin updates the
+  // trainer's title/bio/photo in the People → Trainers tab. Re-hydrate from
+  // the live `facilitators/{id}` doc so the Locker always reflects current
+  // trainer info.
+  useEffect(() => {
+    if (!db) return;
+    const ids = embeddedTrainers.map((t) => t?.id).filter(Boolean);
+    if (ids.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const results = await Promise.all(
+        ids.map(async (id) => {
+          try {
+            const snap = await getDoc(doc(db, 'facilitators', id));
+            return snap.exists() ? [id, snap.data()] : null;
+          } catch (e) {
+            console.error('[YourCohortWidget] Failed to hydrate trainer', id, e);
+            return null;
+          }
+        })
+      );
+      if (cancelled) return;
+      const map = {};
+      results.forEach((entry) => {
+        if (entry) map[entry[0]] = entry[1];
+      });
+      setLiveTrainersById(map);
+    })();
+    return () => { cancelled = true; };
+  }, [db, embeddedTrainers]);
+
+  const trainers = useMemo(() => {
+    return embeddedTrainers.map((t) => {
+      const live = t?.id ? liveTrainersById[t.id] : null;
+      if (!live) return t;
+      // Live facilitator doc wins for display fields; keep embedded id/email
+      // as authoritative identifiers in case the live doc is missing them.
+      return {
+        ...t,
+        name: live.displayName || t.name,
+        title: live.title || t.title,
+        bio: live.bio || t.bio,
+        photoUrl: live.photoUrl || t.photoUrl,
+        phone: live.phone || t.phone,
+        linkedIn: live.linkedIn || t.linkedIn,
+        email: live.email || t.email,
+      };
+    });
+  }, [embeddedTrainers, liveTrainersById]);
 
   const phasePill = useMemo(() => {
     const id = currentPhase?.id;
