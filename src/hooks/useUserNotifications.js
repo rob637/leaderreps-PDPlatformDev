@@ -30,6 +30,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { useAppServices } from '../services/useAppServices';
+import { useDailyPlan, phaseKey } from './useDailyPlan';
 
 const toMillis = (v) => {
   if (!v) return null;
@@ -72,6 +73,8 @@ const PAGE_LIMIT = 100;
 
 const useUserNotifications = () => {
   const { db, user } = useAppServices();
+  const { currentPhase } = useDailyPlan();
+  const userPhase = phaseKey(currentPhase);
   const [raw, setRaw] = useState([]);
   const [loading, setLoading] = useState(true);
   const [nowTick, setNowTick] = useState(() => Date.now());
@@ -117,6 +120,10 @@ const useUserNotifications = () => {
     const snoozed = [];
     raw.forEach((n) => {
       if (n.dismissedAt) return;
+      // Hide phase-targeted items that don't match the viewer's phase.
+      // If we can't yet resolve the user's phase (still loading), skip the
+      // filter rather than hide everything — over-deliver beats silence.
+      if (n.targetPhase && userPhase && n.targetPhase !== userPhase) return;
       const exp = toMillis(n.expiresAt);
       if (exp && exp < now) return;
       const start = toMillis(n.startAt);
@@ -140,7 +147,7 @@ const useUserNotifications = () => {
       groups: groupByDay(visible),
       unreadCount: unread.length,
     };
-  }, [raw, nowTick]);
+  }, [raw, nowTick, userPhase]);
 
   return { loading, ...derived };
 };

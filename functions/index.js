@@ -25503,6 +25503,11 @@ const buildNotificationPayload = (announcementId, data) => {
     linkTarget: data.linkTarget || null,
     priority: typeof data.priority === "number" ? data.priority : 0,
     dismissible: data.dismissible !== false,
+    // Phase filter carried client-side. Server-side phase resolution can't
+    // be trusted (users don't have currentPhaseKey populated; phase is
+    // computed in the app from cohort + start date). Including the target
+    // here lets useUserNotifications hide mismatched items.
+    targetPhase: data.targetPhase || null,
     startAt: startMs ? admin.firestore.Timestamp.fromMillis(startMs) : null,
     expiresAt: endMs ? admin.firestore.Timestamp.fromMillis(endMs) : null,
     read: false,
@@ -25528,7 +25533,7 @@ const fanOutAnnouncement = async (announcementId, data, { isUpdate }) => {
   // On update we don't want to clobber per-user state — only refresh content.
   const mutableFields = [
     "tier", "tierWeight", "type", "title", "body", "link", "linkTarget",
-    "priority", "dismissible", "startAt", "expiresAt", "updatedAt",
+    "priority", "dismissible", "targetPhase", "startAt", "expiresAt", "updatedAt",
   ];
 
   let written = 0;
