@@ -2,9 +2,11 @@
 // Choose between Rep (Dashboard Guide) and Reppy (Standalone Curriculum)
 
 import React from 'react';
-import { ArrowLeft, Sparkles, Bot, ArrowRight, CheckCircle2, Clock, Users, BookOpen, Flame, Target } from 'lucide-react';
+import { Sparkles, Bot, ArrowRight, CheckCircle2, Clock, Users, BookOpen, Flame, Target } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { useReppyProgress } from '../../hooks/useReppyProgress';
+import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
+import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
 
 /**
  * AICoachSelector - Choose your AI coach experience
@@ -18,21 +20,12 @@ const AICoachSelector = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-800">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-white dark:bg-slate-800 border-b border-gray-100">
-        <div className="flex items-center justify-between px-4 py-3">
-          <button 
-            onClick={() => navigate('dashboard')}
-            className="p-2 -ml-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          
-          <h1 className="font-semibold text-gray-900 dark:text-gray-100">Choose Your AI Coach</h1>
-
-          <div className="w-9" /> {/* Spacer for centering */}
-        </div>
-      </header>
+      <div className="max-w-2xl mx-auto px-4 pt-4">
+        <BreadcrumbNav
+          items={getBreadcrumbs('ai-coach')}
+          navigate={navigate}
+        />
+      </div>
 
       <main className="p-4 max-w-2xl mx-auto">
         {/* Intro */}

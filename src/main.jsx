@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './styles/global.css';
 import ErrorBoundary from './components/system/ErrorBoundary';
 import ConfigGate from './components/system/ConfigGate';
+import BootSkeleton from './components/system/BootSkeleton';
 import { onCLS, onINP, onLCP, onFCP, onTTFB } from 'web-vitals';
 
 // === CAPTURE PWA INSTALL PROMPT EARLY ===
@@ -54,15 +55,21 @@ const container = document.getElementById('root');
 const root = createRoot(container);
 
 root.render(
-  <React.StrictMode>
+  ErrorBoundary ? (
     <ErrorBoundary>
       <ConfigGate>
-        <Suspense fallback={<div className="p-8 text-center">Loading…</div>}>
+        <Suspense fallback={<BootSkeleton />}>
           <App />
         </Suspense>
       </ConfigGate>
     </ErrorBoundary>
-  </React.StrictMode>
+  ) : (
+    <ConfigGate>
+      <Suspense fallback={<BootSkeleton />}>
+        <App />
+      </Suspense>
+    </ConfigGate>
+  )
 );
 
 // Initialize Web Vitals monitoring

@@ -36,7 +36,7 @@ const RepCohortPulse = ({
         <div className="grid grid-cols-2 gap-3">
           {/* Active Leaders */}
           <div className="bg-teal-50 dark:bg-teal-900/30 rounded-lg p-3 text-center">
-            <div className="text-2xl font-bold text-corporate-teal dark:text-teal-400">
+            <div className="text-2xl font-bold text-corporate-teal-ink dark:text-teal-400">
               {activeLeaders}/{totalLeaders}
             </div>
             <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">

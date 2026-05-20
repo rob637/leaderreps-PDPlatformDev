@@ -184,7 +184,7 @@ const SkillModal = ({ skill, onClose, navigate }) => {
                       <button
                         onClick={() => copyStarter(p, i)}
                         aria-label="Copy"
-                        className="shrink-0 text-slate-400 hover:text-corporate-teal opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="shrink-0 text-slate-400 hover:text-corporate-teal-ink opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         {copiedIdx === i ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                       </button>

@@ -1,6 +1,8 @@
 // src/routing/ScreenRouter.jsx
 
 import React, { lazy, Suspense } from 'react';
+import { resolveScreenKey } from './screenAliases';
+import { useRevampFlag } from '../hooks/useRevampFlag';
 
 const ScreenMap = {
   // AI Coach Screens
@@ -15,6 +17,14 @@ const ScreenMap = {
   dashboard: lazy(() => import('../components/screens/Dashboard.jsx')),
   'ascent-arena': lazy(() => import('../components/screens/AscentArena.jsx')),
   'conditioning': lazy(() => import('../components/screens/Conditioning.jsx')),
+  // Ascent Revamp screens (WS-1)
+  'events': lazy(() => import('../components/screens/Events.jsx')),
+  'ask-coach': lazy(() => import('../components/screens/AskCoach.jsx')),
+  'ask-trainer-archive': lazy(() =>
+    import('../components/screens/AskTrainerArchive.jsx')
+  ),
+  'identity-statement': lazy(() => import('../components/screens/IdentityStatement.jsx')),
+  'conditioning-light': lazy(() => import('../components/screens/ConditioningLight.jsx')),
   'development-plan': lazy(() =>
     import('../components/screens/DevelopmentPlan.jsx')
   ),
@@ -35,8 +45,8 @@ const ScreenMap = {
   'executive-reflection': lazy(() =>
     import('../components/screens/ExecutiveReflection.jsx')
   ),
-  community: lazy(() => import('../components/screens/CommunityHub.jsx')),
-  'community-hub': lazy(() => import('../components/screens/CommunityHub.jsx')),
+  community: lazy(() => import('../components/screens/Events.jsx')),
+  'community-hub': lazy(() => import('../components/screens/Events.jsx')),
   'community-feed': lazy(() => import('../components/screens/CommunityFeed.jsx')),
   'applied-leadership': lazy(() =>
     import('../components/screens/AppliedLeadership.jsx')
@@ -139,6 +149,9 @@ const ScreenMap = {
   'admin-hub': lazy(() =>
     import('../components/admin/AdminHub.jsx')
   ),
+  'ascent-2': lazy(() =>
+    import('../components/admin/Ascent2Center.jsx')
+  ),
   'config-center': lazy(() =>
     import('../components/admin/AppConfigCenter.jsx')
   ),
@@ -150,6 +163,12 @@ const ScreenMap = {
   ),
   'marketing-center': lazy(() =>
     import('../components/admin/SalesMarketingCenter.jsx')
+  ),
+  'leaderreps-lab': lazy(() =>
+    import('../components/admin/LeaderRepsLab.jsx')
+  ),
+  'team-pulse': lazy(() =>
+    import('../components/admin/TeamPulse.jsx')
   ),
   'book-builder': lazy(() =>
     import('../components/admin/BookBuilder.jsx')
@@ -170,6 +189,9 @@ const ScreenMap = {
   ),
   'admin-coaching-manager': lazy(() =>
     import('../components/admin/CoachingManager.jsx')
+  ),
+  'admin-events-manager': lazy(() =>
+    import('../components/admin/EventsManager.jsx')
   ),
   'admin-lov-manager': lazy(() =>
     import('../components/admin/LOVManager.jsx')
@@ -241,13 +263,18 @@ const ScreenLoadingSkeleton = () => (
 );
 
 const ScreenRouter = ({ currentScreen, navParams, navigate, isDeveloperMode }) => {
-  console.log('🗺️ [ScreenRouter] Routing to screen:', { 
-    currentScreen, 
+  const revampEnabled = useRevampFlag();
+  const effectiveScreen = resolveScreenKey(currentScreen, revampEnabled);
+
+  console.log('🗺️ [ScreenRouter] Routing to screen:', {
+    currentScreen,
+    effectiveScreen,
+    revampEnabled,
     isDeveloperMode,
-    hasComponent: !!ScreenMap[currentScreen]
+    hasComponent: !!ScreenMap[effectiveScreen]
   });
-  
-  const Component = ScreenMap[currentScreen] || NotFoundScreen;
+
+  const Component = ScreenMap[effectiveScreen] || NotFoundScreen;
 
   return (
     <Suspense fallback={<ScreenLoadingSkeleton />}>

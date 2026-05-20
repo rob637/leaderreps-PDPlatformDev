@@ -5,17 +5,18 @@ import {
   ChevronDown
 } from 'lucide-react';
 
+// Conservative, defensible stats — not big-number marketing claims.
 const stats = [
-  { value: '340%', label: 'Average ROI on leadership development', source: 'Association for Talent Development' },
-  { value: '75%', label: 'of employees quit managers, not companies', source: 'Gallup' },
-  { value: '21%', label: 'productivity boost with engaged leaders', source: 'Harvard Business Review' },
+  { value: '35-150%', label: 'of salary to replace one departing employee', source: 'SHRM, CAP, Work Institute' },
+  { value: '75%', label: 'of employees who quit are quitting their manager', source: 'Gallup' },
+  { value: '1', label: 'leader is enough to start the conversation', source: 'LeaderReps' },
 ];
 
 const benefits = [
-  { icon: TrendingUp, title: 'Reduce Turnover', desc: 'Cut costly employee replacement expenses' },
-  { icon: Users, title: 'Boost Engagement', desc: 'Multiply team productivity and morale' },
-  { icon: DollarSign, title: 'Quantify Impact', desc: 'Get hard numbers for your business case' },
-  { icon: Clock, title: 'Fast Results', desc: 'Calculate your ROI in under 2 minutes' },
+  { icon: TrendingUp, title: 'See the hidden costs', desc: 'Recruiting, ramp-up, lost productivity — broken out, not hand-waved' },
+  { icon: Users, title: 'Frame capacity, not cuts', desc: 'Better leaders raise the lid on growth, they don\'t shrink the team' },
+  { icon: DollarSign, title: 'Three defensible scenarios', desc: 'Save 1 person, reclaim 2 hrs/week, land 1 more deal — pick what fits' },
+  { icon: Clock, title: 'Two minutes', desc: 'Per-leader view first; scale only when you want to' },
 ];
 
 const Landing = ({ onStart }) => {
@@ -66,10 +67,10 @@ const Landing = ({ onStart }) => {
               transition={{ delay: 0.2 }}
               className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white mb-6 leading-tight"
             >
-              What's the ROI of
+              The hidden cost of
               <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-300">
-                Better Leaders?
+                an untrained manager.
               </span>
             </motion.h1>
             
@@ -79,9 +80,9 @@ const Landing = ({ onStart }) => {
               transition={{ delay: 0.3 }}
               className="text-xl sm:text-2xl text-white/80 max-w-3xl mx-auto mb-10 font-light"
             >
-              Calculate how much leadership development could save
+              A two-minute walk-through that shows the per-leader picture —
               <br className="hidden sm:block" />
-              your organization in turnover, productivity, and engagement.
+              built from conservative numbers a CFO can actually defend.
             </motion.p>
             
             <motion.button
@@ -94,7 +95,7 @@ const Landing = ({ onStart }) => {
               className="group inline-flex items-center gap-3 px-8 py-4 bg-white text-corporate-navy font-bold text-lg rounded-xl shadow-2xl hover:shadow-3xl transition-all pulse-ring"
             >
               <BarChart3 className="w-6 h-6" />
-              Calculate My ROI
+              Walk Through It
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </motion.button>
             
@@ -104,7 +105,7 @@ const Landing = ({ onStart }) => {
               transition={{ delay: 0.6 }}
               className="text-white/50 text-sm mt-6"
             >
-              Join 1,000+ HR leaders who've calculated their potential savings
+              Educational, not salesy. No big-number projections.
             </motion.p>
           </div>
           
@@ -154,10 +155,11 @@ const Landing = ({ onStart }) => {
             className="text-center mb-12"
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-corporate-navy mb-4">
-              Why Calculate Leadership ROI?
+              Why a per-leader view?
             </h2>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Make the business case for investing in your leaders with real numbers.
+              Aggregated savings figures rarely survive a CFO review.
+              The case for one leader and one direct report does.
             </p>
           </motion.div>
           
@@ -201,9 +203,9 @@ const Landing = ({ onStart }) => {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { step: '01', title: 'Enter Your Numbers', desc: 'Tell us about your organization: number of leaders, team sizes, and industry.' },
-              { step: '02', title: 'Get Your Analysis', desc: 'Our calculator uses research-backed benchmarks to estimate potential savings.' },
-              { step: '03', title: 'Share Your Results', desc: 'Download a professional report to make the case for leadership investment.' },
+              { step: '01', title: 'One leader, one report', desc: 'Start with the simplest defensible scope. Add manager and report salary, industry, and turnover.' },
+              { step: '02', title: 'See three scenarios', desc: 'Save one person from leaving, reclaim two hours of leader capacity, land one more deal — each with the math shown.' },
+              { step: '03', title: 'Take it to the table', desc: 'Use the verbal ROI to start the conversation with finance — no inflated projections required.' },
             ].map((item, i) => (
               <motion.div
                 key={i}
@@ -236,10 +238,10 @@ const Landing = ({ onStart }) => {
           >
             <Building2 className="w-12 h-12 text-corporate-teal mx-auto mb-6" />
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-              Ready to Build the Business Case?
+              Ready to walk through it?
             </h2>
             <p className="text-xl text-white/70 mb-8">
-              See exactly how much leadership development could save your organization.
+              Two minutes. Per leader. Conservative by design.
             </p>
             
             <motion.button
@@ -248,22 +250,22 @@ const Landing = ({ onStart }) => {
               onClick={onStart}
               className="group inline-flex items-center gap-3 px-8 py-4 bg-corporate-teal text-white font-bold text-lg rounded-xl shadow-xl hover:bg-emerald-500 transition-colors"
             >
-              Start Calculating
+              Start the Walk-Through
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </motion.button>
             
             <div className="flex flex-wrap justify-center gap-6 mt-8 text-white/60 text-sm">
               <span className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-corporate-teal" />
-                Research-backed benchmarks
+                Conservative figures by design
               </span>
               <span className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-corporate-teal" />
-                Industry-specific data
+                The math is shown
               </span>
               <span className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-corporate-teal" />
-                Full report emailed to you
+                Educational, not a sales pitch
               </span>
             </div>
           </motion.div>

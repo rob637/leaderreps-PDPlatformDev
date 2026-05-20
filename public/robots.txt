@@ -1,0 +1,13 @@
+# LeaderReps PD Platform
+User-agent: *
+Allow: /
+
+# Disallow internal/admin paths from indexing
+Disallow: /admin
+Disallow: /admin/
+Disallow: /api/
+Disallow: /debug
+Disallow: /debug-data
+Disallow: /data-maintenance
+
+Sitemap: https://arena.leaderreps.com/sitemap.xml

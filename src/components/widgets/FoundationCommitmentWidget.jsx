@@ -232,7 +232,7 @@ export default function FoundationCommitmentWidget({ onComplete, onClose, isModa
         {alreadyCompleted && (
           <div className="flex items-center gap-2 p-3 bg-corporate-teal/10 rounded-xl border border-corporate-teal/20">
             <CheckCircle className="w-5 h-5 text-corporate-teal flex-shrink-0" />
-            <span className="text-sm font-medium text-corporate-teal">
+            <span className="text-sm font-medium text-corporate-teal-ink">
               You have already acknowledged these expectations
             </span>
           </div>

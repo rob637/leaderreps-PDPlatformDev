@@ -310,7 +310,7 @@ const PlannedRepForm = ({
                 type="radio"
                 checked={useEndOfWeek}
                 onChange={() => setUseEndOfWeek(true)}
-                className="text-corporate-teal"
+                className="text-corporate-teal-ink"
               />
               <div>
                 <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
@@ -328,7 +328,7 @@ const PlannedRepForm = ({
                 type="radio"
                 checked={!useEndOfWeek}
                 onChange={() => setUseEndOfWeek(false)}
-                className="text-corporate-teal"
+                className="text-corporate-teal-ink"
               />
               <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
                 Set a specific date

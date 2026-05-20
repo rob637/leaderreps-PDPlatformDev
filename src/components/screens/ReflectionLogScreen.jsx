@@ -148,7 +148,7 @@ const ReflectionLogScreen = () => {
                                 {entry.tryDiff && <p><strong>Try:</strong> {entry.tryDiff}</p>}
                                 {entry.identity && (
                                     <p className="italic font-medium text-gray-800 dark:text-gray-200 pt-2 border-t border-gray-200 dark:border-gray-700 mt-3 flex items-start gap-2">
-                                        <User size={14} className="flex-shrink-0 mt-0.5 text-corporate-teal"/>
+                                        <User size={14} className="flex-shrink-0 mt-0.5 text-corporate-teal-ink"/>
                                         <span>"I'm the kind of leader who {entry.identity}"</span>
                                     </p>
                                 )}

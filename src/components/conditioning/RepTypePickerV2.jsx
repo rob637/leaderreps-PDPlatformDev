@@ -26,7 +26,7 @@ const CATEGORY_COLORS = {
   lead_the_work: { 
     bg: 'bg-corporate-teal/10', 
     border: 'border-corporate-teal/30', 
-    text: 'text-corporate-teal',
+    text: 'text-corporate-teal-ink',
     ring: 'ring-corporate-teal'
   },
   lead_the_team: { 
@@ -104,7 +104,7 @@ const RepTypeCard = ({ repType, isSelected, onClick, unlockStatus }) => {
             isLocked 
               ? 'text-slate-400 dark:text-slate-500'
               : isSelected 
-                ? 'text-corporate-teal' 
+                ? 'text-corporate-teal-ink' 
                 : 'text-corporate-navy dark:text-white'
           }`}>
             {repType.label}

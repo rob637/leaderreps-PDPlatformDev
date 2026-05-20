@@ -82,7 +82,7 @@ const WidgetCard = React.forwardRef(({
   const iconColors = {
     none: 'text-corporate-navy',
     navy: 'text-corporate-navy',
-    teal: 'text-corporate-teal',
+    teal: 'text-corporate-teal-ink',
     orange: 'text-corporate-orange',
     red: 'text-red-500',
     green: 'text-green-500',
@@ -149,7 +149,7 @@ const WidgetCard = React.forwardRef(({
                 e.stopPropagation();
                 action.onClick?.();
               }}
-              className="text-sm font-medium text-corporate-teal hover:text-corporate-navy transition-colors flex items-center gap-1 min-h-[44px] px-3 -mr-3 touch-manipulation active:scale-95 flex-shrink-0"
+              className="text-sm font-medium text-corporate-teal-ink hover:text-corporate-navy transition-colors flex items-center gap-1 min-h-[44px] px-3 -mr-3 touch-manipulation active:scale-95 flex-shrink-0"
             >
               {action.label}
               <ChevronRight className="w-4 h-4" />
@@ -206,7 +206,7 @@ const WidgetHeader = React.forwardRef(({
 }, ref) => {
   const iconColors = {
     navy: 'text-corporate-navy',
-    teal: 'text-corporate-teal',
+    teal: 'text-corporate-teal-ink',
     orange: 'text-corporate-orange',
     red: 'text-red-500',
     green: 'text-green-500',
@@ -236,7 +236,7 @@ const WidgetHeader = React.forwardRef(({
       {action && (
         <button
           onClick={action.onClick}
-          className="text-sm font-medium text-corporate-teal hover:text-corporate-navy transition-colors flex items-center gap-1"
+          className="text-sm font-medium text-corporate-teal-ink hover:text-corporate-navy transition-colors flex items-center gap-1"
         >
           {action.label}
           <ChevronRight className="w-4 h-4" />

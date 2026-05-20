@@ -240,7 +240,7 @@ const BookendsWidget = ({
                 <div className="space-y-4 max-h-60 overflow-y-auto pr-2">
                   {reflectionHistory.map((log) => (
                     <div key={log.id} className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-gray-100 text-left">
-                      <div className="text-xs font-bold text-corporate-teal uppercase tracking-wider mb-2">
+                      <div className="text-xs font-bold text-corporate-teal-ink uppercase tracking-wider mb-2">
                         {new Date(log.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
                       </div>
                       <div className="space-y-2 text-sm">

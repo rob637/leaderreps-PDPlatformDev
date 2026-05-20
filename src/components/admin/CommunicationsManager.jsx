@@ -17,10 +17,9 @@ import {
 
 const CATEGORIES = [
   { id: 'invitation', label: 'Platform Invitations', icon: Mail },
-  { id: 'coaching', label: 'Coaching Sessions', icon: MessageSquare },
+  { id: 'coaching', label: 'Events', icon: MessageSquare },
   { id: 'community', label: 'Community Events', icon: Bell },
   { id: 'notification', label: 'Scheduled Notifications', icon: Bell },
-  { id: 'milestone', label: 'Milestones & Capstone', icon: CheckCircle },
   { id: 'general', label: 'General / Test', icon: Send }
 ];
 
@@ -136,7 +135,7 @@ const TemplateEditor = ({ template, onSave, onCancel }) => {
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
               activeTab === tab
-                ? 'border-corporate-teal text-corporate-teal'
+                ? 'border-corporate-teal text-corporate-teal-ink'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
@@ -313,9 +312,9 @@ const TemplateCard = ({ template, onEdit }) => {
         <div className="flex items-center gap-3">
           {/* Channel indicators */}
           <div className="flex items-center gap-1">
-            <Mail className={`w-4 h-4 ${hasEmail ? 'text-corporate-teal' : 'text-slate-300 dark:text-slate-600'}`} title={hasEmail ? 'Email configured' : 'No email content'} />
-            <MessageSquare className={`w-4 h-4 ${hasSms ? 'text-corporate-teal' : 'text-slate-300 dark:text-slate-600'}`} title={hasSms ? 'SMS configured' : 'No SMS content'} />
-            <Bell className={`w-4 h-4 ${hasPush ? 'text-corporate-teal' : 'text-slate-300 dark:text-slate-600'}`} title={hasPush ? 'Push configured' : 'No push content'} />
+            <Mail className={`w-4 h-4 ${hasEmail ? 'text-corporate-teal-ink' : 'text-slate-300 dark:text-slate-600'}`} title={hasEmail ? 'Email configured' : 'No email content'} />
+            <MessageSquare className={`w-4 h-4 ${hasSms ? 'text-corporate-teal-ink' : 'text-slate-300 dark:text-slate-600'}`} title={hasSms ? 'SMS configured' : 'No SMS content'} />
+            <Bell className={`w-4 h-4 ${hasPush ? 'text-corporate-teal-ink' : 'text-slate-300 dark:text-slate-600'}`} title={hasPush ? 'Push configured' : 'No push content'} />
           </div>
           <div className="text-left">
             <h4 className="font-medium text-slate-900 dark:text-white">{template.name}</h4>
@@ -334,15 +333,15 @@ const TemplateCard = ({ template, onEdit }) => {
         <div className="px-4 pb-4 border-t border-slate-100 dark:border-slate-700 pt-3">
           {/* Channel summary */}
           <div className="flex gap-4 mb-4 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
-            <div className={`flex items-center gap-2 ${hasEmail ? 'text-corporate-teal' : 'text-slate-400'}`}>
+            <div className={`flex items-center gap-2 ${hasEmail ? 'text-corporate-teal-ink' : 'text-slate-400'}`}>
               <Mail size={16} />
               <span className="text-xs font-medium">{hasEmail ? '✓ Email' : '✗ Email'}</span>
             </div>
-            <div className={`flex items-center gap-2 ${hasSms ? 'text-corporate-teal' : 'text-slate-400'}`}>
+            <div className={`flex items-center gap-2 ${hasSms ? 'text-corporate-teal-ink' : 'text-slate-400'}`}>
               <MessageSquare size={16} />
               <span className="text-xs font-medium">{hasSms ? `✓ SMS (${template.smsBody?.length || 0} chars)` : '✗ SMS'}</span>
             </div>
-            <div className={`flex items-center gap-2 ${hasPush ? 'text-corporate-teal' : 'text-slate-400'}`}>
+            <div className={`flex items-center gap-2 ${hasPush ? 'text-corporate-teal-ink' : 'text-slate-400'}`}>
               <Bell size={16} />
               <span className="text-xs font-medium">{hasPush ? '✓ Push' : '✗ Push'}</span>
             </div>
@@ -561,7 +560,7 @@ const CommunicationsManager = () => {
               return (
                 <div key={cat.id}>
                   <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">
-                    <Icon size={20} className="text-corporate-teal" />
+                    <Icon size={20} className="text-corporate-teal-ink" />
                     {cat.label}
                   </h3>
                   <div className="space-y-2">

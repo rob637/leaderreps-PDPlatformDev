@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Settings, User, Bell, CheckCircle, Edit2, Zap, Mail, Smartphone, VolumeX, Shield,
   Download, LogOut, AlertTriangle, Sun, Moon, Monitor, ChevronRight, KeyRound,
-  ClipboardList, ArrowRight
+  ClipboardList, ArrowRight, Compass
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
@@ -10,14 +11,16 @@ import { useAppServices } from '../../services/useAppServices';
 import { useTheme } from '../../providers/ThemeProvider';
 import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
 import NotificationPreferencesWidget from './NotificationPreferencesWidget';
+import SmsPrefsRow from './SmsPrefsRow';
 import BaselineAssessmentSimple from '../screens/developmentplan/BaselineAssessmentSimple';
+const IdentityStatement = lazy(() => import('../screens/IdentityStatement'));
 import { logActivity, ACTIVITY_TYPES } from '../../services/activityLogger';
 import PWAInstall from '../ui/PWAInstall';
 import { doc, getDoc } from 'firebase/firestore';
 
 // Strategy display names and icons
 const STRATEGY_DISPLAY = {
-  smart_escalation: { name: 'Smart Escalation', icon: Zap, color: 'text-corporate-teal' },
+  smart_escalation: { name: 'Smart Escalation', icon: Zap, color: 'text-corporate-teal-ink' },
   push_only: { name: 'Push Only', icon: Smartphone, color: 'text-blue-500' },
   email_only: { name: 'Email Only', icon: Mail, color: 'text-amber-500' },
   full_accountability: { name: 'Full Accountability', icon: Shield, color: 'text-green-500' },
@@ -35,6 +38,7 @@ const STRATEGY_DISPLAY = {
 const MySettingsWidget = () => {
   const [showProfileForm, setShowProfileForm] = useState(false);
   const [showBaselineForm, setShowBaselineForm] = useState(false);
+  const [showIdentityForm, setShowIdentityForm] = useState(false);
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   
@@ -43,12 +47,15 @@ const MySettingsWidget = () => {
   
   // Theme
   const { theme, setTheme } = useTheme();
+
+  // UI Style + Card Animation toggles were retired May 2026. The app now
+  // locks to v2 ("Next") + dashboard-card-morph ON. See UIVersionProvider.
   
   // Use stored isComplete flag - profile is complete once user saves it
   const isProfileComplete = profileComplete;
   
   // Notification settings and baseline data
-  const { user, db, logout, navigate, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
+  const { user, db, logout, navigate, developmentPlanData, updateDevelopmentPlanData, dailyPracticeData } = useAppServices();
   
   // Leadership Skills Baseline status
   const assessmentHistory = developmentPlanData?.assessmentHistory || [];
@@ -59,6 +66,28 @@ const MySettingsWidget = () => {
         year: 'numeric', 
         month: 'short', 
         day: 'numeric' 
+      })
+    : null;
+
+  // Leadership Identity Statement status.
+  // May 2026: a non-empty statement (from either the manual-entry path or
+  // the legacy `identityAnchor` field, OR the full three-exercise builder)
+  // counts as complete. We no longer require qualities.length >= 3 \u2014 that
+  // gated leaders who completed the reflection offline and only entered
+  // the final statement here.
+  const lisData = dailyPracticeData?.leadershipIdentity || null;
+  const lisStatement = (
+    lisData?.statement ||
+    lisData?.anchor?.statement ||
+    dailyPracticeData?.identityAnchor ||
+    ''
+  ).trim();
+  const hasLIS = !!lisStatement;
+  const lisDate = lisData?.updatedAt
+    ? new Date(lisData.updatedAt).toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
       })
     : null;
   const [notifLoading, setNotifLoading] = useState(true);
@@ -140,8 +169,10 @@ const MySettingsWidget = () => {
 
   return (
     <>
-      <Card title="My Settings" icon={Settings} accent="TEAL">
-        {/* Settings Rows */}
+      {/* ============================================================
+          MY PROFILE — identity, baseline, identity statement
+          ============================================================ */}
+      <Card title="My Profile" icon={User} accent="TEAL">
         <div className="space-y-2">
           {/* Leader Profile Row - Clickable to edit */}
           <button
@@ -165,7 +196,7 @@ const MySettingsWidget = () => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-1 text-corporate-teal">
+            <div className="flex items-center gap-1 text-corporate-teal-ink">
               <span className="text-xs font-medium">{isProfileComplete ? 'Edit' : 'Start'}</span>
               <Edit2 className="w-3.5 h-3.5" />
             </div>
@@ -193,12 +224,47 @@ const MySettingsWidget = () => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-1 text-corporate-teal">
+            <div className="flex items-center gap-1 text-corporate-teal-ink">
               <span className="text-xs font-medium">{hasCompletedBaseline ? 'Edit' : 'Start'}</span>
               <Edit2 className="w-3.5 h-3.5" />
             </div>
           </button>
 
+          {/* Leadership Identity Statement Row */}
+          <button
+            onClick={() => setShowIdentityForm(true)}
+            className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-corporate-teal/30 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${hasLIS ? 'bg-green-100 dark:bg-green-900/40' : 'bg-corporate-orange/10 dark:bg-corporate-orange/20'}`}>
+                {hasLIS ? (
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                ) : (
+                  <Compass className="w-4 h-4 text-corporate-orange" />
+                )}
+              </div>
+              <div className="text-left">
+                <h4 className="font-medium text-corporate-navy dark:text-white text-sm">Leadership Identity Statement</h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {hasLIS
+                    ? `Updated ${lisDate}`
+                    : 'Three exercises: qualities, statement, intentions'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 text-corporate-teal-ink">
+              <span className="text-xs font-medium">{hasLIS ? 'Edit' : 'Start'}</span>
+              <Edit2 className="w-3.5 h-3.5" />
+            </div>
+          </button>
+        </div>
+      </Card>
+
+      {/* ============================================================
+          MY SETTINGS — notifications, appearance, account
+          ============================================================ */}
+      <Card title="My Settings" icon={Settings} accent="TEAL" className="mt-6">
+        <div className="space-y-2">
           {/* Notifications Row - Clickable to open settings */}
           <button
             onClick={() => setShowNotificationSettings(true)}
@@ -219,11 +285,16 @@ const MySettingsWidget = () => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-1 text-corporate-teal">
+            <div className="flex items-center gap-1 text-corporate-teal-ink">
               <span className="text-xs font-medium">Edit</span>
               <Edit2 className="w-3.5 h-3.5" />
             </div>
           </button>
+
+          {/* Text Messages (SMS) Row - sibling channel preference. Self-
+              contained: renders its own row + modal, reads/writes via the
+              users/{uid}.profile subtree. */}
+          <SmsPrefsRow />
 
           {/* Appearance / Theme Row - Visible on all devices */}
           <div className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-between">
@@ -317,21 +388,22 @@ const MySettingsWidget = () => {
       </Card>
 
       {/* Profile Form Modal */}
-      {showProfileForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto">
+      {showProfileForm && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[1000] flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-xl my-auto">
             <LeaderProfileFormSimple 
               onComplete={() => setShowProfileForm(false)}
               onClose={() => setShowProfileForm(false)}
             />
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* Baseline Assessment Modal */}
-      {showBaselineForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto">
+      {showBaselineForm && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[1000] flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-xl my-auto">
             <BaselineAssessmentSimple
               onComplete={async (assessment) => {
                 try {
@@ -357,18 +429,32 @@ const MySettingsWidget = () => {
               initialData={latestAssessment}
             />
           </div>
-        </div>
+        </div>,
+        document.body,
+      )}
+
+      {/* Leadership Identity Modal */}
+      {showIdentityForm && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[1000] flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-2xl my-auto">
+            <Suspense fallback={<div className="bg-white rounded-2xl p-8 text-center text-slate-500">Loading…</div>}>
+              <IdentityStatement embedded onClose={() => setShowIdentityForm(false)} />
+            </Suspense>
+          </div>
+        </div>,
+        document.body,
       )}
 
       {/* Notification Settings Modal */}
-      {showNotificationSettings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      {showNotificationSettings && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[1000] flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-lg my-auto">
             <NotificationPreferencesWidget 
               onClose={() => setShowNotificationSettings(false)}
             />
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* Sign Out Confirmation Dialog */}

@@ -53,7 +53,7 @@ const StepRow = ({ stepKey, journey, isNext, accent, onCta, onToggle }) => {
         {done ? (
           <CheckCircle2 className="w-6 h-6 text-emerald-500" />
         ) : (
-          <Circle className={`w-6 h-6 ${isNext ? 'text-corporate-teal' : 'text-slate-300'}`} />
+          <Circle className={`w-6 h-6 ${isNext ? 'text-corporate-teal-ink' : 'text-slate-300'}`} />
         )}
       </button>
       <div className="flex-1 min-w-0">

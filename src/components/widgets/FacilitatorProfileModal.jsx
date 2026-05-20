@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, User, Mail, Phone, Linkedin, Building2, 
   MessageSquare, Award, Calendar
@@ -22,7 +23,26 @@ import FacilitatorAvatar from './FacilitatorAvatar';
  * - isOpen: visibility state
  */
 const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) => {
+  // Lock body scroll while the modal is open and close on Escape.
+  // Without this the page underneath scrolls when the user moves the wheel
+  // over the dimmed area (or even the modal itself), making it look like
+  // the modal is "bouncing" around the screen.
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const handleKey = (e) => {
+      if (e.key === 'Escape') onClose?.();
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKey);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen || !facilitator) return null;
+  if (typeof document === 'undefined') return null;
 
   const {
     name = 'Your Trainer',
@@ -34,14 +54,14 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
     linkedIn
   } = facilitator;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div 
-        className="relative w-full max-w-md max-h-[90vh] bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-y-auto animate-in fade-in zoom-in-95 duration-200"
+        className="relative w-full max-w-md max-h-[90vh] bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-y-auto overscroll-contain animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with gradient */}
-        <div className="relative bg-gradient-to-br from-corporate-navy via-corporate-navy/95 to-corporate-teal pt-8 pb-16 px-6">
+        <div className="relative bg-gradient-to-br from-corporate-navy via-corporate-navy/95 to-corporate-teal pt-8 pb-20 px-6">
           {/* Close button */}
           <button 
             onClick={onClose}
@@ -59,10 +79,10 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
         </div>
 
         {/* Profile Card - overlaps header */}
-        <div className="relative -mt-12 px-6">
+        <div className="relative -mt-10 px-6">
           <div className="bg-white dark:bg-slate-700 rounded-xl shadow-lg p-6 border border-slate-100 dark:border-slate-600">
             {/* Avatar */}
-            <div className="flex justify-center -mt-14 mb-4">
+            <div className="flex justify-center -mt-12 mb-4">
               <FacilitatorAvatar name={name} photoUrl={photoUrl} size="lg" />
             </div>
 
@@ -94,7 +114,7 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
                   </div>
                   <div className="flex-1">
                     <p className="text-xs text-slate-500 dark:text-slate-400">Email</p>
-                    <p className="text-sm text-corporate-navy dark:text-white font-medium group-hover:text-corporate-teal transition-colors">{email}</p>
+                    <p className="text-sm text-corporate-navy dark:text-white font-medium group-hover:text-corporate-teal-ink transition-colors">{email}</p>
                   </div>
                 </a>
               )}
@@ -109,7 +129,7 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
                   </div>
                   <div className="flex-1">
                     <p className="text-xs text-slate-500 dark:text-slate-400">Phone</p>
-                    <p className="text-sm text-corporate-navy dark:text-white font-medium group-hover:text-corporate-teal transition-colors">{phone}</p>
+                    <p className="text-sm text-corporate-navy dark:text-white font-medium group-hover:text-corporate-teal-ink transition-colors">{phone}</p>
                   </div>
                 </a>
               )}
@@ -151,7 +171,8 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

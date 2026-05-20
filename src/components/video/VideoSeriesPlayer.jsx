@@ -432,7 +432,7 @@ export default function VideoSeriesPlayer({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm font-medium truncate ${
-                        isCurrent ? 'text-corporate-teal' : 'text-slate-700 dark:text-slate-200'
+                        isCurrent ? 'text-corporate-teal-ink' : 'text-slate-700 dark:text-slate-200'
                       }`}>
                         {index + 1}. {getVideoDisplayTitle(video)}
                       </p>
@@ -542,7 +542,7 @@ export default function VideoSeriesPlayer({
               <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                 {/* Completion indicator */}
                 {watchedVideos.has(currentVideo?.id) && (
-                  <span className="flex items-center gap-1 text-xs sm:text-sm text-corporate-teal font-medium px-2 py-1">
+                  <span className="flex items-center gap-1 text-xs sm:text-sm text-corporate-teal-ink font-medium px-2 py-1">
                     <CheckCircle2 className="w-4 h-4" />
                     <span className="hidden sm:inline">Completed</span>
                   </span>
@@ -647,7 +647,7 @@ export default function VideoSeriesPlayer({
                           )}
                         </div>
                         <span className={`text-sm font-medium flex-1 truncate ${
-                          isCurrent ? 'text-corporate-teal' : 'text-slate-700 dark:text-slate-200'
+                          isCurrent ? 'text-corporate-teal-ink' : 'text-slate-700 dark:text-slate-200'
                         }`}>
                           {index + 1}. {getVideoDisplayTitle(video)}
                         </span>

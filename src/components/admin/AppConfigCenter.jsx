@@ -3,24 +3,22 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Settings, ArrowLeft, Users, Calendar, FileText, Database,
-  PlaySquare, Zap, BrainCircuit, List, Bell, Mail, Megaphone,
-  ShieldAlert, Wrench, Dumbbell,
+  Settings, Users, Calendar, FileText, Database,
+  PlaySquare, List, Bell, Mail,
+  ShieldAlert, Wrench,
 } from 'lucide-react';
 import UserManagement from './UserManagement';
-import ContentManager from './DailyPlanManager';
+import PhaseContentManager from './PhaseContentManager';
 import ContentAdminHome from './ContentAdminHome';
 import MediaLibrary from './MediaLibrary';
 import VideoSeriesManager from './VideoSeriesManager';
-import DailyRepsLibrary from './DailyRepsLibrary';
-import ConditioningConfig from './ConditioningConfig';
-import CommunityManager from './CommunityManager';
-import CoachingManager from './CoachingManager';
+import EventsManager from './EventsManager';
 import LOVManager from './LOVManager';
-import NotificationManager from './NotificationManager';
 import AnnouncementsManager from './AnnouncementsManager';
 import CommunicationsManager from './CommunicationsManager';
 import MaintenanceToggle from './MaintenanceToggle';
+import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
+import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
 import { useAppServices } from '../../services/useAppServices';
 import { useNavigation } from '../../providers/NavigationProvider';
 
@@ -28,13 +26,13 @@ const TAB_GROUPS = [
   {
     label: 'People',
     tabs: [
-      { id: 'users', label: 'Users & Roles', icon: Users },
+      { id: 'users', label: 'People', icon: Users },
     ],
   },
   {
     label: 'Content',
     tabs: [
-      { id: 'content-manager', label: 'Content Manager', icon: Calendar },
+      { id: 'phase-content', label: 'Phase Content', icon: Calendar },
       { id: 'content', label: 'Content Library', icon: FileText },
       { id: 'video-series', label: 'Video Series', icon: PlaySquare },
       { id: 'media', label: 'Media Vault', icon: Database },
@@ -43,16 +41,13 @@ const TAB_GROUPS = [
   {
     label: 'Program',
     tabs: [
-      { id: 'conditioning-config', label: 'Conditioning Config', icon: Zap },
-      { id: 'community', label: 'Community', icon: Users },
-      { id: 'coaching', label: 'Coaching', icon: BrainCircuit },
+      { id: 'events', label: 'Events', icon: Calendar },
     ],
   },
   {
     label: 'Communications',
     tabs: [
       { id: 'notifications', label: 'Notifications', icon: Bell },
-      { id: 'announcements', label: 'Announcements', icon: Megaphone },
       { id: 'communications', label: 'Communications', icon: Mail },
     ],
   },
@@ -61,12 +56,6 @@ const TAB_GROUPS = [
     tabs: [
       { id: 'maintenance', label: 'Maintenance Mode', icon: Wrench },
       { id: 'lov', label: 'System Values', icon: List },
-    ],
-  },
-  {
-    label: 'Outdated',
-    tabs: [
-      { id: 'daily-reps', label: 'Daily Reps', icon: Dumbbell },
     ],
   },
 ];
@@ -92,16 +81,19 @@ const AppConfigCenter = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'users': return <UserManagement />;
-      case 'content-manager': return <ContentManager />;
+      case 'phase-content': return <PhaseContentManager />;
+      // Legacy alias — preserve any deep links to the old Content Manager tab
+      case 'content-manager': return <PhaseContentManager />;
       case 'content': return <ContentAdminHome />;
       case 'media': return <MediaLibrary />;
       case 'video-series': return <VideoSeriesManager />;
-      case 'daily-reps': return <DailyRepsLibrary />;
-      case 'conditioning-config': return <ConditioningConfig />;
-      case 'community': return <CommunityManager />;
-      case 'coaching': return <CoachingManager />;
+      case 'events': return <EventsManager />;
+      // Legacy aliases — preserve any deep links to the old separate tabs
+      case 'community': return <EventsManager />;
+      case 'coaching': return <EventsManager />;
       case 'lov': return <LOVManager />;
-      case 'notifications': return <NotificationManager />;
+      case 'notifications': return <AnnouncementsManager />;
+      // Legacy alias — the old 'announcements' tab was renamed to 'notifications' May 2026
       case 'announcements': return <AnnouncementsManager />;
       case 'communications': return <CommunicationsManager />;
       case 'maintenance': return <MaintenanceToggle />;
@@ -111,16 +103,16 @@ const AppConfigCenter = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
+      <div className="px-6 pt-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+        <BreadcrumbNav
+          items={getBreadcrumbs('config-center')}
+          navigate={navigate}
+        />
+      </div>
+
       {/* Header */}
       <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('admin-hub')}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-            title="Back to Admin Hub"
-          >
-            <ArrowLeft className="w-5 h-5 text-slate-500" />
-          </button>
           <div className="p-2 bg-corporate-teal/10 rounded-lg">
             <Settings className="w-5 h-5 text-corporate-teal" />
           </div>
@@ -153,11 +145,11 @@ const AppConfigCenter = () => {
                         className={`
                           w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors
                           ${isActive
-                            ? 'bg-corporate-teal/10 text-corporate-teal'
+                            ? 'bg-corporate-teal/10 text-corporate-teal-ink'
                             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'}
                         `}
                       >
-                        <Icon className={`w-4 h-4 ${isActive ? 'text-corporate-teal' : 'text-slate-400'}`} />
+                        <Icon className={`w-4 h-4 ${isActive ? 'text-corporate-teal-ink' : 'text-slate-400'}`} />
                         {tab.label}
                       </button>
                     );

@@ -508,7 +508,7 @@ const ConditioningConfig = () => {
               })}
           </div>
           {(form.prerequisiteRepIds || []).length > 0 && (
-            <p className="text-xs text-corporate-teal mt-1">
+            <p className="text-xs text-corporate-teal-ink mt-1">
               User must complete any one of: {(form.prerequisiteRepIds || []).map(id => {
                 const rt = repTypes.find(r => r.id === id);
                 return rt?.shortLabel || rt?.label || id;
@@ -1377,7 +1377,7 @@ const ConditioningConfig = () => {
                   type="checkbox"
                   checked={unlockRepTypes.includes(rt.id)}
                   onChange={() => handleToggleRepType(rt.id)}
-                  className="rounded text-corporate-teal"
+                  className="rounded text-corporate-teal-ink"
                 />
                 <div>
                   <div className="font-medium text-sm">{rt.label}</div>

@@ -1123,6 +1123,696 @@ body {
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------------
+ * Global "card lift" — make every interactive card feel alive on hover.
+ * Any element that already uses Tailwind's `hover:shadow-card-hover` or
+ * `hover:shadow-pop` will gain a smooth shadow + lift transition.
+ * ------------------------------------------------------------------------- */
+@layer utilities {
+  .hover\:shadow-card-hover,
+  .hover\:shadow-pop {
+    transition-property: box-shadow, transform, border-color, background-color;
+    transition-duration: 200ms;
+    transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+    will-change: transform;
+  }
+  .hover\:shadow-card-hover:hover,
+  .hover\:shadow-pop:hover {
+    transform: translateY(-2px);
+  }
+  .hover\:shadow-card-hover:active,
+  .hover\:shadow-pop:active {
+    transform: translateY(0);
+    transition-duration: 80ms;
+  }
+}
+
+/* ===========================================================================
+ * UI v2 — "Next" — Crisp, bold, modern. Apple/Linear/Vercel inspired.
+ * Activated when <html> has the `ui-v2` class.
+ *
+ * DESIGN PRINCIPLES:
+ *   1. Cards stay PURE WHITE and CRISP — never washed-out glass on white
+ *   2. Typography is the hero — bigger, bolder, tighter letter spacing
+ *   3. Brand colors are AMPLIFIED in the right places (icons, accents, CTAs)
+ *   4. Shadows are SHARP and LAYERED — not muddy blurs
+ *   5. Movement is QUICK and CONFIDENT — 180-220ms with spring easing
+ *   6. Surfaces have CHARACTER — colored glow rings, gradient borders
+ * ======================================================================= */
+
+/* Outer shell: stay navy but add a single subtle accent — NOT a busy aurora */
+.ui-v2 .bg-corporate-navy.min-h-screen,
+.ui-v2 div.min-h-screen.bg-corporate-navy {
+  background:
+    radial-gradient(ellipse 1200px 800px at 50% -200px, rgba(71, 168, 141, 0.18) 0%, transparent 60%),
+    linear-gradient(180deg, #001E2F 0%, #002E47 100%) !important;
+}
+
+/* Inner main panel: stay solid + crisp white. NO glass mush. Just modern.
+ * Only the OUTERMOST panel gets the heavy drop shadow — inner page wrappers
+ * (PageLayout's `min-h-full` div, screen-level `min-h-screen` divs) must NOT
+ * carry the shadow, otherwise their bottom edge casts a dark seam across the
+ * middle of the visible panel area on short-content pages. */
+.ui-v2 .bg-\[\#FAFBFC\]:not(.min-h-full):not(.min-h-screen) {
+  background: #FFFFFF !important;
+  box-shadow:
+    0 50px 100px -30px rgba(0, 0, 0, 0.5),
+    0 20px 40px -20px rgba(0, 0, 0, 0.3) !important;
+}
+.ui-v2 .bg-\[\#FAFBFC\].min-h-full,
+.ui-v2 .bg-\[\#FAFBFC\].min-h-screen {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Typography — Apple-grade crispness */
+.ui-v2 {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+.ui-v2 h1 { font-weight: 800 !important; letter-spacing: -0.035em !important; }
+.ui-v2 h2 { font-weight: 800 !important; letter-spacing: -0.028em !important; }
+.ui-v2 h3 { font-weight: 700 !important; letter-spacing: -0.022em !important; }
+.ui-v2 h4 { font-weight: 700 !important; letter-spacing: -0.015em !important; }
+
+/* Card titles get bigger and bolder */
+.ui-v2 [class*="rounded-2xl"] h3.text-lg,
+.ui-v2 [class*="rounded-xl"] h3.text-lg {
+  font-size: 1.25rem !important;
+  letter-spacing: -0.02em !important;
+}
+
+/* ---- CRISP CARD UPGRADE ---- */
+.ui-v2 .bg-white:not(button):not(input):not(select):not(textarea):not(.no-glass),
+.ui-v2 .shadow-sm:not(button):not(input):not(.no-glass),
+.ui-v2 .shadow-md:not(button):not(input):not(.no-glass),
+.ui-v2 .shadow-lg:not(button):not(input):not(.no-glass),
+.ui-v2 .shadow-xl:not(button):not(input):not(.no-glass),
+.ui-v2 .shadow-2xl:not(button):not(input):not(.no-glass),
+.ui-v2 .shadow-card:not(.no-glass),
+.ui-v2 .shadow-elevated:not(.no-glass),
+.ui-v2 .shadow-pop:not(.no-glass) {
+  background-color: #FFFFFF !important;
+  border: 1px solid rgba(15, 23, 42, 0.10) !important;
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.04),
+    0 2px 4px -1px rgba(15, 23, 42, 0.06),
+    0 8px 16px -4px rgba(15, 23, 42, 0.08),
+    0 24px 48px -12px rgba(0, 46, 71, 0.12) !important;
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 200ms ease;
+  position: relative;
+}
+
+/* Top accent line on every card — subtle gradient that gives them character */
+.ui-v2 [class*="rounded-2xl"].bg-white:not(button)::before,
+.ui-v2 [class*="rounded-xl"].bg-white:not(button)::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(71, 168, 141, 0.5) 50%, transparent 100%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Confident hover lift — shadow gets DEEPER and a teal ring appears */
+.ui-v2 .hover\:shadow-md:hover,
+.ui-v2 .hover\:shadow-lg:hover,
+.ui-v2 .hover\:shadow-xl:hover,
+.ui-v2 .hover\:shadow-card-hover:hover,
+.ui-v2 .hover\:shadow-pop:hover,
+.ui-v2 [class*="hover:shadow"]:hover {
+  transform: translateY(-4px);
+  border-color: rgba(71, 168, 141, 0.35) !important;
+  box-shadow:
+    0 0 0 1px rgba(71, 168, 141, 0.20),
+    0 4px 8px -2px rgba(15, 23, 42, 0.08),
+    0 16px 32px -8px rgba(15, 23, 42, 0.12),
+    0 40px 80px -20px rgba(0, 46, 71, 0.25) !important;
+}
+
+/* Brand-colored left-border accent cards: BOLD vertical rail + matching shadow */
+.ui-v2 [class*="border-l-corporate-teal"] {
+  border-left: 4px solid #47A88D !important;
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.06),
+    0 2px 4px -1px rgba(71, 168, 141, 0.08),
+    0 8px 16px -4px rgba(71, 168, 141, 0.12),
+    0 24px 48px -12px rgba(71, 168, 141, 0.18),
+    -8px 0 24px -8px rgba(71, 168, 141, 0.30) !important;
+}
+.ui-v2 [class*="border-l-corporate-navy"] {
+  border-left: 4px solid #002E47 !important;
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.06),
+    0 2px 4px -1px rgba(0, 46, 71, 0.10),
+    0 8px 16px -4px rgba(0, 46, 71, 0.14),
+    0 24px 48px -12px rgba(0, 46, 71, 0.22),
+    -8px 0 24px -8px rgba(0, 46, 71, 0.30) !important;
+}
+.ui-v2 [class*="border-l-corporate-orange"] {
+  border-left: 4px solid #E04E1B !important;
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.06),
+    0 2px 4px -1px rgba(224, 78, 27, 0.10),
+    0 8px 16px -4px rgba(224, 78, 27, 0.14),
+    0 24px 48px -12px rgba(224, 78, 27, 0.22),
+    -8px 0 24px -8px rgba(224, 78, 27, 0.30) !important;
+}
+
+/* Hero/Foundation cards (ones with both border-l accent AND shadow): give them
+ * a subtle gradient wash on the body so they read like premium content blocks */
+.ui-v2 [class*="border-l-corporate-orange"][class*="rounded-2xl"],
+.ui-v2 [class*="border-l-corporate-orange"][class*="rounded-xl"] {
+  background:
+    linear-gradient(135deg, rgba(224, 78, 27, 0.04) 0%, transparent 30%),
+    linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%) !important;
+}
+.ui-v2 [class*="border-l-corporate-teal"][class*="rounded-2xl"],
+.ui-v2 [class*="border-l-corporate-teal"][class*="rounded-xl"] {
+  background:
+    linear-gradient(135deg, rgba(71, 168, 141, 0.04) 0%, transparent 30%),
+    linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%) !important;
+}
+.ui-v2 [class*="border-l-corporate-navy"][class*="rounded-2xl"],
+.ui-v2 [class*="border-l-corporate-navy"][class*="rounded-xl"] {
+  background:
+    linear-gradient(135deg, rgba(0, 46, 71, 0.04) 0%, transparent 30%),
+    linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%) !important;
+}
+
+/* Sidebar: keep light but with a subtle right edge that pops */
+.ui-v2 nav[aria-label="Main navigation"] {
+  border-right: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+/* ---- BUTTONS — Bold, gradient, springy ---- */
+.ui-v2 button.bg-corporate-navy,
+.ui-v2 .bg-corporate-navy:not(.no-grad):not(.min-h-screen) {
+  background-image: linear-gradient(135deg, #002E47 0%, #003E5F 100%) !important;
+  background-color: transparent !important;
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.15) inset,
+    0 -1px 0 0 rgba(0, 0, 0, 0.15) inset,
+    0 4px 12px -2px rgba(0, 46, 71, 0.4),
+    0 8px 24px -4px rgba(0, 46, 71, 0.3) !important;
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 180ms ease,
+              filter 180ms ease;
+  font-weight: 600 !important;
+}
+.ui-v2 button.bg-corporate-navy:hover,
+.ui-v2 .bg-corporate-navy:not(.no-grad):not(.min-h-screen):hover {
+  transform: translateY(-1px);
+  filter: brightness(1.15) saturate(1.1);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.2) inset,
+    0 -1px 0 0 rgba(0, 0, 0, 0.15) inset,
+    0 6px 16px -2px rgba(0, 46, 71, 0.5),
+    0 12px 32px -4px rgba(0, 46, 71, 0.4) !important;
+}
+.ui-v2 button.bg-corporate-navy:active,
+.ui-v2 .bg-corporate-navy:not(.no-grad):not(.min-h-screen):active {
+  transform: translateY(0px);
+}
+
+.ui-v2 button.bg-corporate-teal,
+.ui-v2 .bg-corporate-teal:not(.no-grad) {
+  background-image: linear-gradient(135deg, #2E8F76 0%, #47A88D 50%, #5CBFA3 100%) !important;
+  background-color: transparent !important;
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.25) inset,
+    0 -1px 0 0 rgba(0, 0, 0, 0.10) inset,
+    0 4px 12px -2px rgba(71, 168, 141, 0.45),
+    0 8px 24px -4px rgba(71, 168, 141, 0.35) !important;
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 180ms ease, filter 180ms ease;
+  font-weight: 600 !important;
+}
+.ui-v2 button.bg-corporate-teal:hover,
+.ui-v2 .bg-corporate-teal:not(.no-grad):hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1) saturate(1.15);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.3) inset,
+    0 6px 16px -2px rgba(71, 168, 141, 0.55),
+    0 12px 32px -4px rgba(71, 168, 141, 0.45) !important;
+}
+.ui-v2 button.bg-corporate-teal:active,
+.ui-v2 .bg-corporate-teal:not(.no-grad):active {
+  transform: translateY(0);
+}
+
+.ui-v2 button.bg-corporate-orange,
+.ui-v2 .bg-corporate-orange:not(.no-grad) {
+  background-image: linear-gradient(135deg, #C04317 0%, #E04E1B 50%, #F26935 100%) !important;
+  background-color: transparent !important;
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.25) inset,
+    0 -1px 0 0 rgba(0, 0, 0, 0.10) inset,
+    0 4px 12px -2px rgba(224, 78, 27, 0.45),
+    0 8px 24px -4px rgba(224, 78, 27, 0.35) !important;
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 180ms ease, filter 180ms ease;
+  font-weight: 600 !important;
+}
+.ui-v2 button.bg-corporate-orange:hover,
+.ui-v2 .bg-corporate-orange:not(.no-grad):hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1) saturate(1.15);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.3) inset,
+    0 6px 16px -2px rgba(224, 78, 27, 0.55),
+    0 12px 32px -4px rgba(224, 78, 27, 0.45) !important;
+}
+
+/* ---- ICON BUBBLES — give every circular icon container a subtle gradient + glow ---- */
+.ui-v2 .bg-green-100,
+.ui-v2 .bg-green-50 {
+  background: linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%) !important;
+  box-shadow: 0 4px 12px -4px rgba(34, 197, 94, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.6) !important;
+}
+.ui-v2 .bg-corporate-orange\/10,
+.ui-v2 .bg-corporate-orange\/20 {
+  background: linear-gradient(135deg, rgba(224, 78, 27, 0.15) 0%, rgba(224, 78, 27, 0.25) 100%) !important;
+  box-shadow: 0 4px 12px -4px rgba(224, 78, 27, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.5) !important;
+}
+.ui-v2 .bg-corporate-teal\/10,
+.ui-v2 .bg-corporate-teal\/20 {
+  background: linear-gradient(135deg, rgba(71, 168, 141, 0.15) 0%, rgba(71, 168, 141, 0.25) 100%) !important;
+  box-shadow: 0 4px 12px -4px rgba(71, 168, 141, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.5) !important;
+}
+.ui-v2 .bg-corporate-navy\/10,
+.ui-v2 .bg-corporate-navy\/20 {
+  background: linear-gradient(135deg, rgba(0, 46, 71, 0.10) 0%, rgba(0, 46, 71, 0.18) 100%) !important;
+  box-shadow: 0 4px 12px -4px rgba(0, 46, 71, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.5) !important;
+}
+
+/* ---- INPUTS — tactile, focused ring with brand color ---- */
+.ui-v2 input[type="text"],
+.ui-v2 input[type="email"],
+.ui-v2 input[type="password"],
+.ui-v2 input[type="search"],
+.ui-v2 input[type="tel"],
+.ui-v2 input[type="number"],
+.ui-v2 textarea,
+.ui-v2 select {
+  background-color: #FFFFFF !important;
+  border: 1.5px solid rgba(15, 23, 42, 0.10) !important;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+  font-weight: 500 !important;
+}
+.ui-v2 input:focus,
+.ui-v2 textarea:focus,
+.ui-v2 select:focus {
+  border-color: #47A88D !important;
+  box-shadow: 0 0 0 4px rgba(71, 168, 141, 0.18) !important;
+  outline: none;
+}
+
+/* ---- PROGRESS BARS — gradient + glow ---- */
+.ui-v2 .bg-corporate-orange.h-2,
+.ui-v2 .bg-corporate-orange.h-1\.5,
+.ui-v2 .bg-corporate-orange.h-3 {
+  background: linear-gradient(90deg, #E04E1B 0%, #F26935 100%) !important;
+  box-shadow: 0 0 12px -2px rgba(224, 78, 27, 0.6) !important;
+}
+.ui-v2 .bg-corporate-teal.h-2,
+.ui-v2 .bg-corporate-teal.h-1\.5,
+.ui-v2 .bg-corporate-teal.h-3 {
+  background: linear-gradient(90deg, #2E8F76 0%, #5CBFA3 100%) !important;
+  box-shadow: 0 0 12px -2px rgba(71, 168, 141, 0.6) !important;
+}
+
+/* ---- BADGES & CHIPS — bolder ---- */
+.ui-v2 .bg-corporate-teal\/10,
+.ui-v2 [class*="rounded-full"][class*="bg-green"] {
+  font-weight: 600 !important;
+  letter-spacing: -0.005em !important;
+}
+
+/* ---- LINKS — a touch of personality ---- */
+.ui-v2 a:not([class*="bg-"]):not([class*="text-white"]) {
+  font-weight: 600;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  background-size: 0% 1.5px;
+  transition: background-size 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ui-v2 a:not([class*="bg-"]):not([class*="text-white"]):hover {
+  background-size: 100% 1.5px;
+}
+
+/* ---- MODAL SCRIM — richer ---- */
+.ui-v2 .bg-black\/50 {
+  background-color: rgba(0, 30, 50, 0.55) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* ---- v2 OPT-IN HERO UTILITY ---- */
+.ui-v2 .v2-hero {
+  position: relative;
+  background: #FFFFFF;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow:
+    0 1px 0 0 rgba(15, 23, 42, 0.04),
+    0 24px 48px -12px rgba(0, 46, 71, 0.18);
+  overflow: hidden;
+}
+.ui-v2 .v2-hero::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(135deg, #002E47 0%, #1F7864 25%, #47A88D 50%, #E04E1B 100%);
+  background-size: 300% 300%;
+  z-index: -1;
+  border-radius: inherit;
+  filter: blur(8px);
+  opacity: 0.6;
+  animation: v2-grad-shift 8s ease infinite;
+}
+@keyframes v2-grad-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+
+/* ===========================================================================
+ * UI v2 — "2030" UPGRADE — Movement, atmosphere, depth.
+ * Adds: animated background orbs, card stagger entrance, rotating conic
+ * border on hover, shimmer sweep, 3D lift, gradient text, bento layout hints.
+ * ======================================================================= */
+
+/* ---- ATMOSPHERE: floating gradient orbs behind the inner panel ----
+ * Scoped to the OUTERMOST panel only (excludes inner page wrappers that use
+ * min-h-full / min-h-screen), so the orb anchors to one stable container. */
+.ui-v2 .bg-\[\#FAFBFC\]:not(.min-h-full):not(.min-h-screen) {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden; /* clip orbs on all sides — was overflow-x only, caused 2nd scrollbar */
+}
+.ui-v2 .bg-\[\#FAFBFC\]:not(.min-h-full):not(.min-h-screen)::before {
+  content: '';
+  position: absolute;
+  top: -200px;
+  right: -300px;
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle, rgba(71, 168, 141, 0.18) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  animation: v2-orb-drift-a 22s ease-in-out infinite;
+  filter: blur(20px);
+}
+.ui-v2 .bg-\[\#FAFBFC\]::after {
+  /* Bottom-left orange ambient orb removed — was leaking peach into empty
+   * lower half on short pages. Top-right teal orb is enough atmosphere. */
+  content: none;
+}
+@keyframes v2-orb-drift-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(-120px, 80px) scale(1.15); }
+  66%      { transform: translate(60px, 180px) scale(0.9); }
+}
+/* keep the actual content above the orbs */
+.ui-v2 .bg-\[\#FAFBFC\]:not(.min-h-full):not(.min-h-screen) > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---- ANIMATED DOT GRID on the navy outer shell ---- */
+.ui-v2 .bg-corporate-navy.min-h-screen::before,
+.ui-v2 div.min-h-screen.bg-corporate-navy::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(71, 168, 141, 0.18) 1px, transparent 0);
+  background-size: 32px 32px;
+  pointer-events: none;
+  opacity: 0.5;
+  mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, black, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, black, transparent 80%);
+  z-index: 0;
+  animation: v2-grid-pulse 8s ease-in-out infinite;
+}
+@keyframes v2-grid-pulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.7; }
+}
+
+/* ---- CARD ENTRANCE: gentle fade (no transform — would create a containing
+   block for position:fixed descendants and break inline modals) ---- */
+@keyframes v2-card-enter {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.ui-v2 [class*="rounded-2xl"].bg-white:not(button),
+.ui-v2 [class*="rounded-xl"].bg-white:not(button),
+.ui-v2 [class*="rounded-2xl"][class*="border-l-corporate"],
+.ui-v2 [class*="rounded-xl"][class*="border-l-corporate"] {
+  animation: v2-card-enter 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+/* Stagger by sibling order — works for any grid/flex container */
+.ui-v2 *:nth-child(1)  > [class*="rounded-2xl"].bg-white { animation-delay: 0ms; }
+.ui-v2 *:nth-child(2)  > [class*="rounded-2xl"].bg-white { animation-delay: 60ms; }
+.ui-v2 *:nth-child(3)  > [class*="rounded-2xl"].bg-white { animation-delay: 120ms; }
+.ui-v2 *:nth-child(4)  > [class*="rounded-2xl"].bg-white { animation-delay: 180ms; }
+.ui-v2 *:nth-child(n+1) > * > [class*="rounded-2xl"].bg-white { animation-delay: calc(60ms * var(--n, 0)); }
+
+.ui-v2 [class*="grid"] > *:nth-child(1)  { --enter-delay: 0ms; }
+.ui-v2 [class*="grid"] > *:nth-child(2)  { --enter-delay: 80ms; }
+.ui-v2 [class*="grid"] > *:nth-child(3)  { --enter-delay: 160ms; }
+.ui-v2 [class*="grid"] > *:nth-child(4)  { --enter-delay: 240ms; }
+.ui-v2 [class*="grid"] > *:nth-child(5)  { --enter-delay: 320ms; }
+.ui-v2 [class*="grid"] > *:nth-child(6)  { --enter-delay: 400ms; }
+.ui-v2 [class*="grid"] > *:nth-child(7)  { --enter-delay: 480ms; }
+.ui-v2 [class*="grid"] > *:nth-child(8)  { --enter-delay: 560ms; }
+.ui-v2 [class*="grid"] > * [class*="rounded-2xl"].bg-white,
+.ui-v2 [class*="grid"] > * [class*="rounded-xl"].bg-white,
+.ui-v2 [class*="grid"] > [class*="rounded-2xl"].bg-white,
+.ui-v2 [class*="grid"] > [class*="rounded-xl"].bg-white {
+  animation-delay: var(--enter-delay, 0ms);
+}
+
+/* ---- ROTATING CONIC BORDER ON HOVER (Linear/Vercel signature) ---- */
+.ui-v2 [class*="rounded-2xl"].bg-white:not(button),
+.ui-v2 [class*="rounded-xl"].bg-white:not(button) {
+  position: relative;
+}
+.ui-v2 [class*="rounded-2xl"].bg-white:not(button)::after,
+.ui-v2 [class*="rounded-xl"].bg-white:not(button)::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--angle, 0deg),
+    transparent 0%,
+    rgba(71, 168, 141, 0.35) 20%,
+    transparent 40%,
+    rgba(224, 78, 27, 0.30) 60%,
+    transparent 80%,
+    transparent 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 280ms ease;
+  pointer-events: none;
+  z-index: 2;
+}
+@property --angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes v2-rotate-angle {
+  to { --angle: 360deg; }
+}
+.ui-v2 [class*="rounded-2xl"].bg-white:not(button):hover::after,
+.ui-v2 [class*="rounded-xl"].bg-white:not(button):hover::after {
+  opacity: 1;
+  animation: v2-rotate-angle 4s linear infinite;
+}
+
+/* ---- SUBTLE HOVER LIFT — perspective tilt feel ----
+   NOTE: We intentionally do NOT set `will-change: transform` or
+   `transform-style: preserve-3d` here. Either creates a containing block for
+   `position: fixed` descendants, which breaks any inline-rendered modals
+   (e.g. LeaderProfileWidget's update modal) by trapping them inside the card. */
+.ui-v2 [class*="rounded-2xl"].bg-white:not(button),
+.ui-v2 [class*="rounded-xl"].bg-white:not(button) {
+  transition:
+    transform 320ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 320ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 240ms ease,
+    background-color 240ms ease;
+}
+.ui-v2 [class*="rounded-2xl"].bg-white:not(button):hover,
+.ui-v2 [class*="rounded-xl"].bg-white:not(button):hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 1px rgba(71, 168, 141, 0.20),
+    0 4px 8px -2px rgba(15, 23, 42, 0.08),
+    0 12px 24px -8px rgba(15, 23, 42, 0.12),
+    0 24px 48px -16px rgba(0, 46, 71, 0.18) !important;
+  border-color: rgba(71, 168, 141, 0.30) !important;
+}
+
+/* ---- ANIMATED GRADIENT TEXT ON H1 ---- */
+.ui-v2 h1 {
+  background: linear-gradient(
+    110deg,
+    #002E47 0%,
+    #1F7864 30%,
+    #002E47 50%,
+    #C04317 75%,
+    #002E47 100%
+  ) !important;
+  background-size: 250% auto !important;
+  -webkit-background-clip: text !important;
+          background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+          color: transparent !important;
+  animation: v2-text-shine 8s linear infinite;
+}
+@keyframes v2-text-shine {
+  to { background-position: -250% center; }
+}
+
+/* ---- BUTTONS: shimmer on hover sweep ---- */
+.ui-v2 button.bg-corporate-navy,
+.ui-v2 button.bg-corporate-teal,
+.ui-v2 button.bg-corporate-orange {
+  position: relative;
+  overflow: hidden;
+}
+.ui-v2 button.bg-corporate-navy::after,
+.ui-v2 button.bg-corporate-teal::after,
+.ui-v2 button.bg-corporate-orange::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  pointer-events: none;
+  transition: left 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ui-v2 button.bg-corporate-navy:hover::after,
+.ui-v2 button.bg-corporate-teal:hover::after,
+.ui-v2 button.bg-corporate-orange:hover::after {
+  left: 200%;
+}
+
+/* ---- BENTO LAYOUT HINTS — first dashboard card spans wider on lg ---- */
+@media (min-width: 1024px) {
+  .ui-v2 .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3 > *:first-child,
+  .ui-v2 .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-4 > *:first-child {
+    grid-column: span 2;
+  }
+  .ui-v2 .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3 > *:first-child [class*="rounded-2xl"],
+  .ui-v2 .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-4 > *:first-child [class*="rounded-2xl"] {
+    height: 100%;
+  }
+}
+
+/* ---- METRIC NUMBERS — pop with weight ---- */
+.ui-v2 .text-3xl,
+.ui-v2 .text-4xl,
+.ui-v2 .text-5xl {
+  font-weight: 800 !important;
+  letter-spacing: -0.04em !important;
+  font-feature-settings: "tnum" 1, "ss01" 1;
+}
+
+/* ---- ICON BUBBLES: subtle pulse on idle for primary cards ---- */
+@keyframes v2-icon-pulse {
+  0%, 100% { box-shadow: 0 4px 12px -4px rgba(71, 168, 141, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.5); }
+  50%      { box-shadow: 0 6px 24px -4px rgba(71, 168, 141, 0.7), inset 0 1px 0 0 rgba(255, 255, 255, 0.6); }
+}
+.ui-v2 [class*="border-l-corporate-teal"] .bg-corporate-teal\/10,
+.ui-v2 [class*="border-l-corporate-teal"] .bg-corporate-teal\/20 {
+  animation: v2-icon-pulse 3.5s ease-in-out infinite;
+}
+@keyframes v2-icon-pulse-orange {
+  0%, 100% { box-shadow: 0 4px 12px -4px rgba(224, 78, 27, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.5); }
+  50%      { box-shadow: 0 6px 24px -4px rgba(224, 78, 27, 0.65), inset 0 1px 0 0 rgba(255, 255, 255, 0.6); }
+}
+.ui-v2 [class*="border-l-corporate-orange"] .bg-corporate-orange\/10,
+.ui-v2 [class*="border-l-corporate-orange"] .bg-corporate-orange\/20 {
+  animation: v2-icon-pulse-orange 3.5s ease-in-out infinite;
+}
+
+/* ---- SCROLLBAR — modern slim ---- */
+.ui-v2 ::-webkit-scrollbar { width: 10px; height: 10px; }
+.ui-v2 ::-webkit-scrollbar-track { background: transparent; }
+.ui-v2 ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(71, 168, 141, 0.4), rgba(0, 46, 71, 0.4));
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.ui-v2 ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(71, 168, 141, 0.7), rgba(0, 46, 71, 0.7));
+  background-clip: padding-box;
+}
+
+/* ---- SECTION SEPARATOR — animated gradient line ---- */
+.ui-v2 hr {
+  border: none !important;
+  height: 1px !important;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(71, 168, 141, 0.4) 30%,
+    rgba(224, 78, 27, 0.4) 70%,
+    transparent 100%
+  ) !important;
+  background-size: 200% 100%;
+  animation: v2-hr-shift 6s ease-in-out infinite;
+}
+@keyframes v2-hr-shift {
+  0%, 100% { background-position: 0% 0; }
+  50%      { background-position: 100% 0; }
+}
+
+/* ---- FLOATING TOGGLE ITSELF — make it pop in v2 ---- */
+.ui-v2 .ui-version-floating-toggle {
+  background: linear-gradient(135deg, #002E47 0%, #1F7864 100%) !important;
+  box-shadow:
+    0 8px 24px -8px rgba(71, 168, 141, 0.6),
+    0 16px 48px -12px rgba(0, 46, 71, 0.5) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-v2 * { transition: none !important; animation: none !important; }
+  .ui-v2 .bg-\[\#FAFBFC\]::before,
+  .ui-v2 .bg-\[\#FAFBFC\]::after { display: none !important; }
+}
+
+
+
 @layer base {
   :root {
     font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -1240,6 +1930,124 @@ body {
   clip: auto;
 }
 
+/* =======================================================================
+ * UI-V2 × DARK MODE
+ * The ui-v2 skin hardcodes light surfaces with !important to defeat the
+ * v1 styles. In dark mode we need equally specific overrides
+ * (.dark.ui-v2 = specificity 0,2,1 > .ui-v2 = 0,1,1) plus !important.
+ * ======================================================================= */
+
+/* Inner main panel: dark slate instead of forced white.
+ * Split to match light-rule specificity (which uses :not() boosters).
+ * Outer panel rule must be (>= 0,4,0) to beat light (0,4,0).
+ * Inner page wrapper rule must be (>= 0,3,0) to beat light (0,3,0). */
+.dark.ui-v2 .bg-\[\#FAFBFC\]:not(.min-h-full):not(.min-h-screen) {
+  background: #0F172A !important;
+  box-shadow:
+    0 50px 100px -30px rgba(0, 0, 0, 0.7),
+    0 20px 40px -20px rgba(0, 0, 0, 0.5) !important;
+}
+.dark.ui-v2 .bg-\[\#FAFBFC\].min-h-full,
+.dark.ui-v2 .bg-\[\#FAFBFC\].min-h-screen {
+  background: #0F172A !important;
+  box-shadow: none !important;
+}
+
+/* Cards: dark slate surfaces with subtle light border */
+.dark.ui-v2 .bg-white:not(button):not(input):not(select):not(textarea):not(.no-glass),
+.dark.ui-v2 .shadow-sm:not(button):not(input):not(.no-glass),
+.dark.ui-v2 .shadow-md:not(button):not(input):not(.no-glass),
+.dark.ui-v2 .shadow-lg:not(button):not(input):not(.no-glass),
+.dark.ui-v2 .shadow-xl:not(button):not(input):not(.no-glass),
+.dark.ui-v2 .shadow-2xl:not(button):not(input):not(.no-glass),
+.dark.ui-v2 .shadow-card:not(.no-glass),
+.dark.ui-v2 .shadow-elevated:not(.no-glass),
+.dark.ui-v2 .shadow-pop:not(.no-glass) {
+  background-color: #1E293B !important;
+  border-color: rgba(148, 163, 184, 0.12) !important;
+  box-shadow:
+    0 0 0 1px rgba(148, 163, 184, 0.06),
+    0 2px 4px -1px rgba(0, 0, 0, 0.3),
+    0 8px 16px -4px rgba(0, 0, 0, 0.35),
+    0 24px 48px -12px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Brand-accent gradient cards: keep the brand wash but on a dark base */
+.dark.ui-v2 [class*="border-l-corporate-orange"][class*="rounded-2xl"],
+.dark.ui-v2 [class*="border-l-corporate-orange"][class*="rounded-xl"] {
+  background:
+    linear-gradient(135deg, rgba(224, 78, 27, 0.10) 0%, transparent 35%),
+    linear-gradient(180deg, #1E293B 0%, #1E293B 100%) !important;
+}
+.dark.ui-v2 [class*="border-l-corporate-teal"][class*="rounded-2xl"],
+.dark.ui-v2 [class*="border-l-corporate-teal"][class*="rounded-xl"] {
+  background:
+    linear-gradient(135deg, rgba(71, 168, 141, 0.10) 0%, transparent 35%),
+    linear-gradient(180deg, #1E293B 0%, #1E293B 100%) !important;
+}
+.dark.ui-v2 [class*="border-l-corporate-navy"][class*="rounded-2xl"],
+.dark.ui-v2 [class*="border-l-corporate-navy"][class*="rounded-xl"] {
+  background:
+    linear-gradient(135deg, rgba(71, 168, 141, 0.08) 0%, transparent 35%),
+    linear-gradient(180deg, #1E293B 0%, #1E293B 100%) !important;
+}
+
+/* Brand-accent shadows softer on dark (no jarring colored halos) */
+.dark.ui-v2 [class*="border-l-corporate-teal"] {
+  box-shadow:
+    0 0 0 1px rgba(148, 163, 184, 0.06),
+    0 8px 16px -4px rgba(0, 0, 0, 0.35),
+    0 24px 48px -12px rgba(0, 0, 0, 0.5),
+    -8px 0 24px -8px rgba(71, 168, 141, 0.25) !important;
+}
+.dark.ui-v2 [class*="border-l-corporate-navy"] {
+  box-shadow:
+    0 0 0 1px rgba(148, 163, 184, 0.06),
+    0 8px 16px -4px rgba(0, 0, 0, 0.35),
+    0 24px 48px -12px rgba(0, 0, 0, 0.5),
+    -8px 0 24px -8px rgba(15, 23, 42, 0.6) !important;
+}
+.dark.ui-v2 [class*="border-l-corporate-orange"] {
+  box-shadow:
+    0 0 0 1px rgba(148, 163, 184, 0.06),
+    0 8px 16px -4px rgba(0, 0, 0, 0.35),
+    0 24px 48px -12px rgba(0, 0, 0, 0.5),
+    -8px 0 24px -8px rgba(224, 78, 27, 0.30) !important;
+}
+
+/* Hover state: dark-friendly lift */
+.dark.ui-v2 .hover\:shadow-md:hover,
+.dark.ui-v2 .hover\:shadow-lg:hover,
+.dark.ui-v2 .hover\:shadow-xl:hover,
+.dark.ui-v2 .hover\:shadow-card-hover:hover,
+.dark.ui-v2 .hover\:shadow-pop:hover,
+.dark.ui-v2 [class*="hover:shadow"]:hover {
+  border-color: rgba(71, 168, 141, 0.45) !important;
+  box-shadow:
+    0 0 0 1px rgba(71, 168, 141, 0.25),
+    0 4px 8px -2px rgba(0, 0, 0, 0.4),
+    0 16px 32px -8px rgba(0, 0, 0, 0.5),
+    0 40px 80px -20px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Sidebar: dark right edge */
+.dark.ui-v2 nav[aria-label="Main navigation"] {
+  border-right: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+/* Top accent line on cards: dim it on dark so it's subtle */
+.dark.ui-v2 [class*="rounded-2xl"].bg-white:not(button)::before,
+.dark.ui-v2 [class*="rounded-xl"].bg-white:not(button)::before {
+  background: linear-gradient(90deg, transparent 0%, rgba(71, 168, 141, 0.25) 50%, transparent 100%);
+}
+
+/* Decorative ambient orbs: softer + cooler in dark mode */
+.dark.ui-v2 .bg-\[\#FAFBFC\]::before,
+.dark.ui-v2 .bg-\[\#FAFBFC\]::after {
+  opacity: 0.45;
+  filter: blur(50px);
+}
+
 /* === GOOGLE-STYLE POP ENHANCEMENTS === */
 /* Using ORIGINAL brand colors with pop techniques */
 
@@ -1294,4 +2102,174 @@ button.bg-corporate-navy:hover {
 [class*="rounded-xl"][class*="border"][class*="bg-white"],
 [class*="rounded-2xl"][class*="border"][class*="bg-white"] {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* ===========================================================================
+ * UI v2 — DARK MODE OVERRIDES
+ * The ui-v2 layer hardcodes #FFFFFF on most surfaces with !important, which
+ * overrides every dark:bg-* utility downstream. This block restores dark
+ * surfaces when <html> has the .dark class.
+ * ======================================================================= */
+
+/* Inner main panel — was forced #FFFFFF.
+ * IMPORTANT: The light-mode rule at line ~1176 uses
+ * `.ui-v2 .bg-[#FAFBFC]:not(.min-h-full):not(.min-h-screen)` which has
+ * specificity (0,4,0). The plain `.dark .ui-v2 .bg-[#FAFBFC]` form is
+ * only (0,3,0) and LOSES to it, leaving the panel forced white in dark
+ * mode (visible as a white footer band at the bottom of every page).
+ * We split into two rules below so dark-mode specificity meets/exceeds
+ * the light-mode rule for both the outer panel and the inner page wrappers. */
+
+/* Outer panel: match the `:not(.min-h-full):not(.min-h-screen)` specificity.
+ * Selector below is (0,5,0) which beats the light (0,4,0) override. */
+.dark.ui-v2 .bg-\[\#FAFBFC\]:not(.min-h-full):not(.min-h-screen),
+.dark .ui-v2 .bg-\[\#FAFBFC\]:not(.min-h-full):not(.min-h-screen) {
+  background: #0B1220 !important;
+  box-shadow:
+    0 50px 100px -30px rgba(0, 0, 0, 0.7),
+    0 20px 40px -20px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Inner page wrappers (PageLayout / screen-level min-h-screen divs).
+ * Light rule sets these to `transparent` (0,3,0); we need >= (0,3,0) and
+ * a later source position. Selector below is (0,4,0). */
+.dark.ui-v2 .bg-\[\#FAFBFC\].min-h-full,
+.dark.ui-v2 .bg-\[\#FAFBFC\].min-h-screen,
+.dark .ui-v2 .bg-\[\#FAFBFC\].min-h-full,
+.dark .ui-v2 .bg-\[\#FAFBFC\].min-h-screen {
+  background: #0F172A !important;
+  box-shadow: none !important;
+}
+
+/* Card surfaces — was forced #FFFFFF + light border */
+.dark .ui-v2 .bg-white:not(button):not(input):not(select):not(textarea):not(.no-glass),
+.dark .ui-v2 .shadow-sm:not(button):not(input):not(.no-glass),
+.dark .ui-v2 .shadow-md:not(button):not(input):not(.no-glass),
+.dark .ui-v2 .shadow-lg:not(button):not(input):not(.no-glass),
+.dark .ui-v2 .shadow-xl:not(button):not(input):not(.no-glass),
+.dark .ui-v2 .shadow-2xl:not(button):not(input):not(.no-glass),
+.dark .ui-v2 .shadow-card:not(.no-glass),
+.dark .ui-v2 .shadow-elevated:not(.no-glass),
+.dark .ui-v2 .shadow-pop:not(.no-glass) {
+  background-color: #111827 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 2px 4px -1px rgba(0, 0, 0, 0.4),
+    0 8px 16px -4px rgba(0, 0, 0, 0.5),
+    0 24px 48px -12px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Hover lift in dark — keep the teal ring but darker shadow */
+.dark .ui-v2 .hover\:shadow-md:hover,
+.dark .ui-v2 .hover\:shadow-lg:hover,
+.dark .ui-v2 .hover\:shadow-xl:hover,
+.dark .ui-v2 .hover\:shadow-card-hover:hover,
+.dark .ui-v2 .hover\:shadow-pop:hover,
+.dark .ui-v2 [class*="hover:shadow"]:hover {
+  border-color: rgba(71, 168, 141, 0.45) !important;
+  box-shadow:
+    0 0 0 1px rgba(71, 168, 141, 0.25),
+    0 4px 8px -2px rgba(0, 0, 0, 0.5),
+    0 16px 32px -8px rgba(0, 0, 0, 0.6),
+    0 40px 80px -20px rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Border-l accent cards — gradient washes were forced to white */
+.dark .ui-v2 [class*="border-l-corporate-orange"][class*="rounded-2xl"],
+.dark .ui-v2 [class*="border-l-corporate-orange"][class*="rounded-xl"] {
+  background:
+    linear-gradient(135deg, rgba(224, 78, 27, 0.10) 0%, transparent 30%),
+    linear-gradient(180deg, #111827 0%, #111827 100%) !important;
+}
+.dark .ui-v2 [class*="border-l-corporate-teal"][class*="rounded-2xl"],
+.dark .ui-v2 [class*="border-l-corporate-teal"][class*="rounded-xl"] {
+  background:
+    linear-gradient(135deg, rgba(71, 168, 141, 0.10) 0%, transparent 30%),
+    linear-gradient(180deg, #111827 0%, #111827 100%) !important;
+}
+.dark .ui-v2 [class*="border-l-corporate-navy"][class*="rounded-2xl"],
+.dark .ui-v2 [class*="border-l-corporate-navy"][class*="rounded-xl"] {
+  background:
+    linear-gradient(135deg, rgba(0, 119, 184, 0.12) 0%, transparent 30%),
+    linear-gradient(180deg, #111827 0%, #111827 100%) !important;
+}
+
+/* Top accent line on cards — invisible on dark white-tinted line; lift it */
+.dark .ui-v2 [class*="rounded-2xl"].bg-white:not(button)::before,
+.dark .ui-v2 [class*="rounded-xl"].bg-white:not(button)::before {
+  background: linear-gradient(90deg, transparent 0%, rgba(71, 168, 141, 0.6) 50%, transparent 100%);
+}
+
+/* Sidebar right edge */
+.dark .ui-v2 nav[aria-label="Main navigation"] {
+  border-right-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Inputs — light borders/bg unreadable on dark */
+.dark .ui-v2 input[type="text"],
+.dark .ui-v2 input[type="email"],
+.dark .ui-v2 input[type="password"],
+.dark .ui-v2 input[type="search"],
+.dark .ui-v2 input[type="tel"],
+.dark .ui-v2 input[type="number"],
+.dark .ui-v2 textarea,
+.dark .ui-v2 select {
+  background-color: #0F172A !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #E2E8F0 !important;
+}
+.dark .ui-v2 input::placeholder,
+.dark .ui-v2 textarea::placeholder {
+  color: rgba(226, 232, 240, 0.4) !important;
+}
+.dark .ui-v2 input:focus,
+.dark .ui-v2 textarea:focus,
+.dark .ui-v2 select:focus {
+  border-color: #47A88D !important;
+  box-shadow: 0 0 0 4px rgba(71, 168, 141, 0.25) !important;
+}
+
+/* Atmosphere orbs — turn down opacity so they don't glow through dark cards */
+.dark .ui-v2 .bg-\[\#FAFBFC\]::before {
+  background: radial-gradient(circle, rgba(71, 168, 141, 0.10) 0%, transparent 70%);
+}
+.dark .ui-v2 .bg-\[\#FAFBFC\]::after {
+  background: radial-gradient(circle, rgba(224, 78, 27, 0.04) 0%, transparent 55%);
+}
+
+/* Icon bubbles — dim the tints in dark so they don't blow out */
+.dark .ui-v2 .bg-green-100,
+.dark .ui-v2 .bg-green-50 {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.18) 0%, rgba(34, 197, 94, 0.28) 100%) !important;
+  box-shadow: 0 4px 12px -4px rgba(34, 197, 94, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.08) !important;
+}
+.dark .ui-v2 .bg-corporate-orange\/10,
+.dark .ui-v2 .bg-corporate-orange\/20 {
+  background: linear-gradient(135deg, rgba(224, 78, 27, 0.20) 0%, rgba(224, 78, 27, 0.30) 100%) !important;
+  box-shadow: 0 4px 12px -4px rgba(224, 78, 27, 0.30), inset 0 1px 0 0 rgba(255, 255, 255, 0.08) !important;
+}
+.dark .ui-v2 .bg-corporate-teal\/10,
+.dark .ui-v2 .bg-corporate-teal\/20 {
+  background: linear-gradient(135deg, rgba(71, 168, 141, 0.20) 0%, rgba(71, 168, 141, 0.30) 100%) !important;
+  box-shadow: 0 4px 12px -4px rgba(71, 168, 141, 0.30), inset 0 1px 0 0 rgba(255, 255, 255, 0.08) !important;
+}
+.dark .ui-v2 .bg-corporate-navy\/10,
+.dark .ui-v2 .bg-corporate-navy\/20 {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.16) 0%, rgba(56, 189, 248, 0.24) 100%) !important;
+  box-shadow: 0 4px 12px -4px rgba(56, 189, 248, 0.30), inset 0 1px 0 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+/* v2-hero opt-in surface */
+.dark .ui-v2 .v2-hero {
+  background: #111827;
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.04),
+    0 24px 48px -12px rgba(0, 0, 0, 0.6);
+}
+
+/* Modal scrim — already dark, just deepen */
+.dark .ui-v2 .bg-black\/50 {
+  background-color: rgba(0, 0, 0, 0.7) !important;
 }

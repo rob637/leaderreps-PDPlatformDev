@@ -9,6 +9,7 @@ import conditioningService, { REP_STATUS, getCurrentWeekId, COACH_PROMPTS } from
 import { Card } from '../ui';
 import { TrainerNudgePanel, CoachPromptsPanel, RepDetailModal } from '../conditioning';
 import FacilitatorFeedbackPanel from './FacilitatorFeedbackPanel';
+import RedAnalyticsPanel from './RedAnalyticsPanel';
 import { getRepType } from '../../services/repTaxonomy';
 import { 
   Users, CheckCircle, AlertTriangle, Clock, RefreshCw,
@@ -130,7 +131,7 @@ const UserRow = ({ summary, isExpanded, onToggle, db, cohortId }) => {
               {summary.email || summary.userId}
             </div>
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              <span className="font-medium text-corporate-teal">{summary.totalHistoricalReps || 0}</span> total reps
+              <span className="font-medium text-corporate-teal-ink">{summary.totalHistoricalReps || 0}</span> total reps
               {(currentWeek?.totalCompleted > 0 || currentWeek?.totalActive > 0) && (
                 <span className="ml-2 text-gray-400">• This week: {currentWeek?.totalCompleted || 0} done, {currentWeek?.totalActive || 0} active</span>
               )}
@@ -214,12 +215,12 @@ const UserRow = ({ summary, isExpanded, onToggle, db, cohortId }) => {
                           className="w-full p-2 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors rounded-t"
                         >
                           <div className="flex items-center gap-2">
-                            <Calendar className={`w-4 h-4 ${isCurrentWeek ? 'text-corporate-teal' : 'text-gray-400'}`} />
-                            <span className={`text-sm font-medium ${isCurrentWeek ? 'text-corporate-teal' : 'text-gray-700 dark:text-gray-200'}`}>
+                            <Calendar className={`w-4 h-4 ${isCurrentWeek ? 'text-corporate-teal-ink' : 'text-gray-400'}`} />
+                            <span className={`text-sm font-medium ${isCurrentWeek ? 'text-corporate-teal-ink' : 'text-gray-700 dark:text-gray-200'}`}>
                               {formatWeekLabel(weekId)}
                             </span>
                             {isCurrentWeek && (
-                              <span className="text-xs px-1.5 py-0.5 bg-corporate-teal/20 text-corporate-teal rounded">
+                              <span className="text-xs px-1.5 py-0.5 bg-corporate-teal/20 text-corporate-teal-ink rounded">
                                 Current
                               </span>
                             )}
@@ -617,6 +618,8 @@ const ConditioningDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [error, setError] = useState(null);
+  // Tab: 'roster' (per-user accountability) | 'feedback-analytics' (RED aggregate analytics)
+  const [activeView, setActiveView] = useState('roster');
   
   // Load cohorts
   useEffect(() => {
@@ -664,35 +667,43 @@ const ConditioningDashboard = () => {
       }));
       
       // Get conditioning summaries for each user (including total historical reps)
-      // PERF: Run all user queries in parallel instead of sequentially
+      // PERF: Run all user queries in parallel instead of sequentially.
+      // We use Promise.allSettled per-user so a failure in the per-cohort
+      // summary doesn't also discard the all-time rep history (which is what
+      // populates "N total reps" on the collapsed row and the expanded view).
       const summaryResults = await Promise.all(
         users.map(async (user) => {
-          try {
-            // Run both queries for this user in parallel
-            const [summary, allRepsData] = await Promise.all([
-              conditioningService.getUserConditioningSummary(db, user.id, selectedCohortId),
-              conditioningService.getAllRepsForUser(db, user.id, null)
-            ]);
-            return {
-              ...summary,
-              email: user.email,
-              displayName: user.displayName,
-              totalHistoricalReps: allRepsData.totalCount || 0,
-              allRepsData // Store for expanded view
-            };
-          } catch (err) {
-            console.error(`Error getting summary for user ${user.id}:`, err);
-            return {
-              userId: user.id,
-              email: user.email,
-              currentWeek: { requiredRepCompleted: false, totalCompleted: 0, totalActive: 0, reps: [] },
-              consecutiveMissedWeeks: 0,
-              unresolvedMissedReps: 0,
-              needsAttention: false,
-              totalHistoricalReps: 0,
-              error: true
-            };
+          const [summaryRes, allRepsRes] = await Promise.allSettled([
+            conditioningService.getUserConditioningSummary(db, user.id, selectedCohortId),
+            conditioningService.getAllRepsForUser(db, user.id, null),
+          ]);
+          const summary = summaryRes.status === 'fulfilled' ? summaryRes.value : null;
+          const allRepsData = allRepsRes.status === 'fulfilled' ? allRepsRes.value : null;
+          if (summaryRes.status === 'rejected') {
+            console.error(`Error getting summary for user ${user.id}:`, summaryRes.reason);
           }
+          if (allRepsRes.status === 'rejected') {
+            console.error(`Error getting rep history for user ${user.id}:`, allRepsRes.reason);
+          }
+          // Build a row that gracefully degrades: if the per-cohort summary
+          // failed, we still render with the all-time rep count from
+          // allRepsData (which is what matters for the visible "N total reps"
+          // and for the expanded history view).
+          const base = summary || {
+            userId: user.id,
+            currentWeek: { requiredRepCompleted: false, totalCompleted: 0, totalActive: 0, reps: [] },
+            consecutiveMissedWeeks: 0,
+            unresolvedMissedReps: 0,
+            needsAttention: false,
+          };
+          return {
+            ...base,
+            email: user.email,
+            displayName: user.displayName,
+            totalHistoricalReps: allRepsData?.totalCount || 0,
+            allRepsData,
+            error: !summary && !allRepsData,
+          };
         })
       );
       const summaries = summaryResults;
@@ -868,14 +879,49 @@ const ConditioningDashboard = () => {
           onSelect={setSelectedCohortId}
         />
       </div>
-      
+
+      {/* View tabs: Roster (per-user) | Feedback Analytics (RED aggregate) */}
+      {selectedCohortId && (
+        <div className="mb-6 flex gap-2 border-b border-slate-200 dark:border-slate-700">
+          {[
+            { id: 'roster', label: 'Roster', icon: Users },
+            { id: 'feedback-analytics', label: 'Feedback Analytics', icon: BarChart3 },
+          ].map((view) => {
+            const ViewIcon = view.icon;
+            const isActive = activeView === view.id;
+            return (
+              <button
+                key={view.id}
+                onClick={() => setActiveView(view.id)}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 -mb-px ${
+                  isActive
+                    ? 'border-corporate-teal text-corporate-teal-ink'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <ViewIcon className="w-4 h-4" />
+                {view.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Error */}
       {error && (
         <Card className="mb-6 p-4 border-l-4 border-l-red-500 bg-red-50 dark:bg-red-900/20">
           <p className="text-red-700">{error}</p>
         </Card>
       )}
-      
+
+      {/* Feedback Analytics view — RED aggregate, scoped to selected cohort */}
+      {selectedCohortId && activeView === 'feedback-analytics' && (
+        <RedAnalyticsPanel cohortId={selectedCohortId} />
+      )}
+
+      {/* Roster view (default) — everything below renders only for the per-user roster */}
+      {activeView === 'roster' && (
+      <>
       {/* Stats Summary */}
       <StatsSummary cohortSummary={cohortSummary} />
       
@@ -976,6 +1022,8 @@ const ConditioningDashboard = () => {
             </div>
           )}
         </Card>
+      )}
+      </>
       )}
     </div>
   );

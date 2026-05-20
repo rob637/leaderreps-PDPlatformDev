@@ -25,7 +25,7 @@ export const AccessibleButton = ({
   const variants = {
     primary: "bg-corporate-teal text-white hover:bg-[#349881] focus:ring-corporate-teal",
     secondary: "bg-corporate-orange text-white hover:bg-[#349881] focus:ring-corporate-orange",
-    outline: "border-2 border-corporate-teal text-corporate-teal hover:bg-corporate-teal hover:text-white focus:ring-corporate-teal",
+    outline: "border-2 border-corporate-teal text-corporate-teal-ink hover:bg-corporate-teal hover:text-white focus:ring-corporate-teal",
     ghost: "text-corporate-navy hover:bg-gray-100 focus:ring-gray-300"
   };
 

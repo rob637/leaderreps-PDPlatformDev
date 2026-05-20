@@ -19,7 +19,7 @@ export const STEP_KEYS = ['learn', 'prep', 'practice', 'reflect'];
 export const STEP_META = {
   learn:    { label: 'Learn',    sub: 'Read the 2-3 min script' },
   prep:     { label: 'Prep',     sub: 'Use the 4-question card' },
-  practice: { label: 'Practice', sub: 'Practice/Reps or rehearse with Rep Coach' },
+  practice: { label: 'Practice', sub: 'Run a Rep or rehearse the script' },
   reflect:  { label: 'Reflect',  sub: 'One-line Field Note' },
 };
 

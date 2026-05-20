@@ -153,6 +153,15 @@ const Results = ({
       className="min-h-screen py-8 px-4"
     >
       <div className="max-w-4xl mx-auto space-y-6">
+        {/* Logo Header */}
+        <header className="flex items-center justify-between">
+          <img
+            src="/logo-full.png"
+            alt="LeaderReps"
+            className="h-16 md:h-20"
+          />
+        </header>
+
         {/* Main Results Card */}
         <section className="rounded-[2.5rem] border border-slate-200 bg-white p-8 md:p-12 shadow-xl">
           <div className="flex flex-wrap items-start justify-between gap-6 mb-4">
@@ -230,7 +239,7 @@ const Results = ({
             ) : (
               <form className="space-y-5" onSubmit={handleEmailSubmit}>
                 <p className="text-slate-600 text-lg leading-relaxed">
-                  <strong className="font-black text-[#002E47]">Enter your email to get a PDF of your results + the LeaderReps&apos; Accountability System Blueprint</strong> &mdash; a one-page reference showing what a fully functioning accountability system looks like in practice.
+                  <strong className="font-black text-[#002E47]">Enter your email to get a PDF of your results + the LeaderReps&apos; Accountability System Blueprint</strong> &mdash; a downloadable map of a high-functioning accountability system, the four behavior reps at its core, and how to run each one.
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4">

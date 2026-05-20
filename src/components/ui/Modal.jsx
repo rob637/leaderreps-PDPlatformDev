@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '../../lib/utils';
 import { X } from 'lucide-react';
 
@@ -92,10 +93,9 @@ const ModalContent = React.forwardRef(({ className, children, onClose, ...props 
       aria-modal="true"
       onKeyDown={handleKeyDown}
       className={cn(
-        'fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2',
-        'w-full max-w-lg max-h-[90vh] overflow-y-auto',
+        'relative z-50 w-full max-w-lg max-h-[90vh] overflow-y-auto',
         'bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100',
-        'animate-in fade-in-0 zoom-in-95 slide-in-from-left-1/2 slide-in-from-top-[48%]',
+        'animate-in fade-in-0',
         className
       )}
       style={{ fontFamily: 'var(--font-body)' }}
@@ -181,13 +181,38 @@ ModalClose.displayName = 'ModalClose';
 
 // --- Main Modal Component ---
 const Modal = ({ isOpen, onClose, children, className, ariaLabel, ariaDescribedBy }) => {
+  // Lock body scroll while open so the page underneath doesn't drift /
+  // "bounce" when the user wheels over the dim backdrop or modal body.
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
-  return (
-    <>
-      <ModalOverlay onClick={onClose} />
-      <ModalContent 
-        className={className} 
+  // Render into document.body so an ancestor with transform/filter/backdrop-filter
+  // (which turns `position: fixed` into "fixed within that ancestor") can't
+  // pin the modal into a corner of the page panel.
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overscroll-contain"
+      onClick={(e) => {
+        // Click on the backdrop (not bubbled from modal content) closes.
+        if (e.target === e.currentTarget) onClose?.();
+      }}
+    >
+      <div
+        className="absolute inset-0 bg-corporate-navy/40 backdrop-blur-md animate-in fade-in-0"
+        aria-hidden="true"
+      />
+      <ModalContent
+        className={cn('overscroll-contain', className)}
         onClose={onClose}
         aria-label={ariaLabel}
         aria-describedby={ariaDescribedBy}
@@ -195,7 +220,8 @@ const Modal = ({ isOpen, onClose, children, className, ariaLabel, ariaDescribedB
         <ModalClose onClick={onClose} />
         {children}
       </ModalContent>
-    </>
+    </div>,
+    document.body
   );
 };
 

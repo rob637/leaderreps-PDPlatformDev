@@ -15,6 +15,7 @@ function ConfigGate({ children }) {
     try {
       cfg = JSON.parse(raw);
       window.__FIREBASE_CONFIG__ = cfg;
+      window.__firebase_config = cfg; // Mirror to both cases for compatibility
     } catch (e) {
       err = `Failed to parse VITE_FIREBASE_CONFIG: ${e.message}`;
     }

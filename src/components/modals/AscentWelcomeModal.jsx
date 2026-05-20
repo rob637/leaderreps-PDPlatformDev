@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Mountain, BookOpen, Sparkles, ArrowRight } from 'lucide-react';
+import FocusTrap from '../accessibility/FocusTrap';
 
 /**
  * AscentWelcomeModal
@@ -23,7 +24,14 @@ const AscentWelcomeModal = ({ isOpen, onClose, onGoToContent, onOpenAscentArena,
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+      <FocusTrap
+        active={isOpen}
+        onEscape={onClose}
+        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ascent-welcome-title"
+      >
         {/* Hero header */}
         <div className="relative bg-gradient-to-br from-corporate-navy via-slate-700 to-corporate-teal p-6 text-white">
           <button
@@ -41,7 +49,7 @@ const AscentWelcomeModal = ({ isOpen, onClose, onGoToContent, onOpenAscentArena,
               <p className="text-xs uppercase tracking-wider text-white/70 font-semibold">
                 Foundation Complete
               </p>
-              <h2 className="text-xl font-bold">Welcome to Ascent, {firstName}!</h2>
+              <h2 id="ascent-welcome-title" className="text-xl font-bold">Welcome to Ascent, {firstName}!</h2>
             </div>
           </div>
           <p className="text-sm text-white/90 leading-relaxed">
@@ -86,34 +94,17 @@ const AscentWelcomeModal = ({ isOpen, onClose, onGoToContent, onOpenAscentArena,
         </div>
 
         {/* Footer */}
-        <div className="px-6 pb-6 pt-2 flex flex-col sm:flex-row gap-2">
-          {onOpenAscentArena && (
-            <button
-              onClick={onOpenAscentArena}
-              className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 bg-corporate-orange hover:bg-corporate-orange/90 text-white text-sm font-semibold rounded-lg transition-colors"
-            >
-              <Mountain className="w-4 h-4" />
-              Enter Ascent Arena
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          )}
-          {onGoToContent && (
-            <button
-              onClick={onGoToContent}
-              className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 bg-corporate-teal hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
-            >
-              <BookOpen className="w-4 h-4" />
-              Open Content
-            </button>
-          )}
+        <div className="px-6 pb-6 pt-2">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm font-semibold rounded-lg transition-colors"
+            className="w-full inline-flex items-center justify-center gap-2 py-2.5 bg-corporate-orange hover:bg-corporate-orange/90 text-white text-sm font-semibold rounded-lg transition-colors"
           >
-            Later
+            <Mountain className="w-4 h-4" />
+            Enter Ascent
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
-      </div>
+      </FocusTrap>
     </div>
   );
 };

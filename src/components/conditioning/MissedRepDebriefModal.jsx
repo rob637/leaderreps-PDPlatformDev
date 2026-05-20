@@ -64,7 +64,7 @@ const BlockerSelector = ({ value, onChange }) => {
                   : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
               }`}
             >
-              <Icon className={`w-5 h-5 ${value === option.id ? 'text-corporate-teal' : 'text-gray-400'}`} />
+              <Icon className={`w-5 h-5 ${value === option.id ? 'text-corporate-teal-ink' : 'text-gray-400'}`} />
               <span className="text-sm">{option.label}</span>
               {value === option.id && <Check className="w-4 h-4 text-corporate-teal ml-auto" />}
             </button>

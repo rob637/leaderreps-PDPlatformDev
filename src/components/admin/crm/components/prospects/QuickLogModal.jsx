@@ -9,6 +9,8 @@ import { useAuthStore } from '../../stores/authStore';
 import { usePersonaStore } from '../../stores/personaStore';
 import useGmailStore from '../../stores/gmailStore';
 import * as gmail from '../../lib/gmail';
+import { dispatchMentionNotifications } from '../../lib/mentions';
+import { TEAM_MEMBERS } from '../../config/team';
 import { 
   ACTIVITY_TYPES, 
   CALL_OUTCOMES, 
@@ -173,6 +175,28 @@ const QuickLogModal = ({ prospect, initialType = null, onClose }) => {
       }
       
       await addActivity(activityData, activeEmail, activePersona?.name || user.displayName || user.email.split('@')[0]);
+
+      // Fire @mention notifications (best effort — non-blocking)
+      try {
+        const mentionText = [formData.content, formData.emailBody, formData.emailSubject]
+          .filter(Boolean)
+          .join('\n');
+        if (mentionText && mentionText.includes('@')) {
+          await dispatchMentionNotifications({
+            text: mentionText,
+            members: TEAM_MEMBERS,
+            context: {
+              entityType: 'prospect',
+              entityId: prospect.id,
+              prospectName,
+              link: { tab: 'prospects', entityId: prospect.id },
+            },
+            actorEmail: activeEmail,
+          });
+        }
+      } catch (mentionErr) {
+        console.warn('Mention dispatch failed:', mentionErr);
+      }
       
       // Add follow-up task if enabled
       if (followUpTask.enabled && followUpTask.title.trim()) {

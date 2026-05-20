@@ -13,7 +13,6 @@ import {
   BookOpen,
   TestTube2,
   ArrowLeftRight,
-  BrainCircuit,
   List,
   Zap,
   Bell,
@@ -30,40 +29,34 @@ import SystemDiagnostics from './SystemDiagnostics';
 import FeatureManager from './FeatureManager';
 import ContentAdminHome from './ContentAdminHome'; // Existing component
 import MediaLibrary from './MediaLibrary'; // New component
-// import MigrationTool from './MigrationTool'; // New component
 import SystemWidgets from './SystemWidgets';
 import DocumentationCenter from './DocumentationCenter';
 import TestCenter from './TestCenter';
-import CommunityManager from './CommunityManager';
-import CoachingManager from './CoachingManager';
+import EventsManager from './EventsManager';
 import LOVManager from './LOVManager';
-import DailyRepsLibrary from './DailyRepsLibrary';
-import ContentManager from './DailyPlanManager';
-import LevelSignOffQueue from './LevelSignOffQueue';
-import SessionAttendanceQueue from './SessionAttendanceQueue';
-import CoachingCertificationQueue from './CoachingCertificationQueue';
+import PhaseContentManager from './PhaseContentManager';
 import CohortManager from './CohortManager';
 import UserManagement from './UserManagement';
 import LeaderProfileReports from './LeaderProfileReports';
-import NotificationManager from './NotificationManager';
 import CommunicationsManager from './CommunicationsManager';
 import AnnouncementsManager from './AnnouncementsManager';
 import ConditioningDashboard from './ConditioningDashboard';
-import AccountabilityInsights from './AccountabilityInsights';
 import ConditioningConfig from './ConditioningConfig';
 import UxAuditPanel from './UxAuditPanel';
 import VideoSeriesManager from './VideoSeriesManager';
+import AskTrainerInbox from './AskTrainerInbox';
 import { BreadcrumbNav } from '../ui/BreadcrumbNav';
 import { useAppServices } from '../../services/useAppServices';
 import { useNavigation } from '../../providers/NavigationProvider';
-import { doc, getDoc } from 'firebase/firestore';
+import { fetchAdminEmails, isAdminEmail, FALLBACK_ADMIN_EMAILS } from '../../services/adminAuth';
+import { FlaskConical as LabIcon } from 'lucide-react';
 
 // Define version locally if not available globally
 // eslint-disable-next-line no-undef
 const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';
 
 const AdminPortal = () => {
-  const { user, db, isAuthReady } = useAppServices();
+  const { user, db, isAuthReady, navigate } = useAppServices();
   const { navParams } = useNavigation();
   const [activeTab, setActiveTab] = useState(navParams?.tab || 'dashboard');
   const [isAdmin, setIsAdmin] = useState(false);
@@ -86,29 +79,14 @@ const AdminPortal = () => {
         return;
       }
 
-      // Default fallback admins
-      const DEFAULT_ADMINS = ['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com'];
-      
+      // Use centralized admin source. Always prefers metadata/config and
+      // falls back to FALLBACK_ADMIN_EMAILS only if Firestore is unreachable.
       try {
-        // Try to fetch from Firestore config
-        const configRef = doc(db, 'metadata', 'config');
-        const configSnap = await getDoc(configRef);
-        
-        let allowedEmails = DEFAULT_ADMINS;
-        
-        if (configSnap.exists() && configSnap.data().adminemails) {
-          allowedEmails = configSnap.data().adminemails;
-        }
-        
-        // Check if user is in the allowed list (case-insensitive)
-        const userEmail = user.email.toLowerCase();
-        const isAllowed = allowedEmails.some(email => email.toLowerCase() === userEmail);
-        
-        setIsAdmin(isAllowed);
+        const allowedEmails = await fetchAdminEmails(db);
+        setIsAdmin(isAdminEmail(user.email, allowedEmails));
       } catch (error) {
-        console.error("Error checking admin status:", error);
-        // Fallback to default list on error
-        setIsAdmin(DEFAULT_ADMINS.includes(user.email));
+        console.error('Error checking admin status:', error);
+        setIsAdmin(isAdminEmail(user.email, FALLBACK_ADMIN_EMAILS.map(e => e.toLowerCase())));
       } finally {
         setLoading(false);
       }
@@ -147,33 +125,27 @@ const AdminPortal = () => {
       items: [
         { id: 'users', label: 'User Management', icon: Users },
         // { id: 'cohorts', label: 'Cohorts', icon: Users },
-        { id: 'content-manager', label: 'Content Manager', icon: Calendar },
+        { id: 'phase-content', label: 'Phase Content', icon: Calendar },
         { id: 'content', label: 'Content Library', icon: FileText },
         { id: 'media', label: 'Media Vault', icon: Database },
         { id: 'video-series', label: 'Video Series', icon: PlaySquare },
         { id: 'notifications', label: 'Notifications', icon: Bell },
-        { id: 'announcements', label: 'Announcements', icon: Megaphone },
         { id: 'communications', label: 'Communications', icon: Mail }
       ]
     },
     {
       title: 'Trainer',
       items: [
-        { id: 'session-attendance', label: 'Session Attendance', icon: BookOpen },
-        { id: 'sign-off-queue', label: 'Level Sign-Off', icon: CheckCircle },
-        { id: 'coaching-cert', label: 'Leader Certification', icon: Award },
-        { id: 'leader-profiles', label: 'Leader Profiles', icon: FileText },
-        { id: 'conditioning', label: 'Conditioning', icon: Zap },
-        { id: 'assessment-insights', label: 'Assessment Insights', icon: BarChart3 }
+        { id: 'ask-trainer-inbox', label: 'Ask a Trainer', icon: Megaphone },
+        { id: 'leader-profiles', label: 'Leaders', icon: FileText },
+        { id: 'conditioning', label: 'Conditioning', icon: Zap }
       ]
     },
     {
       title: 'Advanced Management',
       items: [
         { id: 'conditioning-config', label: 'Conditioning Config', icon: Zap },
-        { id: 'daily-reps', label: 'Daily Reps', icon: Zap },
-        { id: 'community', label: 'Community', icon: Users },
-        { id: 'coaching', label: 'Coaching', icon: BrainCircuit },
+        { id: 'events', label: 'Events', icon: Calendar },
         { id: 'lov', label: 'System Values', icon: List }
       ]
     },
@@ -183,9 +155,9 @@ const AdminPortal = () => {
         { id: 'diagnostics', label: 'Diagnostics', icon: Activity },
         { id: 'features', label: 'Widget Lab', icon: FlaskConical },
         { id: 'system', label: 'System', icon: Settings },
-        // { id: 'migration', label: 'Migration', icon: ArrowLeftRight },
         { id: 'tests', label: 'Test Center', icon: TestTube2 },
-        { id: 'ux-audit', label: 'UX Audit Lab', icon: Eye }
+        { id: 'ux-audit', label: 'UX Audit Lab', icon: Eye },
+        { id: 'leaderreps-lab', label: 'LeaderReps Lab', icon: LabIcon, screen: 'leaderreps-lab' }
       ]
     },
     {
@@ -206,45 +178,39 @@ const AdminPortal = () => {
         return <CohortManager />;
       case 'tests':
         return <TestCenter />;
-      case 'content-manager':
-        return <ContentManager />;
-      case 'sign-off-queue':
-        return <LevelSignOffQueue />;
-      case 'session-attendance':
-        return <SessionAttendanceQueue />;
-      case 'assessment-insights':
-        return <AccountabilityInsights />;
-      case 'coaching-cert':
-        return <CoachingCertificationQueue />;
+      case 'phase-content':
+        return <PhaseContentManager />;
+      case 'ask-trainer-inbox':
+        return <AskTrainerInbox />;
       // 'library' tab removed - Programs/Workouts/Skills now managed as LOVs
       case 'media':
         return <MediaLibrary />;
       case 'notifications':
-        return <NotificationManager />;
+        return <AnnouncementsManager />;
       case 'communications':
         return <CommunicationsManager />;
+      // Legacy alias — 'announcements' tab was renamed to 'notifications' May 2026
       case 'announcements':
         return <AnnouncementsManager />;
       case 'diagnostics':
         return <SystemDiagnostics />;
       case 'content':
         return <ContentAdminHome />;
+      case 'events':
+        return <EventsManager />;
+      // Legacy aliases for any deep links to the old separate admin tabs
       case 'community':
-        return <CommunityManager />;
+        return <EventsManager />;
       case 'coaching':
-        return <CoachingManager />;
+        return <EventsManager />;
       case 'lov':
         return <LOVManager />;
-      case 'daily-reps':
-        return <DailyRepsLibrary />;
       case 'features':
         return <FeatureManager />;
       case 'docs':
         return <DocumentationCenter />;
       case 'system':
         return <SystemWidgets />;
-      // case 'migration':
-      //   return <MigrationTool />;
       case 'leader-profiles':
         return <LeaderProfileReports />;
       case 'conditioning':
@@ -276,7 +242,7 @@ const AdminPortal = () => {
               <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                 <span>{user.email}</span>
                 <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                <span className="font-medium text-corporate-teal">v{APP_VERSION}</span>
+                <span className="font-medium text-corporate-teal-ink">v{APP_VERSION}</span>
               </div>
             </div>
           </div>
@@ -303,6 +269,10 @@ const AdminPortal = () => {
                       <button
                         key={item.id}
                         onClick={() => {
+                          if (item.screen) {
+                            navigate(item.screen);
+                            return;
+                          }
                           setActiveTab(item.id);
                           // Scroll content area to top when switching tabs
                           document.getElementById('admin-content-area')?.scrollTo(0, 0);
@@ -310,11 +280,11 @@ const AdminPortal = () => {
                         className={`
                           w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
                           ${isActive 
-                            ? 'bg-corporate-teal/10 text-corporate-teal' 
+                            ? 'bg-corporate-teal/10 text-corporate-teal-ink' 
                             : 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-corporate-navy dark:hover:text-white'}
                         `}
                       >
-                        <Icon className={`w-4 h-4 ${isActive ? 'text-corporate-teal' : 'text-slate-400'}`} />
+                        <Icon className={`w-4 h-4 ${isActive ? 'text-corporate-teal-ink' : 'text-slate-400'}`} />
                         {item.label}
                       </button>
                     );

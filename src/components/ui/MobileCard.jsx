@@ -193,7 +193,7 @@ const MobileCardIcon = React.forwardRef(({
     red: "bg-red-100 dark:bg-red-900/30 text-red-600",
     purple: "bg-purple-100 dark:bg-purple-900/30 text-purple-600",
     navy: "bg-corporate-navy/10 text-corporate-navy",
-    teal: "bg-corporate-teal/10 text-corporate-teal",
+    teal: "bg-corporate-teal/10 text-corporate-teal-ink",
   };
 
   return (

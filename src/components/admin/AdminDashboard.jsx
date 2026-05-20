@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { collection, getDocs, query, where, orderBy, limit, doc, getDoc, setDoc, arrayUnion } from 'firebase/firestore';
+import { fetchAdminEmails, FALLBACK_ADMIN_EMAILS } from '../../services/adminAuth';
 import { ACTIVITY_TYPES, getActivityMeta, logActivity as logActivityService, getTodaysSummary, cleanupOldLogs } from '../../services/activityLogger';
 
 const AdminDashboard = () => {
@@ -210,25 +211,13 @@ const AdminDashboard = () => {
           console.log('Could not fetch activity summary', e);
         }
         
-        // 5. Fetch Admins
+        // 5. Fetch Admins (centralized via adminAuth helper)
         try {
-          const metadataRef = doc(db, 'metadata', 'config');
-          const metadataSnap = await getDoc(metadataRef);
-          const DEFAULT_ADMINS = ['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com'];
-
-          if (metadataSnap.exists()) {
-            const data = metadataSnap.data();
-            if (data.adminemails && Array.isArray(data.adminemails) && data.adminemails.length > 0) {
-              setAdmins(data.adminemails);
-            } else {
-              setAdmins(DEFAULT_ADMINS);
-            }
-          } else {
-            setAdmins(DEFAULT_ADMINS);
-          }
+          const allowedEmails = await fetchAdminEmails(db);
+          setAdmins(allowedEmails);
         } catch (e) {
           console.error("Error fetching admins:", e);
-          setAdmins(['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com']);
+          setAdmins(FALLBACK_ADMIN_EMAILS);
         }
 
         setStats({

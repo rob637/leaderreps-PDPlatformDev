@@ -5,10 +5,12 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
 
 // --- Icons ---
-import { Users, Send, MessageSquare, Heart, CornerRightUp, Award, Link, Settings, User } from 'lucide-react';
+import { Users, Send, MessageSquare, Heart, Award, Link, Settings, User, Loader2 } from 'lucide-react';
 
 // --- UI Components ---
 import { Button, LoadingState } from '../ui';
+import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
+import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
 
 /* =========================================================
    MOCK DATA (Local Fallback - Replace with Service/API)
@@ -146,7 +148,7 @@ const CommunityFeedScreen = () => {
     // Feature Flag Check
         if (!featureFlags?.enableCommunity) {
       return (
-        <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 text-center">
+        <div className="p-4 sm:p-4 lg:p-8 text-center">
           <h2 className="text-xl sm:text-2xl font-bold mb-4">Community Feature Disabled</h2>
           <p>This feature is currently not enabled. Please contact support for more information.</p>
         </div>
@@ -158,10 +160,15 @@ const CommunityFeedScreen = () => {
 
     return (
         // Consistent page structure and padding
-        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 space-y-4 sm:space-y-6 lg:space-y-8 min-h-screen bg-[#F9FAFB]">
+        <div className="p-4 sm:p-6 lg:p-10 space-y-4 sm:space-y-6 lg:space-y-8 min-h-screen bg-[#F9FAFB]">
+            <BreadcrumbNav
+                items={getBreadcrumbs('community-feed')}
+                navigate={navigate}
+            />
+
             {/* Header */}
             <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-gray-200 dark:border-gray-700 pb-4">
-                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold flex items-center gap-3 text-corporate-navy">
+                <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold flex items-center gap-3 text-corporate-navy">
                     <Users size={32} className="text-corporate-navy" /> Accountability Pod Feed
                 </h1>
                 {/* Link to Community Settings */}
@@ -171,7 +178,7 @@ const CommunityFeedScreen = () => {
             </header>
 
             {/* Main Layout Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:p-4 lg:p-8">
 
                 {/* Left Column: Leaderboard & Quick Share */}
                 <aside className="lg:col-span-1 space-y-4 sm:space-y-5 lg:space-y-6 lg:sticky lg:top-3 sm:p-4 lg:p-6 self-start"> {/* Sticky sidebar */}
@@ -189,7 +196,7 @@ const CommunityFeedScreen = () => {
                                 {/* Name */}
                                 <span className="flex-1 font-semibold text-sm ml-2 truncate text-corporate-navy">{leader.name}</span>
                                 {/* Streak */}
-                                <span className="text-xs font-medium ml-2 text-corporate-teal">{leader.streak} Day Streak</span>
+                                <span className="text-xs font-medium ml-2 text-corporate-teal-ink">{leader.streak} Day Streak</span>
                             </div>
                         ))}
                          {/* Optional: Link to full leaderboard */}
@@ -211,7 +218,7 @@ const CommunityFeedScreen = () => {
                         />
                         {/* Share Button */}
                         <Button onClick={handleQuickShare} size="md" className="w-full" disabled={!quickShareText.trim() || isSharing}>
-                            {isSharing ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+                            {isSharing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
                             {isSharing ? 'Sharing...' : 'Share Rep to Pod'}
                         </Button>
                     </div>

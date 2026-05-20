@@ -204,7 +204,7 @@ const RedAnalyticsPanel = ({ cohortId = null }) => {
       <Card className="p-6">
         <div className="flex items-center gap-3 mb-4">
           <BarChart3 className="w-5 h-5 text-corporate-teal" />
-          <h3 className="font-semibold text-corporate-navy dark:text-white">RED Analytics (Admin)</h3>
+          <h3 className="font-semibold text-corporate-navy dark:text-white">Feedback Analytics</h3>
         </div>
         <div className="flex items-center justify-center py-8">
           <RefreshCw className="w-6 h-6 animate-spin text-corporate-teal" />
@@ -220,14 +220,14 @@ const RedAnalyticsPanel = ({ cohortId = null }) => {
       <Card className="p-6">
         <div className="flex items-center gap-3 mb-4">
           <BarChart3 className="w-5 h-5 text-corporate-teal" />
-          <h3 className="font-semibold text-corporate-navy dark:text-white">RED Analytics (Admin)</h3>
+          <h3 className="font-semibold text-corporate-navy dark:text-white">Feedback Analytics</h3>
         </div>
         <div className="text-center py-6 text-red-500">
           <AlertTriangle className="w-10 h-10 mx-auto mb-3" />
           <p>{error}</p>
           <button 
             onClick={loadAnalytics}
-            className="mt-3 text-sm text-corporate-teal hover:underline"
+            className="mt-3 text-sm text-corporate-teal-ink hover:underline"
           >
             Try again
           </button>
@@ -242,7 +242,10 @@ const RedAnalyticsPanel = ({ cohortId = null }) => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <BarChart3 className="w-5 h-5 text-corporate-teal" />
-          <h3 className="font-semibold text-corporate-navy dark:text-white">RED Analytics (Admin)</h3>
+          <div>
+            <h3 className="font-semibold text-corporate-navy dark:text-white">Feedback Analytics</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Redirecting Feedback (RED) reps &middot; Close-the-Loop completion &middot; behavior change</p>
+          </div>
         </div>
         <button 
           onClick={loadAnalytics}
@@ -253,7 +256,19 @@ const RedAnalyticsPanel = ({ cohortId = null }) => {
         </button>
       </div>
 
-      {/* Tabs */}
+      {/* Empty state when no RED data exists in this cohort */}
+      {aggregateStats && aggregateStats.totalReds === 0 && (
+        <div className="py-10 text-center">
+          <MessageSquare className="w-10 h-10 mx-auto mb-3 text-slate-300" />
+          <p className="text-slate-600 dark:text-slate-300 font-medium">No Redirecting Feedback reps yet</p>
+          <p className="text-sm text-slate-400 mt-1">
+            Analytics will appear here once leaders in this cohort log RED reps.
+          </p>
+        </div>
+      )}
+
+      {/* Tabs (only when there's data) */}
+      {aggregateStats && aggregateStats.totalReds > 0 && (
       <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
         {[
           { id: 'overview', label: 'Overview', icon: BarChart3 },
@@ -266,7 +281,7 @@ const RedAnalyticsPanel = ({ cohortId = null }) => {
             onClick={() => setSelectedTab(tab.id)}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
               selectedTab === tab.id
-                ? 'border-corporate-teal text-corporate-teal'
+                ? 'border-corporate-teal text-corporate-teal-ink'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
@@ -275,9 +290,10 @@ const RedAnalyticsPanel = ({ cohortId = null }) => {
           </button>
         ))}
       </div>
+      )}
 
       {/* Overview Tab */}
-      {selectedTab === 'overview' && aggregateStats && (
+      {selectedTab === 'overview' && aggregateStats && aggregateStats.totalReds > 0 && (
         <div className="space-y-6">
           {/* Key Metrics */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -323,7 +339,7 @@ const RedAnalyticsPanel = ({ cohortId = null }) => {
                     <span className="text-sm text-gray-600 dark:text-gray-300 capitalize">
                       {(redPatternService.SCENARIO_TYPE_LABELS[scenario] || scenario).replace(/_/g, ' ')}
                     </span>
-                    <span className="text-sm font-medium text-corporate-teal">{count}</span>
+                    <span className="text-sm font-medium text-corporate-teal-ink">{count}</span>
                   </div>
                 ))}
             </div>
@@ -506,7 +522,7 @@ const RedAnalyticsPanel = ({ cohortId = null }) => {
  */
 const MetricCard = ({ label, value, subValue, icon, color }) => {
   const colorClasses = {
-    teal: 'bg-corporate-teal/10 text-corporate-teal',
+    teal: 'bg-corporate-teal/10 text-corporate-teal-ink',
     blue: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600',
     green: 'bg-green-100 dark:bg-green-900/30 text-green-600',
     amber: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600',

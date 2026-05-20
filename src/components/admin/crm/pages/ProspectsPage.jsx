@@ -10,6 +10,9 @@ import ProspectsKanban from '../components/prospects/ProspectsKanban';
 import ProspectDetailPanel from '../components/prospects/ProspectDetailPanel';
 import AddProspectModal from '../components/prospects/AddProspectModal';
 import CSVImportModal from '../components/CSVImportModal';
+import SavedViewsBar from '../components/SavedViewsBar';
+import EmptyState from '../components/EmptyState';
+import { Users as UsersIcon } from 'lucide-react';
 import {
   Search,
   Plus,
@@ -38,7 +41,8 @@ const ProspectsPage = () => {
     subscribeToProspects,
     getFilteredProspects,
     selectedProspect,
-    isCurrentUserAdmin
+    isCurrentUserAdmin,
+    prospects
   } = useProspectsStore();
   
   const { openModal, activeModal, closeModal } = useUIStore();
@@ -208,6 +212,11 @@ const ProspectsPage = () => {
         </div>
       </div>
 
+      {/* Saved Views */}
+      <div className="mb-3">
+        <SavedViewsBar />
+      </div>
+
       {/* Results Count */}
       <div className="text-sm text-slate-500 mb-3">
         {loading ? 'Loading...' : `${filteredProspects.length} prospect${filteredProspects.length !== 1 ? 's' : ''}`}
@@ -228,6 +237,26 @@ const ProspectsPage = () => {
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand-teal border-t-transparent"></div>
             </div>
+          ) : filteredProspects.length === 0 ? (
+            <EmptyState
+              icon={UsersIcon}
+              title={prospects.length === 0 ? 'No prospects yet' : 'No prospects match your filters'}
+              message={
+                prospects.length === 0
+                  ? 'Add your first prospect or import a list to get started.'
+                  : 'Try clearing filters or adjusting your search.'
+              }
+              action={
+                prospects.length === 0
+                  ? { label: 'Add Prospect', onClick: () => openModal('addProspect') }
+                  : null
+              }
+              secondary={
+                prospects.length === 0
+                  ? { label: 'Import CSV', onClick: () => setShowCSVImport(true) }
+                  : null
+              }
+            />
           ) : viewMode === 'list' ? (
             <ProspectsList prospects={filteredProspects} />
           ) : (

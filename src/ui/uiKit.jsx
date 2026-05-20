@@ -17,7 +17,7 @@ export const Button = ({
   } else if (variant === 'secondary') {
     baseClasses += " text-white bg-corporate-orange hover:bg-corporate-orange/90 focus:ring-corporate-orange/30";
   } else if (variant === 'outline') {
-    baseClasses = "px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 flex items-center justify-center border-corporate-teal text-corporate-teal dark:text-corporate-teal bg-white dark:bg-slate-800 hover:bg-corporate-teal/5 dark:hover:bg-corporate-teal/10 focus:ring-4 focus:ring-corporate-teal/30";
+    baseClasses = "px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 flex items-center justify-center border-corporate-teal text-corporate-teal-ink dark:text-corporate-teal-ink bg-white dark:bg-slate-800 hover:bg-corporate-teal/5 dark:hover:bg-corporate-teal/10 focus:ring-4 focus:ring-corporate-teal/30";
   } else if (variant === 'nav-back') {
     baseClasses = "px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center justify-center";
   }

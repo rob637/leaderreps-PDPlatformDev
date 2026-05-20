@@ -8,7 +8,7 @@ import { DashboardCard } from '../ui/DashboardCard';
 import { collection, query, where, getCountFromServer } from '../../services/firebaseUtils';
 import { UNIFIED_COLLECTION } from '../../services/unifiedContentService';
 import { useFeatures } from '../../providers/FeatureProvider';
-import WidgetRenderer from '../admin/WidgetRenderer';
+import WidgetRenderer from '../shared/WidgetRenderer';
 
 const Library = () => {
   const { navigate, db } = useAppServices();
@@ -83,7 +83,7 @@ const Library = () => {
         description: 'Practical training sessions to build skills through practice.',
         icon: Dumbbell,
         screen: 'workouts-index',
-        color: 'text-corporate-teal',
+        color: 'text-corporate-teal-ink',
         bgColor: 'bg-corporate-teal/10'
       },
       */
@@ -104,7 +104,7 @@ const Library = () => {
         description: 'Curated books and articles with actionable exercises.',
         icon: BookOpen,
         screen: 'read-reps-index',
-        color: 'text-corporate-teal',
+        color: 'text-corporate-teal-ink',
         bgColor: 'bg-corporate-teal/10'
       },
       {
@@ -113,7 +113,7 @@ const Library = () => {
         description: 'Leadership videos, talks, and curated playlists.',
         icon: Film,
         screen: 'videos-index',
-        color: 'text-corporate-teal',
+        color: 'text-corporate-teal-ink',
         bgColor: 'bg-corporate-teal/10'
       },
       {
@@ -122,7 +122,7 @@ const Library = () => {
         description: 'Reference materials, guides, and whitepapers.',
         icon: FileText,
         screen: 'documents-index',
-        color: 'text-corporate-teal',
+        color: 'text-corporate-teal-ink',
         bgColor: 'bg-corporate-teal/10'
       },
       {
@@ -131,7 +131,7 @@ const Library = () => {
         description: 'Checklists, templates, and job aids for quick application.',
         icon: Wrench,
         screen: 'tools-index',
-        color: 'text-corporate-teal',
+        color: 'text-corporate-teal-ink',
         bgColor: 'bg-corporate-teal/10'
       }
     ];
@@ -183,14 +183,14 @@ const Library = () => {
                 <button
                   key={item.id}
                   onClick={() => handleCardClick(item)}
-                  className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 text-left hover:shadow-card-hover hover:border-corporate-teal/50 transition-all duration-200 group"
+                  className="group bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 border-l-4 border-l-corporate-teal p-5 text-left shadow-card hover:shadow-pop hover:-translate-y-1 hover:border-corporate-teal/60 focus:outline-none focus:ring-2 focus:ring-corporate-teal/40 transition-all duration-200 ease-out will-change-transform"
                 >
                   <div className="flex items-start gap-4">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${item.bgColor || 'bg-corporate-teal/10'}`}>
-                      {ItemIcon && <ItemIcon className={`w-6 h-6 ${item.color || 'text-corporate-teal'}`} />}
+                      {ItemIcon && <ItemIcon className={`w-6 h-6 ${item.color || 'text-corporate-teal-ink'}`} />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-base font-bold text-corporate-navy dark:text-white mb-1 group-hover:text-corporate-teal transition-colors">
+                      <h3 className="text-base font-bold text-corporate-navy dark:text-white mb-1 group-hover:text-corporate-teal-ink transition-colors">
                         {item.title}
                       </h3>
                       <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2">

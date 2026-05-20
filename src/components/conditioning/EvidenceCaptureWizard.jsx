@@ -400,7 +400,7 @@ const ScreenStructuredEvidence = ({
                     : 'border-gray-200 dark:border-slate-600 hover:border-corporate-teal/50'
                 }`}
               >
-                <span className={selected.includes(opt.id) ? 'text-corporate-teal font-medium' : 'text-corporate-navy dark:text-white'}>
+                <span className={selected.includes(opt.id) ? 'text-corporate-teal-ink font-medium' : 'text-corporate-navy dark:text-white'}>
                   {opt.label}
                 </span>
                 {selected.includes(opt.id) && <Check className="w-4 h-4 text-corporate-teal" />}
@@ -433,7 +433,7 @@ const ScreenStructuredEvidence = ({
                     : 'border-gray-200 dark:border-slate-600 hover:border-corporate-teal/50'
                 }`}
               >
-                <span className={value?.selected === opt ? 'text-corporate-teal font-medium' : 'text-corporate-navy dark:text-white'}>
+                <span className={value?.selected === opt ? 'text-corporate-teal-ink font-medium' : 'text-corporate-navy dark:text-white'}>
                   {opt}
                 </span>
               </button>
@@ -475,7 +475,7 @@ const ScreenStructuredEvidence = ({
                     : 'border-gray-200 dark:border-slate-600 hover:border-corporate-teal/50'
                 }`}
               >
-                <span className={value?.selected === opt ? 'text-corporate-teal font-medium' : 'text-corporate-navy dark:text-white'}>
+                <span className={value?.selected === opt ? 'text-corporate-teal-ink font-medium' : 'text-corporate-navy dark:text-white'}>
                   {opt}
                 </span>
               </button>
@@ -507,7 +507,7 @@ const ScreenStructuredEvidence = ({
                     : 'border-gray-200 dark:border-slate-600 hover:border-corporate-teal/50'
                 }`}
               >
-                <span className={value?.selected === opt ? 'text-corporate-teal font-medium' : 'text-corporate-navy dark:text-white'}>
+                <span className={value?.selected === opt ? 'text-corporate-teal-ink font-medium' : 'text-corporate-navy dark:text-white'}>
                   {opt}
                 </span>
               </button>
@@ -718,7 +718,7 @@ const ScreenResponseDynamics = ({
                     : 'border-gray-200 dark:border-slate-600 hover:border-corporate-teal/50'
                 }`}
               >
-                <span className={response === option.id ? 'text-corporate-teal font-medium' : 'text-corporate-navy dark:text-white'}>
+                <span className={response === option.id ? 'text-corporate-teal-ink font-medium' : 'text-corporate-navy dark:text-white'}>
                   {option.label}
                 </span>
               </button>
@@ -765,7 +765,7 @@ const ScreenResponseDynamics = ({
                       : 'border-gray-200 dark:border-slate-600 hover:border-corporate-teal/50'
                   }`}
                 >
-                  <span className={redDifficulty === option.id ? 'text-corporate-teal font-medium' : 'text-corporate-navy dark:text-white'}>
+                  <span className={redDifficulty === option.id ? 'text-corporate-teal-ink font-medium' : 'text-corporate-navy dark:text-white'}>
                     {option.label}
                   </span>
                   <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -798,7 +798,7 @@ const ScreenResponseDynamics = ({
                       : 'border-gray-200 dark:border-slate-600 hover:border-corporate-teal/50'
                   }`}
                 >
-                  <span className={redInternalGap === option.id ? 'text-corporate-teal font-medium' : 'text-corporate-navy dark:text-white'}>
+                  <span className={redInternalGap === option.id ? 'text-corporate-teal-ink font-medium' : 'text-corporate-navy dark:text-white'}>
                     {option.label}
                   </span>
                 </button>
@@ -863,7 +863,7 @@ const ScreenResponseDynamics = ({
                   : 'border-gray-200 dark:border-slate-600 hover:border-corporate-teal/50'
               }`}
             >
-              <span className={response === option.id ? 'text-corporate-teal font-medium' : 'text-corporate-navy dark:text-white'}>
+              <span className={response === option.id ? 'text-corporate-teal-ink font-medium' : 'text-corporate-navy dark:text-white'}>
                 {option.label}
               </span>
             </button>
@@ -889,7 +889,7 @@ const ScreenResponseDynamics = ({
                     : 'border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-corporate-teal/50'
                 }`}
               >
-                <div className={pushbackLogOption === option.id ? 'text-corporate-teal font-medium' : 'text-corporate-navy dark:text-white'}>
+                <div className={pushbackLogOption === option.id ? 'text-corporate-teal-ink font-medium' : 'text-corporate-navy dark:text-white'}>
                   {option.label}
                 </div>
                 {option.description && (
@@ -960,7 +960,7 @@ const ScreenResponseDynamics = ({
                     : 'border-gray-200 dark:border-slate-600 hover:border-corporate-teal/50'
                 }`}
               >
-                <span className={closeLoopOption === option.id ? 'text-corporate-teal font-medium' : 'text-corporate-navy dark:text-white'}>
+                <span className={closeLoopOption === option.id ? 'text-corporate-teal-ink font-medium' : 'text-corporate-navy dark:text-white'}>
                   {option.label}
                 </span>
               </button>
@@ -987,7 +987,7 @@ const ScreenResponseDynamics = ({
                     : 'border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-corporate-teal/50'
                 }`}
               >
-                <div className={closeLoopLogOption === option.id ? 'text-corporate-teal font-medium' : 'text-corporate-navy dark:text-white'}>
+                <div className={closeLoopLogOption === option.id ? 'text-corporate-teal-ink font-medium' : 'text-corporate-navy dark:text-white'}>
                   {option.label}
                 </div>
                 {option.description && (
@@ -1017,7 +1017,7 @@ const ScreenResponseDynamics = ({
                     : 'border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-corporate-teal/50'
                 }`}
               >
-                <span className={behaviorChange === option.id ? 'text-corporate-teal font-medium' : 'text-corporate-navy dark:text-white'}>
+                <span className={behaviorChange === option.id ? 'text-corporate-teal-ink font-medium' : 'text-corporate-navy dark:text-white'}>
                   {option.label}
                 </span>
               </button>
@@ -1351,7 +1351,7 @@ const ScreenArtifacts = ({
                 />
                 
                 <div className="flex items-center justify-between bg-white dark:bg-slate-700 p-3 rounded-lg">
-                  <button onClick={togglePlayback} className="p-2 rounded-full bg-corporate-teal/10 text-corporate-teal hover:bg-corporate-teal/20">
+                  <button onClick={togglePlayback} className="p-2 rounded-full bg-corporate-teal/10 text-corporate-teal-ink hover:bg-corporate-teal/20">
                     {isPlayingPreview ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
                   </button>
                   <div className="flex-1 mx-3 h-1 bg-gray-200 dark:bg-slate-600 rounded-full overflow-hidden">
@@ -1433,7 +1433,7 @@ const ScreenArtifacts = ({
               <button
                 type="button"
                 onClick={() => triggerUpload('image/*')}
-                className="p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-corporate-teal hover:bg-corporate-teal/5 transition-all text-center text-gray-500 hover:text-corporate-teal"
+                className="p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-corporate-teal hover:bg-corporate-teal/5 transition-all text-center text-gray-500 hover:text-corporate-teal-ink"
               >
                 <Image className="w-6 h-6 mx-auto mb-1" />
                 <span className="text-xs font-medium">Screenshot</span>
@@ -1442,7 +1442,7 @@ const ScreenArtifacts = ({
               <button
                 type="button"
                 onClick={() => setCaptureMode('voice')} // Open Voice Recorder
-                className="p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-corporate-teal hover:bg-corporate-teal/5 transition-all text-center text-gray-500 hover:text-corporate-teal"
+                className="p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-corporate-teal hover:bg-corporate-teal/5 transition-all text-center text-gray-500 hover:text-corporate-teal-ink"
               >
                 <Mic className="w-6 h-6 mx-auto mb-1" />
                 <span className="text-xs font-medium">Voice memo</span>
@@ -1451,7 +1451,7 @@ const ScreenArtifacts = ({
               <button
                 type="button"
                 onClick={() => setCaptureMode('transcript')} // Open Transcript Editor
-                className="p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-corporate-teal hover:bg-corporate-teal/5 transition-all text-center text-gray-500 hover:text-corporate-teal"
+                className="p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-corporate-teal hover:bg-corporate-teal/5 transition-all text-center text-gray-500 hover:text-corporate-teal-ink"
               >
                 <MessageSquare className="w-6 h-6 mx-auto mb-1" />
                 <span className="text-xs font-medium">Transcript</span>
@@ -1460,7 +1460,7 @@ const ScreenArtifacts = ({
               <button
                 type="button"
                 onClick={() => triggerUpload('.pdf,.doc,.docx,.txt')}
-                className="p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-corporate-teal hover:bg-corporate-teal/5 transition-all text-center text-gray-500 hover:text-corporate-teal"
+                className="p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-slate-600 hover:border-corporate-teal hover:bg-corporate-teal/5 transition-all text-center text-gray-500 hover:text-corporate-teal-ink"
               >
                 <FileText className="w-6 h-6 mx-auto mb-1" />
                 <span className="text-xs font-medium">Document</span>
@@ -1588,7 +1588,7 @@ const ScreenCloseRR = ({
                             : 'border-gray-200 dark:border-slate-600 hover:border-corporate-teal/50'
                         }`}
                       >
-                        <span className={selfAssessmentResponses[q.id] === opt ? 'text-corporate-teal font-medium' : 'text-corporate-navy dark:text-white'}>
+                        <span className={selfAssessmentResponses[q.id] === opt ? 'text-corporate-teal-ink font-medium' : 'text-corporate-navy dark:text-white'}>
                           {opt}
                         </span>
                       </button>
@@ -1809,7 +1809,7 @@ const ScreenCompleteLoop = ({
                     onClick={() => handleCompleteLoopChange(q.id, completeLoopResponses[q.id] === 'no' ? 'yes_pending' : (completeLoopResponses[q.id] || 'yes_pending'))}
                     className={`flex-1 p-2 border rounded-md text-sm font-medium transition-colors ${
                       isYes 
-                        ? 'border-corporate-teal bg-corporate-teal/10 text-corporate-teal' 
+                        ? 'border-corporate-teal bg-corporate-teal/10 text-corporate-teal-ink' 
                         : 'border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:border-corporate-teal/50'
                     }`}
                   >
@@ -1820,7 +1820,7 @@ const ScreenCompleteLoop = ({
                     onClick={() => handleCompleteLoopChange(q.id, 'no')}
                     className={`flex-1 p-2 border rounded-md text-sm font-medium transition-colors ${
                       isNo 
-                        ? 'border-corporate-teal bg-corporate-teal/10 text-corporate-teal' 
+                        ? 'border-corporate-teal bg-corporate-teal/10 text-corporate-teal-ink' 
                         : 'border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:border-corporate-teal/50'
                     }`}
                   >
@@ -1851,7 +1851,7 @@ const ScreenCompleteLoop = ({
                 <label className="block text-sm font-medium text-corporate-navy dark:text-white mb-1">
                   {q.prompt}
                 </label>
-                <span className="text-sm text-corporate-teal font-medium">
+                <span className="text-sm text-corporate-teal-ink font-medium">
                   {rep?.person || 'Not specified'}
                 </span>
               </div>
@@ -2003,7 +2003,7 @@ const ScreenCTLDecision = ({
                 <div>
                   <div className={`font-medium ${
                     ctlDecision === option.id 
-                      ? 'text-corporate-teal' 
+                      ? 'text-corporate-teal-ink' 
                       : 'text-corporate-navy dark:text-white'
                   }`}>
                     {option.label}

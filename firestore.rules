@@ -9,7 +9,7 @@ service cloud.firestore {
     function isAdmin() {
       let isEmailAuth = request.auth != null && request.auth.token != null && 'email' in request.auth.token && request.auth.token.email != null;
       let userEmail = isEmailAuth ? request.auth.token.email.lower() : '';
-      let hardcodedAdmins = ['rob@sagecg.com', 'admin@leaderreps.com', 'ryan@leaderreps.com'];
+      let hardcodedAdmins = ['rob@sagecg.com', 'admin@leaderreps.com', 'ryan@leaderreps.com', 'cristina@leaderreps.com'];
       
       return isEmailAuth && (
         // 1. Check hardcoded admin list (lowercase comparison)
@@ -23,6 +23,23 @@ service cloud.firestore {
          'adminemails' in get(/databases/$(database)/documents/global/metadata).data &&
          (get(/databases/$(database)/documents/global/metadata).data.adminemails is list && get(/databases/$(database)/documents/global/metadata).data.adminemails.hasAny([userEmail])))
       );
+    }
+
+    // Ascent Revamp WS-4: Ask a Coach responders.
+    // Allowlisted via hardcoded list (Christina + Ryan) plus dynamic
+    // `metadata/config.askCoachResponders` array. Email comparison is
+    // case-insensitive. Admins are always responders.
+    function isAskCoachResponder() {
+      let isEmailAuth = request.auth != null && request.auth.token != null && 'email' in request.auth.token && request.auth.token.email != null;
+      let userEmail = isEmailAuth ? request.auth.token.email.lower() : '';
+      let hardcodedResponders = ['cristina@leaderreps.com', 'ryan@leaderreps.com'];
+      return isAdmin() || (isEmailAuth && (
+        userEmail in hardcodedResponders ||
+        (exists(/databases/$(database)/documents/metadata/config) &&
+         'askCoachResponders' in get(/databases/$(database)/documents/metadata/config).data &&
+         get(/databases/$(database)/documents/metadata/config).data.askCoachResponders is list &&
+         get(/databases/$(database)/documents/metadata/config).data.askCoachResponders.hasAny([userEmail]))
+      ));
     }
 
     // Global metadata
@@ -78,6 +95,18 @@ service cloud.firestore {
         isAdmin()
       );
       allow delete: if isAdmin();
+    }
+
+    // Ascent Revamp WS-3: Conditioning Light reps (server-evaluated)
+    // Verdicts come from the trusted `evaluateRep` Cloud Function (Admin SDK).
+    // NOTE: The wildcard `users/{userId}/{subcollection}` rule above also grants
+    // owner write — Firestore unions allow rules. Lockdown of forged verdicts is
+    // enforced at the application layer (no client code calls setDoc on reps_light;
+    // only the `evaluateRep` callable writes here). If stricter enforcement is
+    // needed later, the wildcard must be narrowed to exclude `reps_light`.
+    match /users/{userId}/reps_light/{repId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow create, update, delete: if isAdmin();
     }
 
     // User data collection (Leader Profile, Assessments, etc.)
@@ -330,12 +359,14 @@ service cloud.firestore {
     match /coaching_sessions/{document} {
       allow read: if request.auth != null;
       allow create, delete: if isAdmin();
-      // Allow users to update ONLY registrationCount (for registration/cancellation)
-      // The hasOnly check ensures they can't modify other fields
+      // Allow authenticated users to update ONLY the registration counters
+      // (registrationCount and/or spotsLeft) plus updatedAt — needed by the
+      // transactional registerForEvent flow in eventsService.js. The hasOnly
+      // check ensures they can't modify other fields like title, link, etc.
       allow update: if isAdmin() || (
-        request.auth != null && 
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['registrationCount']) &&
-        request.resource.data.registrationCount is number
+        request.auth != null &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['registrationCount', 'spotsLeft', 'updatedAt'])
       );
     }
 
@@ -351,10 +382,41 @@ service cloud.firestore {
     }
 
     // Coaching Registrations
+    // Doc id pattern: `${sessionId}_${userId}` (see eventsService.js).
     match /coaching_registrations/{document} {
-      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      // Allow read when doc doesn't exist OR the requesting user owns it.
+      // We also accept ownership inferred from the deterministic docId so
+      // legacy documents missing the `userId` field don't block registration.
+      allow read: if request.auth != null && (
+        resource == null
+        || ('userId' in resource.data && request.auth.uid == resource.data.userId)
+        || document.matches('.+_' + request.auth.uid)
+        || isAdmin()
+      );
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow update, delete: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow update, delete: if request.auth != null && (
+        ('userId' in resource.data && request.auth.uid == resource.data.userId)
+        || document.matches('.+_' + request.auth.uid)
+        || isAdmin()
+      );
+    }
+
+    // Coaching Waitlist (added May 2026 — Join Waitlist UX)
+    // Doc id pattern: `${sessionId}_${userId}` (see communityService.js
+    // joinWaitlist). Users can own their entry; trainers/admins can promote.
+    match /coaching_waitlist/{document} {
+      allow read: if request.auth != null && (
+        resource == null
+        || ('userId' in resource.data && request.auth.uid == resource.data.userId)
+        || document.matches('.+_' + request.auth.uid)
+        || isAdmin()
+      );
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if request.auth != null && (
+        ('userId' in resource.data && request.auth.uid == resource.data.userId)
+        || document.matches('.+_' + request.auth.uid)
+        || isAdmin()
+      );
     }
 
     // Community Session Types (Templates)
@@ -366,14 +428,60 @@ service cloud.firestore {
     // Community Sessions (Scheduled Instances)
     match /community_sessions/{document} {
       allow read: if request.auth != null;
-      allow write: if isAdmin();
+      allow create, delete: if isAdmin();
+      // Allow authenticated users to update ONLY the registration counters
+      // (registrationCount and/or spotsLeft) plus updatedAt — needed by the
+      // transactional registerForCommunitySession flow.
+      allow update: if isAdmin() || (
+        request.auth != null &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['registrationCount', 'spotsLeft', 'updatedAt'])
+      );
     }
 
     // Community Registrations
+    // Doc id pattern: `${userId}_${sessionId}` (see communityService.js).
     match /community_registrations/{document} {
-      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      // Allow read when doc doesn't exist OR the requesting user owns it.
+      // We also accept ownership inferred from the deterministic docId so
+      // legacy documents missing the `userId` field don't block registration.
+      allow read: if request.auth != null && (
+        resource == null
+        || ('userId' in resource.data && request.auth.uid == resource.data.userId)
+        || document.matches(request.auth.uid + '_.+')
+        || isAdmin()
+      );
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow update, delete: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow update, delete: if request.auth != null && (
+        ('userId' in resource.data && request.auth.uid == resource.data.userId)
+        || document.matches(request.auth.uid + '_.+')
+        || isAdmin()
+      );
+    }
+
+    // Ascent Revamp WS-4: Ask a Coach
+    // Users create + read their own; trainers/responders read all.
+    // Additionally: ANSWERED questions are readable by all authenticated users
+    // (curated public knowledge base — see Ascent Dashboard "Other Questions").
+    match /coach_questions/{document} {
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.userId
+        || isAskCoachResponder()
+        || resource.data.status == 'answered'
+      );
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.userId
+        && request.resource.data.status == 'open'
+        && request.resource.data.responseText == null
+        && request.resource.data.responseVideoUrl == null;
+      // Users may cancel their own open question; responders may answer/update.
+      allow update: if isAskCoachResponder()
+        || (request.auth != null
+            && request.auth.uid == resource.data.userId
+            && resource.data.status == 'open'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'cancelledAt'])
+            && request.resource.data.status == 'cancelled');
+      allow delete: if isAdmin();
     }
 
     // System Alerts & Logs
@@ -532,12 +640,32 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Daily Plan V2 (May 2026 three-phase model — foundation-content / ascent-content)
+    match /daily_plan_v2/{document} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
     // Invitations - allow unauthenticated token lookup for signup flow
     match /invitations/{document} {
       // Allow reading a specific invitation by token (for signup validation)
       // This is safe because tokens are random and single-use
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    // Pending admin promotions — written by Cloud Functions when an invited
+    // admin user accepts but the inviter is no longer an admin. Admins read
+    // and approve manually.
+    match /pending_admin_promotions/{document} {
+      allow read, write: if isAdmin();
+    }
+
+    // Admin promotion audit trail — append-only via Cloud Functions; admins
+    // can read for traceability. Client writes are blocked.
+    match /admin_promotion_audit/{document} {
+      allow read: if isAdmin();
+      allow write: if false;
     }
 
     // Corporate Prospects (Sales Enablement)
@@ -568,6 +696,40 @@ service cloud.firestore {
     
     // Outreach Activities (Sales Team activity logs)
     match /outreach_activities/{document} {
+      allow read, write: if isAdmin();
+    }
+
+    // CRM Accounts (company-level records)
+    match /crm_accounts/{document} {
+      allow read, write: if isAdmin();
+    }
+
+    // CRM Deals (revenue opportunities)
+    match /crm_deals/{document} {
+      allow read, write: if isAdmin();
+    }
+
+    // CRM Audit Logs (server-written via Cloud Functions, read-only for admins)
+    match /crm_audit_logs/{document} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // CRM Notifications (per-user inbox; users read their own; CFs/admins write)
+    match /crm_notifications/{document} {
+      allow read: if request.auth != null && (
+        isAdmin() ||
+        request.auth.token.email.lower() == resource.data.recipientEmail.lower()
+      );
+      allow update: if request.auth != null && (
+        isAdmin() ||
+        request.auth.token.email.lower() == resource.data.recipientEmail.lower()
+      );
+      allow create, delete: if isAdmin();
+    }
+
+    // CRM Workflows (admin-only automation rules)
+    match /crm_workflows/{document} {
       allow read, write: if isAdmin();
     }
     
@@ -604,6 +766,78 @@ service cloud.firestore {
     }
     
     match /books/{document} {
+      allow read, write: if isAdmin();
+    }
+
+    // LeaderReps Lab — Anonymous Team Pulse (experiment)
+    // Admins manage campaigns. Responders can be anonymously authenticated
+    // (signInAnonymously) — they may read the campaign meta (to render the
+    // question) and create exactly one response document per submission with
+    // a strict shape. No reads on responses or insights for non-admins.
+    match /team_pulse_campaigns/{campaignId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+
+      // Recipients (admin-only — phone numbers and invite tracking)
+      match /recipients/{recipientId} {
+        allow read, write: if isAdmin();
+      }
+
+      // Anonymous responses: any auth user (incl. anonymous) may CREATE one,
+      // but the document shape is locked down. Reads are admin-only.
+      // 3-question shape: weekKey + scoreEnergy + scoreTrust + scoreTheme +
+      // themeId + (optional) text + submittedAt.
+      match /responses/{responseId} {
+        allow read: if isAdmin();
+        allow create: if request.auth != null
+          && request.resource.data.keys().hasOnly([
+              'weekKey', 'scoreEnergy', 'scoreTrust', 'scoreTheme',
+              'themeId', 'text', 'submittedAt'
+          ])
+          && request.resource.data.weekKey is string
+          && request.resource.data.weekKey.size() <= 10
+          && request.resource.data.scoreEnergy is number
+          && request.resource.data.scoreEnergy >= 1
+          && request.resource.data.scoreEnergy <= 5
+          && request.resource.data.scoreTrust is number
+          && request.resource.data.scoreTrust >= 1
+          && request.resource.data.scoreTrust <= 5
+          && request.resource.data.scoreTheme is number
+          && request.resource.data.scoreTheme >= 1
+          && request.resource.data.scoreTheme <= 5
+          && request.resource.data.themeId is string
+          && request.resource.data.themeId.size() <= 32
+          && (!('text' in request.resource.data) || (request.resource.data.text is string && request.resource.data.text.size() <= 500));
+        allow update, delete: if isAdmin();
+      }
+
+      // AI insights cached per week — admin-only.
+      match /insights/{weekKey} {
+        allow read, write: if isAdmin();
+      }
+    }
+
+    // LeaderReps Lab — pulse_leads (Google-style lead-magnet capture)
+    // ALL writes happen via Cloud Functions (createPulseLead / attachLeadEmail
+    // / addPulseTeamContacts / getLeaderPulseSnapshot / notifyInsightReady).
+    // No direct client read or write — the document holds PII (email + token)
+    // and the leaderToken is itself a bearer credential.
+    match /pulse_leads/{leadId} {
+      allow read, write: if isAdmin();
+    }
+
+    // LeaderReps Lab — identity_leads (Leadership Identity Statement Builder)
+    // ALL writes happen via Cloud Functions (saveIdentityLead).
+    // No direct client access — holds PII (email + statement).
+    match /identity_leads/{leadId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Rep Calibration L1 — trainer ratings of completed reps against the
+    // engine's automated assessment. Top-level collection, admin-only.
+    // Doc id = `${userId}__${repId}` for idempotent upserts. See
+    // src/services/calibrationService.js for schema.
+    match /rep_calibrations/{calibrationId} {
       allow read, write: if isAdmin();
     }
 

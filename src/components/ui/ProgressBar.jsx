@@ -45,7 +45,7 @@ const ProgressBar = React.forwardRef(({
       {showLabel && (
         <span className={cn(
           'absolute right-0 -top-5 text-xs font-semibold',
-          progressPercent >= 100 ? 'text-green-600' : 'text-corporate-teal'
+          progressPercent >= 100 ? 'text-green-600' : 'text-corporate-teal-ink'
         )}>
           {Math.round(progressPercent)}%
         </span>

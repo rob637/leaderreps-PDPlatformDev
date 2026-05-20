@@ -4,12 +4,15 @@ import { Card, PageLayout, NoWidgetsEnabled } from '../ui';
 import { CheckCircle, Calendar, Trophy, BookOpen, Dumbbell } from 'lucide-react';
 import { LockerIcon } from '../icons';
 import { useFeatures } from '../../providers/FeatureProvider';
-import WidgetRenderer from '../admin/WidgetRenderer';
+import WidgetRenderer from '../shared/WidgetRenderer';
 import { useNotifications } from '../../providers/NotificationProvider';
 import { Settings, Clock, User, Bell, AlertTriangle } from 'lucide-react';
-import MyJourneyWidget from '../widgets/MyJourneyWidget';
+import YourCohortWidget from '../widgets/YourCohortWidget';
 import MySettingsWidget from '../widgets/MySettingsWidget';
-import ConditioningHistoryWidget from '../widgets/ConditioningHistoryWidget';
+// May-11 #4: ConditioningHistoryWidget retired from Locker. PracticeRepsHistoryWidget
+// now uses the same week-grouped collapsible UI. Widget file kept dormant for
+// one release cycle in case rollback is needed.
+import PracticeRepsHistoryWidget from '../widgets/PracticeRepsHistoryWidget';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { useDevPlan } from '../../hooks/useDevPlan';
 
@@ -17,7 +20,9 @@ const LOCKER_FEATURES = [
   'locker-wins-history',
   'locker-scorecard-history',
   'locker-latest-reflection',
-  'locker-conditioning-history'  // Replaced locker-reps-history with weekly conditioning history
+  // May-11 #4: 'locker-conditioning-history' removed; Practice Reps now
+  // carries the week-grouped UI for all rep history surfacing.
+  'locker-practice-reps'  // Practice a Rep (Conditioning Light) history
 ];
 
 const Locker = () => {
@@ -152,6 +157,9 @@ const Locker = () => {
   const sortedFeatures = useMemo(() => {
     return LOCKER_FEATURES
       .filter(id => {
+        // Always show the Practice Reps widget — no feature flag, always-on.
+        if (id === 'locker-practice-reps') return true;
+
         // First check feature flag
         if (!isFeatureEnabled(id)) return false;
         
@@ -163,8 +171,6 @@ const Locker = () => {
             return lockerVisibility.showScorecard;
           case 'locker-latest-reflection':
             return lockerVisibility.showReflection;
-          case 'locker-conditioning-history':
-            return lockerVisibility.showDailyReps; // Uses same visibility as old reps widget
           default:
             return true;
         }
@@ -179,9 +185,8 @@ const Locker = () => {
 
   // Custom renderer for special widgets
   const renderFeature = (featureId) => {
-    // Special handling for conditioning history (React component, not template)
-    if (featureId === 'locker-conditioning-history') {
-      return <ConditioningHistoryWidget key={featureId} helpText={getWidgetHelpText(featureId)} />;
+    if (featureId === 'locker-practice-reps') {
+      return <PracticeRepsHistoryWidget key={featureId} helpText={getWidgetHelpText(featureId)} />;
     }
     return <WidgetRenderer key={featureId} widgetId={featureId} scope={scope} />;
   };
@@ -202,12 +207,12 @@ const Locker = () => {
       <div className="mb-6">
         <MySettingsWidget />
       </div>
-      
-      {/* My Journey Widget - shows cohort and journey info, hide prep progress (shown on Dashboard) */}
+
+      {/* Your Cohort Widget - cohort name + trainer contact */}
       <div className="mb-6">
-        <MyJourneyWidget showPrepProgress={false} />
+        <YourCohortWidget />
       </div>
-      
+
       <WidgetRenderer widgetId="locker-controller" scope={scope} />
       
       {sortedFeatures.length > 0 ? (

@@ -106,7 +106,7 @@ const DetailedPlanView = ({
         backTo="tracker"
         backLabel="Back to Tracker"
       >
-        <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 text-center">
+        <div className="p-4 sm:p-6 lg:p-8 text-center">
           <p className="text-lg text-gray-600 dark:text-gray-300">No development plan found.</p>
         </div>
       </PageLayout>

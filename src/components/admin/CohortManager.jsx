@@ -214,7 +214,7 @@ const CohortManager = () => {
               <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 border-t pt-3">
                 <button 
                   onClick={() => openAssignModal(cohort)}
-                  className="flex items-center gap-1 text-corporate-teal hover:text-teal-700 font-medium"
+                  className="flex items-center gap-1 text-corporate-teal-ink hover:text-teal-700 font-medium"
                 >
                   <UserPlus className="w-3 h-3" />
                   {getCohortUsers(cohort.id).length} Members

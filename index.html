@@ -35,7 +35,15 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,300;0,6..12,400;0,6..12,500;0,6..12,600;0,6..12,700;0,6..12,800;1,6..12,400&display=swap" rel="stylesheet"> 
+    <!-- Non-render-blocking font load: fetch as stylesheet but don't block initial paint -->
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,300;0,6..12,400;0,6..12,500;0,6..12,600;0,6..12,700;0,6..12,800;1,6..12,400&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,300;0,6..12,400;0,6..12,500;0,6..12,600;0,6..12,700;0,6..12,800;1,6..12,400&display=swap" rel="stylesheet">
+    </noscript>
     
     <!-- BOOT AND ERROR OVERLAY SCRIPTS -->
     <script>
@@ -162,9 +170,84 @@
       window.__GEMINI_MODEL = 'gemini-2.0-flash'; // optional hint
       window.__BOOTMARK__ && window.__BOOTMARK__.mark('pre-app-scripts-ready');
     </script>
+
+    <!-- INLINE BOOT SKELETON
+         Renders the moment HTML parses, before any JS executes.
+         Designed as a branded landing hero so the LARGEST element on the
+         page (the "LeaderReps" headline) is painted at FCP. As long as the
+         downstream React tree (BootSkeleton -> AuthPanel hero -> Dashboard
+         hero) doesn't paint a larger element, Lighthouse keeps this as the
+         LCP candidate and LCP lands within ~FCP instead of waiting for the
+         eventual app shell (~9s on a cold incognito visit).
+         React's <BootSkeleton /> mirrors this markup 1:1 so the LCP element
+         remains identical bytes through React handover. -->
+    <style>
+      html, body { margin: 0; padding: 0; background: #002E47; color: #fff; font-family: 'Nunito Sans', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+      #boot-skeleton {
+        position: fixed; inset: 0; display: flex; align-items: stretch; justify-content: center;
+        background: #002E47;
+        z-index: 1;
+      }
+      #boot-skeleton .lr-shell {
+        width: 100%; min-height: 100vh; background: #002E47; color: #fff;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        padding: 32px 20px;
+        box-sizing: border-box;
+      }
+      #boot-skeleton .lr-inner { width: 100%; max-width: 520px; text-align: center; }
+      #boot-skeleton .lr-badge {
+        display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 9999px;
+        background: rgba(71, 168, 141, 0.18); color: #7FD1B7;
+        font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 20px;
+      }
+      /* The hero headline — sized so it is the largest paintable element on
+         the viewport. This is what Lighthouse will pick as the LCP candidate. */
+      #boot-skeleton .lr-h1 {
+        margin: 0; font-size: 56px; line-height: 1.05; font-weight: 800;
+        color: #fff; letter-spacing: -0.025em;
+      }
+      @media (max-width: 640px) {
+        #boot-skeleton .lr-h1 { font-size: 44px; }
+      }
+      #boot-skeleton .lr-sub {
+        margin: 16px auto 0; max-width: 420px;
+        color: #B6CCD6; font-size: 16px; line-height: 1.5;
+      }
+      #boot-skeleton .lr-card {
+        margin: 32px auto 0; max-width: 360px;
+        background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px; padding: 20px;
+      }
+      #boot-skeleton .lr-row {
+        height: 40px; background: rgba(255, 255, 255, 0.06); border-radius: 10px;
+      }
+      #boot-skeleton .lr-row + .lr-row { margin-top: 12px; }
+      #boot-skeleton .lr-cta {
+        margin-top: 16px; height: 44px; border-radius: 9999px;
+        background: rgba(71, 168, 141, 0.35);
+      }
+      /* Hide skeleton once React mounts content into #root.
+         Using :has() + the rendered React tree keeps the skeleton in the DOM
+         (so it counts toward FCP/LCP) but invisible once React paints. */
+      #root:not(:empty) ~ #boot-skeleton { display: none; }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+    <div id="boot-skeleton" aria-hidden="true">
+      <div class="lr-shell">
+        <div class="lr-inner">
+          <span class="lr-badge">LeaderReps</span>
+          <h1 class="lr-h1">Leadership, one rep at a time.</h1>
+          <p class="lr-sub">Daily practice, coaching, and community for leaders who want to get measurably better.</p>
+          <div class="lr-card">
+            <div class="lr-row"></div>
+            <div class="lr-row"></div>
+            <div class="lr-cta"></div>
+          </div>
+        </div>
+      </div>
+    </div>
     <script
       type="module"
       src="/src/main.jsx"

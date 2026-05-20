@@ -27,17 +27,17 @@ export const ContentListItem = ({
   return (
     <button
       onClick={isUnlocked ? onClick : undefined}
-      className={`w-full text-left transition-all duration-150 rounded-xl border p-4 flex items-center gap-4 group relative
+      className={`w-full text-left transition-all duration-200 ease-out will-change-transform rounded-xl border border-l-4 p-4 flex items-center gap-4 group relative
         ${isUnlocked 
-          ? 'bg-white dark:bg-slate-800 hover:shadow-md cursor-pointer border-slate-200 dark:border-slate-700 hover:border-corporate-teal/50 active:scale-[0.99] active:bg-slate-50' 
-          : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 opacity-75 cursor-not-allowed'
+          ? 'bg-white dark:bg-slate-800 shadow-card hover:shadow-pop hover:-translate-y-0.5 cursor-pointer border-slate-200 dark:border-slate-700 border-l-corporate-teal hover:border-corporate-teal/60 active:translate-y-0 active:scale-[0.99] active:bg-slate-50' 
+          : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 border-l-slate-300 opacity-75 cursor-not-allowed'
         } mb-3`}
     >
       {/* Icon */}
       <div
         className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors
           ${isUnlocked ? (bgColor || 'bg-corporate-teal/10') : 'bg-slate-200'} 
-          ${isUnlocked ? (color || 'text-corporate-teal') : 'text-slate-400'} 
+          ${isUnlocked ? (color || 'text-corporate-teal-ink') : 'text-slate-400'} 
           ${isUnlocked && 'group-hover:bg-opacity-80'}`}
       >
         {Icon && <Icon className="w-6 h-6" />}
@@ -113,7 +113,7 @@ export const ContentListItem = ({
       
       {/* Chevron */}
       {isUnlocked && (
-        <div className="flex-shrink-0 text-slate-400 group-hover:text-corporate-teal transition-colors">
+        <div className="flex-shrink-0 text-slate-400 group-hover:text-corporate-teal-ink transition-colors">
           <ChevronRight className="w-5 h-5" />
         </div>
       )}

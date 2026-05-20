@@ -52,7 +52,7 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
                         <div className="text-xs font-semibold text-corporate-navy bg-corporate-navy/10 px-3 py-1 rounded-full inline-block">
                             Persona: {scenario.persona}
                         </div>
-                        <div className="mt-4 text-corporate-teal font-semibold flex items-center">
+                        <div className="mt-4 text-corporate-teal-ink font-semibold flex items-center">
                             Start Preparation &rarr;
                         </div>
                     </Card>

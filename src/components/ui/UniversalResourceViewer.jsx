@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ExternalLink, Download, FileText, Film, Link as LinkIcon, Layers, AlertCircle, CheckCircle } from 'lucide-react';
 
 /**
@@ -187,6 +188,27 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
   };
 
   const renderContent = () => {
+    // Guard against missing/empty URLs for any resource type that requires
+    // an external URL to render. Without this, document/pdf/link types fall
+    // through to the Google Docs viewer with an empty `url=` query param,
+    // which returns a Google 400 error page inside the iframe.
+    // Read & Reps are exempt because they can render a synopsis without a URL.
+    if (!url && type !== 'read_rep') {
+      return (
+        <div className="h-[60vh] w-full bg-slate-50 dark:bg-slate-800 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 flex flex-col items-center justify-center gap-3 p-8 text-center">
+          <FileText className="w-12 h-12 text-slate-400" />
+          <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Document not yet available
+          </p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm">
+            {description
+              ? 'The file for this resource hasn\'t been attached yet. Check back soon — your administrator is uploading it.'
+              : 'No URL has been provided for this resource.'}
+          </p>
+        </div>
+      );
+    }
+
     switch (type) {
       case 'video':
         if (!url) {
@@ -211,7 +233,7 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
               </div>
               {onVideoComplete && markedComplete && (
                 <div className="flex justify-center">
-                  <span className="flex items-center gap-2 text-sm text-corporate-teal font-medium px-4 py-2">
+                  <span className="flex items-center gap-2 text-sm text-corporate-teal-ink font-medium px-4 py-2">
                     <CheckCircle className="w-4 h-4" />
                     Marked as Watched
                   </span>
@@ -235,7 +257,7 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
               </div>
               {onVideoComplete && markedComplete && (
                 <div className="flex justify-center">
-                  <span className="flex items-center gap-2 text-sm text-corporate-teal font-medium px-4 py-2">
+                  <span className="flex items-center gap-2 text-sm text-corporate-teal-ink font-medium px-4 py-2">
                     <CheckCircle className="w-4 h-4" />
                     Marked as Watched
                   </span>
@@ -259,7 +281,7 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
               </div>
               {onVideoComplete && markedComplete && (
                 <div className="flex justify-center">
-                  <span className="flex items-center gap-2 text-sm text-corporate-teal font-medium px-4 py-2">
+                  <span className="flex items-center gap-2 text-sm text-corporate-teal-ink font-medium px-4 py-2">
                     <CheckCircle className="w-4 h-4" />
                     Marked as Watched
                   </span>
@@ -291,7 +313,7 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
               
               <div className="flex flex-col items-center gap-3">
                 {onVideoComplete && markedComplete && (
-                  <span className="flex items-center gap-2 text-sm text-corporate-teal font-medium px-4 py-2">
+                  <span className="flex items-center gap-2 text-sm text-corporate-teal-ink font-medium px-4 py-2">
                     <CheckCircle className="w-4 h-4" />
                     Marked as Watched
                   </span>
@@ -322,7 +344,7 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
               </div>
               {resource.synopsis || resource.details?.synopsis ? (
                 <div 
-                  className="text-slate-700 dark:text-slate-200 text-sm leading-relaxed prose-sm prose-blue max-w-none [&>h3]:text-corporate-navy [&>h3]:font-bold [&>h3]:mt-4 [&>h3]:mb-2 [&>h4]:text-corporate-teal [&>h4]:font-bold [&>h4]:mt-3 [&>h4]:mb-1 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>p]:mb-3 [&>blockquote]:border-l-4 [&>blockquote]:border-corporate-teal [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4"
+                  className="text-slate-700 dark:text-slate-200 text-sm leading-relaxed prose-sm prose-blue max-w-none [&>h3]:text-corporate-navy [&>h3]:font-bold [&>h3]:mt-4 [&>h3]:mb-2 [&>h4]:text-corporate-teal-ink [&>h4]:font-bold [&>h4]:mt-3 [&>h4]:mb-1 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:mb-4 [&>p]:mb-3 [&>blockquote]:border-l-4 [&>blockquote]:border-corporate-teal [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4"
                   dangerouslySetInnerHTML={{ __html: resource.synopsis || resource.details?.synopsis }}
                 />
               ) : (
@@ -527,15 +549,18 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
     );
   }
 
-  return (
-    <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 pb-24 sm:pb-4 animate-in fade-in duration-200"
-      onClick={handleClose}
-    >
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    (
       <div 
-        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[70dvh] sm:max-h-[90vh] flex flex-col overflow-hidden relative"
-        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 pb-24 sm:pb-4 animate-in fade-in duration-200"
+        onClick={handleClose}
       >
+        <div 
+          className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[70dvh] sm:max-h-[90vh] flex flex-col overflow-hidden relative"
+          onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
+        >
         {/* Absolute Close Button for reliability */}
         <button 
           type="button"
@@ -580,6 +605,8 @@ const UniversalResourceViewer = ({ resource, onClose, onVideoComplete, inline = 
         </div>
       </div>
     </div>
+    ),
+    document.body
   );
 };
 

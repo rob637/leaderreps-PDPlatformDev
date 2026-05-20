@@ -449,7 +449,7 @@ const LeadershipVideosScreen = () => {
                                 setSelectedTag('');
                                 setSelectedCategory('ALL');
                             }}
-                            className="text-sm underline hover:no-underline text-corporate-teal"
+                            className="text-sm underline hover:no-underline text-corporate-teal-ink"
                         >
                             Clear filters
                         </button>

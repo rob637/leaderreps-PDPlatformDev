@@ -69,10 +69,10 @@ export const PageLayout = ({
   const nav = navigate || onNavigate;
   const sub = subtitle || description;
   const iconColorClass = {
-    teal: 'text-corporate-teal',
+    teal: 'text-corporate-teal-ink',
     orange: 'text-corporate-orange',
     navy: 'text-corporate-navy',
-  }[accentColor] || 'text-corporate-teal';
+  }[accentColor] || 'text-corporate-teal-ink';
 
   // Determine layout based on sidebar presence
   const hasSidebar = !!sidebar;
@@ -84,7 +84,7 @@ export const PageLayout = ({
   ] : []);
 
   return (
-    <div className="min-h-screen bg-[#FAFBFC] dark:bg-slate-900">
+    <div className="min-h-full bg-[#FAFBFC] dark:bg-slate-900">
       <div className={`${maxWidth} mx-auto p-5 sm:p-8 lg:p-10`}>
         
         {/* Navigation - Replaces old Back Button */}
@@ -108,7 +108,7 @@ export const PageLayout = ({
               </div>
               
               {sub && (
-                <p className={`text-slate-500 dark:text-slate-400 text-base sm:text-lg mt-2 leading-relaxed ${centerHeader ? 'max-w-2xl mx-auto' : ''}`} style={{ fontFamily: 'var(--font-body)' }}>
+                <p className={`text-slate-600 dark:text-slate-300 mt-2 leading-relaxed ${centerHeader ? 'max-w-2xl mx-auto' : ''}`} style={{ fontFamily: 'var(--font-body)' }}>
                   {sub}
                 </p>
               )}
@@ -208,7 +208,7 @@ export const NoWidgetsEnabled = ({ moduleName = 'this module' }) => (
     </div>
     <p className="text-lg font-medium mb-2 text-corporate-navy">No widgets enabled</p>
     <p className="text-sm text-slate-500 dark:text-slate-400">
-      Go to <span className="font-semibold text-corporate-teal">Widget Lab</span> in Admin Portal to enable {moduleName} widgets.
+      Go to <span className="font-semibold text-corporate-teal-ink">Widget Lab</span> in Admin Portal to enable {moduleName} widgets.
     </p>
   </div>
 );

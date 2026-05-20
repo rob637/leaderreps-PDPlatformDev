@@ -145,7 +145,7 @@ const SkillsIndex = () => {
                       {/* Content */}
                       <div className="flex-grow min-w-0">
                         <div className="flex items-start justify-between gap-4">
-                          <h3 className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-corporate-teal transition-colors">
+                          <h3 className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-corporate-teal-ink transition-colors">
                             {skill.label}
                           </h3>
                           <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-corporate-teal group-hover:translate-x-1 transition-all" />

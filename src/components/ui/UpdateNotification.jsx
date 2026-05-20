@@ -212,7 +212,7 @@ const UpdateNotification = () => {
                       v{APP_VERSION}
                     </span>
                     <span className="text-slate-400">→</span>
-                    <span className="text-xs font-mono bg-corporate-teal/10 text-corporate-teal px-2 py-0.5 rounded font-bold">
+                    <span className="text-xs font-mono bg-corporate-teal/10 text-corporate-teal-ink px-2 py-0.5 rounded font-bold">
                       v{newVersion}
                     </span>
                   </div>

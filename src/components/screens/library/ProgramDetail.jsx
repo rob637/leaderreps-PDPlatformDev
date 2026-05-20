@@ -241,7 +241,7 @@ const ProgramDetail = (props) => {
                         {item.type?.replace('_', ' ')}
                       </span>
                     </div>
-                    <h4 className={`font-bold transition-colors ${isLocked ? 'text-slate-400' : 'text-slate-800 dark:text-slate-200 group-hover:text-corporate-teal'}`}>
+                    <h4 className={`font-bold transition-colors ${isLocked ? 'text-slate-400' : 'text-slate-800 dark:text-slate-200 group-hover:text-corporate-teal-ink'}`}>
                       {item.title}
                     </h4>
                     {item.description && (

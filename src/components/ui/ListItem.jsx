@@ -71,7 +71,7 @@ const ListItem = React.forwardRef(({
   
   // Leading
   icon: Icon,
-  iconColor = 'text-corporate-teal',
+  iconColor = 'text-corporate-teal-ink',
   avatar,
   leading,
   
@@ -139,7 +139,7 @@ const ListItem = React.forwardRef(({
             />
           ) : (
             <div className="w-10 h-10 rounded-full bg-corporate-teal/10 flex items-center justify-center">
-              <span className="text-sm font-bold text-corporate-teal">
+              <span className="text-sm font-bold text-corporate-teal-ink">
                 {avatar.initials || avatar.alt?.charAt(0) || '?'}
               </span>
             </div>

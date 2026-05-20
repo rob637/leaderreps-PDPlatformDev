@@ -17,7 +17,7 @@ const getAccentColorClass = (tierIdOrColorKey) => {
 const getAccentTextClass = (tierIdOrColorKey) => {
     const key = String(tierIdOrColorKey).toUpperCase();
     if (key.includes('ORANGE') || key.includes('AMBER') || key.includes('RED')) return 'text-corporate-orange';
-    if (key.includes('TEAL') || key.includes('GREEN') || key.includes('PURPLE')) return 'text-corporate-teal';
+    if (key.includes('TEAL') || key.includes('GREEN') || key.includes('PURPLE')) return 'text-corporate-teal-ink';
     return 'text-corporate-navy';
 };
 
@@ -43,7 +43,7 @@ const ResourceDetailModal = ({ isVisible, onClose, resource, skill }) => {
                 <ModalTitle>{resource.title}</ModalTitle>
             </ModalHeader>
             <ModalBody>
-                <p className="text-xs font-semibold uppercase mb-1 text-corporate-teal">Skill: {skill.name}</p>
+                <p className="text-xs font-semibold uppercase mb-1 text-corporate-teal-ink">Skill: {skill.name}</p>
                 <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">{resource.summary || 'Details unavailable.'}</p>
                 {resource.type && <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Type: {resource.type}</p>}
                 {resource.url && (
@@ -197,7 +197,7 @@ const CourseDetailView = ({ course, setCourseDetail }) => {
                                 {module.title}
                             </h3>
                             <details className="my-3 group">
-                                <summary className="text-sm font-semibold cursor-pointer list-none flex items-center gap-2 text-corporate-teal">
+                                <summary className="text-sm font-semibold cursor-pointer list-none flex items-center gap-2 text-corporate-teal-ink">
                                     <Lightbulb className="w-4 h-4 text-amber-500"/> Rationale: {module.focus}
                                     <span className="text-xs text-slate-400 group-open:rotate-90 transition-transform">▶</span>
                                 </summary>

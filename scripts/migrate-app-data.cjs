@@ -38,6 +38,7 @@ const path = require('path');
 const APP_DATA_COLLECTIONS = [
   'development_plan_v1',
   'daily_plan_v1',           // Day-by-Day Daily Plan (includes prep phase)
+  'daily_plan_v2',           // Three-Phase Content (foundation-content, ascent-content)
   'system_lovs',
   'content_readings',
   'content_videos',

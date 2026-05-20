@@ -9,15 +9,14 @@ import {
   EyeOff, 
   Save, 
   X, 
-  ArrowLeft,
   Users,
   MessageSquare,
   Heart,
   Share2,
-  Loader,
-  Calendar
+  Loader
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
+import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
 import { 
   getAllContentAdmin, 
   addContent, 
@@ -25,11 +24,13 @@ import {
   deleteContent, 
   CONTENT_COLLECTIONS 
 } from '../../services/contentService';
-import CommunitySessionManager from './CommunitySessionManager';
+import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
 
-const CommunityManager = () => {
+const CommunityManager = ({ embedded = false }) => {
   const { db, navigate, user } = useAppServices();
-  const [activeTab, setActiveTab] = useState('sessions'); // 'sessions', 'posts'
+  // Sessions/events live in the Events admin now (May 2026 consolidation).
+  // This screen manages Community feed/forum posts only.
+  const [activeTab, setActiveTab] = useState('posts');
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState(null);
@@ -154,25 +155,26 @@ const CommunityManager = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto bg-slate-50 dark:bg-slate-800 min-h-screen">
+    <div className={embedded ? 'p-6 max-w-7xl mx-auto' : 'p-6 max-w-7xl mx-auto bg-slate-50 dark:bg-slate-800 min-h-screen'}>
+      {!embedded && (
+        <BreadcrumbNav
+          items={getBreadcrumbs('admin-community-manager')}
+          navigate={navigate}
+        />
+      )}
+
       {/* Header */}
       <div className="mb-6">
-        <button
-          onClick={() => navigate('admin-content-home')}
-          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 text-slate-500 dark:text-slate-400"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Admin
-        </button>
-        
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Users className="w-8 h-8 text-corporate-teal" />
-            <h1 className="text-3xl font-bold text-corporate-navy">
-              Community Management
-            </h1>
-          </div>
-          
+          {!embedded ? (
+            <div className="flex items-center gap-3">
+              <Users className="w-8 h-8 text-corporate-teal" />
+              <h1 className="text-3xl font-bold text-corporate-navy">
+                Community Management
+              </h1>
+            </div>
+          ) : <div />}
+
           {activeTab === 'posts' && (
             <button
               onClick={handleAdd}
@@ -187,12 +189,6 @@ const CommunityManager = () => {
         {/* Tabs */}
         <div className="flex border-b border-slate-200 dark:border-slate-700 mb-6">
           <TabButton 
-            active={activeTab === 'sessions'} 
-            onClick={() => setActiveTab('sessions')} 
-            icon={Calendar} 
-            label="Sessions & Events" 
-          />
-          <TabButton 
             active={activeTab === 'posts'} 
             onClick={() => setActiveTab('posts')} 
             icon={MessageSquare} 
@@ -201,11 +197,6 @@ const CommunityManager = () => {
           />
         </div>
       </div>
-
-      {/* Sessions Tab */}
-      {activeTab === 'sessions' && (
-        <CommunitySessionManager />
-      )}
 
       {/* Posts Tab */}
       {activeTab === 'posts' && (

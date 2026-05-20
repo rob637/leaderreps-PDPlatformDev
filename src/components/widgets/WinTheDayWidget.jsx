@@ -77,7 +77,7 @@ const WinTheDayWidget = ({ scope, helpText }) => {
   return (
     <Card title="Win the Day" icon={Trophy} accent="TEAL" helpText={helpText}>
       <div className="space-y-1">
-        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider mb-1">
+        <p className="text-xs text-slate-600 dark:text-slate-300 font-medium uppercase tracking-wider mb-1">
           Identify 3 High-Impact Actions
         </p>
         

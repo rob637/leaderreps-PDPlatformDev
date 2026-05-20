@@ -11,7 +11,7 @@ const ToolsIndex = () => {
       icon={Wrench}
       detailRoute="tool-detail"
       indexRoute="tools-index"
-      color="text-corporate-teal"
+      color="text-corporate-teal-ink"
       bgColor="bg-corporate-teal/10"
     />
   );

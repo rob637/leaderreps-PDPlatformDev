@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { User, CheckCircle, ChevronRight, Clock, Award, Sparkles } from 'lucide-react';
 import { Card } from '../ui';
 import { useLeaderProfile } from '../../hooks/useLeaderProfile';
@@ -39,7 +40,7 @@ const LeaderProfileWidget = () => {
             </div>
             <button
               onClick={() => setShowForm(true)}
-              className="text-sm font-medium text-corporate-teal hover:text-corporate-teal/80 hover:underline transition-colors"
+              className="text-sm font-medium text-corporate-teal-ink hover:text-corporate-teal/80 hover:underline transition-colors"
             >
               View or Update
             </button>
@@ -47,15 +48,16 @@ const LeaderProfileWidget = () => {
         </Card>
 
         {/* Modal for editing */}
-        {showForm && (
-          <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
+        {showForm && typeof document !== 'undefined' && createPortal(
+          <div className="fixed inset-0 z-[1000] flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
             <div className="relative w-full max-w-xl my-auto">
               <LeaderProfileFormSimple 
                 onComplete={() => setShowForm(false)}
                 onClose={() => setShowForm(false)}
               />
             </div>
-          </div>
+          </div>,
+          document.body,
         )}
       </>
     );
@@ -116,15 +118,16 @@ const LeaderProfileWidget = () => {
       </Card>
 
       {/* Modal */}
-      {showForm && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
+      {showForm && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[1000] flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
           <div className="relative w-full max-w-xl my-auto">
             <LeaderProfileFormSimple 
               onComplete={() => setShowForm(false)}
               onClose={() => setShowForm(false)}
             />
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

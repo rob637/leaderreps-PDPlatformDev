@@ -2,13 +2,17 @@
 // Sales & Marketing Center — full CRM, lead generation, marketing tools
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
-  Megaphone, ArrowLeft, Globe, Users,
-  ShieldAlert, ExternalLink, Sparkles, BookOpen
+  Megaphone, Globe, Users, BarChart3,
+  ShieldAlert, ExternalLink, Sparkles, BookOpen,
 } from 'lucide-react';
 import SocialMediaManager from './SocialMediaManager';
 import AssessmentLeadsManager from './AssessmentLeadsManager';
+import AccountabilityInsights from './AccountabilityInsights';
 import CRMApp from './crm/CRMApp';
+import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
+import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
 import { useAppServices } from '../../services/useAppServices';
 import { useNavigation } from '../../providers/NavigationProvider';
 
@@ -20,9 +24,10 @@ const TAB_GROUPS = [
     ],
   },
   {
-    label: 'Lead Generation',
+    label: 'Lead Magnets',
     tabs: [
-      { id: 'assessment-leads', label: 'Lead Magnets', icon: Users },
+      { id: 'assessment-leads', label: 'Accountability Leads', icon: Users },
+      { id: 'assessment-insights', label: 'Accountability Insights', icon: BarChart3 },
     ],
   },
   {
@@ -38,6 +43,69 @@ const TAB_GROUPS = [
     ],
   },
 ];
+
+const STATUS_STYLES = {
+  Live: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+  Beta: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  Concept: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+};
+
+const ExperimentCard = ({ icon: Icon, title, status, tagline, description, primaryAction, gradient }) => {
+  const ActionIcon = primaryAction?.icon;
+  const statusClass = STATUS_STYLES[status] || STATUS_STYLES.Concept;
+
+  const buttonClasses = `px-6 py-3 font-semibold rounded-xl shadow-lg transition-all flex items-center gap-2 mx-auto ${
+    primaryAction?.disabled
+      ? 'bg-slate-300 text-slate-500 cursor-not-allowed dark:bg-slate-700 dark:text-slate-400'
+      : 'bg-[#47A88D] hover:bg-[#3d9179] text-white'
+  }`;
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-6 py-12">
+      <div className={`p-6 bg-gradient-to-br ${gradient} rounded-2xl shadow-xl`}>
+        <Icon className="w-16 h-16 text-white" />
+      </div>
+      <div className="text-center max-w-xl">
+        <div className="flex items-center justify-center gap-3 mb-3">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{title}</h2>
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusClass}`}>
+            {status}
+          </span>
+        </div>
+        <p className="text-base font-medium text-slate-700 dark:text-slate-200 mb-3">
+          {tagline}
+        </p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+          {description}
+        </p>
+        {primaryAction && (
+          primaryAction.href ? (
+            <a
+              href={primaryAction.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonClasses}
+              style={{ display: 'inline-flex' }}
+            >
+              {ActionIcon && <ActionIcon className="w-5 h-5" />}
+              {primaryAction.label}
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={primaryAction.onClick}
+              disabled={primaryAction.disabled}
+              className={buttonClasses}
+            >
+              {ActionIcon && <ActionIcon className="w-5 h-5" />}
+              {primaryAction.label}
+            </button>
+          )
+        )}
+      </div>
+    </div>
+  );
+};
 
 const SalesMarketingCenter = () => {
   const { user, isAdmin, navigate } = useAppServices();
@@ -58,9 +126,13 @@ const SalesMarketingCenter = () => {
     );
   }
   
-  // Show full CRM overlay
+  // Show full CRM overlay (portaled to body so it escapes the page-transition
+  // stacking context created by Framer Motion's will-change: transform)
   if (showFullCRM) {
-    return <CRMApp user={user} onClose={() => setShowFullCRM(false)} />;
+    return createPortal(
+      <CRMApp user={user} onClose={() => setShowFullCRM(false)} />,
+      document.body
+    );
   }
 
   const renderContent = () => {
@@ -92,6 +164,8 @@ const SalesMarketingCenter = () => {
       case 'assessment-leads': 
       case 'roi-calculator-leads':
         return <AssessmentLeadsManager />;
+      case 'assessment-insights':
+        return <AccountabilityInsights />;
       case 'social-media':
         return <SocialMediaManager />;
       case 'book-builder':
@@ -125,16 +199,16 @@ const SalesMarketingCenter = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
+      <div className="px-6 pt-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+        <BreadcrumbNav
+          items={getBreadcrumbs('marketing-center')}
+          navigate={navigate}
+        />
+      </div>
+
       {/* Header */}
       <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('admin-hub')}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-            title="Back to Admin Hub"
-          >
-            <ArrowLeft className="w-5 h-5 text-slate-500" />
-          </button>
           <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
             <Megaphone className="w-5 h-5 text-purple-600 dark:text-purple-400" />
           </div>

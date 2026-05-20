@@ -1,79 +1,67 @@
-<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#C8DDD9"/>
-      <stop offset="55%" style="stop-color:#EDE8E2"/>
-      <stop offset="100%" style="stop-color:#DFCEC5"/>
-    </linearGradient>
     <filter id="shadow" x="-5%" y="-5%" width="120%" height="120%">
       <feDropShadow dx="0" dy="4" stdDeviation="16" flood-color="rgba(0,46,71,0.13)"/>
     </filter>
   </defs>
 
-  <!-- Background gradient -->
-  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="#FAF8F5"/>
 
   <!-- White card -->
   <rect x="100" y="60" width="780" height="510" rx="24" fill="white" filter="url(#shadow)"/>
 
-  <!-- Logo mark: outer teal chevron -->
-  <polygon points="196,150 234,115 272,150 257,150 234,130 211,150" fill="#47A88D"/>
-  <!-- Logo mark: inner navy chevron -->
-  <polygon points="205,150 234,128 263,150 248,150 234,136 220,150" fill="#002E47"/>
-  <!-- LeaderReps wordmark -->
-  <text x="284" y="150" fill="#002E47" font-family="system-ui,-apple-system,sans-serif" font-size="38" font-weight="800">Leader</text>
-  <text x="460" y="150" fill="#47A88D" font-family="system-ui,-apple-system,sans-serif" font-size="38" font-weight="800">Reps</text>
+  <!-- Real LeaderReps logo -->
+  <image href="data:image/png;base64,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" x="148" y="100" width="240" height="60" preserveAspectRatio="xMinYMid meet"/>
 
   <!-- Eyebrow pill -->
-  <rect x="148" y="177" width="366" height="36" rx="18" fill="rgba(183,72,37,0.1)"/>
-  <circle cx="168" cy="195" r="7" fill="none" stroke="#B84825" stroke-width="1.5"/>
-  <text x="185" y="201" fill="#B84825" font-family="system-ui,sans-serif" font-size="15" font-weight="600">The Accountability System Pulse Check</text>
+  <rect x="148" y="195" width="366" height="36" rx="18" fill="rgba(183,72,37,0.1)"/>
+  <circle cx="168" cy="213" r="7" fill="none" stroke="#B84825" stroke-width="1.5"/>
+  <text x="185" y="219" fill="#B84825" font-family="system-ui,sans-serif" font-size="15" font-weight="600">The Accountability System Pulse Check</text>
 
   <!-- Main headline -->
-  <text x="148" y="268" fill="#002E47" font-family="system-ui,-apple-system,sans-serif" font-size="48" font-weight="800">How Strong Is Your Team&#39;s</text>
-  <text x="148" y="330" fill="#002E47" font-family="system-ui,-apple-system,sans-serif" font-size="48" font-weight="800">Accountability System?</text>
+  <text x="148" y="286" fill="#002E47" font-family="system-ui,-apple-system,sans-serif" font-size="48" font-weight="800">How Strong Is Your Team&#39;s</text>
+  <text x="148" y="348" fill="#002E47" font-family="system-ui,-apple-system,sans-serif" font-size="48" font-weight="800">Accountability System?</text>
 
-  <!-- Sub-headline in orange -->
-  <text x="148" y="384" fill="#B84825" font-family="system-ui,-apple-system,sans-serif" font-size="32" font-weight="700">Take the 3-Minute Assessment</text>
+  <!-- Sub-headline -->
+  <text x="148" y="402" fill="#B84825" font-family="system-ui,-apple-system,sans-serif" font-size="32" font-weight="700">Take the 3-Minute Assessment</text>
 
   <!-- Body -->
-  <text x="148" y="428" fill="#475569" font-family="system-ui,sans-serif" font-size="20">Find out where your system is strong, and where it&#39;s leaking.</text>
+  <text x="148" y="446" fill="#475569" font-family="system-ui,sans-serif" font-size="20">Find out where your system is strong, and where it&#39;s leaking.</text>
 
   <!-- Badge: 3 minutes -->
-  <rect x="148" y="454" width="164" height="38" rx="19" fill="white" stroke="#E2E8F0" stroke-width="1.5"/>
-  <text x="230" y="478" text-anchor="middle" fill="#002E47" font-family="system-ui,sans-serif" font-size="16" font-weight="600">&#9679; 3 minutes</text>
+  <rect x="148" y="472" width="164" height="38" rx="19" fill="white" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="230" y="496" text-anchor="middle" fill="#002E47" font-family="system-ui,sans-serif" font-size="16" font-weight="600">&#9679; 3 minutes</text>
 
-  <!-- Badge: 5 questions -->
-  <rect x="324" y="454" width="178" height="38" rx="19" fill="white" stroke="#E2E8F0" stroke-width="1.5"/>
-  <text x="413" y="478" text-anchor="middle" fill="#002E47" font-family="system-ui,sans-serif" font-size="16" font-weight="600">&#10003; 5 questions</text>
+  <!-- Badge: 7 questions -->
+  <rect x="324" y="472" width="178" height="38" rx="19" fill="white" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="413" y="496" text-anchor="middle" fill="#002E47" font-family="system-ui,sans-serif" font-size="16" font-weight="600">&#10003; 7 questions</text>
 
   <!-- CTA button -->
-  <rect x="148" y="512" width="298" height="48" rx="10" fill="#B84825"/>
-  <text x="297" y="542" text-anchor="middle" fill="white" font-family="system-ui,-apple-system,sans-serif" font-size="19" font-weight="700">Start the Pulse Check  &#8594;</text>
+  <rect x="148" y="524" width="298" height="48" rx="10" fill="#B84825"/>
+  <text x="297" y="554" text-anchor="middle" fill="white" font-family="system-ui,-apple-system,sans-serif" font-size="19" font-weight="700">Start the Pulse Check  &#8594;</text>
 
-  <!-- Right side score cards -->
-  <!-- Execution Engine -->
+  <!-- Right side score cards (matching live bands) -->
+  <!-- Strong System -->
   <rect x="930" y="80" width="222" height="138" rx="14" fill="white" filter="url(#shadow)"/>
   <rect x="930" y="80" width="6" height="138" rx="3" fill="#47A88D"/>
-  <text x="950" y="117" fill="#277A68" font-family="system-ui,sans-serif" font-size="13" font-weight="700" letter-spacing="1.5">4&#8211;5 YES</text>
-  <text x="950" y="143" fill="#002E47" font-family="system-ui,sans-serif" font-size="18" font-weight="800">Execution Engine</text>
-  <text x="950" y="163" fill="#64748b" font-family="system-ui,sans-serif" font-size="13">Your system is doing</text>
-  <text x="950" y="180" fill="#64748b" font-family="system-ui,sans-serif" font-size="13">real work.</text>
+  <text x="950" y="117" fill="#277A68" font-family="system-ui,sans-serif" font-size="13" font-weight="700" letter-spacing="1.5">6&#8211;7 YES</text>
+  <text x="950" y="143" fill="#002E47" font-family="system-ui,sans-serif" font-size="18" font-weight="800">Strong System</text>
+  <text x="950" y="163" fill="#64748b" font-family="system-ui,sans-serif" font-size="13">Doing real work.</text>
+  <text x="950" y="180" fill="#64748b" font-family="system-ui,sans-serif" font-size="13">Sharpen the edges.</text>
 
-  <!-- Leaky System -->
+  <!-- Room to Strengthen -->
   <rect x="930" y="240" width="222" height="138" rx="14" fill="white" filter="url(#shadow)"/>
   <rect x="930" y="240" width="6" height="138" rx="3" fill="#B84825"/>
-  <text x="950" y="277" fill="#B84825" font-family="system-ui,sans-serif" font-size="13" font-weight="700" letter-spacing="1.5">2&#8211;3 YES</text>
-  <text x="950" y="303" fill="#002E47" font-family="system-ui,sans-serif" font-size="18" font-weight="800">Leaky System</text>
-  <text x="950" y="323" fill="#64748b" font-family="system-ui,sans-serif" font-size="13">Gaps are showing up.</text>
-  <text x="950" y="340" fill="#64748b" font-family="system-ui,sans-serif" font-size="13">These are fixable.</text>
+  <text x="950" y="277" fill="#B84825" font-family="system-ui,sans-serif" font-size="13" font-weight="700" letter-spacing="1.5">3&#8211;5 YES</text>
+  <text x="950" y="303" fill="#002E47" font-family="system-ui,sans-serif" font-size="18" font-weight="800">Room to Strengthen</text>
+  <text x="950" y="323" fill="#64748b" font-family="system-ui,sans-serif" font-size="13">A few targeted reps</text>
+  <text x="950" y="340" fill="#64748b" font-family="system-ui,sans-serif" font-size="13">close the gaps.</text>
 
   <!-- System Not Yet Installed -->
   <rect x="930" y="400" width="222" height="138" rx="14" fill="white" filter="url(#shadow)"/>
   <rect x="930" y="400" width="6" height="138" rx="3" fill="#002E47"/>
-  <text x="950" y="437" fill="#002E47" font-family="system-ui,sans-serif" font-size="13" font-weight="700" letter-spacing="1.5">0&#8211;1 YES</text>
+  <text x="950" y="437" fill="#002E47" font-family="system-ui,sans-serif" font-size="13" font-weight="700" letter-spacing="1.5">0&#8211;2 YES</text>
   <text x="950" y="463" fill="#002E47" font-family="system-ui,sans-serif" font-size="18" font-weight="800">System Not Yet</text>
   <text x="950" y="485" fill="#002E47" font-family="system-ui,sans-serif" font-size="18" font-weight="800">Installed</text>
-  <text x="950" y="505" fill="#64748b" font-family="system-ui,sans-serif" font-size="13">Time to rebuild.</text>
-
+  <text x="950" y="510" fill="#64748b" font-family="system-ui,sans-serif" font-size="13">Time to rebuild.</text>
 </svg>

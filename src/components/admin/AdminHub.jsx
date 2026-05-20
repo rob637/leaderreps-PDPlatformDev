@@ -10,6 +10,7 @@ import {
   Megaphone,
   ChevronRight,
   Loader,
+  FlaskConical,
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 
@@ -20,7 +21,7 @@ const CENTERS = [
     icon: Settings,
     bg: 'bg-corporate-teal/10 hover:bg-corporate-teal/20 border-corporate-teal/30',
     iconBg: 'bg-corporate-teal/20',
-    iconColor: 'text-corporate-teal',
+    iconColor: 'text-corporate-teal-ink',
   },
   {
     id: 'facilitator-center',
@@ -45,6 +46,15 @@ const CENTERS = [
     bg: 'bg-corporate-navy/10 hover:bg-corporate-navy/20 border-corporate-navy/30',
     iconBg: 'bg-corporate-navy/20',
     iconColor: 'text-corporate-navy',
+  },
+  {
+    id: 'leaderreps-lab',
+    title: 'LeaderReps Lab',
+    description: 'Independent experiments; some graduate to production, some don’t.',
+    icon: FlaskConical,
+    bg: 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30',
+    iconBg: 'bg-emerald-500/20',
+    iconColor: 'text-emerald-600',
   },
 ];
 
@@ -104,9 +114,16 @@ const AdminHub = () => {
                 <div className={`w-12 h-12 ${center.iconBg} rounded-xl flex items-center justify-center flex-shrink-0`}>
                   <Icon className={`w-6 h-6 ${center.iconColor}`} />
                 </div>
-                <span className="text-lg font-bold text-corporate-navy dark:text-white">
-                  {center.title}
-                </span>
+                <div className="flex flex-col text-left">
+                  <span className="text-lg font-bold text-corporate-navy dark:text-white">
+                    {center.title}
+                  </span>
+                  {center.description && (
+                    <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      {center.description}
+                    </span>
+                  )}
+                </div>
                 <ChevronRight className="w-5 h-5 text-slate-400 ml-auto group-hover:translate-x-1 transition-transform" />
               </button>
             );

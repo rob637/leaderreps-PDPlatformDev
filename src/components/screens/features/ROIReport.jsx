@@ -22,14 +22,14 @@ const ROIReport = () => {
           <div className="p-6">
             <Text variant="label" className="uppercase mb-4 text-slate-400">Engagement Score</Text>
             <div className="text-4xl font-bold text-corporate-navy mb-2">92%</div>
-            <Text className="font-semibold text-corporate-teal">↑ 5% vs last month</Text>
+            <Text className="font-semibold text-corporate-teal-ink">↑ 5% vs last month</Text>
           </div>
         </Card>
         <Card>
           <div className="p-6">
             <Text variant="label" className="uppercase mb-4 text-slate-400">Competency Growth</Text>
             <div className="text-4xl font-bold text-corporate-navy mb-2">+12</div>
-            <Text className="font-semibold text-corporate-teal">Skills mastered</Text>
+            <Text className="font-semibold text-corporate-teal-ink">Skills mastered</Text>
           </div>
         </Card>
       </PageGrid>

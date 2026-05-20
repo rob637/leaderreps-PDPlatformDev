@@ -46,7 +46,7 @@ const PrivacyPolicy = () => {
             <p>
               If we learn we have collected or received personal information from a minor under 18, we will delete that information. 
               If you believe the Website has any information from a child under 18, please contact us at{' '}
-              <a href="mailto:team@leaderreps.com" className="text-corporate-teal hover:underline">team@leaderreps.com</a>.
+              <a href="mailto:team@leaderreps.com" className="text-corporate-teal-ink hover:underline">team@leaderreps.com</a>.
             </p>
             <p>
               We comply with the Children's Online Privacy Protection Act (COPPA). We do not knowingly collect personal information 
@@ -177,7 +177,7 @@ const PrivacyPolicy = () => {
             <h3>HOW MAY I REVIEW MY PERSONAL INFORMATION AND ASK THE COMPANY TO CHANGE OR DELETE IT?</h3>
             <p>
               You may request to access, correct, or delete your personal information at any time by contacting us at{' '}
-              <a href="mailto:team@leaderreps.com" className="text-corporate-teal hover:underline">team@leaderreps.com</a>.
+              <a href="mailto:team@leaderreps.com" className="text-corporate-teal-ink hover:underline">team@leaderreps.com</a>.
             </p>
 
             <h3>HOW WE HANDLE "DO NOT TRACK" REQUESTS</h3>

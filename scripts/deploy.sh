@@ -148,10 +148,10 @@ if [[ "$BUILD_ENV_CHECK" != *"$PROJECT_ID"* ]] && [ -n "$BUILD_ENV_CHECK" ]; the
     echo -e "${YELLOW}⚠️  Warning: Build may contain different project reference${NC}"
 fi
 
-# Step 4: Deploy
+# Step 4: Deploy (hosting + Firestore rules — keeps rules in sync with each env)
 echo ""
-echo -e "${BLUE}🚀 Step 3: Deploying to Firebase...${NC}"
-firebase deploy --only hosting:$HOSTING_TARGET --project $PROJECT_ID
+echo -e "${BLUE}🚀 Step 3: Deploying to Firebase (hosting + firestore:rules)...${NC}"
+firebase deploy --only hosting:$HOSTING_TARGET,firestore:rules --project $PROJECT_ID
 
 # Step 5: Restore dev environment (for local development)
 echo ""

@@ -12,10 +12,12 @@ import { useThemeStore } from '../stores/themeStore';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import toast from 'react-hot-toast';
+import { useConfirm } from '../components/ConfirmDialog';
 
 export default function SettingsPage() {
   const { user } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
+  const confirm = useConfirm();
   
   // Apollo store
   const { 
@@ -122,7 +124,13 @@ export default function SettingsPage() {
   };
   
   const handleDisconnectGmail = async () => {
-    if (confirm('Disconnect Gmail? Your email sync history will be preserved.')) {
+    const ok = await confirm({
+      title: 'Disconnect Gmail?',
+      message: 'Your email sync history will be preserved.',
+      confirmLabel: 'Disconnect',
+      tone: 'warning',
+    });
+    if (ok) {
       setDisconnectingGmail(true);
       await useGmailStore.getState().disconnect(user.uid);
       setDisconnectingGmail(false);
@@ -143,7 +151,13 @@ export default function SettingsPage() {
   };
   
   const handleRemoveApolloKey = async () => {
-    if (confirm('Remove your Apollo API key? You can add it back anytime.')) {
+    const ok = await confirm({
+      title: 'Remove Apollo API key?',
+      message: 'You can add it back anytime.',
+      confirmLabel: 'Remove',
+      tone: 'danger',
+    });
+    if (ok) {
       await saveApolloKey(user.uid, '');
       toast.success('API key removed');
     }
@@ -163,7 +177,13 @@ export default function SettingsPage() {
   };
   
   const handleRemoveLinkedHelperKey = async () => {
-    if (confirm('Remove your LinkedHelper API key? You can add it back anytime.')) {
+    const ok = await confirm({
+      title: 'Remove LinkedHelper API key?',
+      message: 'You can add it back anytime.',
+      confirmLabel: 'Remove',
+      tone: 'danger',
+    });
+    if (ok) {
       await removeLinkedHelperKey(user.uid);
     }
   };
@@ -613,8 +633,14 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   <button
-                    onClick={() => {
-                      if (confirm(`Disconnect ${account.email}?`)) {
+                    onClick={async () => {
+                      const ok = await confirm({
+                        title: 'Disconnect account?',
+                        message: account.email,
+                        confirmLabel: 'Disconnect',
+                        tone: 'warning',
+                      });
+                      if (ok) {
                         disconnectAccount(account.id);
                       }
                     }}

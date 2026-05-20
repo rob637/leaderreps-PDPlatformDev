@@ -78,7 +78,7 @@ const FocusPicker = ({ open, onPick, firstName = 'Leader' }) => {
                   </div>
                   <ArrowRight
                     className={`w-4 h-4 shrink-0 transition-all ${
-                      isHover ? 'text-corporate-teal translate-x-1' : 'text-slate-400'
+                      isHover ? 'text-corporate-teal-ink translate-x-1' : 'text-slate-400'
                     }`}
                   />
                 </motion.button>
@@ -91,7 +91,7 @@ const FocusPicker = ({ open, onPick, firstName = 'Leader' }) => {
             <p className="text-xs text-slate-500">You can change this anytime.</p>
             <button
               onClick={() => onPick(featured.id)}
-              className="text-sm font-semibold text-corporate-teal hover:text-corporate-subtle-teal inline-flex items-center gap-1"
+              className="text-sm font-semibold text-corporate-teal-ink hover:text-corporate-subtle-teal inline-flex items-center gap-1"
             >
               Not sure? Start me on {featured.title} <ArrowRight className="w-4 h-4" />
             </button>

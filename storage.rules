@@ -16,7 +16,15 @@ service firebase.storage {
     match /vault/{allPaths=**} {
       allow read, write: if request.auth != null;
     }
-    
+
+    // Ascent Revamp WS-4: coach response videos
+    // Authenticated users can read; uploads happen from admin tooling
+    // (admin users will pass the catch-all rule below).
+    match /coach-responses/{questionId}/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
     // Default: authenticated users only
     match /{allPaths=**} {
       allow read, write: if request.auth != null;

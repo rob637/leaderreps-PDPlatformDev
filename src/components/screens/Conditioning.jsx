@@ -177,7 +177,7 @@ const TodaysFocusCard = ({ activeReps, onOpenPrep, onViewDetail, onAskCoach }) =
       <div className="p-4">
         <div className="flex items-center gap-2 mb-2">
           <Lightbulb className="w-4 h-4 text-corporate-teal" />
-          <span className="text-xs font-semibold text-corporate-teal uppercase tracking-wide">Today's Focus</span>
+          <span className="text-xs font-semibold text-corporate-teal-ink uppercase tracking-wide">Today's Focus</span>
         </div>
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
@@ -196,7 +196,7 @@ const TodaysFocusCard = ({ activeReps, onOpenPrep, onViewDetail, onAskCoach }) =
         {onAskCoach && (
           <button
             onClick={onAskCoach}
-            className="mt-3 text-xs text-corporate-navy/70 hover:text-corporate-teal flex items-center gap-1 transition-colors"
+            className="mt-3 text-xs text-corporate-navy/70 hover:text-corporate-teal-ink flex items-center gap-1 transition-colors"
           >
             <MessageSquare className="w-3 h-3" />
             Nervous? Talk it through with your coach first
@@ -1262,7 +1262,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
                   Looking for your completed reps?{' '}
                   <button
                     onClick={() => navigation?.navigate?.('locker')}
-                    className="text-corporate-teal hover:underline font-medium"
+                    className="text-corporate-teal-ink hover:underline font-medium"
                   >
                     Check your Locker
                   </button>
@@ -1284,7 +1284,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
                 {onAskCoach && (
                   <button
                     onClick={onAskCoach}
-                    className="mt-3 text-sm text-corporate-teal hover:underline flex items-center gap-1 mx-auto"
+                    className="mt-3 text-sm text-corporate-teal-ink hover:underline flex items-center gap-1 mx-auto"
                   >
                     <HelpCircle className="w-4 h-4" />
                     Not sure? Ask your coach
@@ -1317,7 +1317,7 @@ const Conditioning = ({ embedded = false, showFloatingAction, onAskCoach }) => {
           {activeReps.length > 0 && onAskCoach && (
             <button
               onClick={onAskCoach}
-              className="w-full mt-2 py-2 text-sm text-corporate-teal hover:bg-corporate-teal/5 rounded-lg flex items-center justify-center gap-2 transition-colors"
+              className="w-full mt-2 py-2 text-sm text-corporate-teal-ink hover:bg-corporate-teal/5 rounded-lg flex items-center justify-center gap-2 transition-colors"
             >
               <MessageSquare className="w-4 h-4" />
               Stuck on a rep? Talk it through with your coach

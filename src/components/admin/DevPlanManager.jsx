@@ -406,7 +406,7 @@ const WeekListView = ({ weeks, onEdit, onDelete }) => {
               <td className="p-3 text-right flex justify-end gap-2">
                 <button 
                   onClick={() => onEdit(week)}
-                  className="px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-white hover:border-corporate-teal hover:text-corporate-teal transition-colors"
+                  className="px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-white hover:border-corporate-teal hover:text-corporate-teal-ink transition-colors"
                 >
                   Edit
                 </button>
@@ -546,7 +546,7 @@ const WeekEditor = ({ weekId, initialData, lovs, availableSkills, dailyRepsLibra
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors capitalize ${
               activeTab === tab 
-                ? 'border-corporate-teal text-corporate-teal' 
+                ? 'border-corporate-teal text-corporate-teal-ink' 
                 : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
             }`}
           >
@@ -817,7 +817,7 @@ const WeekEditor = ({ weekId, initialData, lovs, availableSkills, dailyRepsLibra
                 </h4>
                 <button 
                   onClick={() => addItem('content', { contentItemId: '', contentItemType: 'Workout', contentItemLabel: '', isRequiredContent: true })}
-                  className="text-xs font-bold text-corporate-teal hover:underline flex items-center gap-1"
+                  className="text-xs font-bold text-corporate-teal-ink hover:underline flex items-center gap-1"
                 >
                   <Plus className="w-3 h-3" /> Add Item
                 </button>
@@ -1164,7 +1164,7 @@ const WeekEditor = ({ weekId, initialData, lovs, availableSkills, dailyRepsLibra
                             setFormData(prev => ({ ...prev, skills: prev.skills.filter(s => s !== skill.title) }));
                           }
                         }}
-                        className="rounded text-corporate-teal"
+                        className="rounded text-corporate-teal-ink"
                       />
                       <span className="text-sm text-slate-700 dark:text-slate-200">{skill.title}</span>
                     </label>
@@ -1186,7 +1186,7 @@ const WeekEditor = ({ weekId, initialData, lovs, availableSkills, dailyRepsLibra
                               setFormData(prev => ({ ...prev, skills: prev.skills.filter(s => s !== skill) }));
                             }
                           }}
-                          className="rounded text-corporate-teal"
+                          className="rounded text-corporate-teal-ink"
                         />
                         <span className="text-sm text-slate-700 dark:text-slate-200">{skill}</span>
                       </label>
@@ -1212,7 +1212,7 @@ const WeekEditor = ({ weekId, initialData, lovs, availableSkills, dailyRepsLibra
                           setFormData(prev => ({ ...prev, pillars: prev.pillars.filter(p => p !== pillar) }));
                         }
                       }}
-                      className="rounded text-corporate-teal"
+                      className="rounded text-corporate-teal-ink"
                     />
                     <span className="text-sm text-slate-700 dark:text-slate-200">{pillar}</span>
                   </label>

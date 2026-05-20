@@ -18,6 +18,9 @@ const COLLECTION = 'outreach_activities';
 export const useActivitiesStore = create((set, get) => ({
   // State - activities keyed by prospectId
   activitiesByProspect: {},
+  // Activities indexed by accountId / dealId for the rollup views.
+  activitiesByAccount: {},
+  activitiesByDeal: {},
   loadingProspects: new Set(),
   error: null,
   recentActivities: [],
@@ -101,11 +104,65 @@ export const useActivitiesStore = create((set, get) => ({
     return get().activitiesByProspect[prospectId] || [];
   },
 
+  // ---- Rollup subscriptions for accounts and deals ----
+
+  subscribeToAccountActivities: (accountId, limitCount = 100) => {
+    const q = query(
+      collection(db, COLLECTION),
+      where('accountId', '==', accountId),
+      orderBy('createdAt', 'desc'),
+      limit(limitCount)
+    );
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const activities = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+        set((state) => ({
+          activitiesByAccount: {
+            ...state.activitiesByAccount,
+            [accountId]: activities,
+          },
+        }));
+      },
+      (error) => console.error('Error fetching account activities:', error)
+    );
+  },
+
+  subscribeToDealActivities: (dealId, limitCount = 100) => {
+    const q = query(
+      collection(db, COLLECTION),
+      where('dealId', '==', dealId),
+      orderBy('createdAt', 'desc'),
+      limit(limitCount)
+    );
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const activities = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+        set((state) => ({
+          activitiesByDeal: {
+            ...state.activitiesByDeal,
+            [dealId]: activities,
+          },
+        }));
+      },
+      (error) => console.error('Error fetching deal activities:', error)
+    );
+  },
+
+  getActivitiesForAccount: (accountId) =>
+    get().activitiesByAccount[accountId] || [],
+
+  getActivitiesForDeal: (dealId) => get().activitiesByDeal[dealId] || [],
+
   // Add an activity/comment
   addActivity: async (activityData, userEmail, userName) => {
     try {
       const canonicalEmail = getCanonicalEmail(userEmail);
+      // Ensure accountId/dealId are at least null so Firestore queries work.
       const newActivity = {
+        accountId: activityData.accountId || null,
+        dealId: activityData.dealId || null,
         ...activityData,
         userEmail: canonicalEmail,
         userName: userName || userEmail.split('@')[0],

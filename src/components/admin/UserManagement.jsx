@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { confirmDestructive } from './utils/confirmDestructive';
 import { 
   Users, 
   UserPlus, 
@@ -138,7 +139,7 @@ const UserManagement = () => {
     console.log('[UserManagement] Starting fetchData...', { activeTab, userEmail: user?.email });
     try {
       // Fetch admin emails first
-      let admins = ['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com'];
+      let admins = ['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com', 'cristina@leaderreps.com'];
       try {
         const metadataRef = doc(db, 'metadata', 'config');
         const metadataSnap = await getDoc(metadataRef);
@@ -227,13 +228,25 @@ const UserManagement = () => {
         console.log('[UserManagement] Total users+invites:', allUsers.length);
         setUsers(allUsers);
       } else if (activeTab === 'invites') {
+        // Build a set of existing user emails (lowercase) so we can hide
+        // any orphaned "pending" invites that already have an account.
+        const usersSnap = await getDocs(collection(db, 'users'));
+        const existingUserEmails = new Set(
+          usersSnap.docs.map((d) => (d.data().email || '').toLowerCase().trim())
+        );
+
         const invitesRef = collection(db, 'invitations');
         const q = query(invitesRef, orderBy('createdAt', 'desc'));
         const snapshot = await getDocs(q);
-        const invitesList = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        const invitesList = snapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .filter((inv) => {
+            const status = (inv.status || 'pending').toLowerCase();
+            const email = (inv.email || '').toLowerCase().trim();
+            // Outstanding-only: pending or sent, and no user account yet.
+            const isOutstanding = status === 'pending' || status === 'sent';
+            return isOutstanding && !existingUserEmails.has(email);
+          });
         setInvites(invitesList);
       } else if (activeTab === 'cohorts') {
         // Already fetched in separate effect, but refresh here
@@ -391,6 +404,74 @@ const UserManagement = () => {
     } catch (error) {
       console.error("Error assigning cohort:", error);
       alert("Failed to assign cohort.");
+    }
+  };
+
+  // Get current phase for a user from the foundationCompleted/ascentApproved/graduated flags.
+  // Mirrors isAscentApproved() in src/hooks/useDailyPlan.js.
+  const getUserPhase = (u) => {
+    if (!u) return 'foundation';
+    if (u.graduated === true) return 'ascent';
+    if (u.foundationCompleted === true && u.ascentApproved === true) return 'ascent';
+    return 'foundation';
+  };
+
+  // Manually move a user between Foundation and Ascent.
+  // Ascent = both foundationCompleted + ascentApproved true (with audit fields).
+  // Foundation = both reset to false (and clear graduated legacy flag).
+  const handleSetPhase = async (userId, newPhase) => {
+    const targetUser = users.find(u => u.id === userId);
+    if (!targetUser) return;
+    if (targetUser.type === 'invite') {
+      alert('Cannot set phase on a pending invitation. The user must accept the invite first.');
+      return;
+    }
+    const currentPhase = getUserPhase(targetUser);
+    if (currentPhase === newPhase) return;
+
+    const label = newPhase === 'ascent' ? 'Ascent' : 'Foundation';
+    const name = targetUser.displayName || targetUser.email;
+    const confirmMsg = newPhase === 'ascent'
+      ? `Promote ${name} to Ascent? This sets foundationCompleted = true and ascentApproved = true.`
+      : `Move ${name} back to Foundation? This clears ascentApproved (and foundationCompleted).`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const userRef = doc(db, 'users', userId);
+      const adminEmail = user?.email || 'admin';
+      const updates = newPhase === 'ascent'
+        ? {
+            foundationCompleted: true,
+            foundationCompletedAt: serverTimestamp(),
+            foundationCompletedBy: adminEmail,
+            ascentApproved: true,
+            ascentApprovedAt: serverTimestamp(),
+            ascentApprovedBy: adminEmail,
+          }
+        : {
+            foundationCompleted: false,
+            ascentApproved: false,
+            graduated: false,
+            phaseRevertedAt: serverTimestamp(),
+            phaseRevertedBy: adminEmail,
+          };
+      await updateDoc(userRef, updates);
+
+      // Optimistic update
+      setUsers(users.map(u =>
+        u.id === userId
+          ? {
+              ...u,
+              foundationCompleted: updates.foundationCompleted,
+              ascentApproved: updates.ascentApproved,
+              ...(newPhase === 'foundation' ? { graduated: false } : {}),
+            }
+          : u
+      ));
+      alert(`${name} moved to ${label}.`);
+    } catch (error) {
+      console.error('Error setting phase:', error);
+      alert('Failed to update phase.');
     }
   };
 
@@ -581,7 +662,13 @@ const UserManagement = () => {
   };
 
   const handleDeleteCohort = async (cohortId) => {
-    if (!window.confirm("Are you sure you want to delete this cohort? This action cannot be undone.")) return;
+    const cohort = cohorts.find(c => c.id === cohortId);
+    const label = cohort?.name || cohortId;
+    if (!confirmDestructive({
+      summary: `Permanently delete cohort "${label}"?\n\nThis cannot be undone. Members assigned to this cohort will be unlinked.`,
+      typeToken: 'DELETE',
+      cancelMessage: 'Confirmation text did not match. Cohort deletion cancelled.',
+    })) return;
     try {
       await deleteDoc(doc(db, 'cohorts', cohortId));
       setCohorts(cohorts.filter(c => c.id !== cohortId));
@@ -780,7 +867,13 @@ const UserManagement = () => {
   };
 
   const handleDeleteFacilitator = async (facilitatorId) => {
-    if (!window.confirm("Are you sure you want to delete this trainer? This cannot be undone.")) return;
+    const facilitator = facilitators.find(f => f.id === facilitatorId);
+    const label = facilitator?.name || facilitator?.email || facilitatorId;
+    if (!confirmDestructive({
+      summary: `Permanently delete trainer "${label}"?\n\nThis cannot be undone.`,
+      typeToken: 'DELETE',
+      cancelMessage: 'Confirmation text did not match. Trainer deletion cancelled.',
+    })) return;
     
     try {
       await deleteDoc(doc(db, 'facilitators', facilitatorId));
@@ -841,6 +934,10 @@ const UserManagement = () => {
           aVal = getCohortName(a).toLowerCase();
           bVal = getCohortName(b).toLowerCase();
           break;
+        case 'phase':
+          aVal = getUserPhase(a);
+          bVal = getUserPhase(b);
+          break;
         case 'status':
           aVal = a.disabled ? 'disabled' : 'active';
           bVal = b.disabled ? 'disabled' : 'active';
@@ -899,30 +996,30 @@ const UserManagement = () => {
       {/* Tabs */}
       <div className="flex border-b border-slate-200 dark:border-slate-700">
         <button
-          onClick={() => setActiveTab('users')}
-          className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
-            activeTab === 'users'
-              ? 'border-corporate-teal text-corporate-teal'
-              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
-          }`}
-        >
-          Users
-        </button>
-        <button
           onClick={() => setActiveTab('cohorts')}
           className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
             activeTab === 'cohorts'
-              ? 'border-corporate-teal text-corporate-teal'
+              ? 'border-corporate-teal text-corporate-teal-ink'
               : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
           }`}
         >
           Cohorts
         </button>
         <button
+          onClick={() => setActiveTab('users')}
+          className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
+            activeTab === 'users'
+              ? 'border-corporate-teal text-corporate-teal-ink'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
+          }`}
+        >
+          Users
+        </button>
+        <button
           onClick={() => setActiveTab('facilitators')}
           className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
             activeTab === 'facilitators'
-              ? 'border-corporate-teal text-corporate-teal'
+              ? 'border-corporate-teal text-corporate-teal-ink'
               : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
           }`}
         >
@@ -935,17 +1032,17 @@ const UserManagement = () => {
           onClick={() => setActiveTab('invites')}
           className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
             activeTab === 'invites'
-              ? 'border-corporate-teal text-corporate-teal'
+              ? 'border-corporate-teal text-corporate-teal-ink'
               : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
           }`}
         >
-          Invitations
+          Pending Invitations{invites.length > 0 ? ` (${invites.length})` : ''}
         </button>
         <button
           onClick={() => setActiveTab('templates')}
           className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
             activeTab === 'templates'
-              ? 'border-corporate-teal text-corporate-teal'
+              ? 'border-corporate-teal text-corporate-teal-ink'
               : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
           }`}
         >
@@ -1008,6 +1105,15 @@ const UserManagement = () => {
                       <div className="flex items-center gap-1.5">
                         Cohort
                         <SortIcon column="cohort" />
+                      </div>
+                    </th>
+                    <th 
+                      className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none"
+                      onClick={() => handleSort('phase')}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        Phase
+                        <SortIcon column="phase" />
                       </div>
                     </th>
                     <th 
@@ -1089,6 +1195,25 @@ const UserManagement = () => {
                         </select>
                       </td>
                       <td className="px-6 py-4">
+                        {user.type === 'invite' ? (
+                          <span className="text-xs text-slate-400 italic">—</span>
+                        ) : (
+                          <select
+                            value={getUserPhase(user)}
+                            onChange={(e) => handleSetPhase(user.id, e.target.value)}
+                            className={`text-xs px-2.5 py-1 rounded-md border-0 font-medium cursor-pointer ${
+                              getUserPhase(user) === 'ascent'
+                                ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800'
+                                : 'bg-teal-100 dark:bg-teal-900/30 text-teal-800'
+                            }`}
+                            title="Manually move user between Foundation and Ascent"
+                          >
+                            <option value="foundation">Foundation</option>
+                            <option value="ascent">Ascent</option>
+                          </select>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
                         {user.status === 'Pending' ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800">
                             <Clock className="w-3 h-3" /> Pending
@@ -1160,7 +1285,7 @@ const UserManagement = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
+                    <td colSpan="6" className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
                       {fetchError ? (
                         <div className="text-red-600">
                           <p className="font-medium">Error loading users</p>
@@ -1199,7 +1324,7 @@ const UserManagement = () => {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => handleEditCohort(cohort)}
-                            className="p-1 text-slate-400 hover:text-corporate-teal transition-colors"
+                            className="p-1 text-slate-400 hover:text-corporate-teal-ink transition-colors"
                             title="Edit Cohort"
                           >
                             <Edit className="w-4 h-4" />
@@ -1256,7 +1381,7 @@ const UserManagement = () => {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => handleOpenFacilitatorModal(facilitator)}
-                            className="p-1 text-slate-400 hover:text-corporate-teal transition-colors"
+                            className="p-1 text-slate-400 hover:text-corporate-teal-ink transition-colors"
                             title="Edit Trainer"
                           >
                             <Edit className="w-4 h-4" />
@@ -1335,7 +1460,7 @@ const UserManagement = () => {
                               navigator.clipboard.writeText(`${window.location.origin}/register?token=${invite.token}`);
                               alert("Invite link copied to clipboard!");
                             }}
-                            className="p-1 text-slate-400 hover:text-corporate-teal transition-colors"
+                            className="p-1 text-slate-400 hover:text-corporate-teal-ink transition-colors"
                             title="Copy Invite Link"
                           >
                             <Copy className="w-4 h-4" />
@@ -1354,7 +1479,7 @@ const UserManagement = () => {
                 ) : (
                   <tr>
                     <td colSpan="5" className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
-                      No invitations found.
+                      No outstanding invitations. All sent invites have been accepted.
                     </td>
                   </tr>
                 )
@@ -1603,7 +1728,7 @@ const UserManagement = () => {
                     id="isTest"
                     checked={inviteForm.isTest || false}
                     onChange={e => setInviteForm({...inviteForm, isTest: e.target.checked})}
-                    className="rounded border-slate-300 dark:border-slate-600 text-corporate-teal focus:ring-corporate-teal"
+                    className="rounded border-slate-300 dark:border-slate-600 text-corporate-teal-ink focus:ring-corporate-teal"
                   />
                   <label htmlFor="isTest" className="text-sm font-medium text-slate-700 dark:text-slate-200">Send as Test Invite</label>
                 </div>

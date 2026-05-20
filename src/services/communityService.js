@@ -9,34 +9,40 @@
 import { 
   collection, 
   doc, 
+  getDoc,
   setDoc, 
   updateDoc,
   deleteDoc,
   query,
   where,
   getDocs,
+  runTransaction,
   serverTimestamp,
   Timestamp
 } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 import {
   COMMUNITY_SESSIONS_COLLECTION,
   COMMUNITY_SESSION_TYPES_COLLECTION,
   COMMUNITY_REGISTRATIONS_COLLECTION,
+  COMMUNITY_WAITLIST_COLLECTION,
   COMMUNITY_SESSION_TYPES,
   COMMUNITY_RECURRENCE,
   SESSION_STATUS,
-  REGISTRATION_STATUS
+  REGISTRATION_STATUS,
+  WAITLIST_STATUS
 } from '../data/Constants';
 
 // Re-export for convenience
-export { COMMUNITY_SESSION_TYPES, COMMUNITY_RECURRENCE, SESSION_STATUS, REGISTRATION_STATUS };
+export { COMMUNITY_SESSION_TYPES, COMMUNITY_RECURRENCE, SESSION_STATUS, REGISTRATION_STATUS, WAITLIST_STATUS };
 
 // Collection references
 export const COMMUNITY_COLLECTIONS = {
   SESSION_TYPES: COMMUNITY_SESSION_TYPES_COLLECTION,
   SESSIONS: COMMUNITY_SESSIONS_COLLECTION,
-  REGISTRATIONS: COMMUNITY_REGISTRATIONS_COLLECTION
+  REGISTRATIONS: COMMUNITY_REGISTRATIONS_COLLECTION,
+  WAITLIST: COMMUNITY_WAITLIST_COLLECTION
 };
 
 // Session Type Configurations for display
@@ -261,72 +267,135 @@ export const cancelCommunitySession = async (db, sessionId, reason = '') => {
 
 /**
  * Register a user for a community session
+ * Transactional: hard-caps at maxAttendees and decrements spotsLeft atomically.
  */
 export const registerForCommunitySession = async (db, userId, sessionId, sessionData = {}) => {
   if (!db) throw new Error('Database not initialized');
   if (!userId || !sessionId) throw new Error('userId and sessionId required');
-  
+
   const registrationId = `${userId}_${sessionId}`;
-  const docRef = doc(db, COMMUNITY_COLLECTIONS.REGISTRATIONS, registrationId);
-  
-  const registration = {
-    id: registrationId,
-    userId,
-    sessionId,
-    sessionTitle: sessionData.title || '',
-    sessionDate: sessionData.date || '',
-    sessionTime: sessionData.time || '',
-    sessionType: sessionData.sessionType || '',
-    status: REGISTRATION_STATUS.REGISTERED,
-    registeredAt: serverTimestamp(),
-    updatedAt: serverTimestamp()
-  };
-  
-  await setDoc(docRef, registration);
-  
-  // Update spots left on session
-  if (sessionData.spotsLeft > 0) {
-    const sessionRef = doc(db, COMMUNITY_COLLECTIONS.SESSIONS, sessionId);
-    await updateDoc(sessionRef, {
-      spotsLeft: sessionData.spotsLeft - 1,
-      updatedAt: serverTimestamp()
-    });
+  const regRef = doc(db, COMMUNITY_COLLECTIONS.REGISTRATIONS, registrationId);
+  const sessionRef = doc(db, COMMUNITY_COLLECTIONS.SESSIONS, sessionId);
+
+  // Fetch user profile up front (outside the txn) so the email cloud
+  // function can deliver confirmations/cancellations.
+  let userEmail = null;
+  let userName = null;
+  try {
+    const userSnap = await getDoc(doc(db, 'users', userId));
+    const userData = userSnap.exists() ? userSnap.data() : {};
+    const authUser = getAuth().currentUser;
+    userEmail = userData.email || userData.primaryEmail || authUser?.email || null;
+    userName =
+      userData.displayName ||
+      userData.name ||
+      userData.fullName ||
+      authUser?.displayName ||
+      null;
+  } catch (e) {
+    console.warn('[communityService] could not load user profile for registration:', e?.message);
   }
-  
+
+  await runTransaction(db, async (tx) => {
+    const sessionSnap = await tx.get(sessionRef);
+    if (!sessionSnap.exists()) {
+      throw new Error('SESSION_NOT_FOUND');
+    }
+    const session = sessionSnap.data();
+
+    const regSnap = await tx.get(regRef);
+    const existing = regSnap.exists() ? regSnap.data() : null;
+    const alreadyActive =
+      existing && existing.status === REGISTRATION_STATUS.REGISTERED;
+
+    const maxAttendees =
+      typeof session.maxAttendees === 'number' ? session.maxAttendees : null;
+    const currentSpots =
+      typeof session.spotsLeft === 'number' ? session.spotsLeft : maxAttendees;
+
+    if (!alreadyActive && maxAttendees !== null && currentSpots <= 0) {
+      throw new Error('SESSION_FULL');
+    }
+
+    tx.set(regRef, {
+      id: registrationId,
+      userId,
+      userEmail,
+      userName,
+      sessionId,
+      sessionTitle: sessionData.title || session.title || '',
+      sessionDate: sessionData.date || session.date || '',
+      sessionTime: sessionData.time || session.time || '',
+      sessionType: sessionData.sessionType || session.sessionType || '',
+      host: session.host || sessionData.host || null,
+      hostEmail: session.hostEmail || sessionData.hostEmail || null,
+      zoomLink: session.zoomLink || session.meetingLink || sessionData.zoomLink || null,
+      status: REGISTRATION_STATUS.REGISTERED,
+      registeredAt: existing?.registeredAt || serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+
+    if (!alreadyActive && maxAttendees !== null) {
+      tx.update(sessionRef, {
+        spotsLeft: Math.max(0, currentSpots - 1),
+        updatedAt: serverTimestamp(),
+      });
+    }
+  });
+
   console.log('[communityService] User registered:', registrationId);
   return registrationId;
 };
 
 /**
  * Cancel a user's registration
+ * Transactional: only restores a spot if the registration was active.
  */
 export const cancelCommunityRegistration = async (db, userId, sessionId) => {
   if (!db) throw new Error('Database not initialized');
-  
+
   const registrationId = `${userId}_${sessionId}`;
-  const docRef = doc(db, COMMUNITY_COLLECTIONS.REGISTRATIONS, registrationId);
-  
-  await updateDoc(docRef, {
-    status: REGISTRATION_STATUS.CANCELLED,
-    cancelledAt: serverTimestamp(),
-    updatedAt: serverTimestamp()
-  });
-  
-  // Update spots left on session (add back the spot)
+  const regRef = doc(db, COMMUNITY_COLLECTIONS.REGISTRATIONS, registrationId);
   const sessionRef = doc(db, COMMUNITY_COLLECTIONS.SESSIONS, sessionId);
-  const sessionSnap = await getDocs(query(
-    collection(db, COMMUNITY_COLLECTIONS.SESSIONS),
-    where('__name__', '==', sessionId)
-  ));
-  
-  if (!sessionSnap.empty) {
-    const session = sessionSnap.docs[0].data();
-    await updateDoc(sessionRef, {
-      spotsLeft: (session.spotsLeft || 0) + 1,
-      updatedAt: serverTimestamp()
+
+  await runTransaction(db, async (tx) => {
+    // 1) ALL READS FIRST (Firestore requires reads before writes in a tx)
+    const regSnap = await tx.get(regRef);
+    if (!regSnap.exists()) return;
+    const regData = regSnap.data();
+    const wasActive = regData.status === REGISTRATION_STATUS.REGISTERED;
+
+    let sessionSnap = null;
+    if (wasActive) {
+      sessionSnap = await tx.get(sessionRef);
+    }
+
+    // 2) THEN ALL WRITES
+    tx.update(regRef, {
+      status: REGISTRATION_STATUS.CANCELLED,
+      cancelledAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     });
-  }
-  
+
+    if (wasActive && sessionSnap && sessionSnap.exists()) {
+      const session = sessionSnap.data();
+      const maxAttendees =
+        typeof session.maxAttendees === 'number'
+          ? session.maxAttendees
+          : null;
+      const currentSpots =
+        typeof session.spotsLeft === 'number' ? session.spotsLeft : 0;
+      const nextSpots =
+        maxAttendees !== null
+          ? Math.min(maxAttendees, currentSpots + 1)
+          : currentSpots + 1;
+      tx.update(sessionRef, {
+        spotsLeft: nextSpots,
+        updatedAt: serverTimestamp(),
+      });
+    }
+  });
+
   console.log('[communityService] Registration cancelled:', registrationId);
 };
 
@@ -470,6 +539,170 @@ export const seedCommunitySessions = async (db) => {
   return sampleSessions.map(s => s.id);
 };
 
+// ===========================================================================
+// WAITLIST — added May 2026 per boss feedback.
+// "Rather than 'Register,' how about we create a 'Join Waitlist' option.
+//  Then in Trainer Operations, My Sessions, give me a way to access the
+//  Waitlist."
+//
+// Doc id pattern: `${sessionId}_${userId}` (matches firestore.rules wildcard).
+// Storage: top-level `coaching_waitlist` collection (aliased as
+// COMMUNITY_WAITLIST_COLLECTION). Each entry tracks userId/sessionId, name +
+// email so trainer email handoff is easy, and a status field. Promoting a
+// waitlist entry flips its status to PROMOTED and calls the normal
+// registerForCommunitySession transaction so spot-counts stay consistent.
+// ===========================================================================
+
+/**
+ * Add a user to a session's waitlist. Idempotent — if the user already has
+ * a WAITING entry we return its id without writing again.
+ */
+export const joinWaitlist = async (db, userId, sessionId, sessionData = {}) => {
+  if (!db) throw new Error('Database not initialized');
+  if (!userId || !sessionId) throw new Error('userId and sessionId required');
+
+  const entryId = `${sessionId}_${userId}`;
+  const entryRef = doc(db, COMMUNITY_COLLECTIONS.WAITLIST, entryId);
+
+  // Best-effort user lookup so trainers can email the waitlister directly.
+  let userEmail = null;
+  let userName = null;
+  try {
+    const userSnap = await getDoc(doc(db, 'users', userId));
+    const userData = userSnap.exists() ? userSnap.data() : {};
+    const authUser = getAuth().currentUser;
+    userEmail = userData.email || userData.primaryEmail || authUser?.email || null;
+    userName =
+      userData.displayName ||
+      userData.name ||
+      userData.fullName ||
+      authUser?.displayName ||
+      null;
+  } catch (e) {
+    console.warn('[communityService] could not load user profile for waitlist:', e?.message);
+  }
+
+  const existingSnap = await getDoc(entryRef);
+  if (existingSnap.exists() && existingSnap.data()?.status === WAITLIST_STATUS.WAITING) {
+    return entryId;
+  }
+
+  await setDoc(entryRef, {
+    id: entryId,
+    userId,
+    userEmail,
+    userName,
+    sessionId,
+    sessionTitle: sessionData.title || '',
+    sessionDate: sessionData.date || '',
+    sessionTime: sessionData.time || '',
+    sessionType: sessionData.sessionType || '',
+    host: sessionData.host || null,
+    status: WAITLIST_STATUS.WAITING,
+    joinedAt: existingSnap.exists() ? (existingSnap.data().joinedAt || serverTimestamp()) : serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
+
+  console.log('[communityService] User joined waitlist:', entryId);
+  return entryId;
+};
+
+/**
+ * Remove a user from a session's waitlist (mark LEFT, keep audit trail).
+ */
+export const leaveWaitlist = async (db, userId, sessionId) => {
+  if (!db) throw new Error('Database not initialized');
+  const entryId = `${sessionId}_${userId}`;
+  const entryRef = doc(db, COMMUNITY_COLLECTIONS.WAITLIST, entryId);
+  const snap = await getDoc(entryRef);
+  if (!snap.exists()) return;
+  await updateDoc(entryRef, {
+    status: WAITLIST_STATUS.LEFT,
+    leftAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  console.log('[communityService] User left waitlist:', entryId);
+};
+
+/**
+ * Get all WAITING entries for a session, oldest first.
+ */
+export const getSessionWaitlist = async (db, sessionId) => {
+  if (!db) throw new Error('Database not initialized');
+  const q = query(
+    collection(db, COMMUNITY_COLLECTIONS.WAITLIST),
+    where('sessionId', '==', sessionId),
+    where('status', '==', WAITLIST_STATUS.WAITING)
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => {
+      const at = a.joinedAt?.toMillis?.() || 0;
+      const bt = b.joinedAt?.toMillis?.() || 0;
+      return at - bt;
+    });
+};
+
+/**
+ * Get all WAITING entries for a user across sessions.
+ */
+export const getUserWaitlistEntries = async (db, userId) => {
+  if (!db) throw new Error('Database not initialized');
+  const q = query(
+    collection(db, COMMUNITY_COLLECTIONS.WAITLIST),
+    where('userId', '==', userId),
+    where('status', '==', WAITLIST_STATUS.WAITING)
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+};
+
+/**
+ * Promote a waitlist entry to a confirmed registration.
+ *   1) Bump session.maxAttendees by +1 so the registration txn doesn't fail
+ *      on SESSION_FULL.
+ *   2) Call registerForCommunitySession (reuses email/notification path).
+ *   3) Flip the waitlist entry to PROMOTED.
+ * Admin-only in practice (the UI lives in TrainerSessionsPanel).
+ */
+export const promoteFromWaitlist = async (db, userId, sessionId) => {
+  if (!db) throw new Error('Database not initialized');
+
+  const entryId = `${sessionId}_${userId}`;
+  const entryRef = doc(db, COMMUNITY_COLLECTIONS.WAITLIST, entryId);
+  const sessionRef = doc(db, COMMUNITY_COLLECTIONS.SESSIONS, sessionId);
+
+  const sessionSnap = await getDoc(sessionRef);
+  if (!sessionSnap.exists()) throw new Error('SESSION_NOT_FOUND');
+  const session = sessionSnap.data();
+
+  // Raise capacity by 1 so the seat is available.
+  const newMax =
+    typeof session.maxAttendees === 'number' ? session.maxAttendees + 1 : null;
+  const newSpots =
+    typeof session.spotsLeft === 'number' ? session.spotsLeft + 1 : null;
+  await updateDoc(sessionRef, {
+    ...(newMax !== null ? { maxAttendees: newMax } : {}),
+    ...(newSpots !== null ? { spotsLeft: newSpots } : {}),
+    updatedAt: serverTimestamp(),
+  });
+
+  // Register through the standard transactional path so spotsLeft is
+  // decremented and the registration doc is shaped correctly.
+  await registerForCommunitySession(db, userId, sessionId, session);
+
+  // Flip the waitlist entry.
+  await updateDoc(entryRef, {
+    status: WAITLIST_STATUS.PROMOTED,
+    promotedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  console.log('[communityService] Promoted from waitlist:', entryId);
+  return entryId;
+};
+
 export default {
   COMMUNITY_COLLECTIONS,
   COMMUNITY_SESSION_TYPE_CONFIG,
@@ -484,5 +717,10 @@ export default {
   getSessionRegistrations,
   getUserCommunityRegistrations,
   duplicateCommunitySession,
-  seedCommunitySessions
+  seedCommunitySessions,
+  joinWaitlist,
+  leaveWaitlist,
+  getSessionWaitlist,
+  getUserWaitlistEntries,
+  promoteFromWaitlist
 };

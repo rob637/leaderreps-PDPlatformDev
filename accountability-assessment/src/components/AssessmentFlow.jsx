@@ -127,6 +127,15 @@ const AssessmentFlow = ({ onComplete }) => {
       exit={{ opacity: 0 }}
       className="min-h-screen flex flex-col p-4 md:p-8"
     >
+      {/* Logo Header */}
+      <header className="max-w-6xl mx-auto w-full flex items-center justify-between mb-4">
+        <img
+          src="/logo-full.png"
+          alt="LeaderReps"
+          className="h-16 md:h-20"
+        />
+      </header>
+
       {/* Header */}
       <div className="max-w-2xl mx-auto w-full">
         <div className="text-center mb-4">

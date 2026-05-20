@@ -1,20 +1,34 @@
 // src/components/layout/MobileBottomNav.jsx
 import React from 'react';
-import { LayoutDashboard, BookOpen, Megaphone, Zap } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Megaphone, Zap, Calendar } from 'lucide-react';
 import { LockerIcon } from '../icons';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { useDailyPlan } from '../../hooks/useDailyPlan';
+import { useDailyPlan, isFoundationPhase as resolveIsFoundation, isAscentPhase as resolveIsAscent } from '../../hooks/useDailyPlan';
+import { useRevampFlag } from '../../hooks/useRevampFlag';
 
 const MobileBottomNav = ({ currentScreen }) => {
   const { navigate } = useAppServices();
   const { currentPhase } = useDailyPlan();
-  
+  const revampEnabled = useRevampFlag();
+
   // Conditioning and Coaching are only available during Foundation phase (not during Prep)
-  // Available once user enters Level 1, regardless of prep completion status
-  const isFoundationPhase = currentPhase?.id === 'start' || currentPhase?.id === 'post-start';
-  
-  // 5 core mobile buttons - some are phase-gated
-  const navItems = [
+  // Available once user enters Level 1, regardless of prep completion status.
+  // Historical name retained: covers both Foundation and Ascent here.
+  const isFoundationPhase = resolveIsFoundation(currentPhase) || resolveIsAscent(currentPhase);
+
+  // Revamp nav: 5 items in bottom bar (Locker accessed via header avatar)
+  // Order: Dashboard, Events, Content, Conditioning, Ask a Trainer
+  // (screen key 'ask-coach' is kept for backward compatibility; label is 'Ask a Trainer'.)
+  const revampNavItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, screen: 'dashboard' },
+    { id: 'events', label: 'Events', icon: Calendar, screen: 'events' },
+    { id: 'library', label: 'Content', icon: BookOpen, screen: 'library' },
+    { id: 'conditioning-light', label: 'Conditioning', icon: Zap, screen: 'conditioning-light', requiresFoundation: true },
+    { id: 'ask-coach', label: 'Ask a Trainer', icon: Megaphone, screen: 'ask-coach', requiresFoundation: true },
+  ];
+
+  // Legacy nav: 5 core mobile buttons - some are phase-gated
+  const legacyNavItems = [
     {
       id: 'dashboard',
       label: 'Dashboard',
@@ -49,6 +63,8 @@ const MobileBottomNav = ({ currentScreen }) => {
     }
   ];
 
+  const navItems = revampEnabled ? revampNavItems : legacyNavItems;
+
   const handleNavClick = (item) => {
     if (!navigate || typeof navigate !== 'function') return;
     navigate(item.screen);
@@ -62,12 +78,13 @@ const MobileBottomNav = ({ currentScreen }) => {
     if (item.requiresFoundation && !isFoundationPhase) {
       return false;
     }
-    // Filter out the currently active screen
+    // Revamp nav: keep all 5 items (highlight active in render); legacy nav: hide active
+    if (revampEnabled) return true;
     return item.screen !== currentScreen;
   });
-  
-  // Ensure we only show 4 items max
-  if (visibleItems.length > 4) {
+
+  // Legacy nav cap: ensure we only show 4 items max. Revamp nav always shows all 5.
+  if (!revampEnabled && visibleItems.length > 4) {
     visibleItems = visibleItems.slice(0, 4);
   }
 

@@ -356,7 +356,7 @@ const ROICalculatorLeadsManager = () => {
                       <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
                         <div className="text-xs text-slate-500 mb-1">Team Size</div>
                         <div className="font-medium text-slate-800 dark:text-white">
-                          {lead.inputs?.teamSize} per leader
+                          {lead.inputs?.avgTeamSize ?? lead.inputs?.teamSize} per leader
                         </div>
                       </div>
                       <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
@@ -366,21 +366,35 @@ const ROICalculatorLeadsManager = () => {
                         </div>
                       </div>
                       <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
-                        <div className="text-xs text-slate-500 mb-1">Turnover Rate</div>
+                        <div className="text-xs text-slate-500 mb-1">Department</div>
                         <div className="font-medium text-slate-800 dark:text-white">
-                          {lead.inputs?.turnoverRate}%
+                          {lead.results?.departmentName || lead.inputs?.department || '—'}
+                        </div>
+                      </div>
+                      <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
+                        <div className="text-xs text-slate-500 mb-1">Total Turnover</div>
+                        <div className="font-medium text-slate-800 dark:text-white">
+                          {(lead.results?.totalTurnover ?? lead.inputs?.currentTurnover ?? lead.inputs?.turnoverRate) ?? '—'}%
+                        </div>
+                      </div>
+                      <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
+                        <div className="text-xs text-slate-500 mb-1">Regretted Attrition</div>
+                        <div className="font-medium text-slate-800 dark:text-white">
+                          {lead.results?.regrettedAttrition != null
+                            ? `${lead.results.regrettedAttrition}%${lead.results.regrettedAttritionProvided ? '' : ' (default)'}`
+                            : '—'}
                         </div>
                       </div>
                       <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
                         <div className="text-xs text-slate-500 mb-1">Investment/Leader</div>
                         <div className="font-medium text-slate-800 dark:text-white">
-                          {formatCurrency(lead.inputs?.investmentPerLeader)}
+                          {formatCurrency(lead.inputs?.trainingInvestment ?? lead.inputs?.investmentPerLeader)}
                         </div>
                       </div>
                       <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
                         <div className="text-xs text-slate-500 mb-1">Payback Period</div>
                         <div className="font-medium text-slate-800 dark:text-white">
-                          {lead.results?.paybackMonths} months
+                          {lead.results?.paybackMonths != null ? `${lead.results.paybackMonths} months` : '—'}
                         </div>
                       </div>
                       <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
@@ -390,36 +404,62 @@ const ROICalculatorLeadsManager = () => {
                         </div>
                       </div>
                     </div>
-                    
-                    {/* Savings Breakdown */}
+
+                    {/* Manager Effectiveness ROI scenarios */}
                     <div className="bg-corporate-navy dark:bg-slate-900 rounded-lg p-4 text-white">
-                      <div className="text-sm font-medium mb-3 text-white/80">Savings Breakdown</div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div>
-                          <div className="text-xs text-white/50">Turnover</div>
-                          <div className="text-emerald-400 font-medium">
-                            {formatCurrency(lead.results?.turnoverSavings)}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-xs text-white/50">Productivity</div>
-                          <div className="text-cyan-400 font-medium">
-                            {formatCurrency(lead.results?.productivityGains)}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-xs text-white/50">Absenteeism</div>
-                          <div className="text-yellow-400 font-medium">
-                            {formatCurrency(lead.results?.absenteeismSavings)}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-xs text-white/50">Engagement</div>
-                          <div className="text-orange-400 font-medium">
-                            {formatCurrency(lead.results?.engagementValue)}
-                          </div>
-                        </div>
+                      <div className="text-sm font-medium mb-3 text-white/80">
+                        Manager Effectiveness ROI — Scenarios
                       </div>
+                      {Array.isArray(lead.results?.scenarios) && lead.results.scenarios.length > 0 ? (
+                        <div className="space-y-2">
+                          {lead.results.scenarios.map((s, i) => (
+                            <div key={s.id || i} className="flex items-baseline justify-between gap-3 border-b border-white/10 pb-2 last:border-0">
+                              <div className="text-xs">
+                                <span className="text-white/50">{i + 1}.</span>{' '}
+                                <span className="text-white">{s.title}</span>
+                                {s.illustrative && <span className="text-white/40 italic ml-1">(illustrative)</span>}
+                              </div>
+                              <div className={`font-medium whitespace-nowrap ${i === 0 ? 'text-emerald-400' : i === 1 ? 'text-cyan-400' : 'text-orange-400'}`}>
+                                {formatCurrency(s.value)}
+                              </div>
+                            </div>
+                          ))}
+                          {lead.results?.conservativeValue != null && (
+                            <div className="flex items-baseline justify-between pt-2 mt-1 border-t border-white/20 text-sm">
+                              <span className="text-white/70">Conservative annual value (per leader)</span>
+                              <span className="font-bold text-white">{formatCurrency(lead.results.conservativeValue)}</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        // Legacy leads (pre Manager Effectiveness ROI rename)
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div>
+                            <div className="text-xs text-white/50">Turnover</div>
+                            <div className="text-emerald-400 font-medium">
+                              {formatCurrency(lead.results?.turnoverSavings)}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-white/50">Productivity</div>
+                            <div className="text-cyan-400 font-medium">
+                              {formatCurrency(lead.results?.productivityGains)}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-white/50">Absenteeism</div>
+                            <div className="text-yellow-400 font-medium">
+                              {formatCurrency(lead.results?.absenteeismSavings)}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-white/50">Engagement</div>
+                            <div className="text-orange-400 font-medium">
+                              {formatCurrency(lead.results?.engagementValue)}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     
                     {/* AI Insights */}

@@ -13,11 +13,12 @@ import {
   ToggleLeft, 
   ToggleRight,
   Info,
-  AlertTriangle,
-  ArrowLeft
+  AlertTriangle
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
+import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
 import { Button } from '../ui';
+import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
 
 // Feature Categories
 const CATEGORIES = {
@@ -199,7 +200,7 @@ const FeaturesLab = () => {
           </div>
           <button 
             onClick={() => toggleFeature(feature.id)}
-            className={`transition-colors ${isEnabled ? 'text-corporate-teal' : 'text-slate-400'}`}
+            className={`transition-colors ${isEnabled ? 'text-corporate-teal-ink' : 'text-slate-400'}`}
           >
             {isEnabled ? <ToggleRight className="w-8 h-8" /> : <ToggleLeft className="w-8 h-8" />}
           </button>
@@ -217,7 +218,7 @@ const FeaturesLab = () => {
             {feature.status}
           </span>
           {isEnabled && (
-            <span className="text-xs font-bold text-corporate-teal flex items-center gap-1">
+            <span className="text-xs font-bold text-corporate-teal-ink flex items-center gap-1">
               <Zap className="w-3 h-3" /> Active
             </span>
           )}
@@ -229,12 +230,13 @@ const FeaturesLab = () => {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-800 p-6 md:p-10 animate-fade-in">
       <div className="max-w-6xl mx-auto space-y-8">
+        <BreadcrumbNav
+          items={getBreadcrumbs('features-lab')}
+          navigate={navigate}
+        />
         
         {/* Header */}
         <header className="space-y-4">
-          <Button onClick={() => navigate('app-settings')} variant="nav-back" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Settings
-          </Button>
           <div className="flex items-center gap-3">
             <div className="p-3 bg-corporate-navy rounded-xl text-white shadow-lg">
               <Beaker className="w-8 h-8" />

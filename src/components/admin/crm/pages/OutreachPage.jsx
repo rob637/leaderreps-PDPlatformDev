@@ -12,6 +12,7 @@ import useGmailStore from '../stores/gmailStore';
 import * as gmail from '../lib/gmail';
 import { formatDistanceToNow } from 'date-fns';
 import { SequenceBuilder, SequenceEnrollmentsDashboard, EmailQueue } from '../components/sequences';
+import { useConfirm } from '../components/ConfirmDialog';
 
 const CHANNEL_ICONS = {
   email: Mail,
@@ -62,6 +63,7 @@ export default function OutreachPage() {
   const enrollmentStats = getEnrollmentStats();
   
   const activityStats = getActivityStats();
+  const confirm = useConfirm();
   
   useEffect(() => {
     initialize(activeEmail);
@@ -79,13 +81,25 @@ export default function OutreachPage() {
   };
   
   const handleDeleteTemplate = async (templateId) => {
-    if (confirm('Delete this template?')) {
+    const ok = await confirm({
+      title: 'Delete this template?',
+      message: 'This action cannot be undone.',
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
+    if (ok) {
       await deleteTemplate(templateId);
     }
   };
   
   const handleDeleteSequence = async (sequenceId) => {
-    if (confirm('Delete this sequence?')) {
+    const ok = await confirm({
+      title: 'Delete this sequence?',
+      message: 'Active enrollments will be cancelled.',
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
+    if (ok) {
       await deleteSequence(sequenceId);
     }
   };

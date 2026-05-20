@@ -74,10 +74,10 @@ const Text = React.forwardRef(({
     error: 'text-sm text-red-600',
     // Success text
     success: 'text-sm text-green-600',
-    // Teal accent text
-    accent: 'text-corporate-teal',
+    // Teal accent text (AA-compliant on light surfaces)
+    accent: 'text-corporate-teal-ink dark:text-corporate-teal-soft',
     // Orange accent text
-    highlight: 'text-corporate-orange font-semibold',
+    highlight: 'text-corporate-orange-ink dark:text-corporate-orange font-semibold',
   };
 
   return (

@@ -557,7 +557,7 @@ const NotificationPreferencesWidget = ({ onClose, onComplete }) => {
                       {strategy.name}
                     </h4>
                     {strategy.default && (
-                      <span className="text-[10px] px-1.5 py-0.5 bg-corporate-teal/10 text-corporate-teal rounded font-medium">
+                      <span className="text-[10px] px-1.5 py-0.5 bg-corporate-teal/10 text-corporate-teal-ink rounded font-medium">
                         RECOMMENDED
                       </span>
                     )}

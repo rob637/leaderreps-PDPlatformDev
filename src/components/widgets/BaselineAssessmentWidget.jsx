@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   ClipboardCheck, CheckCircle, ChevronRight, Clock, Target, 
   BarChart2
@@ -84,7 +85,7 @@ const BaselineAssessmentWidget = () => {
             </div>
             <button
               onClick={() => setShowModal(true)}
-              className="text-sm font-medium text-corporate-teal hover:text-corporate-teal/80 hover:underline transition-colors"
+              className="text-sm font-medium text-corporate-teal-ink hover:text-corporate-teal/80 hover:underline transition-colors"
             >
               View or Update
             </button>
@@ -92,8 +93,8 @@ const BaselineAssessmentWidget = () => {
         </Card>
 
         {/* Modal for viewing/updating */}
-        {showModal && (
-          <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
+        {showModal && typeof document !== 'undefined' && createPortal(
+          <div className="fixed inset-0 z-[1000] flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
             <div className="relative max-w-xl w-full my-auto">
               <BaselineAssessmentSimple 
                 onComplete={handleAssessmentComplete}
@@ -102,7 +103,8 @@ const BaselineAssessmentWidget = () => {
                 initialData={latestAssessment}
               />
             </div>
-          </div>
+          </div>,
+          document.body,
         )}
       </>
     );
@@ -162,8 +164,8 @@ const BaselineAssessmentWidget = () => {
       </Card>
 
       {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
+      {showModal && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[1000] flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
           <div className="relative max-w-xl w-full my-auto">
             <BaselineAssessmentSimple 
               onComplete={handleAssessmentComplete}
@@ -172,7 +174,8 @@ const BaselineAssessmentWidget = () => {
               initialData={null}
             />
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

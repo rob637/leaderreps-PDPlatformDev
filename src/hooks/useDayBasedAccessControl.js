@@ -76,16 +76,12 @@ export const useDayBasedAccessControl = () => {
   }, [currentDayNumber]);
 
   // --- UNLOCKED DAYS ---
+  // May 2026 three-phase refactor: day-based gating removed. All days in the
+  // legacy daily plan are exposed; consumers should rely on phaseKey instead.
   const unlockedDays = useMemo(() => {
     if (!dailyPlan || dailyPlan.length === 0) return [];
-    
-    return dailyPlan.filter(day => {
-      // Prep days are always accessible
-      if (day.dayNumber < 0) return true;
-      // All days up to current are unlocked
-      return day.dayNumber <= currentDayNumber;
-    });
-  }, [dailyPlan, currentDayNumber]);
+    return dailyPlan;
+  }, [dailyPlan]);
 
   // --- AGGREGATE UNLOCKED ITEMS BY ZONE ---
   const accessData = useMemo(() => {
@@ -167,14 +163,12 @@ export const useDayBasedAccessControl = () => {
       showPMReflection: checkVisibility('pm-bookend', 'showPMReflection', false),
       showScorecard: checkVisibility('scorecard', 'showScorecard', false),
       
-      // Zone Access (derived from CSV structure)
-      // Community zone opens once user is in Foundation phase
-      isCommunityZoneOpen: prepStatus.isComplete || effectiveDayNumber >= 1,
-      // Coaching zone opens when user enters Foundation phase (not during Prep)
-      isCoachingZoneOpen: effectiveDayNumber >= 1,
-      isCoaching1on1Window: effectiveDayNumber >= 1, // Available throughout Foundation
-      // Conditioning zone opens when user enters Foundation phase (not during Prep)
-      isConditioningZoneOpen: effectiveDayNumber >= 1,
+      // Zone Access \u2014 May 2026 three-phase refactor
+      // All zones open once Onboarding (prep) is complete. No more day-gating.
+      isCommunityZoneOpen: prepStatus.isComplete,
+      isCoachingZoneOpen: prepStatus.isComplete,
+      isCoaching1on1Window: prepStatus.isComplete,
+      isConditioningZoneOpen: prepStatus.isComplete,
       
       // Content Zone is always open but items are gated
       isContentZoneOpen: true,
@@ -182,42 +176,34 @@ export const useDayBasedAccessControl = () => {
       // Locker is always available
       isLockerZoneOpen: true
     };
-  }, [currentDayData, effectiveDayNumber, prepStatus.isComplete]);
+  }, [currentDayData, prepStatus.isComplete]);
 
   // --- HELPER FUNCTIONS ---
-  const isContentUnlocked = (contentId) => {
-    if (!contentId) return false;
-    const normalizedId = String(contentId).toLowerCase();
-    return accessData.unlockedContent.some(id => 
-      String(id).toLowerCase() === normalizedId
-    ) || unlockedContentIds.some(id => 
-      String(id).toLowerCase() === normalizedId
-    );
+  //
+  // May 2026 demolition: day/week/milestone gating has been removed. The new
+  // three-phase model relies on phaseKey + trainer approvals (foundationCompleted,
+  // ascentApproved). For backward compatibility we keep these helpers but make
+  // them open-by-default so existing consumers continue to work without listing
+  // every content/coaching id explicitly.
+  //
+  // Onboarding users still hit the prep gate via zoneVisibility flags above.
+
+  const isContentUnlocked = () => true;
+
+  const isCommunityUnlocked = () => {
+    return zoneVisibility.isCommunityZoneOpen !== false;
   };
 
-  const isCommunityUnlocked = (communityId) => {
-    if (!zoneVisibility.isCommunityZoneOpen) return false;
-    if (!communityId) return true; // Zone is open, item check is optional
-    return accessData.unlockedCommunity.some(id => id === communityId);
+  const isCoachingUnlocked = () => {
+    return zoneVisibility.isCoachingZoneOpen !== false;
   };
 
-  const isCoachingUnlocked = (coachingId) => {
-    if (!zoneVisibility.isCoachingZoneOpen) return false;
-    if (!coachingId) return true; // Zone is open, item check is optional
-    return accessData.unlockedCoaching.some(id => id === coachingId);
-  };
+  const isRepUnlocked = () => true;
 
-  const isRepUnlocked = (repId) => {
-    if (!repId) return false;
-    return accessData.unlockedReps.some(id => id === repId);
-  };
-
-  // Check if a specific day is accessible
-  const isDayUnlocked = (dayNumber) => {
-    if (dayNumber < 0) return true; // Prep days always accessible
-    if (!prepStatus.isComplete) return false; // Blocked at prep gate
-    return dayNumber <= currentDayNumber;
-  };
+  // Check if a specific day is accessible — open in the new model.
+  const isDayUnlocked = () => true;
+  // The legacy implementation gated days behind currentDayNumber; that
+  // behaviour has been removed by Commit 3 of the three-phase refactor.
 
   return {
     loading,

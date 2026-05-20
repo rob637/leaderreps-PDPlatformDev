@@ -59,10 +59,10 @@ export const Badge = ({ children, variant = 'default', size = 'md' }) => {
   
   // Variant
   if (variant === 'primary') baseStyle += ` bg-corporate-navy/10 text-corporate-navy`;
-  else if (variant === 'success') baseStyle += ` bg-corporate-teal/10 text-corporate-teal`;
+  else if (variant === 'success') baseStyle += ` bg-corporate-teal/10 text-corporate-teal-ink`;
   else if (variant === 'warning') baseStyle += ` bg-corporate-orange/10 text-corporate-orange`;
-  else if (variant === 'purple') baseStyle += ` bg-corporate-teal/10 text-corporate-teal`;
-  else baseStyle += ` bg-corporate-teal/10 text-corporate-teal`;
+  else if (variant === 'purple') baseStyle += ` bg-corporate-teal/10 text-corporate-teal-ink`;
+  else baseStyle += ` bg-corporate-teal/10 text-corporate-teal-ink`;
   
   return (
     <span className={baseStyle} style={{ fontFamily: 'var(--font-body)' }}>

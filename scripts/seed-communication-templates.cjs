@@ -154,7 +154,7 @@ Participant Details:
     id: 'coaching_reminder_leader_day_before',
     category: 'coaching',
     channel: 'all',
-    name: 'Session Reminder - Leader (24h)',
+    name: 'Event Reminder - Leader (24h)',
     subject: '📅 Tomorrow: {{sessionTitle}}',
     headline: '📅 Session Tomorrow',
     body: `Hi {{userName}},
@@ -178,7 +178,7 @@ Session Details:
     id: 'coaching_reminder_leader_hour_before',
     category: 'coaching',
     channel: 'all',
-    name: 'Session Reminder - Leader (1h)',
+    name: 'Event Reminder - Leader (1h)',
     subject: '⏰ Starting Soon: {{sessionTitle}}',
     headline: '⏰ Starting Soon',
     body: `Hi {{userName}},
@@ -202,7 +202,7 @@ Session Details:
     id: 'coaching_reminder_facilitator_day_before',
     category: 'coaching',
     channel: 'email',
-    name: 'Session Reminder - Facilitator (24h)',
+    name: 'Event Reminder - Facilitator (24h)',
     subject: '📅 Tomorrow: {{userName}} - {{sessionTitle}}',
     headline: '📅 Session Tomorrow',
     body: `You have a coaching session scheduled for tomorrow.
@@ -227,7 +227,7 @@ Participant:
     id: 'coaching_reminder_facilitator_hour_before',
     category: 'coaching',
     channel: 'email',
-    name: 'Session Reminder - Facilitator (1h)',
+    name: 'Event Reminder - Facilitator (1h)',
     subject: '⏰ Starting Soon: {{userName}} - {{sessionTitle}}',
     headline: '⏰ Starting Soon',
     body: `You have a coaching session starting in about an hour.
@@ -246,54 +246,6 @@ Participant:
     buttonText: 'Open LeaderReps',
     footerText: 'Calendar invite attached for your convenience.',
     variables: ['userName', 'userEmail', 'sessionTitle', 'sessionDate', 'sessionTime'],
-    enabled: true
-  },
-
-  // ============================================
-  // MILESTONE TEMPLATES
-  // ============================================
-  {
-    id: 'milestone_completion',
-    category: 'milestone',
-    channel: 'email',
-    name: 'Milestone Completion',
-    subject: '🎉 Milestone Achieved: {{milestoneName}}',
-    headline: 'Congratulations!',
-    body: `Hi {{userName}},
-
-Great news! Your trainer has certified your completion of:
-
-🏆 {{milestoneName}}
-
-This is a significant achievement in your leadership development journey. Keep up the excellent work!`,
-    smsBody: 'LeaderReps: Congratulations! You completed {{milestoneName}}! 🎉',
-    pushTitle: 'Milestone Achieved!',
-    pushBody: 'You completed {{milestoneName}}! 🎉',
-    buttonText: 'View Progress',
-    footerText: 'Keep building your leadership skills!',
-    variables: ['userName', 'milestoneName', 'milestone'],
-    enabled: true
-  },
-  {
-    id: 'graduation',
-    category: 'milestone',
-    channel: 'email',
-    name: 'Program Graduation',
-    subject: '🎓 Congratulations Graduate!',
-    headline: '🎓 You Did It!',
-    body: `Hi {{userName}},
-
-CONGRATULATIONS! You have successfully completed all 5 milestones and graduated from the LeaderReps Leadership Development Program!
-
-This is a tremendous achievement. You've demonstrated commitment, growth, and dedication to becoming a more effective leader.
-
-Click below to view and download your certificate of completion.`,
-    smsBody: 'LeaderReps: CONGRATULATIONS! 🎓 You graduated from the Leadership Program! View your certificate in the app.',
-    pushTitle: 'Congratulations Graduate! 🎓',
-    pushBody: 'You completed the Leadership Development Program!',
-    buttonText: 'View Certificate',
-    footerText: 'Thank you for growing with LeaderReps!',
-    variables: ['userName'],
     enabled: true
   },
 

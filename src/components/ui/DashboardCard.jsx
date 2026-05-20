@@ -14,7 +14,7 @@ export const DashboardCard = ({ title, description, onClick, color, bgColor, bad
         {/* Icon */}
         <div
           className={`w-14 h-14 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0 sm:mx-auto sm:mb-4 transition-colors
-            ${bgColor || 'bg-corporate-teal/10'} ${color || 'text-corporate-teal'} group-hover:bg-opacity-80`}
+            ${bgColor || 'bg-corporate-teal/10'} ${color || 'text-corporate-teal-ink'} group-hover:bg-opacity-80`}
         >
           <Icon className="w-7 h-7 sm:w-10 sm:h-10" />
         </div>

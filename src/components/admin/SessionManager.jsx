@@ -32,7 +32,9 @@ import {
   MessageSquare,
   UserCheck,
   UserX,
-  ArrowUpDown
+  ArrowUpDown,
+  Archive,
+  ArchiveRestore
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { 
@@ -44,7 +46,8 @@ import {
   updateDoc,
   deleteDoc,
   serverTimestamp,
-  orderBy
+  orderBy,
+  writeBatch
 } from 'firebase/firestore';
 import {
   COACHING_SESSIONS_COLLECTION,
@@ -92,6 +95,31 @@ const SESSION_TYPE_CONFIG = {
     color: 'bg-green-100 dark:bg-green-900/30 text-green-800 border-green-300',
     icon: '👤',
     defaultMaxAttendees: 1
+  },
+  // Community-origin types — merged into Events May 2026
+  community_event: {
+    label: 'Community Event',
+    color: 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 border-orange-300',
+    icon: '🎉',
+    defaultMaxAttendees: 50
+  },
+  accountability_pod: {
+    label: 'Accountability Pod',
+    color: 'bg-teal-100 dark:bg-teal-900/30 text-teal-800 border-teal-300',
+    icon: '🤝',
+    defaultMaxAttendees: 8
+  },
+  mastermind: {
+    label: 'Mastermind',
+    color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 border-blue-300',
+    icon: '🧠',
+    defaultMaxAttendees: 12
+  },
+  networking: {
+    label: 'Networking',
+    color: 'bg-green-100 dark:bg-green-900/30 text-green-800 border-green-300',
+    icon: '🌐',
+    defaultMaxAttendees: 30
   }
 };
 
@@ -175,7 +203,7 @@ const formatTimeForDisplay = (time24) => {
  * - Send notes and notifications
  * - Manage session status
  */
-const SessionManager = () => {
+const SessionManager = ({ embedded = false } = {}) => {
   const { db } = useAppServices();
   
   // Data state
@@ -192,6 +220,12 @@ const SessionManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('date'); // 'date', 'title', 'attendees', 'type', 'status'
   const [sortOrder, setSortOrder] = useState('asc');
+  // Archive controls — Ryan's "79 stale events" cleanup (May 2026 meeting).
+  // Default view hides past + archived so the list stays current; admins can
+  // opt in to see either when triaging.
+  const [hidePast, setHidePast] = useState(true);
+  const [showArchived, setShowArchived] = useState(false);
+  const [archivingPast, setArchivingPast] = useState(false);
   
   // Handle column header click to toggle sort
   const handleSort = (field) => {
@@ -282,7 +316,23 @@ const SessionManager = () => {
   // Filtered and sorted sessions
   const filteredSessions = useMemo(() => {
     let filtered = sessions;
-    
+
+    // Archive gate — sessions with archived === true are hidden by default.
+    // Toggle `showArchived` flips this to archived-only so admins can review
+    // and restore if needed.
+    if (showArchived) {
+      filtered = filtered.filter(s => s.archived === true);
+    } else {
+      filtered = filtered.filter(s => s.archived !== true);
+    }
+
+    // Past gate — hide sessions whose date is in the past unless the admin
+    // explicitly opts in. Date is stored as 'YYYY-MM-DD' string.
+    if (hidePast && !showArchived) {
+      const today = new Date().toISOString().split('T')[0];
+      filtered = filtered.filter(s => !s.date || s.date >= today);
+    }
+
     // Filter by status
     if (filterStatus !== 'all') {
       filtered = filtered.filter(s => s.status === filterStatus);
@@ -329,7 +379,66 @@ const SessionManager = () => {
     });
     
     return filtered;
-  }, [sessions, filterStatus, filterType, searchTerm, sortBy, sortOrder, getSessionRegistrations]);
+  }, [sessions, filterStatus, filterType, searchTerm, sortBy, sortOrder, getSessionRegistrations, hidePast, showArchived]);
+
+  // Bulk archive past events — Ryan's "79 stale events" cleanup. Marks every
+  // session with date < today as archived. Idempotent (already-archived rows
+  // are skipped). Confirms before writing.
+  const pastEventCount = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return sessions.filter(s => s.archived !== true && s.date && s.date < today).length;
+  }, [sessions]);
+
+  const handleArchivePastEvents = useCallback(async () => {
+    if (!db || archivingPast) return;
+    const today = new Date().toISOString().split('T')[0];
+    const toArchive = sessions.filter(s => s.archived !== true && s.date && s.date < today);
+    if (toArchive.length === 0) {
+      alert('Nothing to archive — no past events in view.');
+      return;
+    }
+    const ok = window.confirm(
+      `Archive ${toArchive.length} past event${toArchive.length === 1 ? '' : 's'}? `
+      + 'They will be hidden from the default view but kept in Firestore — '
+      + 'toggle "Show archived" to review or restore them.'
+    );
+    if (!ok) return;
+    setArchivingPast(true);
+    try {
+      // writeBatch caps at 500 ops — chunk just in case the cleanup is huge.
+      const CHUNK = 400;
+      for (let i = 0; i < toArchive.length; i += CHUNK) {
+        const batch = writeBatch(db);
+        toArchive.slice(i, i + CHUNK).forEach((s) => {
+          batch.update(doc(db, COACHING_SESSIONS_COLLECTION, s.id), {
+            archived: true,
+            archivedAt: serverTimestamp(),
+            archivedReason: 'bulk-past',
+          });
+        });
+        await batch.commit();
+      }
+    } catch (err) {
+      console.error('[SessionManager] bulk archive failed:', err);
+      alert('Archive failed: ' + (err?.message || err));
+    } finally {
+      setArchivingPast(false);
+    }
+  }, [db, archivingPast, sessions]);
+
+  const handleToggleArchive = useCallback(async (session) => {
+    if (!db || !session?.id) return;
+    try {
+      await updateDoc(doc(db, COACHING_SESSIONS_COLLECTION, session.id), {
+        archived: !session.archived,
+        archivedAt: session.archived ? null : serverTimestamp(),
+        archivedReason: session.archived ? null : 'manual',
+      });
+    } catch (err) {
+      console.error('[SessionManager] toggle archive failed:', err);
+      alert('Archive update failed: ' + (err?.message || err));
+    }
+  }, [db]);
 
   // Session CRUD Operations
   const handleCreateSession = () => {
@@ -619,74 +728,92 @@ const SessionManager = () => {
     );
   }
 
+  // Derived KPI sets. We can't trust session.status to keep up with the
+  // calendar — nothing flips 'scheduled' to 'completed' once the date
+  // passes, which is why the old counters showed 74 upcoming / 0 completed.
+  // Anchor everything to today's date string (Chicago/local YYYY-MM-DD)
+  // and treat status only as a cancellation flag.
+  const todayStr = new Date().toISOString().split('T')[0];
+  const upcomingCount = sessions.filter(
+    (s) => s.archived !== true && s.status !== 'cancelled' && s.date && s.date >= todayStr
+  ).length;
+  const completedCount = sessions.filter(
+    (s) => s.status !== 'cancelled' && s.date && s.date < todayStr
+  ).length;
+  const registeredCount = registrations.filter((r) => r.status === 'registered').length;
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-corporate-navy">Session Manager</h2>
-          <p className="text-slate-500 dark:text-slate-400">Create, edit, and manage coaching sessions</p>
+      {/* Header — suppressed when embedded inside EventsManager (which renders
+          its own "Events Management" header). Standalone usage still shows it. */}
+      {!embedded && (
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-corporate-navy">Session Manager</h2>
+            <p className="text-slate-500 dark:text-slate-400">Create, edit, and manage coaching sessions</p>
+          </div>
+          <button
+            onClick={handleCreateSession}
+            className="flex items-center gap-2 px-4 py-2 bg-corporate-teal text-white rounded-lg hover:bg-teal-700 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            New Session
+          </button>
         </div>
-        <button
-          onClick={handleCreateSession}
-          className="flex items-center gap-2 px-4 py-2 bg-corporate-teal text-white rounded-lg hover:bg-teal-700 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          New Session
-        </button>
-      </div>
+      )}
+      {embedded && (
+        <div className="flex justify-end">
+          <button
+            onClick={handleCreateSession}
+            className="flex items-center gap-2 px-4 py-2 bg-corporate-teal text-white rounded-lg hover:bg-teal-700 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            New Session
+          </button>
+        </div>
+      )}
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div
+          className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700"
+          title="Sessions with a date today or later that haven't been cancelled or archived."
+        >
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
               <Calendar className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-corporate-navy">
-                {sessions.filter(s => s.status === 'scheduled').length}
-              </p>
+              <p className="text-2xl font-bold text-corporate-navy">{upcomingCount}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">Upcoming</p>
             </div>
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+        <div
+          className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700"
+          title="Active registrations across all sessions (status = registered)."
+        >
           <div className="flex items-center gap-3">
             <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
               <Users className="w-5 h-5 text-green-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-corporate-navy">
-                {registrations.filter(r => r.status === 'registered').length}
-              </p>
+              <p className="text-2xl font-bold text-corporate-navy">{registeredCount}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">Registrations</p>
             </div>
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+        <div
+          className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700"
+          title="Sessions whose date is in the past (not cancelled). Includes archived sessions."
+        >
           <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
               <CheckCircle className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-corporate-navy">
-                {sessions.filter(s => s.status === 'completed').length}
-              </p>
+              <p className="text-2xl font-bold text-corporate-navy">{completedCount}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">Completed</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-              <UserCheck className="w-5 h-5 text-orange-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-corporate-navy">
-                {registrations.filter(r => r.status === 'attended').length}
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Attended</p>
             </div>
           </div>
         </div>
@@ -732,6 +859,38 @@ const SessionManager = () => {
                 <option key={key} value={key}>{config.label}</option>
               ))}
             </select>
+
+            {/* Archive controls */}
+            <label className="inline-flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hidePast}
+                onChange={(e) => setHidePast(e.target.checked)}
+                disabled={showArchived}
+                className="w-3.5 h-3.5 rounded border-slate-300 text-corporate-teal focus:ring-corporate-teal disabled:opacity-40"
+              />
+              Hide past
+            </label>
+            <label className="inline-flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showArchived}
+                onChange={(e) => setShowArchived(e.target.checked)}
+                className="w-3.5 h-3.5 rounded border-slate-300 text-corporate-teal focus:ring-corporate-teal"
+              />
+              Show archived
+            </label>
+            {pastEventCount > 0 && !showArchived && (
+              <button
+                type="button"
+                onClick={handleArchivePastEvents}
+                disabled={archivingPast}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/20 disabled:opacity-50"
+                title={`${pastEventCount} past event${pastEventCount === 1 ? '' : 's'} in Firestore`}
+              >
+                {archivingPast ? 'Archiving…' : `Archive ${pastEventCount} past event${pastEventCount === 1 ? '' : 's'}`}
+              </button>
+            )}
           </div>
           
           {/* View Toggle */}
@@ -826,6 +985,7 @@ const SessionManager = () => {
                     onViewAttendees={() => handleViewAttendees(session)}
                     onUpdateStatus={(status) => handleUpdateStatus(session, status)}
                     onExport={() => handleExportAttendees(session)}
+                    onToggleArchive={() => handleToggleArchive(session)}
                   />
                 ))
               )}
@@ -880,7 +1040,7 @@ const SessionManager = () => {
                   <>
                     <div className={`text-sm font-bold mb-1 ${
                       dayData.dateStr === new Date().toISOString().split('T')[0]
-                        ? 'text-corporate-teal'
+                        ? 'text-corporate-teal-ink'
                         : 'text-slate-600 dark:text-slate-300'
                     }`}>
                       {dayData.day}
@@ -1352,7 +1512,8 @@ const SessionRow = ({
   onDuplicate,
   onViewAttendees, 
   onUpdateStatus,
-  onExport 
+  onExport,
+  onToggleArchive
 }) => {
   const [showActions, setShowActions] = useState(false);
   const typeConfig = SESSION_TYPE_CONFIG[session.sessionType] || SESSION_TYPE_CONFIG.workshop;
@@ -1368,6 +1529,11 @@ const SessionRow = ({
             {session.cohortAccess === 'specific' && (
               <span className="text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 rounded" title={`Restricted to: ${session.cohortIds?.join(', ') || 'none'}`}>
                 🔒 Restricted
+              </span>
+            )}
+            {session.archived && (
+              <span className="text-xs px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded inline-flex items-center gap-1" title="Archived — hidden from default view">
+                <Archive className="w-3 h-3" /> Archived
               </span>
             )}
           </div>
@@ -1393,7 +1559,7 @@ const SessionRow = ({
       <td className="px-4 py-3">
         <button
           onClick={onViewAttendees}
-          className="flex items-center gap-2 text-sm text-corporate-teal hover:underline"
+          className="flex items-center gap-2 text-sm text-corporate-teal-ink hover:underline"
         >
           <Users className="w-4 h-4" />
           {registrations.length}/{session.maxAttendees || 20}
@@ -1468,6 +1634,14 @@ const SessionRow = ({
                   </button>
                 )}
                 <div className="border-t border-slate-100 my-1" />
+                <button
+                  onClick={() => { onToggleArchive?.(); setShowActions(false); }}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50"
+                >
+                  {session.archived
+                    ? (<><ArchiveRestore className="w-4 h-4" /> Restore from archive</>)
+                    : (<><Archive className="w-4 h-4" /> Archive</>)}
+                </button>
                 <button
                   onClick={() => { onDelete(); setShowActions(false); }}
                   className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"

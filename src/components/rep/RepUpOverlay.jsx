@@ -466,7 +466,7 @@ Help them with their question. Be practical and actionable.`;
             onClick={() => setMode('coach')}
             className={`flex-1 px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
               mode === 'coach' 
-                ? 'bg-corporate-teal/10 text-corporate-teal border-b-2 border-corporate-teal' 
+                ? 'bg-corporate-teal/10 text-corporate-teal-ink border-b-2 border-corporate-teal' 
                 : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50'
             }`}
           >
@@ -477,7 +477,7 @@ Help them with their question. Be practical and actionable.`;
             onClick={() => { setMode('reps'); setCoachResponse(null); loadReps(); }}
             className={`flex-1 px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
               mode === 'reps' 
-                ? 'bg-corporate-teal/10 text-corporate-teal border-b-2 border-corporate-teal' 
+                ? 'bg-corporate-teal/10 text-corporate-teal-ink border-b-2 border-corporate-teal' 
                 : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50'
             }`}
           >
@@ -692,7 +692,7 @@ Help them with their question. Be practical and actionable.`;
                   {/* Ask another */}
                   <button
                     onClick={() => { setCoachResponse(null); setChatHistory([]); }}
-                    className="text-sm text-corporate-teal hover:text-corporate-navy font-medium"
+                    className="text-sm text-corporate-teal-ink hover:text-corporate-navy font-medium"
                   >
                     ← Ask another question
                   </button>
@@ -734,7 +734,7 @@ Help them with their question. Be practical and actionable.`;
           <div className="px-4 py-3 bg-slate-50 dark:bg-slate-800 border-t border-slate-100 flex items-center justify-between">
             <button
               onClick={() => setMode('coach')}
-              className="text-xs text-corporate-teal hover:text-corporate-navy font-medium flex items-center gap-1"
+              className="text-xs text-corporate-teal-ink hover:text-corporate-navy font-medium flex items-center gap-1"
             >
               <HelpCircle className="w-3 h-3" />
               Need help?

@@ -130,12 +130,12 @@ const Card = React.forwardRef(({
   const iconColors = {
     none: 'text-corporate-navy',
     navy: 'text-corporate-navy',
-    teal: 'text-corporate-teal',
+    teal: 'text-corporate-teal-ink',
     orange: 'text-corporate-orange',
     
     // Remap standard colors
     red: 'text-corporate-orange',
-    green: 'text-corporate-teal',
+    green: 'text-corporate-teal-ink',
     blue: 'text-corporate-navy',
     yellow: 'text-corporate-orange',
     indigo: 'text-corporate-navy',
@@ -143,14 +143,14 @@ const Card = React.forwardRef(({
     gray: 'text-slate-400',
     
     NAVY: 'text-corporate-navy',
-    TEAL: 'text-corporate-teal',
+    TEAL: 'text-corporate-teal-ink',
     ORANGE: 'text-corporate-orange',
     GOLD: 'text-corporate-gold',
     gold: 'text-corporate-gold',
     
     // Remap uppercase standard colors
     RED: 'text-corporate-orange',
-    GREEN: 'text-corporate-teal',
+    GREEN: 'text-corporate-teal-ink',
     BLUE: 'text-corporate-navy',
     YELLOW: 'text-corporate-orange',
     INDIGO: 'text-corporate-navy',

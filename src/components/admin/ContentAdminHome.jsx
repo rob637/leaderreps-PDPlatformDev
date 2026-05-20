@@ -2,9 +2,11 @@
 // Admin dashboard for content management
 
 import React from 'react';
-import { BookOpen, Film, GraduationCap, ArrowLeft, Settings, Users, BrainCircuit, List, ClipboardEdit, Wrench } from 'lucide-react';
+import { BookOpen, Film, GraduationCap, Settings, Users, BrainCircuit, ClipboardEdit, Wrench } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
+import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
+import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
 
 const COLORS = {
   NAVY: '#002e47',
@@ -454,45 +456,15 @@ const ContentAdminHome = () => {
     }
   ];
 
-  const advancedTypes = [
-    {
-      id: 'community',
-      label: 'Community',
-      icon: Users,
-      description: 'Manage community feed posts and seeds',
-      color: COLORS.TEAL,
-      route: 'admin-community-manager'
-    },
-    {
-      id: 'coaching',
-      label: 'Coaching',
-      icon: BrainCircuit,
-      description: 'Manage AI coaching scenarios and personas',
-      color: COLORS.ORANGE,
-      route: 'admin-coaching-manager'
-    },
-    {
-      id: 'lov',
-      label: 'System Values',
-      icon: List,
-      description: 'Manage dropdown lists and system values',
-      color: COLORS.NAVY,
-      route: 'admin-lov-manager'
-    }
-  ];
-
   return (
     <div className="p-6 w-full min-h-screen bg-slate-50 dark:bg-slate-800">
+      <BreadcrumbNav
+        items={getBreadcrumbs('admin-content-home')}
+        navigate={navigate}
+      />
+
       {/* Header */}
       <div className="mb-8">
-        <button
-          onClick={() => navigate('dashboard')}
-          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 text-slate-500 dark:text-slate-400"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Dashboard
-        </button>
-        
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Settings className="w-8 h-8 text-corporate-teal" />
@@ -518,37 +490,6 @@ const ContentAdminHome = () => {
       {/* Content Type Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {contentTypes.map((type) => {
-          const Icon = type.icon;
-          return (
-            <button
-              key={type.id}
-              onClick={() => navigate(type.route)}
-              className="p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg hover:shadow-xl transition-all text-left border-2 hover:border-opacity-100"
-              style={{ borderColor: `${type.color}40` }}
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <div 
-                  className="w-12 h-12 rounded-lg flex items-center justify-center"
-                  style={{ backgroundColor: `${type.color}20` }}
-                >
-                  <Icon className="w-6 h-6" style={{ color: type.color }} />
-                </div>
-                <h2 className="text-xl font-bold text-corporate-navy">
-                  {type.label}
-                </h2>
-              </div>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                {type.description}
-              </p>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Advanced Types */}
-      <h2 className="text-xl font-bold text-corporate-navy mb-4">Advanced Modules</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {advancedTypes.map((type) => {
           const Icon = type.icon;
           return (
             <button

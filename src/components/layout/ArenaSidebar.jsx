@@ -16,18 +16,21 @@ import {
   AlertTriangle,
   Sparkles,
   Megaphone,
-  Mountain
+  Calendar,
+  MessageCircleQuestion
 } from 'lucide-react';
 import { CommunityIcon, LockerIcon } from '../icons';
 import PWAInstall from '../ui/PWAInstall.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { useDailyPlan } from '../../hooks/useDailyPlan';
+import { useDailyPlan, isFoundationPhase as resolveIsFoundation, isAscentPhase as resolveIsAscent } from '../../hooks/useDailyPlan';
 import { useDayBasedAccessControl } from '../../hooks/useDayBasedAccessControl';
+import { useRevampFlag } from '../../hooks/useRevampFlag';
 
 const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) => {
   const { identityStatement, habitAnchor, whyStatement, isAdmin, user, developmentPlanData } = useAppServices();
   const { prepRequirementsComplete, cohortData, currentPhase } = useDailyPlan();
   const { zoneVisibility } = useDayBasedAccessControl();
+  const revampEnabled = useRevampFlag();
   const [showAnchors, setShowAnchors] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   
@@ -35,14 +38,15 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
   const isPrepComplete = prepRequirementsComplete?.allComplete === true;
   
   // Conditioning and Coaching are only available during Foundation phase (not during Prep)
-  // Available once user enters Level 1, regardless of prep completion status
-  const isFoundationPhase = currentPhase?.id === 'start' || currentPhase?.id === 'post-start';
+  // Available once user enters Level 1, regardless of prep completion status.
+  // Note: "isFoundationPhase" historically meant "in Foundation OR Ascent" here.
+  const isFoundationPhase = resolveIsFoundation(currentPhase) || resolveIsAscent(currentPhase);
   const isContentAvailable = isPrepComplete || isFoundationPhase;
   const isConditioningAvailable = isFoundationPhase;
   const isCoachingAvailable = isFoundationPhase;
   
   // Community is only available during Ascent phase (post-start)
-  const isAscent = currentPhase?.id === 'post-start';
+  const isAscent = resolveIsAscent(currentPhase);
 
   // Developer Mode State
   const [isDeveloperMode, setIsDeveloperMode] = useState(() => {
@@ -79,6 +83,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
     enableConditioning: isConditioningAvailable, // Conditioning only in Foundation
     enableCommunity: isAscent, // Community only available during Ascent phase
     enableCoaching: isCoachingAvailable, // Coaching only in Foundation
+    enableEvents: true, // Revamp: Events available in all phases (Prep + Foundation)
     enableAscentArena: false, // Ascent Arena not yet released — hidden in prod
     
     // FUTURE SCOPE FEATURES (DISABLED)
@@ -87,22 +92,34 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
     enableRoiReport: false,
   };
 
-  const menuItems = [
-    // Rep Coach removed from sidebar - access via floating AI Coach button (password protected)
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'ascent-arena', label: 'Ascent Arena', icon: Mountain, flag: 'enableAscentArena', highlight: true },
-    { id: 'conditioning', label: 'Conditioning', icon: Zap, flag: 'enableConditioning' },
-    // Conditioning accessed via both Dashboard and sidebar - only during Foundation
-    { id: 'development-plan', label: 'Dev Plan', icon: Target, flag: 'enableDevPlan' },
-    
-    { type: 'section', label: 'Resources' },
-    { id: 'community', label: 'Community', icon: CommunityIcon, flag: 'enableCommunity' },
-    { id: 'library', label: 'Content', icon: BookOpen, flag: 'enableReadings' }, // Using enableReadings as proxy for Content
-    { id: 'coaching-hub', label: 'Coaching', icon: Megaphone, flag: 'enableCoaching' },
-    
-    { type: 'section', label: 'Personal' },
-    { id: 'locker', label: 'Your Locker', icon: LockerIcon },
-  ];
+  const menuItems = revampEnabled
+    ? [
+        // Ascent Revamp menu — six core components
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'events', label: 'Events', icon: Calendar, flag: 'enableEvents' },
+        { id: 'library', label: 'Content', icon: BookOpen, flag: 'enableReadings' },
+        { id: 'conditioning-light', label: 'Conditioning', icon: Zap, flag: 'enableConditioning' },
+        { id: 'ask-coach', label: 'Ask a Trainer', icon: Megaphone, flag: 'enableCoaching' },
+        { type: 'section', label: 'Personal' },
+        { id: 'locker', label: 'Your Locker', icon: LockerIcon },
+      ]
+    : [
+        // Legacy menu
+        // Rep Coach removed from sidebar - access via floating AI Coach button (password protected)
+        // Ascent 1 + Ascent 2 moved to LeaderReps Lab (admin-only) — Nov 2026
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'conditioning', label: 'Conditioning', icon: Zap, flag: 'enableConditioning' },
+        // Conditioning accessed via both Dashboard and sidebar - only during Foundation
+        { id: 'development-plan', label: 'Dev Plan', icon: Target, flag: 'enableDevPlan' },
+
+        { type: 'section', label: 'Resources' },
+        { id: 'community', label: 'Community', icon: CommunityIcon, flag: 'enableCommunity' },
+        { id: 'library', label: 'Content', icon: BookOpen, flag: 'enableReadings' }, // Using enableReadings as proxy for Content
+        { id: 'coaching-hub', label: 'Coaching', icon: Megaphone, flag: 'enableCoaching' },
+
+        { type: 'section', label: 'Personal' },
+        { id: 'locker', label: 'Your Locker', icon: LockerIcon },
+      ];
 
   // Filter Menu Items
   const filteredMenuItems = menuItems.filter(item => {
@@ -117,7 +134,12 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
 
     // 2. EXCLUDE: Filter out items explicitly marked for Dev Mode
     if (item.devModeOnly) {
-      return false; 
+      return false;
+    }
+
+    // EXCLUDE: Filter out admin-only items for non-admins
+    if (item.adminOnly && !isAdmin) {
+      return false;
     }
 
     // 3. COHORT CHECK: Filter out items that require a cohort if user doesn't have one
@@ -165,7 +187,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
             <img src="/icons/icon-192x192.png" alt="Logo" className="w-10 h-10 rounded-xl bg-white dark:bg-slate-700 shadow-lg" />
             <div className="flex flex-col">
               <span className="font-semibold text-lg tracking-tight leading-tight text-corporate-navy dark:text-white" style={{ fontFamily: 'var(--font-heading)' }}>LeaderReps</span>
-              <span className="text-[11px] text-corporate-teal font-medium uppercase tracking-widest">
+              <span className="text-[11px] text-corporate-teal-ink font-medium uppercase tracking-widest">
                 The Arena
               </span>
             </div>
@@ -246,8 +268,8 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
                       isActive 
                         ? 'text-white' 
                         : isHighlighted 
-                          ? 'text-corporate-teal'
-                          : 'text-corporate-teal group-hover:text-corporate-teal'
+                          ? 'text-corporate-teal-ink'
+                          : 'text-corporate-teal-ink group-hover:text-corporate-teal-ink'
                     }`} />
                   </div>
                   <span className={`whitespace-nowrap text-sm transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
@@ -265,7 +287,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
 
           {/* Admin Link - Only visible to admins */}
           {isAdmin && (
-            <li className="mt-8 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <li className="mt-8 pt-4 border-t border-slate-200 dark:border-slate-700 space-y-1">
               <button
                 onClick={() => navigate('admin-hub')}
                 className={`
@@ -322,7 +344,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut }) =>
                              <div className="space-y-4 text-sm">
                                 {identityStatement && (
                                     <div>
-                                    <p className="font-semibold text-corporate-teal uppercase tracking-wider text-[10px] mb-1">Identity</p>
+                                    <p className="font-semibold text-corporate-teal-ink uppercase tracking-wider text-[10px] mb-1">Identity</p>
                                     <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{identityStatement}</p>
                                     </div>
                                 )}

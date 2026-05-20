@@ -4,13 +4,15 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
-  ArrowLeft, MoreVertical, Sparkles, Sun, Moon, Coffee, 
+  MoreVertical, Sparkles, Sun, Moon, Coffee, 
   MessageCircle, ExternalLink, CheckCircle2
 } from 'lucide-react';
 import RepAvatar from '../rep/RepAvatar';
 import RepMessage from '../rep/RepMessage';
 import RepCohortPulse from '../rep/RepCohortPulse';
 import RepSessionComplete from '../rep/RepSessionComplete';
+import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
+import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
 import { useAppServices } from '../../services/useAppServices';
 import { useDailyPlan } from '../../hooks/useDailyPlan';
 
@@ -351,25 +353,27 @@ const RepCoach = ({ mode, skillTitle, skillTagline }) => {
     <div className="min-h-full bg-slate-50 dark:bg-slate-900 flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700">
-        <div className="flex items-center justify-between px-4 py-3">
-          <button 
-            onClick={() => navigate('dashboard')}
-            className="p-2 -ml-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          
-          <div className="flex items-center gap-2">
-            <RepAvatar size="sm" />
-            <div>
-              <h1 className="font-semibold text-slate-900 dark:text-white text-sm">Rep</h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Your Leadership Coach</p>
-            </div>
-          </div>
+        <div className="max-w-2xl mx-auto px-4 pt-3">
+          <BreadcrumbNav
+            items={getBreadcrumbs('rep')}
+            navigate={navigate}
+          />
+        </div>
 
-          <button className="p-2 -mr-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
-            <MoreVertical className="w-5 h-5" />
-          </button>
+        <div className="max-w-2xl mx-auto px-4 pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <RepAvatar size="sm" />
+              <div>
+                <h1 className="font-semibold text-slate-900 dark:text-white text-sm">Rep</h1>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Your Leadership Coach</p>
+              </div>
+            </div>
+
+            <button className="p-2 -mr-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+              <MoreVertical className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </header>
 

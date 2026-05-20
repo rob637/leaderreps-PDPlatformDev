@@ -138,7 +138,7 @@ export default function VideoSeriesCard({
             {/* Content */}
             <div className="flex-1 p-6">
               <div className="flex items-start justify-between mb-2">
-                <h3 className="text-xl font-semibold text-slate-800 dark:text-white group-hover:text-corporate-teal transition-colors">
+                <h3 className="text-xl font-semibold text-slate-800 dark:text-white group-hover:text-corporate-teal-ink transition-colors">
                   {series.title}
                 </h3>
                 <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-corporate-teal group-hover:translate-x-1 transition-all" />
@@ -177,7 +177,7 @@ export default function VideoSeriesCard({
                       <div className="flex items-center justify-between text-sm mb-1">
                         <span className="text-slate-600 dark:text-slate-400">
                           {progressInfo.percent === 100 ? (
-                            <span className="flex items-center gap-1 text-corporate-teal font-medium">
+                            <span className="flex items-center gap-1 text-corporate-teal-ink font-medium">
                               <CheckCircle2 className="w-4 h-4" />
                               Complete
                             </span>
@@ -264,7 +264,7 @@ export default function VideoSeriesCard({
                 </span>
               )}
               {showProgress && !loadingProgress && progressInfo.percent > 0 && progressInfo.percent < 100 && (
-                <span className="text-corporate-teal font-medium">
+                <span className="text-corporate-teal-ink font-medium">
                   {progressInfo.percent}% complete
                 </span>
               )}
@@ -313,7 +313,7 @@ export default function VideoSeriesCard({
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <h4 className="font-medium text-slate-800 dark:text-white truncate group-hover:text-corporate-teal transition-colors">
+            <h4 className="font-medium text-slate-800 dark:text-white truncate group-hover:text-corporate-teal-ink transition-colors">
               {series.title}
             </h4>
             <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
@@ -380,7 +380,7 @@ export default function VideoSeriesCard({
 
         {/* Content */}
         <div className="p-4">
-          <h3 className="font-semibold text-slate-800 dark:text-white mb-1 group-hover:text-corporate-teal transition-colors truncate">
+          <h3 className="font-semibold text-slate-800 dark:text-white mb-1 group-hover:text-corporate-teal-ink transition-colors truncate">
             {series.title}
           </h3>
 

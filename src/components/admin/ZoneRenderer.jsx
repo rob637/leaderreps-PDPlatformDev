@@ -1,5 +1,5 @@
 import React from 'react';
-import WidgetRenderer from './WidgetRenderer';
+import WidgetRenderer from '../shared/WidgetRenderer';
 import { ZONE_CONFIG } from '../../config/zoneConfig';
 
 const ZoneRenderer = ({ zoneId, scope = {}, className = "" }) => {

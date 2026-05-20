@@ -486,7 +486,7 @@ Remember: You're their trusted coach who knows their story. Make them feel known
                       </span>
                     )}
                     {repHistory.length > 0 && (
-                      <span className="text-corporate-teal">{repHistory.length} reps</span>
+                      <span className="text-corporate-teal-ink">{repHistory.length} reps</span>
                     )}
                     {Object.values(topicPatterns).some(v => v > 0) && (
                       <span className="text-slate-500 dark:text-slate-400">
@@ -638,7 +638,7 @@ Remember: You're their trusted coach who knows their story. Make them feel known
             {/* New conversation button */}
             <button
               onClick={handleNewConversation}
-              className="w-full py-3 text-corporate-teal font-medium hover:bg-corporate-teal/10 rounded-xl transition-colors"
+              className="w-full py-3 text-corporate-teal-ink font-medium hover:bg-corporate-teal/10 rounded-xl transition-colors"
             >
               ← Ask another question
             </button>

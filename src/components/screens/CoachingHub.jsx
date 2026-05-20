@@ -5,6 +5,7 @@ import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { useAccessControlContext } from '../../providers/AccessControlProvider';
 import { useCoachingSessions, SESSION_TYPES } from '../../hooks/useCoachingSessions';
 import { useCoachingRegistrations, REGISTRATION_STATUS } from '../../hooks/useCoachingRegistrations';
+import { useCoachingWaitlist } from '../../hooks/useCoachingWaitlist';
 import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp } from '../../services/firebaseUtils';
 import { 
   Loader, Users, Calendar, MessageSquare, Video, 
@@ -12,7 +13,7 @@ import {
   CalendarDays, ExternalLink, Lock, Megaphone
 } from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
-import WidgetRenderer from '../admin/WidgetRenderer';
+import WidgetRenderer from '../shared/WidgetRenderer';
 import { NoWidgetsEnabled, TabButton } from '../ui';
 import { generateGoogleCalendarUrl } from '../../services/calendarUtils';
 
@@ -340,7 +341,7 @@ const SessionCard = ({ session, onRegister, onCancel, isRegistered }) => {
                 })}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-corporate-teal hover:text-teal-700 font-medium"
+                className="inline-flex items-center gap-1.5 text-xs text-corporate-teal-ink hover:text-teal-700 font-medium"
               >
                 <Calendar className="w-3.5 h-3.5" />
                 Add to Google Calendar
@@ -494,7 +495,7 @@ const MyCoachingSection = ({ registrations = [], sessions = [], pastSessions = [
                 <p className="text-xs text-slate-400 mt-1">with {registration.coach}</p>
               )}
               {registration.coachingItemId && (
-                <p className="text-xs text-corporate-teal mt-1">
+                <p className="text-xs text-corporate-teal-ink mt-1">
                   Milestone {registration.coachingItemId.includes('-') ? registration.coachingItemId.split('-')[1] : ''} requirement
                 </p>
               )}
@@ -507,7 +508,7 @@ const MyCoachingSection = ({ registrations = [], sessions = [], pastSessions = [
                 {onReschedule && (
                   <button 
                     onClick={() => onReschedule(registration)}
-                    className="text-xs font-medium text-corporate-teal hover:text-teal-700"
+                    className="text-xs font-medium text-corporate-teal-ink hover:text-teal-700"
                   >
                     Reschedule
                   </button>
@@ -752,6 +753,13 @@ const CoachingHub = ({ initialTab, sessionTypeFilter: initialSessionTypeFilter, 
     // getPastRegistrations,
     loading: registrationsLoading
   } = useCoachingRegistrations();
+
+  // Waitlist (May 2026): users can join a queue when a session is full.
+  const {
+    waitlistedIds,
+    joinWaitlist: joinWaitlistEntry,
+    leaveWaitlist: leaveWaitlistEntry,
+  } = useCoachingWaitlist();
   
   // Also fetch legacy sessions from content collection for backward compatibility
   const [legacySessions, setLegacySessions] = useState([]);
@@ -989,6 +997,25 @@ const CoachingHub = ({ initialTab, sessionTypeFilter: initialSessionTypeFilter, 
     }
   };
 
+  const handleJoinWaitlist = async (session) => {
+    if (!user?.uid) {
+      alert('Please log in to join the waitlist.');
+      return;
+    }
+    const result = await joinWaitlistEntry(session);
+    if (!result.success) {
+      alert(result.error || 'Could not join waitlist. Try again.');
+    }
+  };
+
+  const handleLeaveWaitlist = async (session) => {
+    if (!user?.uid) return;
+    const result = await leaveWaitlistEntry(session);
+    if (!result.success) {
+      alert(result.error || 'Could not leave waitlist. Try again.');
+    }
+  };
+
   const handleMarkAttended = async (session) => {
     if (!user?.uid || !session?.id) return;
     const result = await markAttended(session.id);
@@ -1007,6 +1034,9 @@ const CoachingHub = ({ initialTab, sessionTypeFilter: initialSessionTypeFilter, 
     handleRegister,
     handleCancel,
     handleMarkAttended,
+    handleJoinWaitlist,
+    handleLeaveWaitlist,
+    waitlistedIds,
     navigate,
     viewMode,
     setViewMode,

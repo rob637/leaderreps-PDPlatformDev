@@ -122,33 +122,37 @@ const PrepWelcomeBanner = () => {
     
     return { currentMilestone: current, completedMilestones: completed };
   }, [currentPhase?.id, user?.milestoneProgress]);
-  
+
+  // Get trainers array - support both new format (facilitators array) and legacy (single facilitator)
+  // Defensive: filter out null/undefined or malformed entries before render.
+  // NOTE: Must be called BEFORE the early return below to satisfy Rules of Hooks.
+  const trainers = useMemo(() => {
+    const info = prepPhaseInfo || {};
+    const facilitators = info.facilitators;
+    const facilitator = info.facilitator;
+    const isValidTrainer = (t) => t && typeof t === 'object' && (t.name || t.email || t.id);
+    if (facilitators && Array.isArray(facilitators) && facilitators.length > 0) {
+      return facilitators.filter(isValidTrainer);
+    }
+    if (facilitator && isValidTrainer(facilitator)) {
+      return [facilitator];
+    }
+    return [];
+  }, [prepPhaseInfo]);
+
   // Only show in Prep Phase or Foundation (start) Phase
   if (currentPhase?.id !== 'pre-start' && currentPhase?.id !== 'start') {
     return null;
   }
-  
+
   const isFoundationPhase = currentPhase?.id === 'start';
-  
+
   const info = prepPhaseInfo || {};
-  const { 
-    daysUntilStart = 0, 
+  const {
+    daysUntilStart = 0,
     cohortName = null,
     cohortStartDate = null,
-    facilitator = null,
-    facilitators = null
   } = info;
-
-  // Get trainers array - support both new format (facilitators array) and legacy (single facilitator)
-  const trainers = useMemo(() => {
-    if (facilitators && Array.isArray(facilitators) && facilitators.length > 0) {
-      return facilitators;
-    }
-    if (facilitator) {
-      return [facilitator];
-    }
-    return [];
-  }, [facilitators, facilitator]);
 
   const handleTrainerClick = (trainer) => {
     setSelectedTrainer(trainer);
@@ -286,7 +290,7 @@ const PrepWelcomeBanner = () => {
           <div className="flex-1 space-y-4">
             {/* Phase Badge - Cleaner, simpler */}
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-2 text-corporate-teal font-bold tracking-wider text-xs uppercase">
+              <div className="flex items-center gap-2 text-corporate-teal-ink font-bold tracking-wider text-xs uppercase">
                 {isFoundationPhase ? (
                   <>
                     <Flame className="w-4 h-4" />
@@ -324,7 +328,7 @@ const PrepWelcomeBanner = () => {
             {/* Trainers Introduction - Show all trainers assigned to cohort */}
             {trainers.length > 0 && (
               <div className="space-y-2">
-                <p className="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-wider">
+                <p className="text-slate-600 dark:text-slate-300 text-xs font-medium uppercase tracking-wider">
                   {trainers.length === 1 ? 'Your Trainer' : 'Your Trainers'}
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -336,9 +340,9 @@ const PrepWelcomeBanner = () => {
                     >
                       <FacilitatorAvatar name={trainer.name} photoUrl={trainer.photoUrl} size="sm" />
                       <div className="flex-1">
-                        <p className="text-corporate-navy dark:text-white font-medium text-sm group-hover:text-corporate-teal transition-colors">{trainer.name}</p>
+                        <p className="text-corporate-navy dark:text-white font-medium text-sm group-hover:text-corporate-teal-ink transition-colors">{trainer.name}</p>
                         {trainer.title && (
-                          <p className="text-slate-500 dark:text-slate-400 text-xs">{trainer.title}</p>
+                          <p className="text-slate-600 dark:text-slate-300 text-xs">{trainer.title}</p>
                         )}
                       </div>
                       <Info className="w-4 h-4 text-slate-400 group-hover:text-corporate-teal transition-colors" />
@@ -380,7 +384,7 @@ const PrepWelcomeBanner = () => {
                 </div>
               )}
             </div>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            <span className="text-xs text-slate-600 dark:text-slate-300 font-medium">
               {isFoundationPhase ? 'Foundation Level' : 'until Session One'}
             </span>
             

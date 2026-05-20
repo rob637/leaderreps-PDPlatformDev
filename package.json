@@ -1,7 +1,7 @@
 {
   "name": "leader-reps-pdp",
   "private": true,
-  "version": "3.0.7",
+  "version": "3.5.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -22,10 +22,12 @@
     "sync:test": "./scripts/deploy/sync-dev-to-test.sh",
     "lint": "eslint .",
     "lint:ui": "bash ./scripts/ui-architecture-check.sh",
-    "precommit": "npm run lint:ui && npm run lint",
+    "check:screens": "node ./scripts/check-screen-keys.cjs",
+    "precommit": "npm run lint:ui && npm run check:screens && npm run lint",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest --coverage",
+    "calibrate:conditioning": "node functions/conditioning/calibration/run.js",
     "e2e": "playwright test",
     "e2e:headed": "playwright test --headed",
     "e2e:ui": "playwright test --ui",

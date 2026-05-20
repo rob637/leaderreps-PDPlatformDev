@@ -78,7 +78,7 @@ const FoundationRow = ({ item, onOpen, onAddToJourney, alreadyDone, delay }) => 
         className={`shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1.5 rounded-md transition-all ${
           alreadyDone
             ? 'bg-emerald-50 text-emerald-700 cursor-default'
-            : 'border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-corporate-teal/10 hover:border-corporate-teal/50 hover:text-corporate-teal'
+            : 'border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-corporate-teal/10 hover:border-corporate-teal/50 hover:text-corporate-teal-ink'
         }`}
       >
         {alreadyDone ? '✓ In journey' : <><Plus className="w-3 h-3" /> Add to Learn</>}
@@ -122,13 +122,13 @@ const LibraryCard = ({ convo, isFocus, onOpen, onMakeFocus, delay }) => {
       </button>
       <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
         {isFocus ? (
-          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-corporate-teal">
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-corporate-teal-ink">
             <Sparkles className="w-3 h-3" /> Your current focus
           </span>
         ) : (
           <button
             onClick={() => onMakeFocus(convo.id)}
-            className="text-[11px] font-semibold text-corporate-teal hover:text-corporate-subtle-teal inline-flex items-center gap-1"
+            className="text-[11px] font-semibold text-corporate-teal-ink hover:text-corporate-subtle-teal inline-flex items-center gap-1"
           >
             Make this my focus <ArrowRight className="w-3 h-3" />
           </button>
@@ -240,7 +240,7 @@ const ExploreTab = ({
       <section>
         <div className="flex items-end justify-between mb-3">
           <div>
-            <div className="text-[11px] uppercase tracking-wider font-bold text-corporate-teal">
+            <div className="text-[11px] uppercase tracking-wider font-bold text-corporate-teal-ink">
               Community · Practice live
             </div>
             <h2 className="text-lg font-extrabold text-corporate-navy dark:text-white">
@@ -262,7 +262,7 @@ const ExploreTab = ({
                 <p className="text-sm text-slate-600 dark:text-slate-300 mt-0.5">
                   Bring a real scenario. Work it with coaching support.
                 </p>
-                <span className="text-xs font-semibold text-corporate-teal inline-flex items-center gap-1 mt-2">
+                <span className="text-xs font-semibold text-corporate-teal-ink inline-flex items-center gap-1 mt-2">
                   See schedule <ChevronRight className="w-3 h-3" />
                 </span>
               </div>

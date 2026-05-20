@@ -29,11 +29,17 @@ const isSafari = typeof navigator !== 'undefined' &&
 const VoiceInputButton = ({ 
   onTranscription, 
   onPartialTranscription,
+  onError,
   disabled = false,
   size = 'default',
   continuous = true, // Changed: Default to continuous for longer recordings
-  autoStop = true,
-  autoStopDelay = 3000 // Changed: 3 seconds of silence before auto-stop (was 1500)
+  // Changed (May-11): default to manual-stop. Recording stays active until
+  // the user clicks the stop button. On browsers that force non-continuous
+  // mode (iOS/Safari/Android), we auto-restart recognition on `onend` so
+  // the session keeps going through pauses. Pass `autoStop={true}` to opt
+  // back into the legacy silence-detected auto-stop behavior.
+  autoStop = false,
+  autoStopDelay = 3000 // Only used when autoStop is true
 }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isSupported, setIsSupported] = useState(true);
@@ -47,15 +53,37 @@ const VoiceInputButton = ({
   const transcriptRef = useRef('');
   const hasSubmittedRef = useRef(false); // Prevent duplicate submissions
   const processedIndicesRef = useRef(new Set()); // Track processed final result indices (Android fix)
+  // Manual-stop tracking (May-11): when false and `autoStop` is also false,
+  // the `onend` handler will restart recognition so the session continues
+  // through silence on browsers that force non-continuous mode.
+  const userStoppedRef = useRef(false);
+  const wantsActiveRef = useRef(false);
+  // Accumulates final transcript text across auto-restarts within a single
+  // user session. transcriptRef is reset on every recognition.onstart, so
+  // we need a separate session-level buffer to preserve dictated text when
+  // the browser ends and we restart recognition on silence.
+  const sessionTranscriptRef = useRef('');
+  const isRestartingRef = useRef(false);
+  // Deferred-restart bookkeeping (May 2026 — fix for transcription dying
+  // when the user pauses). `recognition.start()` called synchronously inside
+  // `onend` throws InvalidStateError on iOS / Android because the previous
+  // session hasn't fully released. We retry on a short timer with backoff
+  // up to a small cap so silence pauses don't end the session.
+  const restartTimerRef = useRef(null);
+  const restartAttemptsRef = useRef(0);
+  const RESTART_MAX_ATTEMPTS = 5;
+  const RESTART_BASE_DELAY_MS = 250;
   // Store callbacks in refs to avoid re-creating recognition on every render
   const onTranscriptionRef = useRef(onTranscription);
   const onPartialTranscriptionRef = useRef(onPartialTranscription);
+  const onErrorRef = useRef(onError);
   
   // Update callback refs when props change
   useEffect(() => {
     onTranscriptionRef.current = onTranscription;
     onPartialTranscriptionRef.current = onPartialTranscription;
-  }, [onTranscription, onPartialTranscription]);
+    onErrorRef.current = onError;
+  }, [onTranscription, onPartialTranscription, onError]);
   
   // iOS and Android don't support continuous mode well - disable it
   // Android in particular has issues where results repeat many times
@@ -84,15 +112,98 @@ const VoiceInputButton = ({
       setIsRecording(true);
       setError(null);
       transcriptRef.current = '';
-      hasSubmittedRef.current = false; // Reset submission flag on new recording
+      // Reset restart-backoff counter on every successful start.
+      restartAttemptsRef.current = 0;
+      // Only reset cross-restart flags on a fresh user-initiated start.
+      // Auto-restarts (silence-driven) preserve sessionTranscriptRef and
+      // hasSubmittedRef so dictated text accumulates across the session.
+      if (!isRestartingRef.current) {
+        hasSubmittedRef.current = false;
+        sessionTranscriptRef.current = '';
+      }
+      isRestartingRef.current = false;
       processedIndicesRef.current = new Set(); // Reset processed indices (Android fix)
     };
     
     recognition.onend = () => {
+      // May-11 manual-stop mode: if the user hasn't pressed stop and we're
+      // not in autoStop mode, restart recognition on a short timer. We MUST
+      // defer the start() call: invoking it synchronously inside onend
+      // throws InvalidStateError on iOS/Android because the browser hasn't
+      // released the previous session yet. The deferred retry with backoff
+      // (up to RESTART_MAX_ATTEMPTS) keeps the session alive through
+      // silence pauses without spinning into a tight loop.
+      if (!autoStop && wantsActiveRef.current && !userStoppedRef.current) {
+        // Roll the just-finished segment into the session-level buffer so
+        // we don't lose anything when transcriptRef gets cleared on the
+        // next onstart.
+        const segment = transcriptRef.current.trim();
+        if (segment) {
+          sessionTranscriptRef.current = sessionTranscriptRef.current
+            ? `${sessionTranscriptRef.current} ${segment}`
+            : segment;
+          // Surface as a partial so the parent textarea reflects accumulated
+          // text between restarts (without marking the session as submitted).
+          onPartialTranscriptionRef.current?.(sessionTranscriptRef.current);
+        }
+        transcriptRef.current = '';
+
+        if (restartAttemptsRef.current >= RESTART_MAX_ATTEMPTS) {
+          // Backoff cap reached — give up on auto-restart and fall through
+          // to the normal end behavior. The accumulated transcript is still
+          // submitted below.
+          wantsActiveRef.current = false;
+        } else {
+          const attempt = restartAttemptsRef.current;
+          restartAttemptsRef.current = attempt + 1;
+          const delay = RESTART_BASE_DELAY_MS * Math.pow(2, attempt);
+          if (restartTimerRef.current) {
+            clearTimeout(restartTimerRef.current);
+          }
+          isRestartingRef.current = true;
+          restartTimerRef.current = setTimeout(() => {
+            restartTimerRef.current = null;
+            if (!wantsActiveRef.current || userStoppedRef.current) {
+              isRestartingRef.current = false;
+              return;
+            }
+            try {
+              recognitionRef.current?.start();
+            } catch (e) {
+              // start() can still throw on devices that haven't released the
+              // mic yet. Schedule another retry until we hit the cap.
+              isRestartingRef.current = false;
+              if (recognitionRef.current && wantsActiveRef.current && !userStoppedRef.current) {
+                // Re-enter onend's restart path by simulating it: bump the
+                // attempt counter and try again on the same backoff curve.
+                const next = restartAttemptsRef.current;
+                if (next < RESTART_MAX_ATTEMPTS) {
+                  restartAttemptsRef.current = next + 1;
+                  const retryDelay = RESTART_BASE_DELAY_MS * Math.pow(2, next);
+                  restartTimerRef.current = setTimeout(() => {
+                    restartTimerRef.current = null;
+                    if (!wantsActiveRef.current || userStoppedRef.current) return;
+                    try {
+                      isRestartingRef.current = true;
+                      recognitionRef.current?.start();
+                    } catch (_) {
+                      isRestartingRef.current = false;
+                    }
+                  }, retryDelay);
+                }
+              }
+            }
+          }, delay);
+          // Keep the visual recording state on — we're between segments.
+          return;
+        }
+      }
+
       setIsRecording(false);
       setIsProcessing(false);
       setIsStarting(false);
-      
+      wantsActiveRef.current = false;
+
       // Clear timers
       if (autoStopTimerRef.current) {
         clearTimeout(autoStopTimerRef.current);
@@ -102,12 +213,25 @@ const VoiceInputButton = ({
         clearTimeout(startupTimerRef.current);
         startupTimerRef.current = null;
       }
-      
-      // Send final transcription if we have content (only once)
-      if (transcriptRef.current.trim() && !hasSubmittedRef.current) {
+      if (restartTimerRef.current) {
+        clearTimeout(restartTimerRef.current);
+        restartTimerRef.current = null;
+      }
+      restartAttemptsRef.current = 0;
+
+      // Send final transcription if we have content (only once). Combine
+      // the last segment with anything accumulated across auto-restarts.
+      const lastSegment = transcriptRef.current.trim();
+      const combined = sessionTranscriptRef.current
+        ? (lastSegment
+            ? `${sessionTranscriptRef.current} ${lastSegment}`
+            : sessionTranscriptRef.current)
+        : lastSegment;
+      if (combined && !hasSubmittedRef.current) {
         hasSubmittedRef.current = true;
-        onTranscriptionRef.current?.(transcriptRef.current.trim());
-        transcriptRef.current = ''; // Clear after sending to prevent duplicates
+        onTranscriptionRef.current?.(combined);
+        transcriptRef.current = '';
+        sessionTranscriptRef.current = '';
       }
     };
     
@@ -154,6 +278,15 @@ const VoiceInputButton = ({
       } else if (!finalText && interimTranscript.trim()) {
         displayText = interimTranscript.trim();
       }
+
+      // Prepend the session-level buffer so the live preview shows everything
+      // dictated across auto-restarts (manual-stop mode), not just the
+      // current segment.
+      if (sessionTranscriptRef.current && displayText) {
+        displayText = `${sessionTranscriptRef.current} ${displayText}`;
+      } else if (sessionTranscriptRef.current) {
+        displayText = sessionTranscriptRef.current;
+      }
       
       if (onPartialTranscriptionRef.current && displayText) {
         onPartialTranscriptionRef.current(displayText);
@@ -197,10 +330,13 @@ const VoiceInputButton = ({
           setError('No speech detected. Try again.');
           break;
         case 'audio-capture':
-          setError('No microphone found.');
+          setError('No microphone found. Check that a mic is connected and that this site has microphone permission.');
           break;
         case 'not-allowed':
-          setError('Microphone access denied. Tap the lock icon in your browser\'s address bar to allow microphone access, then try again.');
+          setError('Microphone access is blocked. Tap the lock/info icon in your browser\u2019s address bar, allow microphone access for this site, then refresh and try again.');
+          break;
+        case 'service-not-allowed':
+          setError('Microphone access is blocked at the device level. Open your device settings and allow microphone access for this browser.');
           break;
         case 'network':
           setError('Network error. Check your connection.');
@@ -210,6 +346,17 @@ const VoiceInputButton = ({
           break;
         default:
           setError('Speech recognition error. Please try again.');
+      }
+      // Surface error to parent (e.g., VoiceTextarea) so it can render an
+      // always-visible banner. The floating tooltip can be clipped by
+      // overflow-hidden ancestors, which has been a recurring \"mic doesn't
+      // work\" complaint.
+      if (event.error !== 'aborted') {
+        try {
+          onErrorRef.current?.(event.error);
+        } catch (_) {
+          // ignore
+        }
       }
     };
     
@@ -230,6 +377,10 @@ const VoiceInputButton = ({
       if (startupTimerRef.current) {
         clearTimeout(startupTimerRef.current);
       }
+      if (restartTimerRef.current) {
+        clearTimeout(restartTimerRef.current);
+        restartTimerRef.current = null;
+      }
     };
   }, [effectiveContinuous, autoStop, autoStopDelay]);
   
@@ -238,6 +389,14 @@ const VoiceInputButton = ({
     if (!recognitionRef.current || disabled || isStarting) return;
     
     if (isRecording) {
+      // Mark this as a user-initiated stop so the onend handler does NOT
+      // auto-restart recognition.
+      userStoppedRef.current = true;
+      wantsActiveRef.current = false;
+      if (restartTimerRef.current) {
+        clearTimeout(restartTimerRef.current);
+        restartTimerRef.current = null;
+      }
       setIsProcessing(true);
       try {
         recognitionRef.current.stop();
@@ -248,8 +407,17 @@ const VoiceInputButton = ({
       }
     } else {
       transcriptRef.current = '';
+      sessionTranscriptRef.current = '';
       hasSubmittedRef.current = false; // Reset submission flag
       processedIndicesRef.current = new Set(); // Reset processed indices (Android fix)
+      userStoppedRef.current = false;
+      wantsActiveRef.current = true;
+      isRestartingRef.current = false;
+      restartAttemptsRef.current = 0;
+      if (restartTimerRef.current) {
+        clearTimeout(restartTimerRef.current);
+        restartTimerRef.current = null;
+      }
       setError(null);
       setIsStarting(true);
       
@@ -310,7 +478,13 @@ const VoiceInputButton = ({
         type="button"
         disabled
         className={`${sizeClasses[size]} rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed`}
-        title="Voice input not supported in this browser"
+        title="Voice input not supported in this browser. Try Chrome or Safari."
+        aria-label="Voice input not supported in this browser"
+        onClick={() => {
+          try {
+            onErrorRef.current?.('not-supported');
+          } catch (_) { /* ignore */ }
+        }}
       >
         <MicOff className={iconSizes[size]} />
       </button>

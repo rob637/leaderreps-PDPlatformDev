@@ -67,7 +67,7 @@ const AUDIT_TYPES = [
     label: 'Conditioning Flow',
     description: 'Walk through conditioning — commit rep, debrief, modals, colors',
     icon: Zap,
-    color: 'text-corporate-teal',
+    color: 'text-corporate-teal-ink',
   },
   {
     id: 'dashboard',
@@ -195,7 +195,7 @@ const NewAuditForm = ({ onSubmit, isSubmitting }) => {
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <Icon className={`w-5 h-5 mt-0.5 ${isSelected ? 'text-corporate-teal' : type.color}`} />
+                    <Icon className={`w-5 h-5 mt-0.5 ${isSelected ? 'text-corporate-teal-ink' : type.color}`} />
                     <div>
                       <p className={`text-sm font-medium ${isSelected ? 'text-corporate-navy' : 'text-slate-700 dark:text-slate-300'}`}>
                         {type.label}
@@ -623,7 +623,7 @@ const UxAuditPanel = () => {
           <p className="text-xs text-slate-500 dark:text-slate-400">In Queue</p>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
-          <p className="text-2xl font-bold text-corporate-teal">
+          <p className="text-2xl font-bold text-corporate-teal-ink">
             {avgScore ? avgScore.toFixed(1) : '—'}
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400">Avg Score</p>

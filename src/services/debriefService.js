@@ -1,4 +1,10 @@
 // src/services/debriefService.js
+//
+// @deprecated 2026-05-19 — Legacy Conditioning debrief service. The active
+// engine lives in functions/conditioning/* and emits its own observations
+// via the evaluateRep callable. Do not extend; slated for removal after the
+// v2 rollout. Labels and assessment levels here are NOT canonical anymore.
+//
 // System Debrief Service for the Conditioning Loop
 // Provides automated but personal coaching feedback
 // Scoring (what went well, what didn't) with coaching questions vs corrections

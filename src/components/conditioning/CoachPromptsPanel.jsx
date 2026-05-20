@@ -270,7 +270,7 @@ export const CoachPromptsPanel = ({
               <Brain className="w-5 h-5 text-corporate-navy" />
             </div>
             <div>
-              <h3 className="font-semibold text-corporate-navy">Coach Prompts</h3>
+              <h3 className="font-semibold text-corporate-navy">Trainer Prompts</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Behavior patterns detected over 4 weeks
               </p>

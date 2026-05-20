@@ -16,7 +16,7 @@ import {
 const mdToHtml = async (md) => { /* ... Re-use definition from Labs.jsx ... */
     if (!md) return ''; let html = md;
     html = html.replace(/^## (.*$)/gim, '<h2 class="text-xl font-extrabold text-corporate-navy border-b border-gray-200 dark:border-gray-700 pb-2 mb-3 mt-5">$1</h2>');
-    html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold text-corporate-teal mt-4 mb-2">$1</h3>');
+    html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold text-corporate-teal-ink mt-4 mb-2">$1</h3>');
     html = html.replace(/\*\*(.*?)\*\*/gim, '<strong class="font-semibold">$1</strong>');
     html = html.replace(/^\* (.*$)/gim, '<li>$1</li>');
     html = html.replace(/(<li>.*<\/li>\s*)+/g, (match) => `<ul class="list-disc list-inside space-y-1 mb-4 pl-4">${match.trim()}</ul>`);
@@ -572,7 +572,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
                                 </select>
                             </div>
                             {/* Key Results Section */}
-                            <h3 className="text-md font-bold mb-3 border-b border-dashed pb-1 text-corporate-teal">Key Results (Measurable 'from X to Y')</h3>
+                            <h3 className="text-md font-bold mb-3 border-b border-dashed pb-1 text-corporate-teal-ink">Key Results (Measurable 'from X to Y')</h3>
                             <div className="space-y-3">
                                 {(obj.keyResults || []).map((kr, krIndex) => (
                                     <div key={kr.id} className='flex items-center gap-2'>

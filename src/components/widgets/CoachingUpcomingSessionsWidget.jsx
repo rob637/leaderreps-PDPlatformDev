@@ -1,6 +1,6 @@
 // src/components/widgets/CoachingUpcomingSessionsWidget.jsx
 import React, { useState, useMemo } from 'react';
-import { Calendar, Clock, Users, MapPin, Video, ChevronRight, ChevronLeft, Play, X, Loader } from 'lucide-react';
+import { Calendar, Clock, Users, MapPin, Video, ChevronRight, ChevronLeft, Play, X, Loader, ListPlus } from 'lucide-react';
 import { Card } from '../ui';
 
 /**
@@ -110,7 +110,7 @@ const getDerivedSessionType = (session) => {
 };
 
 // Session Card Component
-const SessionCard = ({ session, isRegistered, onRegister, onCancel, showSwitch = false }) => {
+const SessionCard = ({ session, isRegistered, isWaitlisted, onRegister, onCancel, onJoinWaitlist, onLeaveWaitlist, showSwitch = false }) => {
   const typeConfig = SESSION_TYPE_CONFIG[session.sessionType] || SESSION_TYPE_CONFIG.workshop;
   
   // Check if session is full
@@ -143,10 +143,20 @@ const SessionCard = ({ session, isRegistered, onRegister, onCancel, showSwitch =
           >
             Cancel
           </button>
+        ) : isFull && isWaitlisted ? (
+          <button
+            onClick={() => onLeaveWaitlist?.(session)}
+            className="px-3 py-1.5 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
+          >
+            Leave Waitlist
+          </button>
         ) : isFull ? (
-          <span className="px-3 py-1.5 text-sm font-medium text-slate-400 bg-slate-100 dark:bg-slate-700 rounded-lg cursor-not-allowed">
-            Full
-          </span>
+          <button
+            onClick={() => onJoinWaitlist?.(session)}
+            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-amber-500 rounded-lg hover:bg-amber-600 transition-colors"
+          >
+            <ListPlus className="w-3.5 h-3.5" /> Join Waitlist
+          </button>
         ) : (
           <button
             onClick={() => onRegister?.(session)}
@@ -207,7 +217,7 @@ const SessionCard = ({ session, isRegistered, onRegister, onCancel, showSwitch =
 };
 
 // Day Sessions Modal Component
-const DaySessionsModal = ({ isOpen, onClose, date, sessions, registeredIds, onRegister, onCancel, existingExclusiveRegistrations }) => {
+const DaySessionsModal = ({ isOpen, onClose, date, sessions, registeredIds, waitlistedIds, onRegister, onCancel, onJoinWaitlist, onLeaveWaitlist, existingExclusiveRegistrations }) => {
   const [registering, setRegistering] = useState(null);
   
   // Extract existing 1:1 session ID for Switch UX
@@ -230,6 +240,12 @@ const DaySessionsModal = ({ isOpen, onClose, date, sessions, registeredIds, onRe
     return !!registeredIds[sessionId];
   };
   
+  const checkWaitlisted = (sessionId) => {
+    if (!waitlistedIds) return false;
+    if (typeof waitlistedIds.has === 'function') return waitlistedIds.has(sessionId);
+    return !!waitlistedIds[sessionId];
+  };
+  
   const handleRegisterClick = async (session) => {
     setRegistering(session.id);
     try {
@@ -243,6 +259,24 @@ const DaySessionsModal = ({ isOpen, onClose, date, sessions, registeredIds, onRe
     setRegistering(session.id);
     try {
       await onCancel?.(session);
+    } finally {
+      setRegistering(null);
+    }
+  };
+
+  const handleJoinWaitlistClick = async (session) => {
+    setRegistering(session.id);
+    try {
+      await onJoinWaitlist?.(session);
+    } finally {
+      setRegistering(null);
+    }
+  };
+
+  const handleLeaveWaitlistClick = async (session) => {
+    setRegistering(session.id);
+    try {
+      await onLeaveWaitlist?.(session);
     } finally {
       setRegistering(null);
     }
@@ -303,6 +337,7 @@ const DaySessionsModal = ({ isOpen, onClose, date, sessions, registeredIds, onRe
               sessions.map(session => {
                 const typeConfig = getTypeConfig(session.sessionType);
                 const isReg = checkRegistered(session.id);
+                const isWait = checkWaitlisted(session.id);
                 const maxSpots = session.maxAttendees || getDefaultMaxAttendees(session.sessionType);
                 const spotsLeft = Math.max(0, maxSpots - (session.registrationCount || 0));
                 const isFull = spotsLeft <= 0 && !isReg;
@@ -357,10 +392,23 @@ const DaySessionsModal = ({ isOpen, onClose, date, sessions, registeredIds, onRe
                           >
                             {registering === session.id ? <Loader className="w-3 h-3 animate-spin" /> : 'Cancel'}
                           </button>
+                        ) : isFull && isWait ? (
+                          <button
+                            onClick={() => handleLeaveWaitlistClick(session)}
+                            disabled={registering === session.id}
+                            className="px-3 py-1.5 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors disabled:opacity-50 flex items-center gap-1"
+                          >
+                            {registering === session.id ? <Loader className="w-3 h-3 animate-spin" /> : 'Leave Waitlist'}
+                          </button>
                         ) : isFull ? (
-                          <span className="px-3 py-1.5 text-sm font-medium text-slate-400 bg-slate-100 dark:bg-slate-600 rounded-lg">
-                            Full
-                          </span>
+                          <button
+                            onClick={() => handleJoinWaitlistClick(session)}
+                            disabled={registering === session.id}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-amber-500 rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50"
+                          >
+                            {registering === session.id ? <Loader className="w-3 h-3 animate-spin" /> : <ListPlus className="w-3.5 h-3.5" />}
+                            Join Waitlist
+                          </button>
                         ) : (
                           <button
                             onClick={() => handleRegisterClick(session)}
@@ -410,8 +458,11 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
     sessions = [], 
     upcomingSessions = [],
     registeredIds = new Set(),
+    waitlistedIds = new Set(),
     handleRegister,
     handleCancel,
+    handleJoinWaitlist,
+    handleLeaveWaitlist,
     navigate,
     viewMode = 'list',
     setViewMode,
@@ -542,7 +593,7 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
           {hasOtherSessions && typeFilter !== 'all' && (
             <button
               onClick={() => setTypeFilter('all')}
-              className="text-sm text-corporate-teal hover:text-teal-600 font-medium"
+              className="text-sm text-corporate-teal-ink hover:text-teal-600 font-medium"
             >
               View all {allUpcomingSessions.length} available sessions →
             </button>
@@ -637,8 +688,11 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
             date={selectedDay}
             sessions={selectedDay ? (sessionsByDate[selectedDay] || []) : []}
             registeredIds={registeredIds}
+            waitlistedIds={waitlistedIds}
             onRegister={handleRegister}
             onCancel={handleCancel}
+            onJoinWaitlist={handleJoinWaitlist}
+            onLeaveWaitlist={handleLeaveWaitlist}
             existingExclusiveRegistrations={existingExclusiveRegistrations}
           />
           
@@ -696,7 +750,7 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
           {displaySessions.length === 0 && typeFilter !== 'all' ? (
             <div className="text-center py-6">
               <p className="text-sm text-slate-400">No {SESSION_TYPE_CONFIG[typeFilter]?.label || typeFilter} sessions available.</p>
-              <button onClick={() => setTypeFilter('all')} className="mt-2 text-sm text-corporate-teal font-medium">Show all sessions</button>
+              <button onClick={() => setTypeFilter('all')} className="mt-2 text-sm text-corporate-teal-ink font-medium">Show all sessions</button>
             </div>
           ) : (
             displaySessions.slice(0, showAllSessions ? undefined : 5).map(session => {
@@ -713,8 +767,11 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
                   key={session.id}
                   session={session}
                   isRegistered={checkRegistered(session.id)}
+                  isWaitlisted={(typeof waitlistedIds?.has === 'function' ? waitlistedIds.has(session.id) : !!waitlistedIds?.[session.id])}
                   onRegister={handleRegister}
                   onCancel={handleCancel}
+                  onJoinWaitlist={handleJoinWaitlist}
+                  onLeaveWaitlist={handleLeaveWaitlist}
                   showSwitch={showSwitch}
                 />
               );
@@ -723,7 +780,7 @@ const CoachingUpcomingSessionsWidget = ({ scope = {}, helpText }) => {
           {!showAllSessions && displaySessions.length > 5 && (
             <button 
               onClick={() => navigate?.('coaching-lab')}
-              className="w-full py-2 text-sm text-corporate-teal font-medium hover:bg-teal-50 rounded-lg transition-colors flex items-center justify-center gap-1"
+              className="w-full py-2 text-sm text-corporate-teal-ink font-medium hover:bg-teal-50 rounded-lg transition-colors flex items-center justify-center gap-1"
             >
               View all {displaySessions.length} sessions
               <ChevronRight className="w-4 h-4" />

@@ -262,7 +262,7 @@ export default function ExecutiveReflection() {
                             </div>
                             <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 shadow-inner">
                                 <p className='text-xs font-semibold uppercase text-slate-500 dark:text-slate-400'>Competence</p>
-                                <p className="text-4xl font-bold mt-1 text-corporate-teal">{longitudinalData.competence}%</p>
+                                <p className="text-4xl font-bold mt-1 text-corporate-teal-ink">{longitudinalData.competence}%</p>
                                  <p className='text-[10px] text-slate-500 dark:text-slate-400'>(Daily Rep Success Rate)</p>
                             </div>
                         </div>

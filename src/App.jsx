@@ -28,9 +28,20 @@ import { Loader } from 'lucide-react';
 import useNavigationHistory from './hooks/useNavigationHistory.js';
 import useMaintenanceMode from './hooks/useMaintenanceMode.js';
 
+// --- LeaderReps Lab — public anonymous pulse responder + lead-magnet flow ---
+import PulseRespond from './components/lab/PulseRespond.jsx';
+import LeaderStart from './components/lab/LeaderStart.jsx';
+import LeaderDashboard from './components/lab/LeaderDashboard.jsx';
+import IdentityBuilder from './components/lab/IdentityBuilder.jsx';
+
 // --- New Structure ---
-import AuthPanel from './components/auth/AuthPanel.jsx';
+// AuthPanel is lazy-loaded so an unauthenticated cold load doesn't pull
+// firebase/auth + firebase/firestore + AuthPanel itself into the eager
+// critical-path bundle. The boot skeleton stays as the LCP element while
+// the auth chunk streams in.
+const AuthPanel = React.lazy(() => import('./components/auth/AuthPanel.jsx'));
 import AppContent from './components/layout/AppContent.jsx';
+import BootSkeleton from './components/system/BootSkeleton.jsx';
 import DataProvider from './providers/DataProvider.jsx';
 import { FeatureProvider } from './providers/FeatureProvider.jsx';
 import { LayoutProvider } from './providers/LayoutProvider.jsx';
@@ -40,7 +51,9 @@ import UpdateNotification from './components/ui/UpdateNotification.jsx';
 import { NotificationProvider } from './providers/NotificationProvider.jsx';
 import { TimeProvider } from './providers/TimeProvider.jsx';
 import { AccessControlProvider } from './providers/AccessControlProvider.jsx';
+import { EventsProvider } from './providers/EventsProvider.jsx';
 import { ThemeProvider } from './providers/ThemeProvider.jsx';
+import { UIVersionProvider } from './providers/UIVersionProvider.jsx';
 import { RepTypeProvider } from './providers/RepTypeProvider.jsx';
 
 // --- Mobile Experience Enhancements ---
@@ -63,6 +76,39 @@ const ADMIN_ONLY_SCREENS = [
 ];
 
 function App() {
+  // LeaderReps Lab — Anonymous Team Pulse public responder route.
+  // Detected via ?pulse=campaignId. Renders standalone (no app shell, no auth panel).
+  // Must run BEFORE any state hooks that depend on Firebase/auth so unauth users
+  // are never bounced to the AuthPanel.
+  const params =
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search)
+      : new URLSearchParams();
+  const pulseCampaignId = params.get('pulse');
+  const leaderToken = params.get('leader');
+  const referredBy = params.get('ref');
+  // Tolerate both ?pulse-start (no value) and ?pulse-start=1
+  const isPulseStart =
+    params.has('pulse-start') || params.has('pulse_start');
+  const isIdentityStart =
+    params.has('identity-start') || params.has('identity_start');
+
+  if (pulseCampaignId) {
+    return <PulseRespond campaignId={pulseCampaignId} />;
+  }
+  if (leaderToken) {
+    return <LeaderDashboard token={leaderToken} />;
+  }
+  if (isPulseStart) {
+    return <LeaderStart referredBy={referredBy} />;
+  }
+  if (isIdentityStart) {
+    return <IdentityBuilder />;
+  }
+  return <MainApp />;
+}
+
+function MainApp() {
   const [firebaseConfig, setFirebaseConfig] = useState(null);
   const [firebaseServices, setFirebaseServices] = useState(null);
   const [user, setUser] = useState(null);
@@ -197,16 +243,42 @@ function App() {
   }
 
   if (!isAuthReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader className="animate-spin h-10 w-10 text-corporate-teal" />
-      </div>
-    );
+    return <BootSkeleton />;
   }
 
   // Show maintenance page if maintenance mode is enabled (bypass emails are excluded)
   if (isMaintenanceMode) {
     return <MaintenancePage message={maintenanceMessage} />;
+  }
+
+  // Unauthenticated users: render AuthPanel WITHOUT mounting Data/Feature
+  // providers. Those providers open Firestore listeners which hang for ~30s
+  // when there is no auth (rules block them), pinning Lighthouse LCP at 9-10s.
+  if (isAuthRequired) {
+    return (
+      <>
+        <SkipLinks
+          links={[
+            { id: 'main-content', label: 'Skip to main content' },
+            { id: 'main-nav', label: 'Skip to navigation' },
+          ]}
+        />
+        <LiveRegion />
+        <ThemeProvider>
+          <UIVersionProvider>
+            <Suspense fallback={<BootSkeleton />}>
+              <AuthPanel
+                auth={firebaseServices.auth}
+                db={firebaseServices.db}
+                functions={firebaseServices.functions}
+                onSuccess={() => navigate('dashboard')}
+              />
+            </Suspense>
+          </UIVersionProvider>
+        </ThemeProvider>
+        <UpdateNotification />
+      </>
+    );
   }
 
   return (
@@ -223,6 +295,7 @@ function App() {
       <LiveRegion />
       
       <ThemeProvider>
+      <UIVersionProvider>
       <TimeProvider>
         <OfflineProvider>
           <DataProvider
@@ -239,15 +312,8 @@ function App() {
                     {/* Offline Banner - shows when connection is lost */}
                     <OfflineBanner position="top" />
                     
-                    {isAuthRequired ? (
-                      <AuthPanel 
-                        auth={firebaseServices.auth} 
-                        db={firebaseServices.db}
-                        functions={firebaseServices.functions}
-                        onSuccess={() => navigate('dashboard')}
-                      />
-                    ) : (
-                      <NotificationProvider>
+                    <NotificationProvider>
+                      <EventsProvider>
                         <AppContent
                           currentScreen={currentScreen}
                           user={user}
@@ -259,8 +325,8 @@ function App() {
                           goBack={goBack}
                           canGoBack={canGoBack}
                         />
-                      </NotificationProvider>
-                    )}
+                      </EventsProvider>
+                    </NotificationProvider>
                 </AccessControlProvider>
               </LayoutProvider>
             </FeatureProvider>
@@ -268,6 +334,7 @@ function App() {
           </DataProvider>
         </OfflineProvider>
       </TimeProvider>
+      </UIVersionProvider>
       </ThemeProvider>
       
       {/* PWA Update Notification */}

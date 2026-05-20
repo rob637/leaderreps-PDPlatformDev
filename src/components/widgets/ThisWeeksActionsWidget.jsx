@@ -19,9 +19,11 @@ import CoachingActionItem from '../coaching/CoachingActionItem';
 import SessionPickerModal from '../coaching/SessionPickerModal';
 import { doc, getDoc, updateDoc, setDoc, deleteField, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
+import { useFeatures } from '../../providers/FeatureProvider';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
 import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
 import BaselineAssessmentSimple from '../screens/developmentplan/BaselineAssessmentSimple';
+import IdentityStatement from '../screens/IdentityStatement';
 import NotificationPreferencesWidget from './NotificationPreferencesWidget';
 import FoundationCommitmentWidget from './FoundationCommitmentWidget';
 import ConditioningTutorialWidget from './ConditioningTutorialWidget';
@@ -78,6 +80,12 @@ const generateCalendarUrl = (calendarEvent) => {
 
 const ThisWeeksActionsWidget = ({ helpText }) => {
   const { db, user, developmentPlanData, updateDevelopmentPlanData, isAdmin } = useAppServices();
+  const { isFeatureEnabled } = useFeatures();
+  // Foundation Open Access (May-11 revamp): when enabled, Foundation phase
+  // ('start') drops milestone-by-milestone gating and treats all 5 milestones
+  // as flat, all-access content from Day 1. Default OFF (not in FEATURE_METADATA);
+  // toggle in Firestore at config/features.foundation-open-access.enabled = true.
+  const foundationOpenAccess = isFeatureEnabled('foundation-open-access');
   const navigation = useSafeNavigation();
   const navigate = navigation?.navigate;
   const [resettingPrep, setResettingPrep] = useState(false);
@@ -89,6 +97,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   // Interactive content modals
   const [showLeaderProfileModal, setShowLeaderProfileModal] = useState(false);
   const [showBaselineModal, setShowBaselineModal] = useState(false);
+  const [showIdentityStatementModal, setShowIdentityStatementModal] = useState(false);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [showFoundationCommitmentModal, setShowFoundationCommitmentModal] = useState(false);
   const [showConditioningTutorialModal, setShowConditioningTutorialModal] = useState(false);
@@ -479,6 +488,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           handlerType = 'leader-profile';
         } else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment' || labelLower.includes('baseline') || labelLower.includes('skills assessment')) {
           handlerType = 'baseline-assessment';
+        } else if (action.id?.includes('identity-statement') || action.resourceId === 'leadership-identity-statement' || action.resourceId === 'interactive-identity-statement' || labelLower.includes('identity statement') || labelLower.includes('leadership identity')) {
+          handlerType = 'identity-statement';
         } else if (action.id?.includes('notification-setup') || action.resourceId === 'interactive-notification-setup' || labelLower.includes('setup notification')) {
           handlerType = 'notification-setup';
         } else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial' || labelLower.includes('conditioning tutorial')) {
@@ -520,7 +531,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         }
       }
 
-      const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial', 'conditioning-rep'].includes(handlerType);
+      const isInteractive = ['leader-profile', 'baseline-assessment', 'identity-statement', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial', 'conditioning-rep'].includes(handlerType);
       
       // Auto-complete status for interactive items
       let autoComplete = undefined;
@@ -694,6 +705,93 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     // Foundation uses 5 gated milestones instead of 8 weeks
     // Milestones are stored as milestone-1, milestone-2, etc. in daily_plan_v1
     if (currentPhase?.id === 'start') {
+      // -------------------- FOUNDATION OPEN ACCESS (May-11 revamp) --------------------
+      // When the foundation-open-access feature flag is on, Foundation is flat:
+      // all 5 milestones' content is shown at once with no milestone gating,
+      // no trainer-controlled session attendance items, no certificate gating.
+      // Session prep items are still surfaced for completeness.
+      if (foundationOpenAccess) {
+        const flatActions = [];
+        const flatCoaching = [];
+        const flatCommunity = [];
+        const flatSessionPrep = [];
+
+        for (let m = 1; m <= 5; m++) {
+          const mDoc = dailyPlan.find(d => d.id === `milestone-${m}`);
+          if (mDoc?.actions && mDoc.actions.length > 0) {
+            const normalized = normalizeDailyActions(mDoc.actions, `milestone-${m}`, m).filter(a => {
+              if (a.type === 'daily_rep') return false;
+              if (a.handlerType === 'conditioning-rep' && a.repTypeId) {
+                if (!SIMPLIFIED_REP_TYPES.includes(a.repTypeId)) return false;
+              }
+              return true;
+            });
+            flatActions.push(...normalized);
+          }
+          if (mDoc?.coachingSessionTypes && mDoc.coachingSessionTypes.length > 0) {
+            mDoc.coachingSessionTypes.forEach((sessionType) => {
+              const typeInfo = COACHING_SESSION_LABELS[sessionType] || { label: 'Coaching Session', description: '', icon: '🎯' };
+              flatCoaching.push({
+                id: `milestone-${m}-coaching-${sessionType}`,
+                type: 'coaching',
+                displayType: 'coaching',
+                sessionType,
+                label: typeInfo.label,
+                description: typeInfo.description,
+                icon: typeInfo.icon,
+                required: false,
+                category: 'Coaching',
+                fromDailyPlan: true,
+                dayId: `milestone-${m}`,
+                handlerType: 'session-picker',
+                isSessionPicker: true,
+                requiresCertification: false,
+                milestoneId: m
+              });
+            });
+          }
+          if (mDoc?.communitySessionTypes && mDoc.communitySessionTypes.length > 0) {
+            mDoc.communitySessionTypes.forEach((sessionType) => {
+              const typeInfo = COMMUNITY_SESSION_LABELS[sessionType] || { label: 'Community Session', description: '', icon: '🎉' };
+              flatCommunity.push({
+                id: `milestone-${m}-community-${sessionType}`,
+                type: 'community',
+                displayType: 'community',
+                sessionType,
+                label: `Join: ${typeInfo.label}`,
+                description: typeInfo.description,
+                icon: typeInfo.icon,
+                required: false,
+                optional: true,
+                category: 'Community',
+                fromDailyPlan: true,
+                dayId: `milestone-${m}`,
+                handlerType: 'community-session-picker',
+                isSessionPicker: true
+              });
+            });
+          }
+        }
+
+        // Aggregate all session-prep configs (session2..session5) so users see prep items together
+        ['session2', 'session3', 'session4', 'session5'].forEach((spId) => {
+          const cfg = dailyPlan.find(d => d.id === `${spId}-config`);
+          if (cfg?.actions && cfg.actions.length > 0) {
+            const visible = cfg.actions.filter(a => a.hidden !== true);
+            const normalized = normalizeDailyActions(visible, `${spId}-config`, 0).map(action => ({
+              ...action,
+              prepSection: spId,
+              isSessionPrep: true,
+              category: `Session ${spId.replace('session', '')} Prep`
+            }));
+            flatSessionPrep.push(...normalized);
+          }
+        });
+
+        return [...flatActions, ...flatCoaching, ...flatCommunity, ...flatSessionPrep];
+      }
+
+      // -------------------- DEFAULT (milestone-gated) FOUNDATION FLOW --------------------
       // Determine current milestone from user's milestone progress
       // Current milestone = first milestone that is NOT signed off (or 6 if all signed = graduated)
       let currentMilestone = 1;
@@ -942,11 +1040,13 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     // Filter out Daily Reps
     return weekActions.filter(action => action.type !== 'daily_rep');
     
-  }, [dailyPlan, currentPhase?.id, currentWeekNumber, prepRequirementsComplete?.allComplete, normalizeDailyActions, user?.milestoneProgress]);
+  }, [dailyPlan, currentPhase?.id, currentWeekNumber, prepRequirementsComplete?.allComplete, normalizeDailyActions, user?.milestoneProgress, foundationOpenAccess]);
 
   // Calculate current milestone info for display
   const currentMilestoneInfo = useMemo(() => {
     if (currentPhase?.id !== 'start') return null;
+    // Foundation Open Access: hide milestone progression chip & sign-off block.
+    if (foundationOpenAccess) return null;
     
     const milestoneProgress = user?.milestoneProgress || {};
     let currentMilestone = 1;
@@ -985,7 +1085,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       name: milestoneNames[currentMilestone] || `Milestone ${currentMilestone}`,
       isGraduated: false
     };
-  }, [currentPhase?.id, user?.milestoneProgress]);
+  }, [currentPhase?.id, user?.milestoneProgress, foundationOpenAccess]);
 
   // Get carried over items (including incomplete prep phase items AND all prior weeks)
   const carriedOverItems = useMemo(() => {
@@ -1070,7 +1170,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
           });
           
           const handlerType = item.handlerType || fullAction?.handlerType || '';
-          const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType);
+          const isInteractive = ['leader-profile', 'baseline-assessment', 'identity-statement', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType);
           
           carriedItems.push({
             ...(fullAction || {}),
@@ -1300,7 +1400,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             else if (labelLower.includes('watch') || labelLower.includes('video')) handlerType = 'video';
             else if (labelLower.includes('read')) handlerType = 'read';
           }
-          const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType);
+          const isInteractive = ['leader-profile', 'baseline-assessment', 'identity-statement', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial'].includes(handlerType);
           
           carriedItems.push({
             ...action,
@@ -1414,6 +1514,37 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   const groupedSessionPrepItems = useMemo(() => {
     if (currentPhase?.id !== 'start') return {};
     
+    // Foundation Open Access: surface ALL session prep groups (session2..session5) flat,
+    // not gated by current milestone progression.
+    if (foundationOpenAccess) {
+      const groups = {
+        session2: { items: [], completedCount: 0, totalCount: 0, allComplete: false },
+        session3: { items: [], completedCount: 0, totalCount: 0, allComplete: false },
+        session4: { items: [], completedCount: 0, totalCount: 0, allComplete: false },
+        session5: { items: [], completedCount: 0, totalCount: 0, allComplete: false }
+      };
+      const isItemCompleteOA = (item) => {
+        if (item.prepComplete !== undefined) return item.prepComplete;
+        const progress = getItemProgress(item.id);
+        return progress?.status === 'completed' || completedItems.includes(item.id);
+      };
+      const seenOA = new Set();
+      allActions.forEach(item => {
+        if (!item.prepSection || seenOA.has(item.id)) return;
+        if (!groups[item.prepSection]) return;
+        seenOA.add(item.id);
+        const isComplete = isItemCompleteOA(item);
+        groups[item.prepSection].items.push({ ...item, isComplete });
+        groups[item.prepSection].totalCount++;
+        if (isComplete) groups[item.prepSection].completedCount++;
+      });
+      Object.keys(groups).forEach(sessionId => {
+        const g = groups[sessionId];
+        g.allComplete = g.totalCount > 0 && g.completedCount === g.totalCount;
+      });
+      return groups;
+    }
+    
     // Calculate current milestone to determine which session prep is "native"
     let currentMilestoneNum = 1;
     const milestoneProgress = user?.milestoneProgress || {};
@@ -1482,7 +1613,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     });
     
     return groups;
-  }, [currentPhase?.id, user?.milestoneProgress, allActions, getItemProgress, completedItems]);
+  }, [currentPhase?.id, user?.milestoneProgress, allActions, getItemProgress, completedItems, foundationOpenAccess]);
 
   // Fetch video series durations for video_series actions
   // Use a ref to track fetched series IDs to avoid infinite loops
@@ -1773,6 +1904,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       } else {
         if (action.id?.includes('leader-profile') || action.resourceId === 'interactive-leader-profile' || labelLower.includes('leader profile')) handlerType = 'leader-profile';
         else if (action.id?.includes('baseline-assessment') || action.resourceId === 'interactive-baseline-assessment' || labelLower.includes('baseline') || labelLower.includes('skills assessment')) handlerType = 'baseline-assessment';
+        else if (action.id?.includes('identity-statement') || action.resourceId === 'leadership-identity-statement' || action.resourceId === 'interactive-identity-statement' || labelLower.includes('identity statement') || labelLower.includes('leadership identity')) handlerType = 'identity-statement';
+        else if (action.id?.includes('identity-statement') || action.resourceId === 'leadership-identity-statement' || action.resourceId === 'interactive-identity-statement' || labelLower.includes('identity statement') || labelLower.includes('leadership identity')) handlerType = 'identity-statement';
         else if (action.id?.includes('notification-setup') || action.resourceId === 'interactive-notification-setup' || labelLower.includes('setup notification')) handlerType = 'notification-setup';
         else if (action.id?.includes('conditioning-tutorial') || action.resourceId === 'interactive-conditioning-tutorial' || labelLower.includes('conditioning tutorial')) handlerType = 'conditioning-tutorial';
         else if (action.id?.includes('foundation-commitment') || action.resourceId === 'interactive-foundation-commitment' || labelLower.includes('foundation expectation') || labelLower.includes('foundation commitment')) handlerType = 'foundation-commitment';
@@ -1852,7 +1985,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
         }
       }
       
-      const isInteractive = ['leader-profile', 'baseline-assessment', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial', 'conditioning-rep'].includes(handlerType);
+      const isInteractive = ['leader-profile', 'baseline-assessment', 'identity-statement', 'notification-setup', 'foundation-commitment', 'conditioning-tutorial', 'conditioning-rep'].includes(handlerType);
       
       return {
         ...action,
@@ -1943,6 +2076,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
       setShowLeaderProfileModal(true);
     } else if (item.handlerType === 'baseline-assessment') {
       setShowBaselineModal(true);
+    } else if (item.handlerType === 'identity-statement') {
+      setShowIdentityStatementModal(true);
     } else if (item.handlerType === 'notification-setup') {
       setShowNotificationModal(true);
     } else if (item.handlerType === 'foundation-commitment') {
@@ -2351,7 +2486,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   ? 'text-emerald-700 dark:text-emerald-400' 
                   : isCertified
                     ? 'text-amber-700 dark:text-amber-400'
-                    : 'text-slate-500 dark:text-slate-400'
+                    : 'text-slate-600 dark:text-slate-300'
               }`}>
                 {item.label}
               </p>
@@ -2544,12 +2679,12 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                     </span>
                   </div>
                   {registration.coach && (
-                    <p className="text-slate-500 dark:text-slate-400 mt-0.5">with {registration.coach}</p>
+                    <p className="text-slate-600 dark:text-slate-300 mt-0.5">with {registration.coach}</p>
                   )}
                   <p className="text-slate-400 dark:text-slate-500 mt-0.5">• {item.sessionType === SESSION_TYPES.OPEN_GYM ? '60' : '30'} min</p>
                 </div>
               ) : (
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-slate-600 dark:text-slate-300">
                   Click to schedule your coaching session • 5 min
                 </p>
               )}
@@ -2557,7 +2692,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             
             {/* Right side: Status badge and action button */}
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-corporate-teal bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">
+              <span className="text-[10px] font-bold text-corporate-teal-ink bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">
                 Required
               </span>
               {!isCertified && (
@@ -2660,7 +2795,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 {displayLabel}
               </p>
               {!isAttended && (
-                <span className="text-[10px] font-bold text-corporate-teal bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
+                <span className="text-[10px] font-bold text-corporate-teal-ink bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
               )}
             </div>
             {isAttended ? (
@@ -2684,7 +2819,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 <span className="text-amber-500 dark:text-amber-300 underline ml-1">Reschedule</span>
               </div>
             ) : isSchedulableCoaching ? (
-              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                 <Calendar className="w-3 h-3" />
                 <span>Click to schedule your coaching session • 5 min</span>
               </div>
@@ -2752,7 +2887,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 {item.label}
               </p>
               {!isScheduled && (
-                <span className="text-[10px] font-bold text-corporate-teal bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
+                <span className="text-[10px] font-bold text-corporate-teal-ink bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
               )}
             </div>
             {isScheduled && registration ? (
@@ -2771,7 +2906,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 <span className="text-emerald-400 dark:text-emerald-500">• 30 min</span>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                 <Calendar className="w-3 h-3" />
                 <span>Coaching • Personal coaching session • 5 min</span>
               </div>
@@ -2829,7 +2964,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 {item.label}
               </p>
               {!isScheduled && (
-                <span className="text-[10px] font-bold text-corporate-teal bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
+                <span className="text-[10px] font-bold text-corporate-teal-ink bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
               )}
             </div>
             {isScheduled && registration ? (
@@ -2848,7 +2983,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 <span className="text-emerald-400 dark:text-emerald-500">• 60 min</span>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                 <Calendar className="w-3 h-3" />
                 <span>Coaching • Drop-in feedback session • 5 min</span>
               </div>
@@ -2961,7 +3096,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
     const getIconColor = () => {
       if (isCompleted) return 'text-emerald-600 dark:text-emerald-400';
       if (item.isLocked) return 'text-gray-400 dark:text-gray-500';
-      return 'text-corporate-teal dark:text-teal-400';
+      return 'text-teal-700 dark:text-teal-400';
     };
     
     // Determine if this item is clickable (interactive, has resource, or is session picker) - but NOT if locked
@@ -3028,7 +3163,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               </span>
             )}
             {!item.isLocked && item.required !== false && !item.optional && !isCarriedOver && !isCompleted && (
-              <span className="text-[10px] font-bold text-corporate-teal bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
+              <span className="text-[10px] font-bold text-corporate-teal-ink bg-teal-50 dark:text-teal-400 dark:bg-teal-900/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Required</span>
             )}
             {!item.isInteractive && item.optional && !isCarriedOver && !isCompleted && (
               <span className="text-[10px] font-bold text-slate-500 bg-slate-100 dark:text-slate-400 dark:bg-slate-700 px-1.5 py-0.5 rounded uppercase tracking-wider">Optional</span>
@@ -3077,7 +3212,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   </>
                 )}
                 {item.estimatedMinutes && (
-                  <><span>•</span><span className="text-slate-500 dark:text-slate-400">{item.estimatedMinutes} min</span></>
+                  <><span>•</span><span className="text-slate-600 dark:text-slate-300">{item.estimatedMinutes} min</span></>
                 )}
               </>
             ) : item.isInteractive ? (
@@ -3090,7 +3225,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                     : 'Foundation Onboarding'}
                 </span>
                 {(interactiveDurations[item.resourceId] || item.estimatedMinutes || item.duration) && (
-                  <><span>•</span><span className="text-slate-500 dark:text-slate-400">{interactiveDurations[item.resourceId] || item.estimatedMinutes || item.duration} min</span></>
+                  <><span>•</span><span className="text-slate-600 dark:text-slate-300">{interactiveDurations[item.resourceId] || item.estimatedMinutes || item.duration} min</span></>
                 )}
               </>
             ) : (
@@ -3104,7 +3239,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 )}
                 {/* Show estimated time to complete - uses explicit values or defaults by resource type */}
                 {getEstimatedTime(item) && (
-                   <><span>•</span><span className="text-slate-500 dark:text-slate-400">{getEstimatedTime(item)} min</span></>
+                   <><span>•</span><span className="text-slate-600 dark:text-slate-300">{getEstimatedTime(item)} min</span></>
                 )}
               </>
             )}
@@ -3118,7 +3253,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-corporate-teal hover:bg-teal-50 dark:text-slate-500 dark:hover:text-teal-400 dark:hover:bg-teal-900/30 rounded-xl transition-all"
+              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-corporate-teal-ink hover:bg-teal-50 dark:text-slate-500 dark:hover:text-teal-400 dark:hover:bg-teal-900/30 rounded-xl transition-all"
             >
               <Calendar className="w-5 h-5" />
             </a>
@@ -3131,8 +3266,9 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                 e.stopPropagation();
                 handleInteractiveClick(item);
               }}
-              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-transparent text-slate-400 hover:text-corporate-teal hover:bg-teal-50 dark:text-slate-500 dark:hover:text-teal-400 dark:hover:bg-teal-900/30 rounded-xl transition-all"
+              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-transparent text-slate-400 hover:text-corporate-teal-ink hover:bg-teal-50 dark:text-slate-500 dark:hover:text-teal-400 dark:hover:bg-teal-900/30 rounded-xl transition-all"
               title={isCompleted ? 'Edit' : 'Complete'}
+              aria-label={isCompleted ? `Edit ${item.title || 'item'}` : `Complete ${item.title || 'item'}`}
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -3155,7 +3291,8 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   handleViewResource(e, item);
                 }
               }}
-              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-transparent text-slate-400 hover:text-corporate-teal hover:bg-teal-50 dark:text-slate-500 dark:hover:text-teal-400 dark:hover:bg-teal-900/30 rounded-xl transition-all"
+              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center bg-transparent text-slate-400 hover:text-corporate-teal-ink hover:bg-teal-50 dark:text-slate-500 dark:hover:text-teal-400 dark:hover:bg-teal-900/30 rounded-xl transition-all"
+              aria-label={`Open ${item.title || 'resource'}`}
             >
               {loadingResource === item.id ? (
                 <Loader className="w-5 h-5 animate-spin" />
@@ -3261,7 +3398,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   
                   {prepExpanded && (
                     <div className="mt-2 p-3 bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 space-y-2">
-                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Completed Items</p>
+                      <p className="text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-2">Completed Items</p>
                       {onboardingActions.map((item) => (
                         <div key={item.id} className="flex items-center gap-2 text-sm">
                           <CheckCircle className="w-4 h-4 text-corporate-teal flex-shrink-0" />
@@ -3321,7 +3458,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   
                   {exploreExpanded && (
                     <div className="mt-2 p-3 bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 space-y-2">
-                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Completed Items</p>
+                      <p className="text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-2">Completed Items</p>
                       {session1Actions.map((item) => (
                         <div key={item.id} className="flex items-center gap-2 text-sm">
                           <CheckCircle className="w-4 h-4 text-corporate-teal flex-shrink-0" />
@@ -3373,7 +3510,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                   
                   {exploreExpanded && (
                     <div className="mt-2 p-3 bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 space-y-2">
-                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Explored Items</p>
+                      <p className="text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-2">Explored Items</p>
                       {allExploreActions.map((item) => (
                         <div key={item.id} className="flex items-center gap-2 text-sm">
                           <CheckCircle className="w-4 h-4 text-corporate-teal flex-shrink-0" />
@@ -3508,7 +3645,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                     </div>
                     <div className="flex-1 text-left">
                       <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
-                        🎉 {currentPhase?.id === 'start' ? 'Level Complete!' : 'This Week Complete!'}
+                        🎉 {currentPhase?.id === 'start' && currentMilestoneInfo ? 'Level Complete!' : 'This Week Complete!'}
                       </p>
                       <p className="text-xs text-emerald-600 dark:text-emerald-400">
                         All {milestoneActions.length} {milestoneActions.length === 1 ? 'task' : 'tasks'} finished — Great work!
@@ -3534,7 +3671,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
                     <div className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                       <span className="text-sm font-bold text-teal-800 dark:text-teal-400 uppercase tracking-wider">
-                        {currentPhase?.id === 'start' 
+                        {currentPhase?.id === 'start' && currentMilestoneInfo
                           ? currentMilestoneInfo?.name || 'Current Milestone'
                           : 'This Week'}
                       </span>
@@ -3627,7 +3764,7 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
             {/* Empty state */}
             {allActions.length === 0 && displayedCarriedOverItems.length === 0 && 
              (currentPhase?.id !== 'start' || Object.values(groupedSessionPrepItems).every(g => g.totalCount === 0)) && (
-              <div className="p-4 text-center text-slate-500 dark:text-slate-400 text-sm italic">
+              <div className="p-4 text-center text-slate-600 dark:text-slate-300 text-sm italic">
                 {currentPhase?.id === 'start' 
                   ? 'No content configured for this milestone yet. Check Content Manager.'
                   : 'No actions scheduled for this week.'
@@ -3695,6 +3832,18 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
               onClose={() => setShowBaselineModal(false)}
               isLoading={savingBaseline}
               initialData={developmentPlanData?.assessmentHistory?.[developmentPlanData.assessmentHistory.length - 1]}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Leadership Identity Statement Modal */}
+      {showIdentityStatementModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pb-24 sm:pb-4 bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-xl">
+            <IdentityStatement
+              embedded
+              onClose={() => setShowIdentityStatementModal(false)}
             />
           </div>
         </div>

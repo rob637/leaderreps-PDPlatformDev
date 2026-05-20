@@ -66,7 +66,7 @@ const PracticeCard = ({ scenario, onClick }) => {
             )}
           </div>
           
-          <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-1 group-hover:text-corporate-teal transition-colors">
+          <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-1 group-hover:text-corporate-teal-ink transition-colors">
             {scenario.title}
           </h4>
           
@@ -186,7 +186,7 @@ const CoachingOnDemandWidget = ({ scope = {}, helpText }) => {
         {displayScenarios.length > 3 && (
           <button 
             onClick={() => navigate?.('ai-roleplay')}
-            className="w-full mt-3 py-2 text-sm text-corporate-teal font-medium hover:bg-teal-50 rounded-lg transition-colors flex items-center justify-center gap-1"
+            className="w-full mt-3 py-2 text-sm text-corporate-teal-ink font-medium hover:bg-teal-50 rounded-lg transition-colors flex items-center justify-center gap-1"
           >
             Browse all scenarios
             <ChevronRight className="w-4 h-4" />

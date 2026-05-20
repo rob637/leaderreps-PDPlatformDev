@@ -229,7 +229,7 @@ const ArenaDashboard = () => {
           </div>
           <div className="flex gap-8 text-center">
             <div>
-              <div className="text-2xl font-bold text-corporate-teal">94%</div>
+              <div className="text-2xl font-bold text-corporate-teal-ink">94%</div>
               <div className="text-xs text-blue-200 uppercase">Consistency</div>
             </div>
             <div>
@@ -309,7 +309,7 @@ const ArenaDashboard = () => {
                       subLabel="Execute your targeted practice."
                     />
                     {/* FEATURE: Calendar Integration */}
-                    <button className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-corporate-teal" title="Sync to Calendar">
+                    <button className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-corporate-teal-ink" title="Sync to Calendar">
                       <Calendar className="w-5 h-5" />
                     </button>
                   </div>

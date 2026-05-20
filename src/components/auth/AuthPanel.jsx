@@ -497,7 +497,7 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
         
         {inviteData && isSignup && (
             <div className="mb-6 p-4 bg-corporate-teal/5 text-corporate-navy rounded-xl text-sm border border-corporate-teal/20">
-                <p className="font-semibold text-corporate-teal">Invitation Accepted!</p>
+                <p className="font-semibold text-corporate-teal-ink">Invitation Accepted!</p>
                 <p className="text-slate-600 dark:text-slate-300 mt-1">{inviteData.customMessage || "Welcome to the team."}</p>
             </div>
         )}
@@ -673,14 +673,14 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
             <>
               <button 
                 onClick={() => setMode('reset')}
-                className="text-slate-500 dark:text-slate-400 hover:text-corporate-teal transition-colors"
+                className="text-slate-500 dark:text-slate-400 hover:text-corporate-teal-ink transition-colors"
               >
                 Forgot Password?
               </button>
               <span className="text-slate-300 mx-2">·</span>
               <button 
                 onClick={() => setMode('signup')}
-                className="text-corporate-teal font-medium hover:text-teal-600 transition-colors"
+                className="text-corporate-teal-ink font-medium hover:text-teal-600 transition-colors"
               >
                 Create Account
               </button>
@@ -694,7 +694,7 @@ function AuthPanel({ auth, db, functions, onSuccess }) {
                   setFirstName('');
                   setLastName('');
               }}
-              className="text-slate-500 dark:text-slate-400 hover:text-corporate-teal transition-colors"
+              className="text-slate-500 dark:text-slate-400 hover:text-corporate-teal-ink transition-colors"
             >
               ← Back to Sign In
             </button>

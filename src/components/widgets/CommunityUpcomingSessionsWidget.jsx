@@ -82,7 +82,7 @@ const SessionCard = ({ session, isRegistered, onRegister, onCancel }) => {
           </div>
         )}
         {session.recurrence && session.recurrence !== 'none' && (
-          <div className="flex items-center gap-1 text-corporate-teal">
+          <div className="flex items-center gap-1 text-corporate-teal-ink">
             <Repeat className="w-4 h-4" />
             <span className="capitalize">{session.recurrence}</span>
           </div>
@@ -172,7 +172,7 @@ const CommunityUpcomingSessionsWidget = ({ helpText }) => {
         )}
         
         {filteredSessions.length > 5 && (
-          <button className="w-full py-2 text-sm text-corporate-teal font-medium hover:bg-teal-50 rounded-lg transition-colors">
+          <button className="w-full py-2 text-sm text-corporate-teal-ink font-medium hover:bg-teal-50 rounded-lg transition-colors">
             View All Sessions
           </button>
         )}

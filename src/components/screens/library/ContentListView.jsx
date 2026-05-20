@@ -164,7 +164,7 @@ const ContentListView = ({
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-2 px-4 py-3 rounded-xl border transition-colors ${
               showFilters || selectedSkills.length > 0
-                ? 'bg-corporate-teal/10 border-corporate-teal/30 text-corporate-teal'
+                ? 'bg-corporate-teal/10 border-corporate-teal/30 text-corporate-teal-ink'
                 : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300'
             }`}
           >

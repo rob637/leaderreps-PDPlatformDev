@@ -6,7 +6,7 @@ import { useDailyPlan } from '../../hooks/useDailyPlan';
 import { useAccessControlContext } from '../../providers/AccessControlProvider';
 import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 // import { useFeatures } from '../../providers/FeatureProvider';
-import WidgetRenderer from '../admin/WidgetRenderer';
+import WidgetRenderer from '../shared/WidgetRenderer';
 import PrepGate from '../ui/PrepGate';
 
 import {

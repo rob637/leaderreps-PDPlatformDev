@@ -368,7 +368,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
                   onClick={() => setActiveCategory(cat)}
                   className={`flex-1 py-3 text-xs font-medium border-b-2 transition-colors ${
                     activeCategory === cat 
-                      ? 'border-corporate-teal text-corporate-teal bg-teal-50/50 dark:bg-teal-900/20/50' 
+                      ? 'border-corporate-teal text-corporate-teal-ink bg-teal-50/50 dark:bg-teal-900/20/50' 
                       : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 hover:bg-slate-50'
                   }`}
                 >
@@ -458,7 +458,7 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
                 href="/admin/content" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-xs font-bold text-corporate-teal hover:underline flex items-center gap-1"
+                className="text-xs font-bold text-corporate-teal-ink hover:underline flex items-center gap-1"
               >
                 <PlusCircle className="w-3 h-3" />
                 Manage Resources

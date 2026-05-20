@@ -39,7 +39,7 @@ const OutcomeSelector = ({ selectedOutcome, onSelect }) => {
               <span className="text-lg">{option.icon}</span>
               <span className={`font-medium ${
                 selectedOutcome === option.id 
-                  ? 'text-corporate-teal' 
+                  ? 'text-corporate-teal-ink' 
                   : 'text-corporate-navy dark:text-white'
               }`}>
                 {option.label}

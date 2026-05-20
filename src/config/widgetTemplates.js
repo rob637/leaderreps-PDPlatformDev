@@ -123,36 +123,36 @@ export const WIDGET_TEMPLATES = {
 })()
     `,
     'lis-maker': `
-<Card title="LIS Maker" icon={PenTool} accent="NAVY" helpText={widgetHelpText}>
-  <div className="space-y-2">
+<Card title="Leadership Identity" icon={Compass} accent="NAVY" helpText={widgetHelpText}>
+  <div className="space-y-3">
     <div className="bg-teal-50 p-3 rounded-xl border border-teal-100">
-      <h4 className="font-bold text-teal-900 mb-1">Build Your Identity</h4>
-      <p className="text-sm text-teal-800 mb-2">
-        Your Leadership Identity Statement (LIS) anchors you in who you want to be.
-      </p>
-      <p className="text-xs text-teal-600 italic mb-1">
-        Try this format: "I am a [Core Value] leader who [Action] to create [Impact]."
+      <h4 className="font-bold text-teal-900 mb-1">Build your Leadership Identity</h4>
+      <p className="text-sm text-teal-800">
+        An AI coach drafts your <b>Anchor</b>, three pieces of <b>Evidence</b>, and your <b>Edge</b> from four short prompts.
       </p>
     </div>
 
-    <div>
-      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-        Your Statement
-      </label>
-      <textarea 
-        value={identityStatement}
-        onChange={(e) => setIdentityStatement(e.target.value)}
-        className="w-full p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all text-sm min-h-[80px]"
-        placeholder="I am a..."
-      />
-    </div>
+    {identityStatement && identityStatement.trim().length > 0 ? (
+      <div className="p-3 rounded-xl bg-white border border-slate-200">
+        <p className="text-sm font-serif italic text-slate-800">
+          "{identityStatement}"
+        </p>
+        <p className="mt-1 text-[11px] text-slate-500">
+          Open the builder to upgrade to the structured 3-card version.
+        </p>
+      </div>
+    ) : (
+      <p className="text-xs text-slate-500">
+        4 short prompts &middot; about 4 minutes &middot; you can edit anything before saving.
+      </p>
+    )}
 
-    <button 
-      onClick={() => handleSaveIdentity(identityStatement)}
+    <button
+      onClick={() => navigate && navigate('identity-statement')}
       className="w-full py-2 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors flex items-center justify-center gap-2"
     >
-      <Save className="w-4 h-4" />
-      Save Identity
+      <Compass className="w-4 h-4" />
+      {identityStatement && identityStatement.trim().length > 0 ? 'Open my Identity' : 'Build my Identity'}
     </button>
   </div>
 </Card>
@@ -2859,7 +2859,7 @@ const RepsHistoryWidget = () => {
                     )}
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
-                    <span className="font-bold text-corporate-teal">{entry.completedCount || (entry.items?.length || 0)}</span>
+                    <span className="font-bold text-corporate-teal-ink">{entry.completedCount || (entry.items?.length || 0)}</span>
                     <span className="text-slate-400 text-xs ml-1">reps</span>
                   </td>
                 </tr>
@@ -3170,7 +3170,7 @@ render(<RepsHistoryWidget />);
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1 text-corporate-teal">
+          <div className="flex items-center gap-1 text-corporate-teal-ink">
             <span className="text-xs font-medium">{hasCompletedAssessment ? 'View' : 'Start'}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </div>
@@ -3201,6 +3201,25 @@ render(<RepsHistoryWidget />);
   };
 
 export const FEATURE_METADATA = {
+  // ─── UI Polish ─────────────────────────────────────────────────────────
+  // Behavior flag (NOT a widget). When ON, supported dashboard cards morph
+  // into a centered detail view via shared-element transition instead of
+  // popping a modal or expanding inline. When OFF, every supported widget
+  // falls back to its prior behavior. Defaults to ON (because it's listed in
+  // FEATURE_METADATA) — toggle off in Widget Lab → "Dashboard" group.
+  // Currently wired into: DailyPlanWidget, AskTrainerWidget, MyEventsWidget,
+  // UpcomingEventsWidget.
+  'dashboard-card-morph': {
+    core: false,
+    category: 'UI Polish',
+    name: 'Dashboard Card Morph',
+    description: 'Cards morph into detail view (vs modal/accordion)',
+    purpose: 'Behavior flag — enable iOS-style shared-element transitions on supported dashboard cards.',
+    extendedDescription: 'When enabled, clicking a supported row (Today\'s Plan resource, Ask a Trainer answered question, My Events, Upcoming Events) animates the row itself into a centered detail card instead of opening a separate modal or inline accordion. Respects prefers-reduced-motion.',
+    inputs: [],
+    outputs: [],
+    behaviorFlag: true,
+  },
   'program-status-debug': {
     core: true,
     category: 'System',
@@ -3349,12 +3368,13 @@ export const FEATURE_METADATA = {
     outputs: [],
   },
   'locker-conditioning-history': {
-    core: true,
+    core: false, // DEPRECATED (May-11 #4): Practice Reps widget now carries the
+                 // week-grouped collapsible UI for all rep history surfacing.
     category: 'Locker',
-    name: 'Conditioning History',
+    name: 'Conditioning History (Deprecated)',
     description: 'Weekly conditioning rep history',
     purpose: 'Track your weekly leadership conditioning reps.',
-    extendedDescription: 'Displays your conditioning rep history grouped by week. Shows completed and canceled reps with details about the person, rep type, and completion status.',
+    extendedDescription: 'DEPRECATED: Replaced by Practice Reps in Locker. The widget file remains in the codebase for one release cycle in case rollback is needed.',
     inputs: ['conditioningReps'],
     outputs: [],
     componentPath: 'src/components/widgets/ConditioningHistoryWidget.jsx',
@@ -3543,6 +3563,28 @@ export const FEATURE_METADATA = {
     inputs: ['currentWeek', 'userProgress'],
     outputs: ['toggleItemComplete'],
     componentPath: 'src/components/widgets/ThisWeeksActionsWidget.jsx',
+  },
+  'my-actions': {
+    core: true,
+    category: 'Dashboard',
+    name: 'My Actions',
+    description: 'Self-paced phase content (May 2026 three-phase model).',
+    purpose: 'Phase To-Do List.',
+    extendedDescription: 'Renders Foundation or Ascent content from daily_plan_v2 with completion tracking. Replaces This Week\'s Actions in the simplified phase model.',
+    inputs: ['threePhaseContent', 'userProgress'],
+    outputs: ['toggleItemComplete'],
+    componentPath: 'src/components/widgets/MyActionsWidget.jsx',
+  },
+  'kickoff-todo': {
+    core: true,
+    category: 'Dashboard',
+    name: 'Phase Kickoff To-Do',
+    description: 'Required content for the current phase.',
+    purpose: 'Surfaces required-only content with progress.',
+    extendedDescription: 'Shows only items marked Required in Phase Content for the leader\'s current phase. Auto-hides when 100% complete.',
+    inputs: ['threePhaseContent', 'userProgress'],
+    outputs: ['toggleItemComplete'],
+    componentPath: 'src/components/widgets/KickoffToDoWidget.jsx',
   },
   'dev-plan-focus-areas': {
     core: true,
