@@ -8,16 +8,11 @@ import { createPortal } from 'react-dom';
 import { cn } from '../../lib/utils';
 import { X, Check } from 'lucide-react';
 
-// ============================================
-// MODAL OVERLAY — backdrop with blur
-// ============================================
-const Overlay = ({ onClick }) => (
-  <div
-    onClick={onClick}
-    className="fixed inset-0 z-50 bg-corporate-navy/40 backdrop-blur-sm animate-in fade-in-0"
-    aria-hidden="true"
-  />
-);
+// NOTE: Overlay/backdrop is now rendered inline inside the flex centering
+// wrapper (see render below). Centering via transforms (-translate-x/y-1/2)
+// caused the modal to drift/float when ancestor animations or framer-motion
+// layouts injected their own transforms. The flex-overlay pattern (matches
+// src/components/ui/Modal.jsx) is immune to that class of bug.
 
 // ============================================
 // STEP INDICATOR — numbered circles with green checks
@@ -116,19 +111,30 @@ const ConditioningModal = ({
   };
 
   return createPortal(
-    <>
-      <Overlay onClick={onClose} />
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center md:p-4 overscroll-contain"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose?.();
+      }}
+    >
+      {/* Backdrop — absolute inside the flex overlay so it never competes
+          with the panel's centering. */}
+      <div
+        className="absolute inset-0 bg-corporate-navy/40 backdrop-blur-sm"
+        aria-hidden="true"
+      />
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
         onKeyDown={handleKeyDown}
         className={cn(
-          'fixed left-1/2 z-50 -translate-x-1/2 overscroll-contain',
-          // Mobile: Position higher to account for bottom nav (~80px + safe area)
-          // Use bottom positioning on mobile for better visibility of footer buttons
-          'bottom-20 md:bottom-auto md:top-1/2 md:-translate-y-1/2',
-          // Mobile: Reduce max height to account for bottom nav + top spacing
+          // Position via flex parent — NO transforms, so animation/morphing
+          // transforms on ancestors can't strand this element.
+          'relative z-10 overscroll-contain',
+          // Mobile: pin near the bottom to leave room for bottom nav.
+          // Desktop: flex parent centers it.
+          'mb-20 md:mb-0 mt-auto md:mt-0',
           'w-full max-h-[calc(100vh-6rem)] md:max-h-[90vh] overflow-hidden flex flex-col',
           'bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700',
           maxWidth,
@@ -136,7 +142,7 @@ const ConditioningModal = ({
         )}
         style={{
           // Add safe area bottom padding for notched devices when on mobile
-          marginBottom: 'env(safe-area-inset-bottom, 0px)'
+          marginBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
       >
         {/* ====== HEADER — Navy gradient, always consistent ====== */}
@@ -195,7 +201,7 @@ const ConditioningModal = ({
           </div>
         )}
       </div>
-    </>,
+    </div>,
     document.body
   );
 };
