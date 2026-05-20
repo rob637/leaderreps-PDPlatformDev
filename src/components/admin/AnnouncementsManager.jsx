@@ -55,7 +55,6 @@ const TIER_OPTIONS = [
 // Phase targeting options. Empty value = broadcast to all phases.
 const PHASE_OPTIONS = [
   { id: '', label: 'All Phases' },
-  { id: 'onboarding', label: 'Onboarding' },
   { id: 'foundation', label: 'Foundation' },
   { id: 'ascent', label: 'Ascent' },
 ];
