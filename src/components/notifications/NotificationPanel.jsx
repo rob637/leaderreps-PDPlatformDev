@@ -58,6 +58,11 @@ const NotificationPanel = ({ open, onClose }) => {
     return { today, yesterday, earlier };
   }, [items, groups, tab]);
 
+  // IDs of every already-read item currently in the panel. Computed before
+  // any early return so the hook order stays stable between open/closed
+  // renders (React error #310 otherwise).
+  const readIds = useMemo(() => all.filter((n) => n.read).map((n) => n.id), [all]);
+
   if (!open) return null;
   if (typeof document === 'undefined') return null;
 
@@ -69,7 +74,6 @@ const NotificationPanel = ({ open, onClose }) => {
   // unread + snoozed visible. Confirms first because it's destructive (the
   // user can still recover via undismiss, but the inbox view will hide
   // them).
-  const readIds = useMemo(() => all.filter((n) => n.read).map((n) => n.id), [all]);
   const handleArchiveRead = () => {
     if (readIds.length === 0) return;
     const ok = window.confirm(
