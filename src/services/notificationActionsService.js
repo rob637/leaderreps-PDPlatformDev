@@ -105,6 +105,23 @@ export const undismiss = async (db, uid, id) => {
   }).catch((e) => console.warn('[notif] undismiss failed', e?.message || e));
 };
 
+// Bulk dismiss — used by "Archive read" / "Dismiss all" in the slide-over
+// panel. Batched the same way markAllRead is.
+export const dismissMany = async (db, uid, ids = []) => {
+  if (!db || !uid || ids.length === 0) return;
+  for (let i = 0; i < ids.length; i += 400) {
+    const slice = ids.slice(i, i + 400);
+    const batch = writeBatch(db);
+    slice.forEach((id) => {
+      batch.update(notifRef(db, uid, id), {
+        dismissedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    });
+    await batch.commit().catch((e) => console.warn('[notif] dismissMany chunk failed', e?.message || e));
+  }
+};
+
 // ---------------------------------------------------------------------------
 // Lightweight telemetry — stamps first-view and click timestamps on the
 // per-user inbox doc itself so we don't need a new collection or new rules.

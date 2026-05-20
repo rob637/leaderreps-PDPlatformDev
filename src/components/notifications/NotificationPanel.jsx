@@ -6,10 +6,10 @@
 
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, CheckCheck, Inbox } from 'lucide-react';
+import { X, CheckCheck, Inbox, Archive } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import useUserNotifications from '../../hooks/useUserNotifications';
-import { markAllRead } from '../../services/notificationActionsService';
+import { markAllRead, dismissMany } from '../../services/notificationActionsService';
 import NotificationRow from './NotificationRow';
 
 const TABS = [
@@ -65,6 +65,20 @@ const NotificationPanel = ({ open, onClose }) => {
     markAllRead(db, user?.uid, unread.map((n) => n.id));
   };
 
+  // Bulk-dismiss every already-read item currently in the panel. Keeps
+  // unread + snoozed visible. Confirms first because it's destructive (the
+  // user can still recover via undismiss, but the inbox view will hide
+  // them).
+  const readIds = useMemo(() => all.filter((n) => n.read).map((n) => n.id), [all]);
+  const handleArchiveRead = () => {
+    if (readIds.length === 0) return;
+    const ok = window.confirm(
+      `Archive ${readIds.length} read notification${readIds.length === 1 ? '' : 's'}? They'll be removed from your inbox.`
+    );
+    if (!ok) return;
+    dismissMany(db, user?.uid, readIds);
+  };
+
   return createPortal(
     <div className="fixed inset-0 z-50 flex">
       {/* Backdrop */}
@@ -90,6 +104,15 @@ const NotificationPanel = ({ open, onClose }) => {
               className="text-xs font-medium px-2 py-1 rounded text-corporate-teal-ink dark:text-corporate-teal hover:bg-corporate-teal/10 disabled:text-slate-400 disabled:hover:bg-transparent disabled:cursor-not-allowed inline-flex items-center gap-1"
             >
               <CheckCheck size={13} /> Mark all read
+            </button>
+            <button
+              type="button"
+              onClick={handleArchiveRead}
+              disabled={readIds.length === 0}
+              className="text-xs font-medium px-2 py-1 rounded text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:text-slate-400 disabled:hover:bg-transparent disabled:cursor-not-allowed inline-flex items-center gap-1"
+              title="Remove all already-read notifications from your inbox"
+            >
+              <Archive size={13} /> Archive read
             </button>
             <button
               type="button"

@@ -1961,6 +1961,82 @@ exports.scheduledArchivePastEvents = onSchedule(
 );
 
 /**
+ * SCHEDULED NOTIFICATION RETENTION
+ * Runs nightly. For every per-user inbox at `users/{uid}/notifications`,
+ * soft-deletes rows older than NOTIF_RETENTION_DAYS (default 60) that are
+ * not already dismissed. Soft-delete = stamping `dismissedAt`, which is the
+ * same field useUserNotifications already filters on, so no UI changes are
+ * needed for the cleanup to take effect. `archivedReason: 'auto-retention'`
+ * is stamped for traceability.
+ *
+ * Uses a collectionGroup query for efficiency across all users in a single
+ * pass. Idempotent — dismissed rows are skipped client-side after the query.
+ *
+ * Added May 2026 (Phase 4 of Rob/Ryan May 19 cleanup).
+ */
+const NOTIF_RETENTION_DAYS = 60;
+exports.scheduledArchiveOldNotifications = onSchedule(
+  {
+    schedule: "every day 03:00",
+    timeZone: "America/New_York",
+    retryCount: 1,
+  },
+  async (event) => {
+    const cutoffMs = Date.now() - NOTIF_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+    const cutoffTs = admin.firestore.Timestamp.fromMillis(cutoffMs);
+    logger.info(
+      `[scheduledArchiveOldNotifications] dismissing notifications with createdAt < ${cutoffTs.toDate().toISOString()} (>${NOTIF_RETENTION_DAYS}d old)`
+    );
+
+    let snap;
+    try {
+      snap = await db.collectionGroup('notifications')
+        .where('createdAt', '<', cutoffTs)
+        .get();
+    } catch (err) {
+      logger.error('[scheduledArchiveOldNotifications] query failed:', err);
+      throw err;
+    }
+
+    if (snap.empty) {
+      logger.info('[scheduledArchiveOldNotifications] no aged notifications found.');
+      return;
+    }
+
+    // Restrict to the user inbox path. collectionGroup('notifications') would
+    // also match any other collection named "notifications" anywhere in the
+    // tree; we only want users/{uid}/notifications/{id}.
+    const candidates = snap.docs.filter((d) => {
+      if (d.get('dismissedAt')) return false;
+      const segs = d.ref.path.split('/');
+      return segs.length === 4 && segs[0] === 'users' && segs[2] === 'notifications';
+    });
+
+    if (candidates.length === 0) {
+      logger.info(`[scheduledArchiveOldNotifications] scanned ${snap.size} aged docs, all already dismissed or off-path.`);
+      return;
+    }
+
+    const CHUNK = 400;
+    let dismissed = 0;
+    for (let i = 0; i < candidates.length; i += CHUNK) {
+      const batch = db.batch();
+      candidates.slice(i, i + CHUNK).forEach((d) => {
+        batch.update(d.ref, {
+          dismissedAt: admin.firestore.FieldValue.serverTimestamp(),
+          archivedReason: 'auto-retention',
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      });
+      await batch.commit();
+      dismissed += Math.min(CHUNK, candidates.length - i);
+    }
+
+    logger.info(`[scheduledArchiveOldNotifications] dismissed ${dismissed} aged notification(s) across users.`);
+  }
+);
+
+/**
  * MILESTONE COMPLETION EMAIL (DEPRECATED — May 2026 three-phase refactor)
  * The day/week/milestone gating model has been removed. This callable is
  * retained as a no-op stub so legacy clients (e.g. LevelSignOffQueue) that
