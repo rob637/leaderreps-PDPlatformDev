@@ -16,6 +16,7 @@ import {
   saveCalibration,
   getCalibrationStats,
 } from '../../services/calibrationService';
+import CalibrationInsights from './CalibrationInsights';
 
 const SCORE_OPTIONS = [1, 2, 3, 4, 5];
 const TAG_OPTIONS = [
@@ -476,35 +477,10 @@ const RepCalibrationPanel = () => {
         </button>
       </header>
 
-      {/* Per-rep-type stats */}
+      {/* Per-rep-type insights (Slice 3) — drift, accuracy, tags, override count,
+          and the few-shot feature flag. */}
       {Object.keys(stats).length > 0 && (
-        <section className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 bg-white dark:bg-slate-800">
-          <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 mb-2">
-            Calibration coverage
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-            {Object.entries(stats).map(([type, s]) => {
-              const rt = getRepType(type);
-              const ready = s.count >= 10;
-              return (
-                <div key={type} className="text-xs border border-slate-200 dark:border-slate-700 rounded p-2">
-                  <div className="font-semibold text-slate-700 dark:text-slate-200 truncate" title={rt?.label || type}>
-                    {rt?.shortLabel || rt?.label || type}
-                  </div>
-                  <div className="text-slate-500 mt-0.5">
-                    {s.count} calibration{s.count === 1 ? '' : 's'}
-                    {ready && <span className="ml-1 text-emerald-600">· L2 ready</span>}
-                  </div>
-                  {s.avgDelta != null && (
-                    <div className="text-[11px] text-slate-500 mt-0.5">
-                      Δ {s.avgDelta > 0 ? '+' : ''}{s.avgDelta} (engine vs trainer)
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </section>
+        <CalibrationInsights stats={stats} />
       )}
 
       {error && (

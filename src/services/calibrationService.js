@@ -199,7 +199,8 @@ export const saveCalibration = async (db, {
  * Per-rep-type calibration stats — used to decide when L2 (few-shot prompt
  * injection) is worth turning on. Returns
  *   { [repType]: { count, avgEngine, avgTrainer, avgDelta, passRateEngine,
- *                  passRateTrainer } }
+ *                  passRateTrainer, tagCounts, accuracyCounts, overrideCount,
+ *                  lastUpdated } }
  */
 export const getCalibrationStats = async (db) => {
   if (!db) return {};
@@ -216,6 +217,10 @@ export const getCalibrationStats = async (db) => {
         deltaSum: 0, deltaN: 0,
         engineTrue: 0, engineBoolN: 0,
         trainerTrue: 0, trainerBoolN: 0,
+        tagCounts: {},
+        accuracyCounts: { correct: 0, partial: 0, incorrect: 0 },
+        overrideCount: 0,
+        lastUpdated: null,
       };
     }
     const b = byType[t];
@@ -225,6 +230,15 @@ export const getCalibrationStats = async (db) => {
     if (typeof c.delta === 'number') { b.deltaSum += c.delta; b.deltaN += 1; }
     if (typeof c.enginePassed === 'boolean') { b.engineTrue += c.enginePassed ? 1 : 0; b.engineBoolN += 1; }
     if (typeof c.trainerPassed === 'boolean') { b.trainerTrue += c.trainerPassed ? 1 : 0; b.trainerBoolN += 1; }
+    if (Array.isArray(c.tags)) {
+      c.tags.forEach((tag) => { b.tagCounts[tag] = (b.tagCounts[tag] || 0) + 1; });
+    }
+    if (c.aiAccuracy && b.accuracyCounts[c.aiAccuracy] != null) {
+      b.accuracyCounts[c.aiAccuracy] += 1;
+    }
+    if (c.correctedResult) b.overrideCount += 1;
+    const ts = c.updatedAt?.toMillis ? c.updatedAt.toMillis() : null;
+    if (ts && (!b.lastUpdated || ts > b.lastUpdated)) b.lastUpdated = ts;
   });
   const out = {};
   Object.entries(byType).forEach(([t, b]) => {
@@ -235,9 +249,52 @@ export const getCalibrationStats = async (db) => {
       avgDelta: b.deltaN ? Math.round(b.deltaSum / b.deltaN) : null,
       passRateEngine: b.engineBoolN ? Math.round((b.engineTrue / b.engineBoolN) * 100) : null,
       passRateTrainer: b.trainerBoolN ? Math.round((b.trainerTrue / b.trainerBoolN) * 100) : null,
+      tagCounts: b.tagCounts,
+      accuracyCounts: b.accuracyCounts,
+      overrideCount: b.overrideCount,
+      lastUpdated: b.lastUpdated,
     };
   });
   return out;
+};
+
+/**
+ * Read the few-shot feature flag from `config/features.calibrationFewShot`.
+ * Returns { enabled: boolean, maxExamples: number }.
+ */
+export const getFewShotFlag = async (db) => {
+  if (!db) return { enabled: false, maxExamples: 3 };
+  try {
+    const snap = await getDoc(doc(db, 'config', 'features'));
+    const data = snap.exists() ? snap.data() : null;
+    const f = data && data.calibrationFewShot;
+    return {
+      enabled: !!(f && f.enabled),
+      maxExamples: (f && Number(f.maxExamples)) || 3,
+    };
+  } catch {
+    return { enabled: false, maxExamples: 3 };
+  }
+};
+
+/**
+ * Toggle the few-shot feature flag. Admin-only (enforced by firestore.rules
+ * on the config collection).
+ */
+export const setFewShotFlag = async (db, { enabled, maxExamples = 3 }) => {
+  if (!db) throw new Error('setFewShotFlag: db required');
+  await setDoc(
+    doc(db, 'config', 'features'),
+    {
+      calibrationFewShot: {
+        enabled: !!enabled,
+        maxExamples: Math.max(1, Math.min(5, Number(maxExamples) || 3)),
+        updatedAt: serverTimestamp(),
+      },
+    },
+    { merge: true }
+  );
+  return { enabled: !!enabled, maxExamples };
 };
 
 export default {
@@ -245,4 +302,6 @@ export default {
   getCalibration,
   saveCalibration,
   getCalibrationStats,
+  getFewShotFlag,
+  setFewShotFlag,
 };
