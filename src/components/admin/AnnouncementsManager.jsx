@@ -43,6 +43,19 @@ const LEGACY_TYPE_MAP = {
   success: 'celebration',
 };
 
+// When the admin picks a notification Type we auto-suggest the matching
+// Link type (Content → Content Item, Event → Event/Session). Other types
+// have no obvious link target so we leave it as "No link". We only apply
+// the suggestion when the current Link type is "none" or still equals the
+// previous type's suggestion, so a deliberate choice is never stomped.
+const DEFAULT_LINK_KIND_FOR_TYPE = {
+  content: 'content',
+  event: 'event',
+  announcement: 'none',
+  celebration: 'none',
+  alert: 'none',
+};
+
 // Tier drives sort order + visual treatment in the per-user inbox.
 // Independent of `type` (which is a legacy banner style hint).
 const TIER_OPTIONS = [
@@ -620,7 +633,27 @@ const AnnouncementsManager = () => {
               </label>
               <select
                 value={formData.type}
-                onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
+                onChange={(e) => {
+                  const newType = e.target.value;
+                  setFormData(prev => {
+                    const prevSuggested = DEFAULT_LINK_KIND_FOR_TYPE[prev.type] || 'none';
+                    const newSuggested = DEFAULT_LINK_KIND_FOR_TYPE[newType] || 'none';
+                    // Only swap linkKind if the admin hasn't customised it
+                    // (still equals previous suggestion or "none"). Clear the
+                    // target id when the kind actually changes.
+                    const shouldUpdateLinkKind =
+                      prev.linkKind === 'none' || prev.linkKind === prevSuggested;
+                    if (!shouldUpdateLinkKind || newSuggested === prev.linkKind) {
+                      return { ...prev, type: newType };
+                    }
+                    return {
+                      ...prev,
+                      type: newType,
+                      linkKind: newSuggested,
+                      linkTargetId: '',
+                    };
+                  });
+                }}
                 className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg 
                          bg-white dark:bg-slate-900 text-slate-800 dark:text-white
                          focus:ring-2 focus:ring-corporate-teal focus:border-transparent"
