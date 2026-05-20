@@ -181,13 +181,24 @@ ModalClose.displayName = 'ModalClose';
 
 // --- Main Modal Component ---
 const Modal = ({ isOpen, onClose, children, className, ariaLabel, ariaDescribedBy }) => {
+  // Lock body scroll while open so the page underneath doesn't drift /
+  // "bounce" when the user wheels over the dim backdrop or modal body.
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
     <>
       <ModalOverlay onClick={onClose} />
       <ModalContent 
-        className={className} 
+        className={cn('overscroll-contain', className)}
         onClose={onClose}
         aria-label={ariaLabel}
         aria-describedby={ariaDescribedBy}
