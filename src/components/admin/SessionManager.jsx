@@ -203,7 +203,7 @@ const formatTimeForDisplay = (time24) => {
  * - Send notes and notifications
  * - Manage session status
  */
-const SessionManager = () => {
+const SessionManager = ({ embedded = false } = {}) => {
   const { db } = useAppServices();
   
   // Data state
@@ -728,73 +728,106 @@ const SessionManager = () => {
     );
   }
 
+  // Derived KPI sets. We can't trust session.status to keep up with the
+  // calendar — nothing flips 'scheduled' to 'completed' once the date
+  // passes, which is why the old counters showed 74 upcoming / 0 completed.
+  // Anchor everything to today's date string (Chicago/local YYYY-MM-DD)
+  // and treat status only as a cancellation flag.
+  const todayStr = new Date().toISOString().split('T')[0];
+  const upcomingCount = sessions.filter(
+    (s) => s.archived !== true && s.status !== 'cancelled' && s.date && s.date >= todayStr
+  ).length;
+  const completedCount = sessions.filter(
+    (s) => s.status !== 'cancelled' && s.date && s.date < todayStr
+  ).length;
+  const registeredCount = registrations.filter((r) => r.status === 'registered').length;
+  const attendedCount = registrations.filter((r) => r.status === 'attended').length;
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-corporate-navy">Session Manager</h2>
-          <p className="text-slate-500 dark:text-slate-400">Create, edit, and manage coaching sessions</p>
+      {/* Header — suppressed when embedded inside EventsManager (which renders
+          its own "Events Management" header). Standalone usage still shows it. */}
+      {!embedded && (
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-corporate-navy">Session Manager</h2>
+            <p className="text-slate-500 dark:text-slate-400">Create, edit, and manage coaching sessions</p>
+          </div>
+          <button
+            onClick={handleCreateSession}
+            className="flex items-center gap-2 px-4 py-2 bg-corporate-teal text-white rounded-lg hover:bg-teal-700 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            New Session
+          </button>
         </div>
-        <button
-          onClick={handleCreateSession}
-          className="flex items-center gap-2 px-4 py-2 bg-corporate-teal text-white rounded-lg hover:bg-teal-700 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          New Session
-        </button>
-      </div>
+      )}
+      {embedded && (
+        <div className="flex justify-end">
+          <button
+            onClick={handleCreateSession}
+            className="flex items-center gap-2 px-4 py-2 bg-corporate-teal text-white rounded-lg hover:bg-teal-700 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            New Session
+          </button>
+        </div>
+      )}
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+        <div
+          className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700"
+          title="Sessions with a date today or later that haven't been cancelled or archived."
+        >
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
               <Calendar className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-corporate-navy">
-                {sessions.filter(s => s.status === 'scheduled').length}
-              </p>
+              <p className="text-2xl font-bold text-corporate-navy">{upcomingCount}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">Upcoming</p>
             </div>
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+        <div
+          className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700"
+          title="Active registrations across all sessions (status = registered)."
+        >
           <div className="flex items-center gap-3">
             <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
               <Users className="w-5 h-5 text-green-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-corporate-navy">
-                {registrations.filter(r => r.status === 'registered').length}
-              </p>
+              <p className="text-2xl font-bold text-corporate-navy">{registeredCount}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">Registrations</p>
             </div>
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+        <div
+          className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700"
+          title="Sessions whose date is in the past (not cancelled). Includes archived sessions."
+        >
           <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
               <CheckCircle className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-corporate-navy">
-                {sessions.filter(s => s.status === 'completed').length}
-              </p>
+              <p className="text-2xl font-bold text-corporate-navy">{completedCount}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">Completed</p>
             </div>
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+        <div
+          className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700"
+          title={`Registrations marked attended. Mark attendance from each session's "View Attendees" modal.`}
+        >
           <div className="flex items-center gap-3">
             <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
               <UserCheck className="w-5 h-5 text-orange-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-corporate-navy">
-                {registrations.filter(r => r.status === 'attended').length}
-              </p>
+              <p className="text-2xl font-bold text-corporate-navy">{attendedCount}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">Attended</p>
             </div>
           </div>
