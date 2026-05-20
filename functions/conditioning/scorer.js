@@ -76,7 +76,7 @@ OUTPUT SCHEMA (JSON):
 Return ONLY the JSON object. No markdown fences, no commentary.
 `;
 
-const buildUserPrompt = (rrType, transcript, examples = []) => {
+const buildUserPrompt = (rrType, transcript, examples = [], addendum = '') => {
   const cfg = getRrConfig(rrType);
   const defs = getConditionDefsForRr(rrType);
 
@@ -145,6 +145,15 @@ const buildUserPrompt = (rrType, transcript, examples = []) => {
         .join('\n\n')
     : '';
 
+  // Admin addendum (Slice 4) — free-form rubric guidance the admin team can
+  // edit per rrType without a code change. Stored at
+  // `metadata/conditioning/rrAddendums/{rrType}` and read by evaluateRep.
+  const addendumBlock = (typeof addendum === 'string' && addendum.trim())
+    ? `\n\nADMIN ADDENDUM (rubric guidance for ${cfg.code}):\n${addendum.trim()}\n` +
+      `Apply this guidance strictly. It supplements — never overrides — the\n` +
+      `anchored scoring criteria above.`
+    : '';
+
   return `
 RR Type: ${cfg.code} (${cfg.name})
 Rubric version: ${cfg.version || 'unversioned'}
@@ -152,7 +161,7 @@ Rubric version: ${cfg.version || 'unversioned'}
 Conditions to score (apply each anchor strictly):
 
 ${conditionBlocks}
-${courageBlock}${exampleBlock}
+${courageBlock}${exampleBlock}${addendumBlock}
 
 Leader transcript:
 """
@@ -244,12 +253,12 @@ const normalizeScorerOutput = (rrType, raw) => {
  * For higher reliability use `scoreTranscript({ samples: 3 })` which calls
  * this multiple times and takes the median per condition.
  */
-const scoreTranscriptOnce = async ({ rrType, transcript, apiKey, anthropicApiKey, examples = [] }) => {
+const scoreTranscriptOnce = async ({ rrType, transcript, apiKey, anthropicApiKey, examples = [], addendum = '' }) => {
   if (!apiKey && !anthropicApiKey) {
     throw new Error('No AI API key configured (need GEMINI_API_KEY or ANTHROPIC_API_KEY)');
   }
   const systemInstruction = buildSystemInstruction();
-  const userPrompt = buildUserPrompt(rrType, transcript, examples);
+  const userPrompt = buildUserPrompt(rrType, transcript, examples, addendum);
   let text = '';
   let lastError = null;
 

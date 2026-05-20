@@ -17,6 +17,7 @@ import {
   getCalibrationStats,
 } from '../../services/calibrationService';
 import CalibrationInsights from './CalibrationInsights';
+import RubricAddendumEditor from './RubricAddendumEditor';
 
 const SCORE_OPTIONS = [1, 2, 3, 4, 5];
 const TAG_OPTIONS = [
@@ -482,6 +483,9 @@ const RepCalibrationPanel = () => {
       {Object.keys(stats).length > 0 && (
         <CalibrationInsights stats={stats} />
       )}
+
+      {/* Editable rubric addendum per rrType (Slice 4). */}
+      <RubricAddendumEditor />
 
       {error && (
         <div className="rounded border border-rose-300 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 text-xs px-3 py-2 inline-flex items-center gap-2">

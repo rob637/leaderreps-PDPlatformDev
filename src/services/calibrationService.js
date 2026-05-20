@@ -297,6 +297,50 @@ export const setFewShotFlag = async (db, { enabled, maxExamples = 3 }) => {
   return { enabled: !!enabled, maxExamples };
 };
 
+/**
+ * Admin scorer addendum (Slice 4) — free-form per-rrType rubric guidance
+ * that gets appended to the scorer's user prompt at evaluation time. Stored
+ * at `metadata/conditioning/rrAddendums/{rrType}`. Admin-only writes
+ * (firestore.rules `metadata/{document=**}`), public reads.
+ */
+const ADDENDUM_PATH = (rrType) => ['metadata', 'conditioning', 'rrAddendums', rrType];
+
+export const getRrAddendum = async (db, rrType) => {
+  if (!db || !rrType) return { text: '', updatedAt: null, updatedBy: null };
+  try {
+    const snap = await getDoc(doc(db, ...ADDENDUM_PATH(rrType)));
+    if (!snap.exists()) return { text: '', updatedAt: null, updatedBy: null };
+    const d = snap.data() || {};
+    return {
+      text: typeof d.text === 'string' ? d.text : '',
+      updatedAt: d.updatedAt || null,
+      updatedBy: d.updatedBy || null,
+      version: d.version || 0,
+    };
+  } catch {
+    return { text: '', updatedAt: null, updatedBy: null };
+  }
+};
+
+export const setRrAddendum = async (db, rrType, { text = '', trainerId, trainerEmail }) => {
+  if (!db) throw new Error('setRrAddendum: db required');
+  if (!rrType) throw new Error('setRrAddendum: rrType required');
+  const ref = doc(db, ...ADDENDUM_PATH(rrType));
+  const prev = await getDoc(ref);
+  const version = (prev.exists() && Number(prev.data()?.version)) || 0;
+  await setDoc(
+    ref,
+    {
+      text: String(text || '').slice(0, 4000),
+      updatedAt: serverTimestamp(),
+      updatedBy: trainerEmail || trainerId || null,
+      version: version + 1,
+    },
+    { merge: true }
+  );
+  return { ok: true, version: version + 1 };
+};
+
 export default {
   listReps,
   getCalibration,
@@ -304,4 +348,6 @@ export default {
   getCalibrationStats,
   getFewShotFlag,
   setFewShotFlag,
+  getRrAddendum,
+  setRrAddendum,
 };

@@ -2289,6 +2289,22 @@ exports.evaluateRep = onCall(
       logger.warn('evaluateRep: few-shot fetch failed (continuing without)', err?.message);
     }
 
+    // Admin rubric addendum (Slice 4) — free-form per-rrType guidance the
+    // admin team can edit without code changes. Stored at
+    // `metadata/conditioning/rrAddendums/{rrType}`. Empty string on miss.
+    let addendum = '';
+    try {
+      const addSnap = await db
+        .doc(`metadata/conditioning/rrAddendums/${rrType}`)
+        .get();
+      if (addSnap.exists) {
+        const t = addSnap.data()?.text;
+        if (typeof t === 'string' && t.trim()) addendum = t.trim();
+      }
+    } catch (err) {
+      logger.warn('evaluateRep: addendum fetch failed (continuing without)', err?.message);
+    }
+
     // Score the transcript via Gemini, with Anthropic Claude as fallback.
     const apiKey = process.env.GEMINI_API_KEY;
     const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
@@ -2300,6 +2316,7 @@ exports.evaluateRep = onCall(
         apiKey,
         anthropicApiKey,
         examples: fewShotExamples,
+        addendum,
       });
     } catch (err) {
       logger.error('evaluateRep: scorer failed', err);
@@ -2347,6 +2364,7 @@ exports.evaluateRep = onCall(
       rubricVersion: scorerResult.rubricVersion || null,
       usedFewShot,
       fewShotCount: fewShotExamples.length,
+      usedAddendum: !!addendum,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     };
     const ref = await db
