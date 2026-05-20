@@ -10,6 +10,7 @@ import { useSafeNavigation } from '../../providers/NavigationProvider';
 import { useAppServices } from '../../services/useAppServices';
 import { markRead, snoozeBy, dismiss, markShown, recordClick, notificationTelemetry } from '../../services/notificationActionsService';
 import { getTier, formatRelative } from './notificationStyles';
+import useResourceOpener from '../../hooks/useResourceOpener';
 
 const AUTOREAD_MS = 3000; // Read-on-view convention (Gmail/Linear style).
 
@@ -25,6 +26,12 @@ const NotificationRow = ({
   const [menuOpen, setMenuOpen] = useState(false);
   const tier = getTier(notif);
   const { Icon } = tier;
+
+  // Inline content opener — clicking a "content" notification opens the
+  // underlying content_library item in the universal viewer, matching how
+  // content opens everywhere else in the app (Kickoff todos, library, etc).
+  // No completion tracking from notifications; that's a content-surface concern.
+  const { openResource, ResourceViewer } = useResourceOpener({});
 
   // Auto-mark-read after the row has been on screen for AUTOREAD_MS,
   // and stamp shownAt the first time it intersects (regardless of read).
@@ -87,7 +94,10 @@ const NotificationRow = ({
       const params = linkTarget?.targetId ? { targetId: linkTarget.targetId } : {};
       navigate(linkTarget.screen, params);
     } else if (kind === 'content' && linkTarget?.targetId) {
-      navigate('library', { contentItemId: linkTarget.targetId });
+      // Open the content_library doc inline rather than dumping the user on
+      // the Library hub. useResourceOpener handles type detection (video,
+      // document, read-rep, tool, etc.) and rendering.
+      openResource({ resourceId: linkTarget.targetId, label: notif.title });
     } else if (kind === 'event' && linkTarget?.targetId) {
       navigate('community-hub', { sessionId: linkTarget.targetId });
     }
@@ -198,6 +208,7 @@ const NotificationRow = ({
           </div>
         )}
       </div>
+      {ResourceViewer}
     </div>
   );
 };

@@ -10,7 +10,7 @@
 //   - Show source badge (Coaching | Community) so users can tell origin.
 //   - "Join" link button when within 15min of start (or session is live).
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Calendar, Clock, ExternalLink, Loader2, Users, Video,
   CheckCircle2, AlertCircle, ChevronLeft, ChevronRight,
@@ -527,7 +527,7 @@ const EventDetailModal = ({ event, onClose, onRegister, onCancel, onJoinWaitlist
   );
 };
 
-const Events = () => {
+const Events = ({ sessionId: deepLinkSessionId } = {}) => {
   const { user, navigate } = useAppServices();
   const userId = user?.uid;
   const { events, loading, register, cancel, joinWaitlist, leaveWaitlist } = useEvents();
@@ -543,6 +543,26 @@ const Events = () => {
   });
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [detailEvent, setDetailEvent] = useState(null);
+
+  // Deep-link support: when a notification (or anything else) navigates to
+  // this screen with a sessionId, auto-open the matching event's detail
+  // modal once events have loaded. We use a ref to ensure we only auto-open
+  // once per navigation, so closing the modal doesn't immediately reopen it.
+  const deepLinkConsumedRef = useRef(null);
+  useEffect(() => {
+    if (!deepLinkSessionId) return;
+    if (deepLinkConsumedRef.current === deepLinkSessionId) return;
+    if (!events || events.length === 0) return;
+    const match = events.find(
+      (e) => e.id === deepLinkSessionId
+        || e.sourceId === deepLinkSessionId
+        || e.sessionId === deepLinkSessionId
+    );
+    if (match) {
+      setDetailEvent(match);
+      deepLinkConsumedRef.current = deepLinkSessionId;
+    }
+  }, [deepLinkSessionId, events]);
 
   const now = useMemo(() => Date.now(), [events]);
   const startOfToday = useMemo(() => {
