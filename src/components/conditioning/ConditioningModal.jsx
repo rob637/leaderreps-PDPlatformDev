@@ -4,6 +4,7 @@
 // gray footer, focus trap, ESC handling, corporate color palette
 
 import React, { useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '../../lib/utils';
 import { X, Check } from 'lucide-react';
 
@@ -93,7 +94,19 @@ const ConditioningModal = ({
     }
   }, [isOpen, currentStep]);
 
+  // Lock body scroll while the modal is open so the page underneath
+  // doesn't drift/"bounce" when wheeling over the backdrop or contents.
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
+  if (typeof document === 'undefined') return null;
 
   // Handle ESC key
   const handleKeyDown = (e) => {
@@ -102,7 +115,7 @@ const ConditioningModal = ({
     }
   };
 
-  return (
+  return createPortal(
     <>
       <Overlay onClick={onClose} />
       <div
@@ -111,7 +124,7 @@ const ConditioningModal = ({
         aria-label={title}
         onKeyDown={handleKeyDown}
         className={cn(
-          'fixed left-1/2 z-50 -translate-x-1/2',
+          'fixed left-1/2 z-50 -translate-x-1/2 overscroll-contain',
           // Mobile: Position higher to account for bottom nav (~80px + safe area)
           // Use bottom positioning on mobile for better visibility of footer buttons
           'bottom-20 md:bottom-auto md:top-1/2 md:-translate-y-1/2',
@@ -182,7 +195,8 @@ const ConditioningModal = ({
           </div>
         )}
       </div>
-    </>
+    </>,
+    document.body
   );
 };
 
