@@ -128,7 +128,7 @@ export const WIDGET_TEMPLATES = {
     <div className="bg-teal-50 p-3 rounded-xl border border-teal-100">
       <h4 className="font-bold text-teal-900 mb-1">Build your Leadership Identity</h4>
       <p className="text-sm text-teal-800">
-        A coach AI drafts your <b>Anchor</b>, three pieces of <b>Evidence</b>, and your <b>Edge</b> from four short prompts.
+        An AI coach drafts your <b>Anchor</b>, three pieces of <b>Evidence</b>, and your <b>Edge</b> from four short prompts.
       </p>
     </div>
 

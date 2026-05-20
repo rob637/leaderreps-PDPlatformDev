@@ -420,7 +420,7 @@ const AskTrainerWidget = () => {
               transition={transition}
               role="dialog"
               aria-modal="true"
-              aria-label={expandedItem.title || 'Coach response'}
+              aria-label={expandedItem.title || 'Trainer response'}
               className="w-full max-w-2xl max-h-[85vh] overflow-hidden bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 shadow-2xl flex flex-col pointer-events-auto"
             >
             {/* Header — title + close. Fades in after the morph settles so

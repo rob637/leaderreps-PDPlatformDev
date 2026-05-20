@@ -258,7 +258,7 @@ const ConditioningLight = () => {
 
         {verdict && !isPass && (verdict.observation || verdict.question) && (
           <div className="mt-4 p-4 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800">
-            <p className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400 mb-2">Coach feedback from your last attempt</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400 mb-2">Feedback from your last attempt</p>
             {verdict.observation && <p className="text-sm text-slate-800 dark:text-slate-200 mb-1">{verdict.observation}</p>}
             {verdict.question && <p className="text-sm text-slate-600 dark:text-slate-400 italic">{verdict.question}</p>}
           </div>
