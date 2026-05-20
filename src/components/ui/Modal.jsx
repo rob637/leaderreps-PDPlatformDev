@@ -93,8 +93,7 @@ const ModalContent = React.forwardRef(({ className, children, onClose, ...props 
       aria-modal="true"
       onKeyDown={handleKeyDown}
       className={cn(
-        'fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2',
-        'w-full max-w-lg max-h-[90vh] overflow-y-auto',
+        'relative z-50 w-full max-w-lg max-h-[90vh] overflow-y-auto',
         'bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100',
         'animate-in fade-in-0',
         className
@@ -201,9 +200,18 @@ const Modal = ({ isOpen, onClose, children, className, ariaLabel, ariaDescribedB
   if (typeof document === 'undefined') return null;
 
   return createPortal(
-    <>
-      <ModalOverlay onClick={onClose} />
-      <ModalContent 
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overscroll-contain"
+      onClick={(e) => {
+        // Click on the backdrop (not bubbled from modal content) closes.
+        if (e.target === e.currentTarget) onClose?.();
+      }}
+    >
+      <div
+        className="absolute inset-0 bg-corporate-navy/40 backdrop-blur-md animate-in fade-in-0"
+        aria-hidden="true"
+      />
+      <ModalContent
         className={cn('overscroll-contain', className)}
         onClose={onClose}
         aria-label={ariaLabel}
@@ -212,7 +220,7 @@ const Modal = ({ isOpen, onClose, children, className, ariaLabel, ariaDescribedB
         <ModalClose onClick={onClose} />
         {children}
       </ModalContent>
-    </>,
+    </div>,
     document.body
   );
 };
