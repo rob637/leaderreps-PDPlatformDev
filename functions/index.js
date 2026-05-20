@@ -2237,6 +2237,58 @@ exports.evaluateRep = onCall(
       .flatMap((r) => [r.observation, r.question])
       .filter(Boolean);
 
+    // Few-shot calibration examples (Slice 2, opt-in via feature flag).
+    // When `config/features.calibrationFewShot.enabled === true`, fetch the
+    // most recent N expert-trainer-calibrated reps for this rrType and pass
+    // them to the scorer as anchor cases. Falls back to empty (no examples)
+    // on any error so a config or query issue can never block scoring.
+    let fewShotExamples = [];
+    let usedFewShot = false;
+    try {
+      const flagSnap = await db.doc('config/features').get();
+      const flag = flagSnap.exists ? flagSnap.data() : null;
+      const cfg = flag && flag.calibrationFewShot;
+      if (cfg && cfg.enabled === true) {
+        const maxExamples = Math.max(1, Math.min(5, Number(cfg.maxExamples) || 3));
+        const calSnap = await db
+          .collection('rep_calibrations')
+          .where('status', '==', 'submitted')
+          .where('repType', '==', rrType)
+          .orderBy('updatedAt', 'desc')
+          .limit(maxExamples * 4) // over-fetch; we'll filter for usable rows
+          .get();
+        const rows = [];
+        for (const d of calSnap.docs) {
+          if (rows.length >= maxExamples) break;
+          const c = d.data();
+          // Need an actual transcript — pull from the source rep doc.
+          if (!c.userId || !c.repId) continue;
+          let repDoc = null;
+          for (const path of ['conditioning_reps', 'reps_light']) {
+            const rs = await db
+              .collection('users').doc(c.userId)
+              .collection(path).doc(c.repId)
+              .get();
+            if (rs.exists) { repDoc = rs.data(); break; }
+          }
+          const t = repDoc && (repDoc.transcript || repDoc.transcriptText);
+          if (typeof t !== 'string' || t.trim().length < 20) continue;
+          rows.push({
+            transcript: t,
+            trainerVerdict: c.correctedResult || (c.trainerPassed ? 'pass' : 'notYet'),
+            trainerScore: c.trainerScore,
+            note: c.trainerNote || c.feedback || '',
+          });
+        }
+        if (rows.length) {
+          fewShotExamples = rows;
+          usedFewShot = true;
+        }
+      }
+    } catch (err) {
+      logger.warn('evaluateRep: few-shot fetch failed (continuing without)', err?.message);
+    }
+
     // Score the transcript via Gemini, with Anthropic Claude as fallback.
     const apiKey = process.env.GEMINI_API_KEY;
     const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
@@ -2247,6 +2299,7 @@ exports.evaluateRep = onCall(
         transcript,
         apiKey,
         anthropicApiKey,
+        examples: fewShotExamples,
       });
     } catch (err) {
       logger.error('evaluateRep: scorer failed', err);
@@ -2292,6 +2345,8 @@ exports.evaluateRep = onCall(
       failReason: evaluation.failReason || null,
       evidenceNotes: scorerResult.evidenceNotes || {},
       rubricVersion: scorerResult.rubricVersion || null,
+      usedFewShot,
+      fewShotCount: fewShotExamples.length,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     };
     const ref = await db

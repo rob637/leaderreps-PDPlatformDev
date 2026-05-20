@@ -76,7 +76,7 @@ OUTPUT SCHEMA (JSON):
 Return ONLY the JSON object. No markdown fences, no commentary.
 `;
 
-const buildUserPrompt = (rrType, transcript) => {
+const buildUserPrompt = (rrType, transcript, examples = []) => {
   const cfg = getRrConfig(rrType);
   const defs = getConditionDefsForRr(rrType);
 
@@ -128,6 +128,23 @@ const buildUserPrompt = (rrType, transcript) => {
         `definition. If you cannot produce that verbatim evidence, the signal is false.`
       : '';
 
+  // Few-shot examples (Slice 2) — opt-in trainer-calibrated examples from
+  // rep_calibrations. Empty by default; injected by evaluateRep when the
+  // `config/features.calibrationFewShot.enabled` flag is on.
+  const exampleBlock = (Array.isArray(examples) && examples.length)
+    ? `\n\nCALIBRATION EXAMPLES (expert trainer scoring for ${cfg.code}):\n` +
+      `Treat these as anchor cases. Do NOT copy them; use them to recalibrate\n` +
+      `where your scoring tends to drift relative to expert judgment.\n\n` +
+      examples
+        .map((ex, i) => {
+          const verdict = ex.trainerVerdict === 'pass' ? 'PASS' : 'NOT YET';
+          const score = typeof ex.trainerScore === 'number' ? ` (trainer rating ${ex.trainerScore}/5)` : '';
+          const note = ex.note ? `\n  Trainer note: ${ex.note}` : '';
+          return `Example ${i + 1} — verdict: ${verdict}${score}\n  Transcript: """${(ex.transcript || '').trim()}"""${note}`;
+        })
+        .join('\n\n')
+    : '';
+
   return `
 RR Type: ${cfg.code} (${cfg.name})
 Rubric version: ${cfg.version || 'unversioned'}
@@ -135,7 +152,7 @@ Rubric version: ${cfg.version || 'unversioned'}
 Conditions to score (apply each anchor strictly):
 
 ${conditionBlocks}
-${courageBlock}
+${courageBlock}${exampleBlock}
 
 Leader transcript:
 """
@@ -227,12 +244,12 @@ const normalizeScorerOutput = (rrType, raw) => {
  * For higher reliability use `scoreTranscript({ samples: 3 })` which calls
  * this multiple times and takes the median per condition.
  */
-const scoreTranscriptOnce = async ({ rrType, transcript, apiKey, anthropicApiKey }) => {
+const scoreTranscriptOnce = async ({ rrType, transcript, apiKey, anthropicApiKey, examples = [] }) => {
   if (!apiKey && !anthropicApiKey) {
     throw new Error('No AI API key configured (need GEMINI_API_KEY or ANTHROPIC_API_KEY)');
   }
   const systemInstruction = buildSystemInstruction();
-  const userPrompt = buildUserPrompt(rrType, transcript);
+  const userPrompt = buildUserPrompt(rrType, transcript, examples);
   let text = '';
   let lastError = null;
 
