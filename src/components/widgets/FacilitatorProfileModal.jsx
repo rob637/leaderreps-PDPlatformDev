@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { 
   X, User, Mail, Phone, Linkedin, Building2, 
   MessageSquare, Award, Calendar
@@ -22,6 +22,24 @@ import FacilitatorAvatar from './FacilitatorAvatar';
  * - isOpen: visibility state
  */
 const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) => {
+  // Lock body scroll while the modal is open and close on Escape.
+  // Without this the page underneath scrolls when the user moves the wheel
+  // over the dimmed area (or even the modal itself), making it look like
+  // the modal is "bouncing" around the screen.
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const handleKey = (e) => {
+      if (e.key === 'Escape') onClose?.();
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKey);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen || !facilitator) return null;
 
   const {
@@ -37,7 +55,7 @@ const FacilitatorProfileModal = ({ facilitator, cohortName, onClose, isOpen }) =
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div 
-        className="relative w-full max-w-md max-h-[90vh] bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-y-auto animate-in fade-in zoom-in-95 duration-200"
+        className="relative w-full max-w-md max-h-[90vh] bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-y-auto overscroll-contain animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with gradient */}
