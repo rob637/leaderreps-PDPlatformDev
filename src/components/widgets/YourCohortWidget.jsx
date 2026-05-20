@@ -44,7 +44,7 @@ const YourCohortWidget = () => {
     : phasePill.label;
 
   return (
-    <Card title="Your Cohort" icon={Users} accent="TEAL">
+    <Card title="My Cohort" icon={Users} accent="TEAL">
       <div className="space-y-2">
         {/* Cohort info row — non-interactive */}
         {cohortData ? (

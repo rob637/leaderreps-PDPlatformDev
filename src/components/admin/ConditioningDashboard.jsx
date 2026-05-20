@@ -667,35 +667,43 @@ const ConditioningDashboard = () => {
       }));
       
       // Get conditioning summaries for each user (including total historical reps)
-      // PERF: Run all user queries in parallel instead of sequentially
+      // PERF: Run all user queries in parallel instead of sequentially.
+      // We use Promise.allSettled per-user so a failure in the per-cohort
+      // summary doesn't also discard the all-time rep history (which is what
+      // populates "N total reps" on the collapsed row and the expanded view).
       const summaryResults = await Promise.all(
         users.map(async (user) => {
-          try {
-            // Run both queries for this user in parallel
-            const [summary, allRepsData] = await Promise.all([
-              conditioningService.getUserConditioningSummary(db, user.id, selectedCohortId),
-              conditioningService.getAllRepsForUser(db, user.id, null)
-            ]);
-            return {
-              ...summary,
-              email: user.email,
-              displayName: user.displayName,
-              totalHistoricalReps: allRepsData.totalCount || 0,
-              allRepsData // Store for expanded view
-            };
-          } catch (err) {
-            console.error(`Error getting summary for user ${user.id}:`, err);
-            return {
-              userId: user.id,
-              email: user.email,
-              currentWeek: { requiredRepCompleted: false, totalCompleted: 0, totalActive: 0, reps: [] },
-              consecutiveMissedWeeks: 0,
-              unresolvedMissedReps: 0,
-              needsAttention: false,
-              totalHistoricalReps: 0,
-              error: true
-            };
+          const [summaryRes, allRepsRes] = await Promise.allSettled([
+            conditioningService.getUserConditioningSummary(db, user.id, selectedCohortId),
+            conditioningService.getAllRepsForUser(db, user.id, null),
+          ]);
+          const summary = summaryRes.status === 'fulfilled' ? summaryRes.value : null;
+          const allRepsData = allRepsRes.status === 'fulfilled' ? allRepsRes.value : null;
+          if (summaryRes.status === 'rejected') {
+            console.error(`Error getting summary for user ${user.id}:`, summaryRes.reason);
           }
+          if (allRepsRes.status === 'rejected') {
+            console.error(`Error getting rep history for user ${user.id}:`, allRepsRes.reason);
+          }
+          // Build a row that gracefully degrades: if the per-cohort summary
+          // failed, we still render with the all-time rep count from
+          // allRepsData (which is what matters for the visible "N total reps"
+          // and for the expanded history view).
+          const base = summary || {
+            userId: user.id,
+            currentWeek: { requiredRepCompleted: false, totalCompleted: 0, totalActive: 0, reps: [] },
+            consecutiveMissedWeeks: 0,
+            unresolvedMissedReps: 0,
+            needsAttention: false,
+          };
+          return {
+            ...base,
+            email: user.email,
+            displayName: user.displayName,
+            totalHistoricalReps: allRepsData?.totalCount || 0,
+            allRepsData,
+            error: !summary && !allRepsData,
+          };
         })
       );
       const summaries = summaryResults;
