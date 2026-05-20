@@ -1897,6 +1897,70 @@ exports.scheduledCoachingReminders = onSchedule("every 1 hours", async (event) =
 });
 
 /**
+ * SCHEDULED EVENT AUTO-ARCHIVE
+ * Runs nightly and marks any session in `coaching_sessions` whose date is in
+ * the past (date < today, YYYY-MM-DD string compare) as archived. Archived
+ * sessions are filtered out of the default admin Events view and out of all
+ * user-facing event feeds (useCommunitySessions, useCoachingSessions,
+ * eventsService) but preserved in Firestore for history.
+ *
+ * Added May 2026 in response to Ryan's "79 stale events" cleanup request.
+ * Idempotent — already-archived rows are skipped via the `where` clause.
+ */
+exports.scheduledArchivePastEvents = onSchedule(
+  {
+    schedule: "every day 02:30",
+    timeZone: "America/New_York",
+    retryCount: 1,
+  },
+  async (event) => {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    logger.info(`[scheduledArchivePastEvents] archiving sessions with date < ${todayStr}`);
+
+    let snap;
+    try {
+      snap = await db.collection('coaching_sessions')
+        .where('date', '<', todayStr)
+        .get();
+    } catch (err) {
+      logger.error('[scheduledArchivePastEvents] query failed:', err);
+      throw err;
+    }
+
+    if (snap.empty) {
+      logger.info('[scheduledArchivePastEvents] no past sessions found.');
+      return;
+    }
+
+    // Filter to docs not already archived.
+    const toArchive = snap.docs.filter((d) => d.get('archived') !== true);
+    if (toArchive.length === 0) {
+      logger.info(`[scheduledArchivePastEvents] scanned ${snap.size} past sessions, all already archived.`);
+      return;
+    }
+
+    // writeBatch caps at 500 ops — chunk for safety.
+    const CHUNK = 400;
+    let archived = 0;
+    for (let i = 0; i < toArchive.length; i += CHUNK) {
+      const batch = db.batch();
+      toArchive.slice(i, i + CHUNK).forEach((d) => {
+        batch.update(d.ref, {
+          archived: true,
+          archivedAt: admin.firestore.FieldValue.serverTimestamp(),
+          archivedReason: 'auto-past',
+        });
+      });
+      await batch.commit();
+      archived += Math.min(CHUNK, toArchive.length - i);
+    }
+
+    logger.info(`[scheduledArchivePastEvents] archived ${archived} past session(s).`);
+  }
+);
+
+/**
  * MILESTONE COMPLETION EMAIL (DEPRECATED — May 2026 three-phase refactor)
  * The day/week/milestone gating model has been removed. This callable is
  * retained as a no-op stub so legacy clients (e.g. LevelSignOffQueue) that

@@ -155,7 +155,10 @@ export const useCommunitySessions = (options = {}) => {
       }));
 
       // Client-side filtering for flexibility
-      
+
+      // Always exclude archived sessions from user-facing views.
+      items = items.filter(s => s.archived !== true);
+
       // Filter by status (exclude cancelled unless specifically requested)
       items = items.filter(s => s.status !== SESSION_STATUS.CANCELLED);
       

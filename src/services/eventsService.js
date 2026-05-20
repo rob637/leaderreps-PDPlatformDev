@@ -196,6 +196,8 @@ export const subscribeUpcomingEvents = (db, userId, callback) => {
         state.sessions.clear();
         snap.forEach((d) => {
           const data = { id: d.id, ...d.data() };
+          // Skip archived sessions from user-facing event feeds.
+          if (data.archived === true) return;
           state.sessions.set(d.id, data);
         });
         emit();
