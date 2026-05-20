@@ -35,7 +35,7 @@ import useThreePhaseContent from '../../hooks/useThreePhaseContent';
 import { useActionProgress } from '../../hooks/useActionProgress';
 import useResourceOpener from '../../hooks/useResourceOpener';
 import { useAppServices } from '../../services/useAppServices';
-import { isAscentApproved } from '../../hooks/useDailyPlan';
+import { isAscentApproved } from '../../hooks/useDailyPlan'; // eslint-disable-line no-unused-vars -- retained for future per-phase gating
 import useArtifactCompletion, {
   isArtifactItem,
   getArtifactKind,
@@ -194,8 +194,10 @@ const KickoffProgressCard = () => {
       .sort((a, b) => a.order - b.order);
   }, [phaseContent, phaseKey]);
 
-  const ascentLocked = phaseKey === 'ascent' && !isAscentApproved(user || {});
-  const hidden = phaseKey === 'onboarding' || ascentLocked || isLoading;
+  // Ascent has no formal kickoff (per May 2026 product decision — Foundation
+  // requires the onboarding ritual; Ascent does not). Hide the card entirely
+  // in Ascent so we don't need the ascentApproved gate at all.
+  const hidden = phaseKey === 'onboarding' || phaseKey === 'ascent' || isLoading;
 
   const itemDone = useCallback((item, idx) => {
     if (isArtifactItem(item)) return isArtifactComplete(getArtifactKind(item));
