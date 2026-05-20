@@ -12,7 +12,7 @@ import {
   Megaphone, Plus, Edit2, Trash2, Save, X, 
   AlertTriangle, Info, CheckCircle, Bell,
   Calendar, Eye, EyeOff, ExternalLink, Users, User as UserIcon,
-  RefreshCw
+  RefreshCw, BookOpen, PartyPopper
 } from 'lucide-react';
 
 /**
@@ -29,10 +29,19 @@ import {
 
 const ANNOUNCEMENT_TYPES = [
   { id: 'announcement', label: 'Announcement', icon: Megaphone, color: 'orange' },
-  { id: 'info', label: 'Information', icon: Info, color: 'blue' },
-  { id: 'success', label: 'Success/Celebration', icon: CheckCircle, color: 'green' },
-  { id: 'alert', label: 'Important Alert', icon: AlertTriangle, color: 'red' }
+  { id: 'event', label: 'Event', icon: Calendar, color: 'blue' },
+  { id: 'content', label: 'Content', icon: BookOpen, color: 'purple' },
+  { id: 'celebration', label: 'Celebration', icon: PartyPopper, color: 'green' },
+  { id: 'alert', label: 'Alert', icon: AlertTriangle, color: 'red' },
 ];
+
+// Legacy type ids that pre-date the May 2026 cleanup. Older Firestore
+// docs may still carry these; map them to the closest current type so
+// listings render with a sensible icon/color.
+const LEGACY_TYPE_MAP = {
+  info: 'announcement',
+  success: 'celebration',
+};
 
 // Tier drives sort order + visual treatment in the per-user inbox.
 // Independent of `type` (which is a legacy banner style hint).
@@ -255,7 +264,10 @@ const AnnouncementsManager = () => {
   // Lazy-load content items the first time the admin picks 'content' as the
   // link kind. Cached for the lifetime of the manager session.
   useEffect(() => {
-    if (formData.linkKind !== 'content' || contentItems !== null || !db || contentLoading) return;
+    if (formData.linkKind !== 'content' || contentItems !== null || !db) return;
+    // NOTE: do NOT include contentLoading in deps — toggling it inside the
+    // effect would cause the cleanup to fire (cancelled=true) before the
+    // async work finishes, leaving the spinner stuck on forever.
     let cancelled = false;
     setContentLoading(true);
     (async () => {
@@ -283,19 +295,21 @@ const AnnouncementsManager = () => {
       }
     })();
     return () => { cancelled = true; };
-  }, [formData.linkKind, contentItems, db, contentLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.linkKind, contentItems, db]);
 
   // Lazy-load events (community/coaching sessions) on first 'event' selection.
   useEffect(() => {
-    if (formData.linkKind !== 'event' || eventItems !== null || !db || eventsLoading) return;
+    if (formData.linkKind !== 'event' || eventItems !== null || !db) return;
+    // NOTE: do NOT include eventsLoading in deps — see content loader above.
     let cancelled = false;
     setEventsLoading(true);
     (async () => {
       try {
-        const snap = await getDocs(query(
-          collection(db, COMMUNITY_SESSIONS_COLLECTION),
-          orderBy('date', 'desc'),
-        ));
+        // Plain collection read + client-side sort. We intentionally drop the
+        // orderBy('date') here because Firestore silently excludes documents
+        // missing the indexed field, which would hide events with no date.
+        const snap = await getDocs(collection(db, COMMUNITY_SESSIONS_COLLECTION));
         const items = [];
         snap.forEach((d) => {
           const data = d.data() || {};
@@ -308,8 +322,8 @@ const AnnouncementsManager = () => {
             host: data.host || '',
           });
         });
-        // Already ordered date desc — keep that so newest-first feels natural
-        // when "show all" is on.
+        // Sort newest-first by date string (ISO sorts lexicographically).
+        items.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
         if (!cancelled) setEventItems(items);
       } catch (err) {
         console.error('[AnnouncementsManager] load events failed:', err);
@@ -319,7 +333,8 @@ const AnnouncementsManager = () => {
       }
     })();
     return () => { cancelled = true; };
-  }, [formData.linkKind, eventItems, db, eventsLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.linkKind, eventItems, db]);
 
   // Reset the search box whenever the link kind switches so the previous
   // query doesn't bleed into the new picker.
@@ -522,13 +537,15 @@ const AnnouncementsManager = () => {
   };
 
   const getTypeConfig = (typeId) => {
-    return ANNOUNCEMENT_TYPES.find(t => t.id === typeId) || ANNOUNCEMENT_TYPES[0];
+    const resolved = LEGACY_TYPE_MAP[typeId] || typeId;
+    return ANNOUNCEMENT_TYPES.find(t => t.id === resolved) || ANNOUNCEMENT_TYPES[0];
   };
 
   const getTypeColorClasses = (color) => {
     const colors = {
       orange: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800',
       blue: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
+      purple: 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800',
       green: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
       red: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800'
     };
