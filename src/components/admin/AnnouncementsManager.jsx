@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices';
 import { 
   collection, query, orderBy, onSnapshot, getDocs,
   doc, setDoc, updateDoc, deleteDoc, serverTimestamp 
 } from 'firebase/firestore';
+import { UNIFIED_COLLECTION } from '../../services/unifiedContentService';
+import { COMMUNITY_SESSIONS_COLLECTION } from '../../data/Constants';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { Card, Button } from '../ui';
 import { 
@@ -167,6 +169,16 @@ const AnnouncementsManager = () => {
   });
   const [saving, setSaving] = useState(false);
 
+  // Lazy-loaded option lists for the link-target picker. Populated the first
+  // time the admin selects linkKind === 'content' or 'event' so we don't pay
+  // the read cost for every notification create.
+  const [contentItems, setContentItems] = useState(null); // null = not loaded
+  const [contentLoading, setContentLoading] = useState(false);
+  const [eventItems, setEventItems] = useState(null);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [linkSearch, setLinkSearch] = useState('');
+  const [eventsShowAll, setEventsShowAll] = useState(false);
+
   // Fetch announcements
   useEffect(() => {
     if (!db) return;
@@ -239,6 +251,121 @@ const AnnouncementsManager = () => {
     };
     loadUsers();
   }, [db]);
+
+  // Lazy-load content items the first time the admin picks 'content' as the
+  // link kind. Cached for the lifetime of the manager session.
+  useEffect(() => {
+    if (formData.linkKind !== 'content' || contentItems !== null || !db || contentLoading) return;
+    let cancelled = false;
+    setContentLoading(true);
+    (async () => {
+      try {
+        const snap = await getDocs(collection(db, UNIFIED_COLLECTION));
+        const items = [];
+        snap.forEach((d) => {
+          const data = d.data() || {};
+          // Exclude archived items from the picker — they're not user-visible.
+          if (data.status === 'ARCHIVED') return;
+          items.push({
+            id: d.id,
+            title: data.title || data.name || d.id,
+            type: data.type || '',
+            phase: data.phase || data.targetPhase || '',
+          });
+        });
+        items.sort((a, b) => a.title.localeCompare(b.title));
+        if (!cancelled) setContentItems(items);
+      } catch (err) {
+        console.error('[AnnouncementsManager] load content failed:', err);
+        if (!cancelled) setContentItems([]);
+      } finally {
+        if (!cancelled) setContentLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [formData.linkKind, contentItems, db, contentLoading]);
+
+  // Lazy-load events (community/coaching sessions) on first 'event' selection.
+  useEffect(() => {
+    if (formData.linkKind !== 'event' || eventItems !== null || !db || eventsLoading) return;
+    let cancelled = false;
+    setEventsLoading(true);
+    (async () => {
+      try {
+        const snap = await getDocs(query(
+          collection(db, COMMUNITY_SESSIONS_COLLECTION),
+          orderBy('date', 'desc'),
+        ));
+        const items = [];
+        snap.forEach((d) => {
+          const data = d.data() || {};
+          if (data.status === 'cancelled') return;
+          items.push({
+            id: d.id,
+            title: data.title || data.name || data.topic || d.id,
+            date: data.date || '',
+            sessionType: data.sessionType || '',
+            host: data.host || '',
+          });
+        });
+        // Already ordered date desc — keep that so newest-first feels natural
+        // when "show all" is on.
+        if (!cancelled) setEventItems(items);
+      } catch (err) {
+        console.error('[AnnouncementsManager] load events failed:', err);
+        if (!cancelled) setEventItems([]);
+      } finally {
+        if (!cancelled) setEventsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [formData.linkKind, eventItems, db, eventsLoading]);
+
+  // Reset the search box whenever the link kind switches so the previous
+  // query doesn't bleed into the new picker.
+  useEffect(() => {
+    setLinkSearch('');
+  }, [formData.linkKind]);
+
+  // Derived filtered lists for the pickers.
+  const filteredContent = useMemo(() => {
+    if (!contentItems) return [];
+    const q = linkSearch.trim().toLowerCase();
+    return contentItems.filter((c) => {
+      if (!q) return true;
+      return c.title.toLowerCase().includes(q)
+        || c.id.toLowerCase().includes(q)
+        || (c.type || '').toLowerCase().includes(q);
+    }).slice(0, 100);
+  }, [contentItems, linkSearch]);
+
+  const filteredEvents = useMemo(() => {
+    if (!eventItems) return [];
+    const today = new Date().toISOString().split('T')[0];
+    const q = linkSearch.trim().toLowerCase();
+    return eventItems
+      .filter((e) => eventsShowAll || (e.date && e.date >= today))
+      .filter((e) => {
+        if (!q) return true;
+        return e.title.toLowerCase().includes(q)
+          || e.id.toLowerCase().includes(q)
+          || (e.sessionType || '').toLowerCase().includes(q);
+      })
+      .slice(0, 100);
+  }, [eventItems, linkSearch, eventsShowAll]);
+
+  const selectedContentLabel = useMemo(() => {
+    if (formData.linkKind !== 'content' || !formData.linkTargetId) return '';
+    const found = (contentItems || []).find((c) => c.id === formData.linkTargetId);
+    return found ? found.title : formData.linkTargetId;
+  }, [contentItems, formData.linkKind, formData.linkTargetId]);
+
+  const selectedEventLabel = useMemo(() => {
+    if (formData.linkKind !== 'event' || !formData.linkTargetId) return '';
+    const found = (eventItems || []).find((e) => e.id === formData.linkTargetId);
+    if (!found) return formData.linkTargetId;
+    return found.date ? `${found.title} — ${found.date}` : found.title;
+  }, [eventItems, formData.linkKind, formData.linkTargetId]);
 
   const resetForm = () => {
     setFormData({
@@ -795,18 +922,136 @@ const AnnouncementsManager = () => {
 
             {(formData.linkKind === 'content' || formData.linkKind === 'event') && (
               <div className="mt-3">
-                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  {formData.linkKind === 'content' ? 'Content item ID' : 'Event / Session ID'}
-                </label>
+                <div className="flex items-center justify-between gap-3 mb-1">
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">
+                    {formData.linkKind === 'content' ? 'Content item' : 'Event / Session'}
+                  </label>
+                  {formData.linkKind === 'event' && (
+                    <label className="inline-flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-400 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={eventsShowAll}
+                        onChange={(e) => setEventsShowAll(e.target.checked)}
+                        className="w-3 h-3 rounded border-slate-300 text-corporate-teal focus:ring-corporate-teal"
+                      />
+                      Show past events
+                    </label>
+                  )}
+                </div>
+
+                {/* Currently selected */}
+                {formData.linkTargetId && (
+                  <div className="flex items-center justify-between gap-2 mb-2 px-3 py-2 rounded-lg bg-corporate-teal/10 border border-corporate-teal/30">
+                    <span className="text-xs text-corporate-teal-ink truncate">
+                      <span className="font-medium">Selected:</span>{' '}
+                      {formData.linkKind === 'content' ? selectedContentLabel : selectedEventLabel}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, linkTargetId: '' }))}
+                      className="text-corporate-teal-ink hover:text-rose-500"
+                      aria-label="Clear selection"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Search box */}
                 <input
                   type="text"
-                  value={formData.linkTargetId}
-                  onChange={(e) => setFormData(prev => ({ ...prev, linkTargetId: e.target.value }))}
-                  placeholder={formData.linkKind === 'content' ? 'e.g. unified-content/foundation-week1' : 'community_sessions document id'}
-                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg
-                           bg-white dark:bg-slate-900 text-slate-800 dark:text-white
+                  value={linkSearch}
+                  onChange={(e) => setLinkSearch(e.target.value)}
+                  placeholder={
+                    formData.linkKind === 'content'
+                      ? 'Search content by title, type, or ID…'
+                      : 'Search events by title, type, or ID…'
+                  }
+                  className="w-full px-3 py-2 mb-2 border border-slate-200 dark:border-slate-700 rounded-lg
+                           bg-white dark:bg-slate-900 text-slate-800 dark:text-white text-sm
                            focus:ring-2 focus:ring-corporate-teal focus:border-transparent"
                 />
+
+                {/* Results */}
+                <div className="max-h-56 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-lg divide-y divide-slate-100 dark:divide-slate-700 bg-white dark:bg-slate-900">
+                  {formData.linkKind === 'content' && (
+                    <>
+                      {contentLoading && (
+                        <p className="text-xs text-slate-400 italic px-3 py-2">Loading content…</p>
+                      )}
+                      {!contentLoading && filteredContent.length === 0 && (
+                        <p className="text-xs text-slate-400 italic px-3 py-2">
+                          {contentItems && contentItems.length > 0 ? 'No matches.' : 'No content items found.'}
+                        </p>
+                      )}
+                      {filteredContent.map((c) => {
+                        const selected = c.id === formData.linkTargetId;
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => setFormData((prev) => ({ ...prev, linkTargetId: c.id }))}
+                            className={`w-full text-left flex items-center justify-between gap-2 px-3 py-1.5 text-xs hover:bg-slate-50 dark:hover:bg-slate-800 ${
+                              selected ? 'bg-corporate-teal/5' : ''
+                            }`}
+                          >
+                            <span className="truncate">
+                              <span className="font-medium text-slate-800 dark:text-white">{c.title}</span>
+                              {c.type && (
+                                <span className="text-[10px] uppercase tracking-wide text-slate-400 ml-2">
+                                  {c.type}
+                                </span>
+                              )}
+                            </span>
+                            {selected && <CheckCircle className="w-3.5 h-3.5 text-corporate-teal flex-shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </>
+                  )}
+
+                  {formData.linkKind === 'event' && (
+                    <>
+                      {eventsLoading && (
+                        <p className="text-xs text-slate-400 italic px-3 py-2">Loading events…</p>
+                      )}
+                      {!eventsLoading && filteredEvents.length === 0 && (
+                        <p className="text-xs text-slate-400 italic px-3 py-2">
+                          {eventItems && eventItems.length > 0
+                            ? (eventsShowAll ? 'No matches.' : 'No upcoming events — toggle "Show past events" to broaden.')
+                            : 'No events found.'}
+                        </p>
+                      )}
+                      {filteredEvents.map((ev) => {
+                        const selected = ev.id === formData.linkTargetId;
+                        return (
+                          <button
+                            key={ev.id}
+                            type="button"
+                            onClick={() => setFormData((prev) => ({ ...prev, linkTargetId: ev.id }))}
+                            className={`w-full text-left flex items-center justify-between gap-2 px-3 py-1.5 text-xs hover:bg-slate-50 dark:hover:bg-slate-800 ${
+                              selected ? 'bg-corporate-teal/5' : ''
+                            }`}
+                          >
+                            <span className="truncate">
+                              <span className="font-medium text-slate-800 dark:text-white">{ev.title}</span>
+                              {ev.date && (
+                                <span className="text-[10px] text-slate-500 ml-2">{ev.date}</span>
+                              )}
+                              {ev.sessionType && (
+                                <span className="text-[10px] uppercase tracking-wide text-slate-400 ml-2">
+                                  {ev.sessionType}
+                                </span>
+                              )}
+                            </span>
+                            {selected && <CheckCircle className="w-3.5 h-3.5 text-corporate-teal flex-shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </>
+                  )}
+                </div>
+
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                   {formData.linkKind === 'content'
                     ? 'Opens the Library and surfaces this content item.'
