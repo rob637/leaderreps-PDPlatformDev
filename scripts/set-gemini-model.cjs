@@ -1,26 +1,33 @@
 #!/usr/bin/env node
 /**
  * Set metadata/config.GEMINI_MODEL across all 3 environments.
- * Usage: node scripts/set-gemini-model.cjs [model]
- *   default model: gemini-2.5-flash
+ *
+ * Usage:
+ *   node scripts/set-gemini-model.cjs [model]
+ *
+ * Defaults:
+ *   model = gemini-2.5-flash
+ *
+ * Auth:
+ *   Uses Application Default Credentials (ADC). Run once:
+ *     gcloud auth application-default login
+ *   Your Google account must have Firestore write access (roles/datastore.user
+ *   or owner/editor) on each target project.
  */
 const admin = require('firebase-admin');
-const path = require('path');
 
 const MODEL = process.argv[2] || 'gemini-2.5-flash';
 
 const PROJECTS = [
-  { name: 'dev',  projectId: 'leaderreps-pd-platform', key: 'leaderreps-pd-platform-firebase-adminsdk.json' },
-  { name: 'test', projectId: 'leaderreps-test',        key: 'leaderreps-test-firebase-adminsdk.json' },
-  { name: 'prod', projectId: 'leaderreps-prod',        key: 'leaderreps-prod-firebase-adminsdk.json' },
+  { name: 'dev',  projectId: 'leaderreps-pd-platform' },
+  { name: 'test', projectId: 'leaderreps-test' },
+  { name: 'prod', projectId: 'leaderreps-prod' },
 ];
 
 (async () => {
   for (const p of PROJECTS) {
-    const app = admin.initializeApp({
-      credential: admin.credential.cert(require(path.resolve(__dirname, '..', p.key))),
-      projectId: p.projectId,
-    }, p.name);
+    // No `credential` field => firebase-admin picks up ADC automatically.
+    const app = admin.initializeApp({ projectId: p.projectId }, p.name);
 
     const db = admin.firestore(app);
     const ref = db.doc('metadata/config');
@@ -33,4 +40,10 @@ const PROJECTS = [
     await app.delete();
   }
   console.log('\nDone.');
-})().catch((e) => { console.error(e); process.exit(1); });
+})().catch((e) => {
+  console.error(e);
+  if (String(e && e.message).includes('Could not load the default credentials')) {
+    console.error('\nADC not configured. Run:  gcloud auth application-default login');
+  }
+  process.exit(1);
+});
