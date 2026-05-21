@@ -46,6 +46,18 @@ const REP_PATHS = ['conditioning_reps', 'reps_light'];
 
 const calId = (userId, repId) => `${userId}__${repId}`;
 
+// Defensive coercion: `situation` may be a plain string, or a structured
+// object like `{ selected, customContext, isRequired }` from the rep wizard.
+// Always return a string so React doesn't try to render a raw object.
+const extractSituationText = (val) => {
+  if (!val) return '';
+  if (typeof val === 'string') return val;
+  if (typeof val === 'object') {
+    return val.customContext || val.selected || val.text || '';
+  }
+  return String(val);
+};
+
 /**
  * List recent reps across all users in a cohort, suitable for the trainer
  * calibration queue. Uses collectionGroup query on conditioning_reps and
@@ -85,7 +97,7 @@ export const listReps = async (db, { cohortId = null, limitCount = 50 } = {}) =>
         ? data.qualityAssessment.meetsStandard
         : null,
       engineSummary: data.qualityAssessment?.feedback || data.qualityAssessment?.summary || '',
-      situationContext: data.context?.situation || data.situation || '',
+      situationContext: extractSituationText(data.context?.situation) || extractSituationText(data.situation) || '',
     });
   });
   return reps.slice(0, limitCount);

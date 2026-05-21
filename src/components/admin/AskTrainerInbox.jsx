@@ -10,7 +10,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Megaphone, Loader2, Send, Video, CheckCircle2, Clock, X,
-  AlertCircle, RotateCcw, Tag, Mail, Library, Check,
+  AlertCircle, RotateCcw, Tag, Mail, Library, Check, Lock, Users, Globe,
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import {
@@ -58,10 +58,38 @@ const StatusPill = ({ status }) => {
   );
 };
 
+const VISIBILITY_OPTIONS = [
+  {
+    key: 'private',
+    label: 'Private',
+    icon: Lock,
+    desc: 'Only this leader sees the reply. Use for personal questions.',
+  },
+  {
+    key: 'cohort',
+    label: 'Cohort',
+    icon: Users,
+    desc: "Visible to this leader's cohort. May be added to the Media Vault.",
+  },
+  {
+    key: 'public',
+    label: 'Public',
+    icon: Globe,
+    desc: 'Shared with all leaders via the Media Vault.',
+  },
+];
+
 const ReplyForm = ({ question, onSubmit, busy }) => {
   const [text, setText] = useState(question.responseText || '');
   const [videoUrl, setVideoUrl] = useState(question.responseVideoUrl || '');
   const alreadyPublished = !!question.publishedToLibraryId;
+  // Privacy-safe default: only persist 'public' if it was previously set.
+  const [visibility, setVisibility] = useState(
+    question.visibility === 'public' || question.visibility === 'cohort'
+      ? question.visibility
+      : 'private'
+  );
+  // Auto-check Vault publishing only when visibility is 'public'.
   const [publishToLibrary, setPublishToLibrary] = useState(false);
   const [libraryTitle, setLibraryTitle] = useState(
     question.title ? `Trainer answer: ${question.title}` : ''
@@ -71,7 +99,18 @@ const ReplyForm = ({ question, onSubmit, busy }) => {
   );
   const [error, setError] = useState(null);
 
-  const canPublish = !!videoUrl.trim() && !alreadyPublished;
+  const vaultEligible = visibility !== 'private';
+  const canPublish = !!videoUrl.trim() && !alreadyPublished && vaultEligible;
+
+  // When the coach switches to Public, default Vault publishing to ON.
+  // When they switch to Private/Cohort, reset Vault to OFF so it isn't sent by mistake.
+  React.useEffect(() => {
+    if (visibility === 'public') {
+      setPublishToLibrary(true);
+    } else {
+      setPublishToLibrary(false);
+    }
+  }, [visibility]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -80,6 +119,7 @@ const ReplyForm = ({ question, onSubmit, busy }) => {
       await onSubmit({
         responseText: text,
         responseVideoUrl: videoUrl,
+        visibility,
         publishToLibrary: publishToLibrary && canPublish,
         libraryTitle: libraryTitle.trim(),
         libraryTags: libraryTags
@@ -125,11 +165,60 @@ const ReplyForm = ({ question, onSubmit, busy }) => {
         />
       </div>
 
+      <div>
+        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+          Audience
+        </label>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          {VISIBILITY_OPTIONS.map((opt) => {
+            const Icon = opt.icon;
+            const selected = visibility === opt.key;
+            return (
+              <label
+                key={opt.key}
+                className={`flex items-start gap-2 p-2.5 rounded-lg border cursor-pointer text-sm transition ${
+                  selected
+                    ? 'border-corporate-teal bg-corporate-teal/5 ring-1 ring-corporate-teal'
+                    : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/40'
+                } ${busy ? 'opacity-60 pointer-events-none' : ''}`}
+              >
+                <input
+                  type="radio"
+                  name={`visibility-${question.id}`}
+                  value={opt.key}
+                  checked={selected}
+                  onChange={() => setVisibility(opt.key)}
+                  disabled={busy}
+                  className="mt-0.5 accent-corporate-teal"
+                />
+                <span className="flex-1">
+                  <span className="inline-flex items-center gap-1 font-semibold text-slate-800 dark:text-slate-100">
+                    <Icon className="w-3.5 h-3.5" />
+                    {opt.label}
+                  </span>
+                  <span className="block text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    {opt.desc}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-3">
         {alreadyPublished ? (
           <div className="flex items-center gap-2 text-sm text-emerald-700">
             <Check className="w-4 h-4" />
             Already published to the Media Vault.
+          </div>
+        ) : !vaultEligible ? (
+          <div className="flex items-start gap-2 text-sm text-slate-500 dark:text-slate-400">
+            <Lock className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <span>
+              Private replies are never added to the Media Vault. Change the audience to
+              {' '}<span className="font-semibold">Cohort</span> or <span className="font-semibold">Public</span> to enable sharing.
+            </span>
           </div>
         ) : (
           <>
@@ -147,7 +236,9 @@ const ReplyForm = ({ question, onSubmit, busy }) => {
                 </span>
                 <span className="block text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   {canPublish
-                    ? 'Adds the video URL as a Media Vault entry so other leaders & content editors can reuse it.'
+                    ? (visibility === 'public'
+                        ? 'Public replies default to the Media Vault. Uncheck to keep this one out of the library.'
+                        : 'Adds the video URL as a Media Vault entry so other leaders & content editors can reuse it.')
                     : 'Add a video URL above to enable.'}
                 </span>
               </span>
@@ -350,11 +441,18 @@ const AskTrainerInbox = () => {
         publishToLibrary,
         libraryTitle,
         libraryTags,
+        visibility,
         ...replyPayload
       } = payload || {};
-      await respondToQuestion(db, user, questionId, replyPayload);
+      const safeVisibility =
+        visibility === 'public' || visibility === 'cohort' ? visibility : 'private';
+      await respondToQuestion(db, user, questionId, {
+        ...replyPayload,
+        visibility: safeVisibility,
+      });
 
-      if (publishToLibrary && replyPayload.responseVideoUrl) {
+      // Safety: never publish private replies to the Media Vault.
+      if (publishToLibrary && safeVisibility !== 'private' && replyPayload.responseVideoUrl) {
         const q = questions.find((x) => x.id === questionId) || {};
         try {
           const asset = await createMediaAssetFromUrl(db, {
