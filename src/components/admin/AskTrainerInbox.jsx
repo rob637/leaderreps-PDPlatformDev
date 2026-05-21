@@ -9,8 +9,22 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Megaphone, Loader2, Send, Video, CheckCircle2, Clock, X,
-  AlertCircle, RotateCcw, Tag, Mail, Library, Check, Lock, Users, Globe,
+  Megaphone,
+  Loader2,
+  Send,
+  Video,
+  CheckCircle2,
+  Clock,
+  X,
+  AlertCircle,
+  RotateCcw,
+  Tag,
+  Mail,
+  Library,
+  Check,
+  Lock,
+  Users,
+  Globe,
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import {
@@ -32,18 +46,40 @@ const RR_TAG_LABEL = {
 };
 
 const STATUS_TABS = [
-  { key: 'open', label: 'Open', icon: Clock, cls: 'bg-amber-50 text-amber-700 border-amber-200' },
-  { key: 'answered', label: 'Answered', icon: CheckCircle2, cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  { key: 'cancelled', label: 'Cancelled', icon: X, cls: 'bg-slate-100 text-slate-500 border-slate-200' },
-  { key: 'all', label: 'All', icon: Megaphone, cls: 'bg-slate-100 text-slate-700 border-slate-200' },
+  {
+    key: 'open',
+    label: 'Open',
+    icon: Clock,
+    cls: 'bg-amber-50 text-amber-700 border-amber-200',
+  },
+  {
+    key: 'answered',
+    label: 'Answered',
+    icon: CheckCircle2,
+    cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  },
+  {
+    key: 'cancelled',
+    label: 'Cancelled',
+    icon: X,
+    cls: 'bg-slate-100 text-slate-500 border-slate-200',
+  },
+  {
+    key: 'all',
+    label: 'All',
+    icon: Megaphone,
+    cls: 'bg-slate-100 text-slate-700 border-slate-200',
+  },
 ];
 
 const formatTimestamp = (ts) => {
   if (!ts) return '';
   const d = ts.toDate ? ts.toDate() : new Date(ts);
   return d.toLocaleString(undefined, {
-    month: 'short', day: 'numeric',
-    hour: 'numeric', minute: '2-digit',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
   });
 };
 
@@ -51,7 +87,9 @@ const StatusPill = ({ status }) => {
   const meta = STATUS_TABS.find((s) => s.key === status) || STATUS_TABS[0];
   const Icon = meta.icon;
   return (
-    <span className={`text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${meta.cls}`}>
+    <span
+      className={`text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${meta.cls}`}
+    >
       <Icon className="w-3 h-3" />
       {meta.label}
     </span>
@@ -87,15 +125,15 @@ const ReplyForm = ({ question, onSubmit, busy }) => {
   const [visibility, setVisibility] = useState(
     question.visibility === 'public' || question.visibility === 'cohort'
       ? question.visibility
-      : 'private'
+      : 'private',
   );
   // Auto-check Vault publishing only when visibility is 'public'.
   const [publishToLibrary, setPublishToLibrary] = useState(false);
   const [libraryTitle, setLibraryTitle] = useState(
-    question.title ? `Trainer answer: ${question.title}` : ''
+    question.title ? `Trainer answer: ${question.title}` : '',
   );
   const [libraryTags, setLibraryTags] = useState(
-    question.rrTag ? question.rrTag : ''
+    question.rrTag ? question.rrTag : '',
   );
   const [error, setError] = useState(null);
 
@@ -153,7 +191,10 @@ const ReplyForm = ({ question, onSubmit, busy }) => {
 
       <div>
         <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
-          Video URL <span className="font-normal normal-case text-slate-400">(optional · Loom, YouTube, Vimeo)</span>
+          Video URL{' '}
+          <span className="font-normal normal-case text-slate-400">
+            (optional · Loom, YouTube, Vimeo)
+          </span>
         </label>
         <input
           type="url"
@@ -216,13 +257,16 @@ const ReplyForm = ({ question, onSubmit, busy }) => {
           <div className="flex items-start gap-2 text-sm text-slate-500 dark:text-slate-400">
             <Lock className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <span>
-              Private replies are never added to the Media Vault. Change the audience to
-              {' '}<span className="font-semibold">Cohort</span> or <span className="font-semibold">Public</span> to enable sharing.
+              Private replies are never added to the Media Vault. Change the
+              audience to <span className="font-semibold">Cohort</span> or{' '}
+              <span className="font-semibold">Public</span> to enable sharing.
             </span>
           </div>
         ) : (
           <>
-            <label className={`flex items-start gap-2 text-sm ${canPublish ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`}>
+            <label
+              className={`flex items-start gap-2 text-sm ${canPublish ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`}
+            >
               <input
                 type="checkbox"
                 checked={publishToLibrary && canPublish}
@@ -232,13 +276,14 @@ const ReplyForm = ({ question, onSubmit, busy }) => {
               />
               <span className="flex-1">
                 <span className="inline-flex items-center gap-1 font-semibold">
-                  <Library className="w-4 h-4" /> Publish this video to the Media Vault
+                  <Library className="w-4 h-4" /> Publish this video to the
+                  Media Vault
                 </span>
                 <span className="block text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   {canPublish
-                    ? (visibility === 'public'
-                        ? 'Public replies default to the Media Vault. Uncheck to keep this one out of the library.'
-                        : 'Adds the video URL as a Media Vault entry so other leaders & content editors can reuse it.')
+                    ? visibility === 'public'
+                      ? 'Public replies default to the Media Vault. Uncheck to keep this one out of the library.'
+                      : 'Adds the video URL as a Media Vault entry so other leaders & content editors can reuse it.'
                     : 'Add a video URL above to enable.'}
                 </span>
               </span>
@@ -246,7 +291,9 @@ const ReplyForm = ({ question, onSubmit, busy }) => {
             {publishToLibrary && canPublish && (
               <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Library title</label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                    Library title
+                  </label>
                   <input
                     type="text"
                     value={libraryTitle}
@@ -256,7 +303,12 @@ const ReplyForm = ({ question, onSubmit, busy }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Tags <span className="font-normal normal-case text-slate-400">(comma-separated)</span></label>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                    Tags{' '}
+                    <span className="font-normal normal-case text-slate-400">
+                      (comma-separated)
+                    </span>
+                  </label>
                   <input
                     type="text"
                     value={libraryTags}
@@ -285,22 +337,33 @@ const ReplyForm = ({ question, onSubmit, busy }) => {
           disabled={busy || (!text.trim() && !videoUrl.trim())}
           className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold bg-corporate-teal text-white hover:bg-corporate-teal/90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          {busy ? 'Sending…' : (question.status === 'answered' ? 'Update reply' : 'Send reply')}
+          {busy ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Send className="w-4 h-4" />
+          )}
+          {busy
+            ? 'Sending…'
+            : question.status === 'answered'
+              ? 'Update reply'
+              : 'Send reply'}
         </button>
       </div>
     </form>
   );
 };
 
-const QuestionRow = ({ question, expanded, onToggle, onReply, onReopen, busy }) => {
+const QuestionRow = ({
+  question,
+  expanded,
+  onToggle,
+  onReply,
+  onReopen,
+  busy,
+}) => {
   return (
     <article className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="w-full text-left"
-      >
+      <button type="button" onClick={onToggle} className="w-full text-left">
         <div className="flex items-start justify-between gap-3 mb-2">
           <StatusPill status={question.status} />
           <span className="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0">
@@ -340,7 +403,9 @@ const QuestionRow = ({ question, expanded, onToggle, onReply, onReopen, busy }) 
           )}
         </div>
 
-        <p className={`text-sm text-slate-900 dark:text-slate-100 whitespace-pre-wrap ${expanded ? '' : 'line-clamp-3'}`}>
+        <p
+          className={`text-sm text-slate-900 dark:text-slate-100 whitespace-pre-wrap ${expanded ? '' : 'line-clamp-3'}`}
+        >
           {question.question}
         </p>
       </button>
@@ -418,7 +483,7 @@ const AskTrainerInbox = () => {
         setQuestions(items);
         setLoading(false);
       },
-      opts
+      opts,
     );
     return unsub;
   }, [db, statusFilter]);
@@ -445,19 +510,26 @@ const AskTrainerInbox = () => {
         ...replyPayload
       } = payload || {};
       const safeVisibility =
-        visibility === 'public' || visibility === 'cohort' ? visibility : 'private';
+        visibility === 'public' || visibility === 'cohort'
+          ? visibility
+          : 'private';
       await respondToQuestion(db, user, questionId, {
         ...replyPayload,
         visibility: safeVisibility,
       });
 
       // Safety: never publish private replies to the Media Vault.
-      if (publishToLibrary && safeVisibility !== 'private' && replyPayload.responseVideoUrl) {
+      if (
+        publishToLibrary &&
+        safeVisibility !== 'private' &&
+        replyPayload.responseVideoUrl
+      ) {
         const q = questions.find((x) => x.id === questionId) || {};
         try {
           const asset = await createMediaAssetFromUrl(db, {
             url: replyPayload.responseVideoUrl,
-            title: libraryTitle || `Trainer answer: ${q.title || 'Ask a Trainer'}`,
+            title:
+              libraryTitle || `Trainer answer: ${q.title || 'Ask a Trainer'}`,
             type: MEDIA_TYPES.VIDEO,
             tags: libraryTags || [],
             description: replyPayload.responseText || '',
@@ -479,7 +551,9 @@ const AskTrainerInbox = () => {
           });
         } catch (pubErr) {
           // Don't fail the whole reply if publish fails — surface error.
-          setGlobalError(`Reply sent, but publishing to library failed: ${pubErr?.message || pubErr}`);
+          setGlobalError(
+            `Reply sent, but publishing to library failed: ${pubErr?.message || pubErr}`,
+          );
         }
       }
 
@@ -516,8 +590,9 @@ const AskTrainerInbox = () => {
           </h1>
         </div>
         <p className="text-sm text-slate-600 dark:text-slate-400">
-          Questions submitted by leaders through the &ldquo;Ask a Trainer&rdquo; flow.
-          Open one, type a reply, and (optionally) drop in a Loom/Video link.
+          Questions submitted by leaders through the &ldquo;Ask a Trainer&rdquo;
+          flow. Open one, type a reply, and (optionally) drop in a Loom/Video
+          link.
         </p>
       </header>
 
@@ -583,7 +658,8 @@ const AskTrainerInbox = () => {
 
       {statusFilter === 'all' && questions.length > 0 && (
         <div className="mt-4 text-xs text-slate-500 dark:text-slate-400 text-right">
-          {counts.open} open · {counts.answered} answered · {counts.cancelled} cancelled
+          {counts.open} open · {counts.answered} answered · {counts.cancelled}{' '}
+          cancelled
         </div>
       )}
     </div>

@@ -10,11 +10,20 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  BookOpen, Save, Loader2, AlertCircle, CheckCircle2,
-  ChevronDown, ChevronRight, ShieldAlert,
+  BookOpen,
+  Save,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  ShieldAlert,
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
-import { getRrAddendum, setRrAddendum } from '../../services/calibrationService';
+import {
+  getRrAddendum,
+  setRrAddendum,
+} from '../../services/calibrationService';
 import { getRubric } from '../../data/rrRubric';
 
 const TIER_STYLES = {
@@ -39,16 +48,25 @@ const formatWhen = (ts) => {
   try {
     const d = ts.toDate ? ts.toDate() : new Date(ts);
     return d.toLocaleString(undefined, {
-      month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
     });
-  } catch { return ''; }
+  } catch {
+    return '';
+  }
 };
 
 const RubricAddendumEditor = () => {
   const { db, user } = useAppServices();
   const [active, setActive] = useState('DRF');
   const [text, setText] = useState('');
-  const [meta, setMeta] = useState({ updatedAt: null, updatedBy: null, version: 0 });
+  const [meta, setMeta] = useState({
+    updatedAt: null,
+    updatedBy: null,
+    version: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -67,14 +85,20 @@ const RubricAddendumEditor = () => {
         const a = await getRrAddendum(db, active);
         if (cancelled) return;
         setText(a.text || '');
-        setMeta({ updatedAt: a.updatedAt, updatedBy: a.updatedBy, version: a.version || 0 });
+        setMeta({
+          updatedAt: a.updatedAt,
+          updatedBy: a.updatedBy,
+          version: a.version || 0,
+        });
       } catch (e) {
         if (!cancelled) setError(e?.message || String(e));
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [db, active]);
 
   const handleSave = async () => {
@@ -113,9 +137,9 @@ const RubricAddendumEditor = () => {
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Free-form guidance appended to the AI scorer's prompt for the
-            selected rep type. Use this to tighten edge cases the rubric
-            anchors don't already cover. Saved instantly; takes effect on
-            the next rep evaluation. Leave blank for default behavior.
+            selected rep type. Use this to tighten edge cases the rubric anchors
+            don't already cover. Saved instantly; takes effect on the next rep
+            evaluation. Leave blank for default behavior.
           </p>
         </div>
       </div>
@@ -149,7 +173,11 @@ const RubricAddendumEditor = () => {
             aria-expanded={showRubric}
           >
             <span className="flex items-center gap-2 text-xs font-semibold text-corporate-navy dark:text-white">
-              {showRubric ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+              {showRubric ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <ChevronRight className="w-4 h-4" />
+              )}
               Current rubric — {active}: {rubric.name}
               <span className="font-normal text-[11px] text-slate-500 dark:text-slate-400">
                 v{rubric.version}
@@ -164,19 +192,25 @@ const RubricAddendumEditor = () => {
             <div className="px-3 pb-3 space-y-3">
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 This is what the AI scorer evaluates against. Your addendum
-                above is appended to this rubric in the scorer prompt — use
-                it for edge cases the anchors below don&apos;t already cover.
+                above is appended to this rubric in the scorer prompt — use it
+                for edge cases the anchors below don&apos;t already cover.
               </p>
 
               {/* Pass / fail / strong-rep summary */}
               <div className="rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2.5 text-[11px] space-y-1.5">
                 <div>
-                  <span className="font-semibold text-corporate-navy dark:text-white">Pass: </span>
-                  <span className="text-slate-600 dark:text-slate-300">{rubric.passSummary}</span>
+                  <span className="font-semibold text-corporate-navy dark:text-white">
+                    Pass:{' '}
+                  </span>
+                  <span className="text-slate-600 dark:text-slate-300">
+                    {rubric.passSummary}
+                  </span>
                 </div>
                 {rubric.failRules?.length > 0 && (
                   <div>
-                    <span className="font-semibold text-rose-600 dark:text-rose-400">Fail rules: </span>
+                    <span className="font-semibold text-rose-600 dark:text-rose-400">
+                      Fail rules:{' '}
+                    </span>
                     <ul className="list-disc list-inside text-slate-600 dark:text-slate-300 mt-0.5">
                       {rubric.failRules.map((r, i) => (
                         <li key={i}>{r}</li>
@@ -185,8 +219,12 @@ const RubricAddendumEditor = () => {
                   </div>
                 )}
                 <div>
-                  <span className="font-semibold text-emerald-700 dark:text-emerald-400">Strong rep: </span>
-                  <span className="text-slate-600 dark:text-slate-300">{rubric.strongRep}</span>
+                  <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                    Strong rep:{' '}
+                  </span>
+                  <span className="text-slate-600 dark:text-slate-300">
+                    {rubric.strongRep}
+                  </span>
                 </div>
               </div>
 
@@ -230,7 +268,9 @@ const RubricAddendumEditor = () => {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div>{a.criterion}</div>
-                              <div className="opacity-75 mt-0.5">e.g. {a.example}</div>
+                              <div className="opacity-75 mt-0.5">
+                                e.g. {a.example}
+                              </div>
                             </div>
                           </div>
                         );
@@ -264,7 +304,9 @@ const RubricAddendumEditor = () => {
                 {meta.version > 0 && (
                   <>
                     <span>v{meta.version}</span>
-                    {meta.updatedAt && <span>· updated {formatWhen(meta.updatedAt)}</span>}
+                    {meta.updatedAt && (
+                      <span>· updated {formatWhen(meta.updatedAt)}</span>
+                    )}
                     {meta.updatedBy && <span>· by {meta.updatedBy}</span>}
                   </>
                 )}
@@ -281,7 +323,11 @@ const RubricAddendumEditor = () => {
                 disabled={saving}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-corporate-teal text-white text-xs font-semibold hover:bg-corporate-teal/90 disabled:opacity-50 transition-colors"
               >
-                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                {saving ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Save className="w-3.5 h-3.5" />
+                )}
                 Save {active} addendum
               </button>
               {savedAt && (

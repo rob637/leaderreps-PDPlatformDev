@@ -19,7 +19,7 @@ const admin = require('firebase-admin');
 const MODEL = process.argv[2] || 'gemini-2.5-flash';
 
 const PROJECTS = [
-  { name: 'dev',  projectId: 'leaderreps-pd-platform' },
+  { name: 'dev', projectId: 'leaderreps-pd-platform' },
   { name: 'test', projectId: 'leaderreps-test' },
   { name: 'prod', projectId: 'leaderreps-prod' },
 ];
@@ -35,15 +35,21 @@ const PROJECTS = [
     const prev = before.exists ? before.data().GEMINI_MODEL : '(no doc)';
     await ref.set({ GEMINI_MODEL: MODEL }, { merge: true });
     const after = await ref.get();
-    console.log(`[${p.name.padEnd(4)}] ${p.projectId}: GEMINI_MODEL  ${prev}  ->  ${after.data().GEMINI_MODEL}`);
+    console.log(
+      `[${p.name.padEnd(4)}] ${p.projectId}: GEMINI_MODEL  ${prev}  ->  ${after.data().GEMINI_MODEL}`,
+    );
 
     await app.delete();
   }
   console.log('\nDone.');
 })().catch((e) => {
   console.error(e);
-  if (String(e && e.message).includes('Could not load the default credentials')) {
-    console.error('\nADC not configured. Run:  gcloud auth application-default login');
+  if (
+    String(e && e.message).includes('Could not load the default credentials')
+  ) {
+    console.error(
+      '\nADC not configured. Run:  gcloud auth application-default login',
+    );
   }
   process.exit(1);
 });

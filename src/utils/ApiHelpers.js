@@ -15,7 +15,7 @@ export function getEnv(key, fallback = '') {
 // (functions/index.js -> geminiProxy). The API key is held only in Secret
 // Manager and is NEVER exposed to the client bundle.
 // Set VITE_GEMINI_PROXY_URL to your deployed geminiProxy URL.
-export const PROXY_URL    = getEnv('VITE_GEMINI_PROXY_URL', '');
+export const PROXY_URL = getEnv('VITE_GEMINI_PROXY_URL', '');
 export const GEMINI_MODEL = getEnv('VITE_GEMINI_MODEL', 'gemini-1.5-pro');
 
 export function hasGeminiKey() {
@@ -33,7 +33,11 @@ export async function fetchJSON(input, init = {}) {
 
   const text = await res.text();
   let data;
-  try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = text;
+  }
 
   if (!res.ok) {
     const err = new Error(`HTTP ${res.status} ${res.statusText}`);
@@ -77,7 +81,7 @@ export async function callSecureGeminiAPI(opts = {}) {
   if (!PROXY_URL) {
     throw new Error(
       'VITE_GEMINI_PROXY_URL is not configured. All Gemini calls must go ' +
-        'through the geminiProxy Cloud Function.'
+        'through the geminiProxy Cloud Function.',
     );
   }
 
@@ -125,36 +129,37 @@ export function mdToHtml(md = '') {
   // Links [text](url)
   out = out.replace(
     /\[([^\]]+)]\((https?:\/\/[^\s)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
+    '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>',
   );
 
   // Inline code `code`
-  out = out.replace(/`([^`]+)`/g, (_, code) => `<code>${escapeHtml(code)}</code>`);
+  out = out.replace(
+    /`([^`]+)`/g,
+    (_, code) => `<code>${escapeHtml(code)}</code>`,
+  );
 
   // Bold then italic
   out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   out = out.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
 
   // Unordered lists
-  out = out.replace(
-    /(?:^|\n)(- .*(?:\n- .*)*)(?:\n|$)/g,
-    (block) => {
-      const items = block
-        .trim()
-        .split('\n')
-        .filter((l) => l.trim().startsWith('- '))
-        .map((l) => l.replace(/^- /, '').trim());
-      if (!items.length) return block;
-      return `\n<ul>${items.map((i) => `<li>${i}</li>`).join('')}</ul>\n`;
-    }
-  );
+  out = out.replace(/(?:^|\n)(- .*(?:\n- .*)*)(?:\n|$)/g, (block) => {
+    const items = block
+      .trim()
+      .split('\n')
+      .filter((l) => l.trim().startsWith('- '))
+      .map((l) => l.replace(/^- /, '').trim());
+    if (!items.length) return block;
+    return `\n<ul>${items.map((i) => `<li>${i}</li>`).join('')}</ul>\n`;
+  });
 
   // Paragraphs
   const parts = out.split(/\n{2,}/).map((chunk) => chunk.trim());
   out = parts
     .map((chunk) => {
       if (!chunk) return '';
-      if (/^<(h\d|ul|pre|blockquote|table|p|img|hr|code)/i.test(chunk)) return chunk;
+      if (/^<(h\d|ul|pre|blockquote|table|p|img|hr|code)/i.test(chunk))
+        return chunk;
       return `<p>${chunk}</p>`;
     })
     .join('\n');

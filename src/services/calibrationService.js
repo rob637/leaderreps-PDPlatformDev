@@ -65,7 +65,10 @@ const extractSituationText = (val) => {
  * Returns the most recent `limitCount` reps not yet calibrated first, then
  * the rest.
  */
-export const listReps = async (db, { cohortId = null, limitCount = 50 } = {}) => {
+export const listReps = async (
+  db,
+  { cohortId = null, limitCount = 50 } = {},
+) => {
   if (!db) return [];
   const repsQ = query(
     collectionGroup(db, 'conditioning_reps'),
@@ -90,14 +93,22 @@ export const listReps = async (db, { cohortId = null, limitCount = 50 } = {}) =>
       cohortId: data.cohortId || null,
       status: data.status,
       updatedAt: data.updatedAt || null,
-      engineScore: typeof data.qualityAssessment?.score === 'number'
-        ? data.qualityAssessment.score
-        : null,
-      enginePassed: typeof data.qualityAssessment?.meetsStandard === 'boolean'
-        ? data.qualityAssessment.meetsStandard
-        : null,
-      engineSummary: data.qualityAssessment?.feedback || data.qualityAssessment?.summary || '',
-      situationContext: extractSituationText(data.context?.situation) || extractSituationText(data.situation) || '',
+      engineScore:
+        typeof data.qualityAssessment?.score === 'number'
+          ? data.qualityAssessment.score
+          : null,
+      enginePassed:
+        typeof data.qualityAssessment?.meetsStandard === 'boolean'
+          ? data.qualityAssessment.meetsStandard
+          : null,
+      engineSummary:
+        data.qualityAssessment?.feedback ||
+        data.qualityAssessment?.summary ||
+        '',
+      situationContext:
+        extractSituationText(data.context?.situation) ||
+        extractSituationText(data.situation) ||
+        '',
     });
   });
   return reps.slice(0, limitCount);
@@ -114,28 +125,31 @@ export const getCalibration = async (db, userId, repId) => {
  * dimensionScores, feedback, tags, status. The trainer + rep identifiers
  * are passed separately to keep the call site explicit.
  */
-export const saveCalibration = async (db, {
-  userId,
-  repId,
-  repType,
-  cohortId = null,
-  engineScore = null,
-  enginePassed = null,
-  trainerId,
-  trainerEmail = null,
-  trainerScore,
-  trainerPassed,
-  dimensionScores = {},
-  feedback = '',
-  tags = [],
-  status = 'submitted',
-  // adminReview fields (Slice 1) — written back to the rep doc so leaders
-  // can see when a trainer has reviewed their AI verdict.
-  aiAccuracy = null,            // 'correct' | 'partial' | 'incorrect' | null
-  correctedResult = null,       // 'pass' | 'notYet' | null  (null = AI stands)
-  trainerNote = '',             // public-facing note to the leader
-  shareWithLeader = true,       // if false, adminReview is internal only
-}) => {
+export const saveCalibration = async (
+  db,
+  {
+    userId,
+    repId,
+    repType,
+    cohortId = null,
+    engineScore = null,
+    enginePassed = null,
+    trainerId,
+    trainerEmail = null,
+    trainerScore,
+    trainerPassed,
+    dimensionScores = {},
+    feedback = '',
+    tags = [],
+    status = 'submitted',
+    // adminReview fields (Slice 1) — written back to the rep doc so leaders
+    // can see when a trainer has reviewed their AI verdict.
+    aiAccuracy = null, // 'correct' | 'partial' | 'incorrect' | null
+    correctedResult = null, // 'pass' | 'notYet' | null  (null = AI stands)
+    trainerNote = '', // public-facing note to the leader
+    shareWithLeader = true, // if false, adminReview is internal only
+  },
+) => {
   if (!db || !userId || !repId || !trainerId) {
     throw new Error('saveCalibration: missing required ids');
   }
@@ -144,10 +158,12 @@ export const saveCalibration = async (db, {
   const existing = await getDoc(ref);
   // engineScore is 0-100; trainerScore is 1-5. Normalize trainer to 0-100
   // for an apples-to-apples delta (engine - trainer_scaled).
-  const trainerScaled = typeof trainerScore === 'number' ? ((trainerScore - 1) / 4) * 100 : null;
-  const delta = (typeof engineScore === 'number' && typeof trainerScaled === 'number')
-    ? Math.round(engineScore - trainerScaled)
-    : null;
+  const trainerScaled =
+    typeof trainerScore === 'number' ? ((trainerScore - 1) / 4) * 100 : null;
+  const delta =
+    typeof engineScore === 'number' && typeof trainerScaled === 'number'
+      ? Math.round(engineScore - trainerScaled)
+      : null;
   const payload = {
     repId,
     userId,
@@ -198,9 +214,12 @@ export const saveCalibration = async (db, {
           }
         } catch (err) {
           // Best-effort; the calibration row is the source of truth.
-          console.warn(`[calibrationService] adminReview merge failed (${path}):`, err?.message);
+          console.warn(
+            `[calibrationService] adminReview merge failed (${path}):`,
+            err?.message,
+          );
         }
-      })
+      }),
     );
   }
 
@@ -216,7 +235,9 @@ export const saveCalibration = async (db, {
  */
 export const getCalibrationStats = async (db) => {
   if (!db) return {};
-  const snap = await getDocs(query(collection(db, COLLECTION), where('status', '==', 'submitted')));
+  const snap = await getDocs(
+    query(collection(db, COLLECTION), where('status', '==', 'submitted')),
+  );
   const byType = {};
   snap.forEach((d) => {
     const c = d.data();
@@ -224,11 +245,16 @@ export const getCalibrationStats = async (db) => {
     if (!byType[t]) {
       byType[t] = {
         count: 0,
-        engineSum: 0, engineN: 0,
-        trainerSum: 0, trainerN: 0,
-        deltaSum: 0, deltaN: 0,
-        engineTrue: 0, engineBoolN: 0,
-        trainerTrue: 0, trainerBoolN: 0,
+        engineSum: 0,
+        engineN: 0,
+        trainerSum: 0,
+        trainerN: 0,
+        deltaSum: 0,
+        deltaN: 0,
+        engineTrue: 0,
+        engineBoolN: 0,
+        trainerTrue: 0,
+        trainerBoolN: 0,
         tagCounts: {},
         accuracyCounts: { correct: 0, partial: 0, incorrect: 0 },
         overrideCount: 0,
@@ -237,13 +263,30 @@ export const getCalibrationStats = async (db) => {
     }
     const b = byType[t];
     b.count += 1;
-    if (typeof c.engineScore === 'number') { b.engineSum += c.engineScore; b.engineN += 1; }
-    if (typeof c.trainerScore === 'number') { b.trainerSum += c.trainerScore; b.trainerN += 1; }
-    if (typeof c.delta === 'number') { b.deltaSum += c.delta; b.deltaN += 1; }
-    if (typeof c.enginePassed === 'boolean') { b.engineTrue += c.enginePassed ? 1 : 0; b.engineBoolN += 1; }
-    if (typeof c.trainerPassed === 'boolean') { b.trainerTrue += c.trainerPassed ? 1 : 0; b.trainerBoolN += 1; }
+    if (typeof c.engineScore === 'number') {
+      b.engineSum += c.engineScore;
+      b.engineN += 1;
+    }
+    if (typeof c.trainerScore === 'number') {
+      b.trainerSum += c.trainerScore;
+      b.trainerN += 1;
+    }
+    if (typeof c.delta === 'number') {
+      b.deltaSum += c.delta;
+      b.deltaN += 1;
+    }
+    if (typeof c.enginePassed === 'boolean') {
+      b.engineTrue += c.enginePassed ? 1 : 0;
+      b.engineBoolN += 1;
+    }
+    if (typeof c.trainerPassed === 'boolean') {
+      b.trainerTrue += c.trainerPassed ? 1 : 0;
+      b.trainerBoolN += 1;
+    }
     if (Array.isArray(c.tags)) {
-      c.tags.forEach((tag) => { b.tagCounts[tag] = (b.tagCounts[tag] || 0) + 1; });
+      c.tags.forEach((tag) => {
+        b.tagCounts[tag] = (b.tagCounts[tag] || 0) + 1;
+      });
     }
     if (c.aiAccuracy && b.accuracyCounts[c.aiAccuracy] != null) {
       b.accuracyCounts[c.aiAccuracy] += 1;
@@ -257,10 +300,16 @@ export const getCalibrationStats = async (db) => {
     out[t] = {
       count: b.count,
       avgEngine: b.engineN ? Math.round(b.engineSum / b.engineN) : null,
-      avgTrainer: b.trainerN ? Math.round((b.trainerSum / b.trainerN) * 10) / 10 : null,
+      avgTrainer: b.trainerN
+        ? Math.round((b.trainerSum / b.trainerN) * 10) / 10
+        : null,
       avgDelta: b.deltaN ? Math.round(b.deltaSum / b.deltaN) : null,
-      passRateEngine: b.engineBoolN ? Math.round((b.engineTrue / b.engineBoolN) * 100) : null,
-      passRateTrainer: b.trainerBoolN ? Math.round((b.trainerTrue / b.trainerBoolN) * 100) : null,
+      passRateEngine: b.engineBoolN
+        ? Math.round((b.engineTrue / b.engineBoolN) * 100)
+        : null,
+      passRateTrainer: b.trainerBoolN
+        ? Math.round((b.trainerTrue / b.trainerBoolN) * 100)
+        : null,
       tagCounts: b.tagCounts,
       accuracyCounts: b.accuracyCounts,
       overrideCount: b.overrideCount,
@@ -304,7 +353,7 @@ export const setFewShotFlag = async (db, { enabled, maxExamples = 3 }) => {
         updatedAt: serverTimestamp(),
       },
     },
-    { merge: true }
+    { merge: true },
   );
   return { enabled: !!enabled, maxExamples };
 };
@@ -315,7 +364,12 @@ export const setFewShotFlag = async (db, { enabled, maxExamples = 3 }) => {
  * at `metadata/conditioning/rrAddendums/{rrType}`. Admin-only writes
  * (firestore.rules `metadata/{document=**}`), public reads.
  */
-const ADDENDUM_PATH = (rrType) => ['metadata', 'conditioning', 'rrAddendums', rrType];
+const ADDENDUM_PATH = (rrType) => [
+  'metadata',
+  'conditioning',
+  'rrAddendums',
+  rrType,
+];
 
 export const getRrAddendum = async (db, rrType) => {
   if (!db || !rrType) return { text: '', updatedAt: null, updatedBy: null };
@@ -334,7 +388,11 @@ export const getRrAddendum = async (db, rrType) => {
   }
 };
 
-export const setRrAddendum = async (db, rrType, { text = '', trainerId, trainerEmail }) => {
+export const setRrAddendum = async (
+  db,
+  rrType,
+  { text = '', trainerId, trainerEmail },
+) => {
   if (!db) throw new Error('setRrAddendum: db required');
   if (!rrType) throw new Error('setRrAddendum: rrType required');
   const ref = doc(db, ...ADDENDUM_PATH(rrType));
@@ -348,7 +406,7 @@ export const setRrAddendum = async (db, rrType, { text = '', trainerId, trainerE
       updatedBy: trainerEmail || trainerId || null,
       version: version + 1,
     },
-    { merge: true }
+    { merge: true },
   );
   return { ok: true, version: version + 1 };
 };

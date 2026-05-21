@@ -35,7 +35,7 @@ export const subscribeUserQuestions = (db, userId, callback, opts = {}) => {
   const q = query(
     collection(db, COLLECTION),
     where('userId', '==', userId),
-    orderBy('createdAt', 'desc')
+    orderBy('createdAt', 'desc'),
   );
   return onSnapshot(
     q,
@@ -46,8 +46,12 @@ export const subscribeUserQuestions = (db, userId, callback, opts = {}) => {
     (err) => {
       // eslint-disable-next-line no-console
       console.warn('[coachQuestions] subscribe error', err);
-      try { opts.onError?.(err); } catch (_) { /* ignore */ }
-    }
+      try {
+        opts.onError?.(err);
+      } catch (_) {
+        /* ignore */
+      }
+    },
   );
 };
 
@@ -71,7 +75,7 @@ export const subscribeAnsweredQuestions = (db, callback, opts = {}) => {
   const q = query(
     collection(db, COLLECTION),
     where('status', '==', 'answered'),
-    orderBy('respondedAt', 'desc')
+    orderBy('respondedAt', 'desc'),
   );
   return onSnapshot(
     q,
@@ -83,8 +87,12 @@ export const subscribeAnsweredQuestions = (db, callback, opts = {}) => {
     (err) => {
       // eslint-disable-next-line no-console
       console.warn('[coachQuestions] answered subscribe error', err);
-      try { opts.onError?.(err); } catch (_) { /* ignore */ }
-    }
+      try {
+        opts.onError?.(err);
+      } catch (_) {
+        /* ignore */
+      }
+    },
   );
 };
 
@@ -99,9 +107,10 @@ export const submitQuestion = async (db, user, payload) => {
   if (!payload?.question || payload.question.trim().length < 10) {
     throw new Error('Please write a longer question (at least 10 characters).');
   }
-  const rrTag = payload?.rrTag && VALID_RR_TAGS.includes(payload.rrTag)
-    ? payload.rrTag
-    : null;
+  const rrTag =
+    payload?.rrTag && VALID_RR_TAGS.includes(payload.rrTag)
+      ? payload.rrTag
+      : null;
 
   const docRef = await addDoc(collection(db, COLLECTION), {
     userId: user.uid,
@@ -148,7 +157,7 @@ export const subscribeAllQuestions = (db, callback, opts = {}) => {
     q = query(
       collection(db, COLLECTION),
       where('status', '==', opts.status),
-      orderBy('createdAt', 'desc')
+      orderBy('createdAt', 'desc'),
     );
   }
   return onSnapshot(
@@ -160,7 +169,7 @@ export const subscribeAllQuestions = (db, callback, opts = {}) => {
     (err) => {
       // eslint-disable-next-line no-console
       console.warn('[coachQuestions] admin subscribe error', err);
-    }
+    },
   );
 };
 
@@ -180,7 +189,9 @@ export const respondToQuestion = async (db, user, questionId, payload) => {
   // Only 'cohort' and 'public' replies may be promoted to the Media Vault.
   const rawVisibility = payload?.visibility;
   const visibility =
-    rawVisibility === 'public' || rawVisibility === 'cohort' ? rawVisibility : 'private';
+    rawVisibility === 'public' || rawVisibility === 'cohort'
+      ? rawVisibility
+      : 'private';
   await updateDoc(doc(db, COLLECTION, questionId), {
     status: 'answered',
     responseText: responseText || null,
