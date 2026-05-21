@@ -2389,16 +2389,24 @@ exports.evaluateRep = onCall(
 
 /**
  * GEMINI AI PROXY
- * Secure endpoint for making Gemini API calls from the frontend
- * Keeps the API key secure on the server side
- * 
- * Set GEMINI_API_KEY in Secret Manager
+ * Secure endpoint for making Gemini API calls from the frontend.
+ * Keeps the API key secure on the server side.
+ *
+ * Falls back to Anthropic Claude (claude-haiku-4-5) if Gemini fails
+ * or returns empty text — so a Gemini outage/quota does NOT take the
+ * user-facing AI features down.
+ *
+ * Set GEMINI_API_KEY and ANTHROPIC_API_KEY in Secret Manager.
  */
+const GEMINI_PROXY_CLAUDE_MODEL = "claude-haiku-4-5";
+const DEFAULT_SYSTEM_INSTRUCTION =
+  "You are a helpful assistant for the LeaderReps leadership development platform.";
+
 exports.geminiProxy = onRequest(
   {
     cors: true,
     invoker: "public", // Required for CORS preflight requests to work
-    secrets: ["GEMINI_API_KEY"],
+    secrets: ["GEMINI_API_KEY", "ANTHROPIC_API_KEY"],
   },
   async (req, res) => {
     // Handle CORS preflight
@@ -2406,57 +2414,109 @@ exports.geminiProxy = onRequest(
       res.status(204).send("");
       return;
     }
-    
+
     // Only allow POST requests
     if (req.method !== "POST") {
       res.status(405).json({ error: "Method not allowed" });
       return;
     }
 
-    try {
-      const { prompt, model = "gemini-2.0-flash", systemInstruction } = req.body;
+    const { prompt, model = "gemini-2.0-flash", systemInstruction } = req.body || {};
 
-      if (!prompt) {
-        res.status(400).json({ error: "Prompt is required" });
-        return;
-      }
-
-      // Get the API key from environment variable (functions/.env)
-      const apiKey = process.env.GEMINI_API_KEY;
-      
-      if (!apiKey) {
-        logger.error("GEMINI_API_KEY is not configured. Set it in functions/.env");
-        res.status(500).json({ error: "AI service not configured" });
-        return;
-      }
-
-      // Initialize Gemini
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const genModel = genAI.getGenerativeModel({ 
-        model,
-        systemInstruction: systemInstruction || "You are a helpful assistant for the LeaderReps leadership development platform."
-      });
-
-      // Generate content
-      const result = await genModel.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-
-      logger.info(`Gemini API call successful, model: ${model}`);
-      
-      res.status(200).json({ 
-        success: true, 
-        text,
-        model 
-      });
-
-    } catch (error) {
-      logger.error("Gemini API error:", error);
-      res.status(500).json({ 
-        error: "Failed to generate content", 
-        details: error.message 
-      });
+    if (!prompt) {
+      res.status(400).json({ error: "Prompt is required" });
+      return;
     }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+    const sysInstr = systemInstruction || DEFAULT_SYSTEM_INSTRUCTION;
+
+    if (!apiKey && !anthropicApiKey) {
+      logger.error("Neither GEMINI_API_KEY nor ANTHROPIC_API_KEY is configured");
+      res.status(500).json({ error: "AI service not configured" });
+      return;
+    }
+
+    let text = "";
+    let usedProvider = null;
+    let usedModel = null;
+    let geminiError = null;
+
+    // Primary: Gemini
+    if (apiKey) {
+      try {
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const genModel = genAI.getGenerativeModel({
+          model,
+          systemInstruction: sysInstr,
+        });
+        const result = await genModel.generateContent(prompt);
+        const response = await result.response;
+        text = response.text();
+        if (text) {
+          usedProvider = "gemini";
+          usedModel = model;
+          logger.info(`geminiProxy: Gemini OK, model=${model}`);
+        }
+      } catch (error) {
+        geminiError = error;
+        logger.warn(
+          `geminiProxy: Gemini failed (model=${model}) — will try Claude fallback. ` +
+            `error=${error && error.message ? error.message : String(error)}`
+        );
+      }
+    }
+
+    // Fallback: Anthropic Claude
+    if (!text && anthropicApiKey) {
+      try {
+        const anthropic = new Anthropic({ apiKey: anthropicApiKey });
+        const response = await anthropic.messages.create({
+          model: GEMINI_PROXY_CLAUDE_MODEL,
+          max_tokens: 4096,
+          system: sysInstr,
+          messages: [{ role: "user", content: prompt }],
+        });
+        const block = response && response.content && response.content[0];
+        text = block && block.type === "text" ? block.text : "";
+        if (text) {
+          usedProvider = "anthropic";
+          usedModel = GEMINI_PROXY_CLAUDE_MODEL;
+          logger.info(
+            `geminiProxy: Claude fallback OK, model=${GEMINI_PROXY_CLAUDE_MODEL}`
+          );
+        }
+      } catch (claudeError) {
+        logger.error(
+          `geminiProxy: Claude fallback also failed. ` +
+            `gemini=${geminiError && geminiError.message} ` +
+            `claude=${claudeError && claudeError.message}`
+        );
+        res.status(500).json({
+          error: "Failed to generate content",
+          details: claudeError.message,
+          geminiError: geminiError ? geminiError.message : null,
+        });
+        return;
+      }
+    }
+
+    if (!text) {
+      logger.error("geminiProxy: no text produced by Gemini and no Claude fallback available");
+      res.status(500).json({
+        error: "Failed to generate content",
+        details: geminiError ? geminiError.message : "Empty response",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      text,
+      model: usedModel,
+      provider: usedProvider,
+    });
   }
 );
 
