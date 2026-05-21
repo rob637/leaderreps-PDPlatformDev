@@ -210,7 +210,22 @@ export default function ApolloSearchPage() {
           </button>
         </div>
       </div>
-      
+
+      {/* Apollo plan/API unavailable notice (prod only) */}
+      {import.meta.env.VITE_FIREBASE_PROJECT_ID === 'leaderreps-prod' && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/40 p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-amber-900 dark:text-amber-200">
+            <div className="font-semibold mb-1">Apollo CRM temporarily unavailable</div>
+            <div>
+              Apollo's people-search API requires a paid plan tier. Searches may return
+              an "Invalid Apollo API key" error until the plan upgrade is completed.
+              All other CRM features (Prospects, Tasks, Activities) continue to work.
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Search Mode Toggle */}
       <div className="flex gap-2">
         <button
