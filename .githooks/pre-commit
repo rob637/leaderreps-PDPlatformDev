@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Pre-commit hook: gitleaks scan on staged changes.
+# Enable for this repo with: git config core.hooksPath .githooks
+set -e
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "⚠️  gitleaks not installed — skipping secret scan."
+  echo "    Install: https://github.com/gitleaks/gitleaks/releases"
+  exit 0
+fi
+
+echo "🔍 gitleaks: scanning staged changes…"
+if ! gitleaks protect --staged --redact --no-banner; then
+  echo ""
+  echo "❌ gitleaks found potential secrets in your staged changes."
+  echo "   Remove them or, if a false positive, allowlist in .gitleaks.toml"
+  echo "   Bypass (NOT RECOMMENDED): git commit --no-verify"
+  exit 1
+fi
+
+echo "✅ gitleaks: clean"
