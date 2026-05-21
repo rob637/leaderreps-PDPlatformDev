@@ -176,10 +176,16 @@ export const respondToQuestion = async (db, user, questionId, payload) => {
   if (!responseText && !responseVideoUrl) {
     throw new Error('Add a written reply or a video URL before sending.');
   }
+  // Audience for the reply: 'private' (default), 'cohort', or 'public'.
+  // Only 'cohort' and 'public' replies may be promoted to the Media Vault.
+  const rawVisibility = payload?.visibility;
+  const visibility =
+    rawVisibility === 'public' || rawVisibility === 'cohort' ? rawVisibility : 'private';
   await updateDoc(doc(db, COLLECTION, questionId), {
     status: 'answered',
     responseText: responseText || null,
     responseVideoUrl,
+    visibility,
     respondedBy: user.email || user.uid,
     respondedAt: serverTimestamp(),
     updatedAt: serverTimestamp(),

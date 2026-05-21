@@ -841,6 +841,17 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Collection-group access for Rep Calibration queue.
+    // `calibrationService.listReps` issues `collectionGroup('conditioning_reps')`
+    // to surface every leader's completed reps to the admin calibration UI.
+    // Firestore collection-group queries require a rule whose final path
+    // segment matches the collection name literally (the wildcard
+    // `users/{userId}/{subcollection}/...` rule above only authorizes
+    // direct-path reads, not collection-group queries). Admin-only.
+    match /{path=**}/conditioning_reps/{repId} {
+      allow read: if isAdmin();
+    }
+
     // Deny all other access
     match /{document=**} {
       allow read, write: if false;

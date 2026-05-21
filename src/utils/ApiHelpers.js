@@ -11,15 +11,15 @@ export function getEnv(key, fallback = '') {
   }
 }
 
-// Prefer using a server-side proxy (e.g., Netlify function) for Gemini calls.
-// Leave empty by default; set VITE_GEMINI_PROXY_URL to use your function.
+// All Gemini calls must go through the server-side Cloud Function proxy
+// (functions/index.js -> geminiProxy). The API key is held only in Secret
+// Manager and is NEVER exposed to the client bundle.
+// Set VITE_GEMINI_PROXY_URL to your deployed geminiProxy URL.
 export const PROXY_URL    = getEnv('VITE_GEMINI_PROXY_URL', '');
 export const GEMINI_MODEL = getEnv('VITE_GEMINI_MODEL', 'gemini-1.5-pro');
-// Only for direct client calls in dev. Prefer PROXY_URL in production.
-export const API_KEY      = getEnv('VITE_GEMINI_API_KEY', '');
 
 export function hasGeminiKey() {
-  return Boolean(PROXY_URL) || Boolean(API_KEY);
+  return Boolean(PROXY_URL);
 }
 
 // ---------------- Generic fetch helpers ----------------
@@ -70,40 +70,25 @@ export async function callSecureGeminiAPI(opts = {}) {
     ...extra
   } = opts || {};
 
-  // Prefer proxy (keeps your API key server-side)
-  if (PROXY_URL) {
-    return postJSON(PROXY_URL, {
-      model,
-      prompt,
-      messages,
-      systemInstruction,
-      stream,
-      ...extra,
-    });
+  // All calls go through the server-side proxy. Direct client calls to
+  // generativelanguage.googleapis.com with an embedded API key were removed
+  // because VITE_* env vars are baked into the client bundle and visible to
+  // any visitor.
+  if (!PROXY_URL) {
+    throw new Error(
+      'VITE_GEMINI_PROXY_URL is not configured. All Gemini calls must go ' +
+        'through the geminiProxy Cloud Function.'
+    );
   }
 
-  // Fallback: direct call to Google API (dev-only)
-  if (!API_KEY) {
-    throw new Error('No PROXY_URL or API_KEY configured for Gemini calls.');
-  }
-
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
-    model
-  )}:generateContent?key=${encodeURIComponent(API_KEY)}`;
-
-  const contents =
-    Array.isArray(messages) && messages.length
-      ? normalizeToGeminiContents(messages)
-      : [{ role: 'user', parts: [{ text: String(prompt ?? '') }] }];
-
-  const body = {
-    contents,
-    ...(systemInstruction
-      ? { system_instruction: { parts: [{ text: String(systemInstruction) }] } }
-      : {}),
-  };
-
-  return postJSON(endpoint, body);
+  return postJSON(PROXY_URL, {
+    model,
+    prompt,
+    messages,
+    systemInstruction,
+    stream,
+    ...extra,
+  });
 }
 
 function normalizeToGeminiContents(msgs) {
@@ -208,7 +193,6 @@ export function removeLocal(key) {
 const ApiHelpers = {
   PROXY_URL,
   GEMINI_MODEL,
-  API_KEY,
   hasGeminiKey,
   fetchJSON,
   getJSON,

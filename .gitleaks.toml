@@ -1,0 +1,26 @@
+# gitleaks config — secret scanning rules for LeaderReps
+#
+# We intentionally allow:
+#   - Firebase web API keys (AIzaSy...) — public-by-design client config
+#   - .env.example with placeholder values
+#
+# See: https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlist for LeaderReps"
+paths = [
+  '''\.env\.example$''',
+  '''docs/.*''',
+  '''README\.md$''',
+  '''CONTRIBUTING\.md$''',
+]
+# Firebase web config keys are public — exposed in every client bundle.
+# These follow the pattern AIzaSy + 33 chars and have no privileged scopes.
+regexes = [
+  '''AIzaSyBf_js_jWW-GctwOLvN5PUqRAiZyezgXAo''',
+  '''AIzaSyArqA0bh6.*''',
+  '''AIzaSyAy21Tmhwjy4jAPrZYxd5STaGpK8Asfmu0''',
+]

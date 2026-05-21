@@ -537,7 +537,40 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "conditioning_reps",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "cohortId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "conditioning_weeks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "cohortId", "order": "ASCENDING" },
+        { "fieldPath": "weekId", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "conditioning_nudges",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "cohortId", "order": "ASCENDING" },
+        { "fieldPath": "sentAt", "order": "DESCENDING" }
+      ]
     }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    {
+      "collectionGroup": "conditioning_reps",
+      "fieldPath": "updatedAt",
+      "indexes": [
+        { "order": "DESCENDING", "queryScope": "COLLECTION" },
+        { "order": "DESCENDING", "queryScope": "COLLECTION_GROUP" }
+      ]
+    }
+  ]
 }

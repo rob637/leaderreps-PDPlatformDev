@@ -133,6 +133,9 @@ build_output.log
 # -------------------------
 google-cloud-sdk/**/__pycache__/
 
+# Vendored Google Cloud SDK — should be installed locally, not committed
+google-cloud-sdk/
+
 # -------------------------
 # Browser-Use Audit Reports
 # -------------------------
