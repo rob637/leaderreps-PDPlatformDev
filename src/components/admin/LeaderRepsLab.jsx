@@ -200,13 +200,27 @@ const LeaderRepsLab = () => {
               viral lead magnet — employees mark squares, share scores on
               LinkedIn, and discover LeaderReps via a gentle CTA.
             </p>
-            <button
-              onClick={() => navigate('lab-bad-boss-bingo')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
-            >
-              Open Bad Boss Bingo
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <a
+                href="/?bingo"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+              >
+                Play the card
+                <ExternalLink className="w-4 h-4" />
+              </a>
+              <button
+                onClick={() => navigate('lab-bad-boss-bingo')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-corporate-teal text-corporate-teal text-sm font-semibold hover:bg-corporate-teal/10 transition-colors w-fit"
+              >
+                Manage squares
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-400">
+              Public link to share: <code className="text-slate-600">/?bingo</code>
+            </p>
           </ToolCard>
 
           {/* Leadership Phrasebook */}

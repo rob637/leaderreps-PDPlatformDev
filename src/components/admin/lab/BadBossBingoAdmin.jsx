@@ -13,7 +13,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Grid3x3, Plus, Trash2, Edit3, Save, X, ShieldAlert, RefreshCw,
-  Eye, BarChart3, Sparkles, Check, AlertTriangle,
+  Eye, BarChart3, Sparkles, Check, AlertTriangle, ExternalLink,
 } from 'lucide-react';
 import {
   collection, addDoc, doc, deleteDoc, updateDoc, setDoc, getDoc,
@@ -359,9 +359,20 @@ const BadBossBingoAdmin = () => {
               </p>
             </div>
           </div>
-          <div className="text-xs text-slate-400 dark:text-slate-500 text-right">
-            <div>{activeSquares.length} active squares</div>
-            <div>{stats.totalPlays} plays · {stats.emailCaptured} emails</div>
+          <div className="flex items-center gap-4">
+            <a
+              href="/?bingo"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors"
+            >
+              Play live card
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+            <div className="text-xs text-slate-400 dark:text-slate-500 text-right">
+              <div>{activeSquares.length} active squares</div>
+              <div>{stats.totalPlays} plays · {stats.emailCaptured} emails</div>
+            </div>
           </div>
         </div>
       </div>
