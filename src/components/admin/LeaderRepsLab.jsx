@@ -16,6 +16,12 @@ import {
   Zap,
   Presentation,
   Briefcase,
+  Share2,
+  UserPlus,
+  Users2,
+  Grid3x3,
+  BookMarked,
+  FileBarChart,
 } from 'lucide-react';
 import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
 import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
@@ -154,6 +160,124 @@ const LeaderRepsLab = () => {
             <p className="text-xs text-slate-400">
               Public link to share: <code className="text-slate-600">/?pulse-start</code>
             </p>
+          </ToolCard>
+
+          {/* Viral Growth MVPs — Combos A / B / C (demo-only, no Firestore impact) */}
+          <ToolCard
+            icon={Share2}
+            title="Win Card Generator (Combo B)"
+            status="MVP"
+          >
+            <p>
+              "Strava for leaders" demo. Generates a brand-styled,
+              LinkedIn-shareable card from a leader's win. Validates whether
+              members will actually post growth artifacts to LinkedIn.
+            </p>
+            <button
+              onClick={() => navigate('lab-win-card')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+            >
+              Open Win Card Generator
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </ToolCard>
+
+          <ToolCard
+            icon={UserPlus}
+            title="Manager Multiplier (Combo A)"
+            status="MVP"
+          >
+            <p>
+              Dropbox-style B2B referral demo. Manager invites direct reports →
+              both sides unlock value → Team Plan upsell. Visualizes the full
+              invite → accept → convert funnel with rewards.
+            </p>
+            <button
+              onClick={() => navigate('lab-manager-multiplier')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+            >
+              Open Manager Multiplier
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </ToolCard>
+
+          <ToolCard
+            icon={Users2}
+            title="Pod Match Simulator (Combo C)"
+            status="MVP"
+          >
+            <p>
+              CrossFit-style "pods of 5" demo. Runs the matching algorithm on a
+              mock cohort, scores each pod for diversity, and previews the Pod
+              Home experience members would see.
+            </p>
+            <button
+              onClick={() => navigate('lab-pod-match')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+            >
+              Open Pod Match Simulator
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </ToolCard>
+
+          {/* Viral Marketing — Bad Boss Bingo */}
+          <ToolCard
+            icon={Grid3x3}
+            title="Bad Boss Bingo"
+            status="MVP"
+          >
+            <p>
+              Shareable bingo card of bad-management patterns. Tongue-in-cheek
+              viral lead magnet — employees mark squares, share scores on
+              LinkedIn, and discover LeaderReps via a gentle CTA.
+            </p>
+            <button
+              onClick={() => navigate('lab-bad-boss-bingo')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+            >
+              Open Bad Boss Bingo
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </ToolCard>
+
+          {/* Viral Marketing — Leadership Phrasebook */}
+          <ToolCard
+            icon={BookMarked}
+            title="Leadership Phrasebook"
+            status="MVP"
+          >
+            <p>
+              Public, growing library of <em>exact scripts</em> for hard
+              leadership moments. SEO-driven lead magnet. Each phrase deep-links
+              to a LeaderReps practice rep.
+            </p>
+            <button
+              onClick={() => navigate('lab-phrasebook')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+            >
+              Open Phrasebook
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </ToolCard>
+
+          {/* Viral Marketing — State of Leadership Report */}
+          <ToolCard
+            icon={FileBarChart}
+            title="State of Leadership Report"
+            status="MVP"
+          >
+            <p>
+              Annual HBR-style report aggregating anonymized platform data
+              (“What 10,000 leaders struggled with most this year”). Free PDF,
+              email-gated — becomes a recurring industry reference.
+            </p>
+            <button
+              onClick={() => navigate('lab-state-of-leadership')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+            >
+              Open State of Leadership
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </ToolCard>
 
           {/* Tool 3 — Leadership Identity Statement Builder (MVP) */}

@@ -2521,6 +2521,468 @@ exports.geminiProxy = onRequest(
 );
 
 // ================================================================
+// MODERATE KUDOS
+// Anonymous-kudos safety + quality gate. Accepts a raw kudos message,
+// returns an accept/rewrite/reject decision with a (possibly rewritten)
+// safe-to-send version. Used by the anonymous Kudos sub-app and the
+// admin Sales lead-magnet embed.
+//
+// Request body:  { text: string, model?: string }
+// Response 200:  { success, decision, reason, rewritten, concerns,
+//                  deAnonymizationRisk, sentiment, provider, model }
+// Response 4xx/5xx: { error, code, details? }
+// ================================================================
+const { moderateKudosText, MAX_INPUT_LENGTH: KUDOS_MAX_LEN } = require('./kudosModeration');
+
+exports.moderateKudos = onRequest(
+  {
+    cors: true,
+    invoker: 'public',
+    secrets: ['GEMINI_API_KEY', 'ANTHROPIC_API_KEY'],
+  },
+  async (req, res) => {
+    if (req.method === 'OPTIONS') {
+      res.status(204).send('');
+      return;
+    }
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    const { text, model } = req.body || {};
+    if (!text || typeof text !== 'string') {
+      res.status(400).json({ error: 'Field "text" is required (string).' });
+      return;
+    }
+    if (text.length > KUDOS_MAX_LEN) {
+      res.status(413).json({
+        error: `Message too long (max ${KUDOS_MAX_LEN} characters).`,
+        code: 'too-long',
+      });
+      return;
+    }
+
+    try {
+      const result = await moderateKudosText(text, {
+        geminiKey: process.env.GEMINI_API_KEY,
+        anthropicKey: process.env.ANTHROPIC_API_KEY,
+        model,
+      });
+      logger.info(
+        `moderateKudos: decision=${result.decision} provider=${result._provider} ` +
+          `risk=${result.deAnonymizationRisk} len=${text.length}`
+      );
+      res.status(200).json({
+        success: true,
+        decision: result.decision,
+        reason: result.reason,
+        rewritten: result.rewritten,
+        concerns: result.concerns,
+        deAnonymizationRisk: result.deAnonymizationRisk,
+        sentiment: result.sentiment,
+        provider: result._provider,
+        model: result._model,
+      });
+    } catch (err) {
+      const code = err && err.code ? err.code : 'internal';
+      const status = code === 'empty' || code === 'too-long' ? 400 : 500;
+      logger.error(`moderateKudos: ${code} — ${err && err.message}`);
+      res.status(status).json({
+        error: err && err.message ? err.message : 'Moderation failed',
+        code,
+      });
+    }
+  }
+);
+
+// ================================================================
+// KUDOS CONSUMER APP — sendKudos + getKudos
+// ----------------------------------------------------------------
+// Backs the public-facing Kudos sub-app (kudos/). Anonymous senders
+// submit a kudos; we moderate, persist sanitized, queue an email via
+// the Firebase Trigger Email extension (/mail collection), and return
+// the moderation outcome. The recipient never sees sender identity.
+// ================================================================
+
+const KUDOS_SEND_RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const KUDOS_SEND_RATE_MAX = 5;                    // per senderEmail per hour
+const KUDOS_FORWARD_RATE_MAX = 20;                // per senderEmail per day (chains)
+
+function isValidEmail(s) {
+  return typeof s === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+}
+
+function safeOrigin(s) {
+  if (typeof s !== 'string') return null;
+  try {
+    const u = new URL(s);
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
+    // Strip path/query — origin only.
+    return `${u.protocol}//${u.host}`;
+  } catch {
+    return null;
+  }
+}
+
+function buildKudosEmail({ recipientName, message, viewUrl }) {
+  const safeName = (recipientName || 'there').replace(/[<>]/g, '');
+  const safeMsg = (message || '').replace(/[<>]/g, (c) =>
+    c === '<' ? '&lt;' : '&gt;'
+  );
+  const text = [
+    `Hi ${safeName},`,
+    ``,
+    `Someone wanted you to know:`,
+    ``,
+    message,
+    ``,
+    `(This kudos is 100% anonymous — we never reveal who sent it.)`,
+    ``,
+    `View it online or pass it on:`,
+    viewUrl,
+    ``,
+    `— A gift from the team at LeaderReps`,
+    `https://leaderreps.com`,
+  ].join('\n');
+
+  const html = `
+    <div style="font-family:'Nunito Sans',Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#002E47;background:#FFFAF8;">
+      <div style="text-align:center;margin-bottom:24px;">
+        <div style="display:inline-block;width:48px;height:48px;line-height:48px;border-radius:24px;background:#47A88D;color:#fff;font-size:22px;">&#9829;</div>
+        <h1 style="margin:12px 0 4px;font-size:22px;">Hi ${safeName} — someone sent you a kudos</h1>
+        <p style="margin:0;color:#5b6b75;font-size:13px;">100% anonymous. The sender isn't visible — that's on purpose.</p>
+      </div>
+      <div style="background:#fff;border-radius:14px;padding:24px;box-shadow:0 4px 14px rgba(0,46,71,0.08);font-size:16px;line-height:1.55;white-space:pre-wrap;">${safeMsg}</div>
+      <div style="text-align:center;margin:28px 0 8px;">
+        <a href="${viewUrl}" style="display:inline-block;background:#47A88D;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:12px;">View &amp; pay it forward</a>
+      </div>
+      <p style="text-align:center;color:#5b6b75;font-size:12px;margin-top:24px;">
+        A gift from the team at <a href="https://leaderreps.com" style="color:#47A88D;text-decoration:none;font-weight:700;">LeaderReps</a>.
+      </p>
+    </div>
+  `;
+  return { text, html };
+}
+
+exports.sendKudos = onRequest(
+  {
+    cors: true,
+    invoker: 'public',
+    secrets: ['GEMINI_API_KEY', 'ANTHROPIC_API_KEY'],
+  },
+  async (req, res) => {
+    if (req.method === 'OPTIONS') {
+      res.status(204).send('');
+      return;
+    }
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    const {
+      recipientName,
+      recipientEmail,
+      message,
+      senderEmail,
+      parentKudosId,
+      forwardOrigin,
+    } = req.body || {};
+
+    // ----- validation
+    if (!recipientName || typeof recipientName !== 'string') {
+      res.status(400).json({ error: 'recipientName is required' });
+      return;
+    }
+    if (!isValidEmail(recipientEmail)) {
+      res.status(400).json({ error: 'recipientEmail must be a valid email' });
+      return;
+    }
+    if (!isValidEmail(senderEmail)) {
+      res.status(400).json({ error: 'senderEmail must be a valid email' });
+      return;
+    }
+    if (!message || typeof message !== 'string' || message.trim().length < 10) {
+      res.status(400).json({ error: 'message is too short' });
+      return;
+    }
+    if (message.length > KUDOS_MAX_LEN) {
+      res.status(413).json({
+        error: `Message too long (max ${KUDOS_MAX_LEN} characters).`,
+      });
+      return;
+    }
+    if (recipientEmail.trim().toLowerCase() === senderEmail.trim().toLowerCase()) {
+      res.status(400).json({ error: 'You cannot send a kudos to yourself.' });
+      return;
+    }
+
+    const normalizedSender = senderEmail.trim().toLowerCase();
+    const normalizedRecipient = recipientEmail.trim().toLowerCase();
+    const origin =
+      safeOrigin(forwardOrigin) ||
+      'https://leaderreps-kudos.web.app'; // default public origin
+
+    // ----- rate limit on senderEmail (simple window via counter doc)
+    try {
+      const now = Date.now();
+      const counterRef = db.collection('kudos_sender_counters').doc(
+        normalizedSender.replace(/[^a-z0-9._-]+/g, '_')
+      );
+      const counter = await db.runTransaction(async (tx) => {
+        const snap = await tx.get(counterRef);
+        const data = snap.exists ? snap.data() : { windowStart: 0, count: 0 };
+        if (now - (data.windowStart || 0) > KUDOS_SEND_RATE_WINDOW_MS) {
+          data.windowStart = now;
+          data.count = 0;
+        }
+        data.count = (data.count || 0) + 1;
+        data.lastAt = now;
+        tx.set(counterRef, data, { merge: true });
+        return data;
+      });
+      if (counter.count > KUDOS_SEND_RATE_MAX) {
+        res.status(429).json({
+          error: 'Too many kudos from this email recently. Try again later.',
+        });
+        return;
+      }
+    } catch (err) {
+      logger.warn(`sendKudos rate-limit check failed: ${err && err.message}`);
+      // Fail open on infra issues — moderation is the real gatekeeper.
+    }
+
+    // ----- moderation
+    let mod;
+    try {
+      mod = await moderateKudosText(message.trim(), {
+        geminiKey: process.env.GEMINI_API_KEY,
+        anthropicKey: process.env.ANTHROPIC_API_KEY,
+      });
+    } catch (err) {
+      logger.error(`sendKudos moderation error: ${err && err.message}`);
+      res.status(500).json({ error: 'Moderation failed. Please try again.' });
+      return;
+    }
+
+    if (mod.decision === 'reject') {
+      logger.info(
+        `sendKudos rejected: concerns=${(mod.concerns || []).join(',')} ` +
+          `risk=${mod.deAnonymizationRisk}`
+      );
+      res.status(200).json({
+        success: false,
+        decision: 'reject',
+        reason: mod.reason,
+        concerns: mod.concerns || [],
+      });
+      return;
+    }
+
+    const finalMessage =
+      mod.decision === 'rewrite' && mod.rewritten
+        ? mod.rewritten
+        : message.trim();
+
+    // ----- resolve chain context
+    let chainId = null;
+    let chainPosition = 0;
+    let parentRef = null;
+    if (parentKudosId && typeof parentKudosId === 'string') {
+      try {
+        const parentSnap = await db
+          .collection('kudos_messages')
+          .doc(parentKudosId)
+          .get();
+        if (parentSnap.exists) {
+          const p = parentSnap.data();
+          chainId = p.chainId || parentKudosId;
+          chainPosition = (p.chainPosition || 0) + 1;
+          parentRef = parentKudosId;
+        }
+      } catch (err) {
+        logger.warn(`sendKudos parent lookup failed: ${err && err.message}`);
+      }
+    }
+
+    // ----- persist sanitized kudos
+    const docRef = db.collection('kudos_messages').doc();
+    const kudosId = docRef.id;
+    if (!chainId) chainId = kudosId;
+    const viewUrl = `${origin}/k/${kudosId}`;
+
+    const fingerprint = require('crypto')
+      .createHash('sha256')
+      .update(normalizedSender)
+      .digest('hex')
+      .slice(0, 16);
+
+    const ip =
+      (req.headers['x-forwarded-for'] || '').toString().split(',')[0].trim() ||
+      req.ip ||
+      null;
+
+    await docRef.set({
+      kudosId,
+      recipientName: recipientName.trim().slice(0, 80),
+      // recipientEmail is private — used only for delivery + abuse triage
+      recipientEmail: normalizedRecipient,
+      message: finalMessage,
+      originalMessage: message.trim(),
+      moderation: {
+        decision: mod.decision,
+        reason: mod.reason || null,
+        concerns: mod.concerns || [],
+        deAnonymizationRisk: mod.deAnonymizationRisk || null,
+        sentiment: mod.sentiment || null,
+        provider: mod._provider || null,
+        model: mod._model || null,
+      },
+      chainId,
+      chainPosition,
+      parentKudosId: parentRef,
+      // sender info: private fields, never returned by getKudos
+      senderEmail: normalizedSender,
+      senderFingerprint: fingerprint,
+      senderIp: ip,
+      opened: false,
+      openCount: 0,
+      forwardCount: 0,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // ----- ensure chain doc exists
+    try {
+      const chainRef = db.collection('kudos_chains').doc(chainId);
+      await chainRef.set(
+        {
+          chainId,
+          rootKudosId: chainId,
+          depth: admin.firestore.FieldValue.increment(1),
+          lastKudosId: kudosId,
+          lastAt: admin.firestore.FieldValue.serverTimestamp(),
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+    } catch (err) {
+      logger.warn(`sendKudos chain upsert failed: ${err && err.message}`);
+    }
+
+    // ----- send email directly via Gmail SMTP (existing nodemailer setup)
+    // Reuses EMAIL_USER / EMAIL_PASS from functions/.env (same Gmail app password
+    // used by other functions in this file). No Firebase extension required.
+    try {
+      const emailUser = process.env.EMAIL_USER;
+      const emailPass = process.env.EMAIL_PASS;
+      if (!emailUser || !emailPass) {
+        throw new Error('EMAIL_USER / EMAIL_PASS not configured');
+      }
+      const { text, html } = buildKudosEmail({
+        recipientName: recipientName.trim(),
+        message: finalMessage,
+        viewUrl,
+      });
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user: emailUser, pass: emailPass },
+      });
+      await transporter.sendMail({
+        from: `"Kudos by LeaderReps" <arena@leaderreps.com>`,
+        sender: emailUser,
+        to: normalizedRecipient,
+        subject: `${recipientName.trim().split(/\s+/)[0]} — someone sent you a kudos`,
+        text,
+        html,
+      });
+    } catch (err) {
+      // Email failure is non-fatal — sender still gets a moderation result.
+      logger.error(`sendKudos email send failed: ${err && err.message}`);
+    }
+
+    // ----- increment parent's forwardCount
+    if (parentRef) {
+      try {
+        await db.collection('kudos_messages').doc(parentRef).update({
+          forwardCount: admin.firestore.FieldValue.increment(1),
+        });
+      } catch (err) {
+        logger.warn(
+          `sendKudos forwardCount increment failed: ${err && err.message}`
+        );
+      }
+    }
+
+    logger.info(
+      `sendKudos ok: id=${kudosId} decision=${mod.decision} chain=${chainId} pos=${chainPosition}`
+    );
+
+    res.status(200).json({
+      success: true,
+      kudosId,
+      viewUrl,
+      decision: mod.decision,
+      reason: mod.reason || null,
+      rewritten: mod.decision === 'rewrite' ? finalMessage : null,
+      concerns: mod.concerns || [],
+      sentiment: mod.sentiment || null,
+      chainPosition,
+    });
+  }
+);
+
+exports.getKudos = onRequest(
+  { cors: true, invoker: 'public' },
+  async (req, res) => {
+    if (req.method === 'OPTIONS') {
+      res.status(204).send('');
+      return;
+    }
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+    const { kudosId } = req.body || {};
+    if (!kudosId || typeof kudosId !== 'string') {
+      res.status(400).json({ error: 'kudosId is required' });
+      return;
+    }
+    try {
+      const snap = await db.collection('kudos_messages').doc(kudosId).get();
+      if (!snap.exists) {
+        res.status(404).json({ error: 'Not found' });
+        return;
+      }
+      const k = snap.data();
+      // Best-effort open tracking — never block the response.
+      db.collection('kudos_messages')
+        .doc(kudosId)
+        .update({
+          opened: true,
+          openCount: admin.firestore.FieldValue.increment(1),
+          lastOpenedAt: admin.firestore.FieldValue.serverTimestamp(),
+        })
+        .catch(() => {});
+      // Sanitized projection — never expose sender info or moderation guts.
+      res.status(200).json({
+        success: true,
+        kudos: {
+          kudosId: k.kudosId || kudosId,
+          recipientName: k.recipientName,
+          message: k.message,
+          chainId: k.chainId,
+          chainPosition: k.chainPosition || 0,
+        },
+      });
+    } catch (err) {
+      logger.error(`getKudos error: ${err && err.message}`);
+      res.status(500).json({ error: 'Could not load kudos' });
+    }
+  }
+);
+
+// ================================================================
 // DRF EVALUATION FUNCTION
 // Implements the LeaderReps AI Evaluation Specification for 
 // Deliver Reinforcing Feedback Real Reps
@@ -9753,6 +10215,16 @@ exports.onBugReportCreated = require("firebase-functions/v2/firestore").onDocume
         <div style="margin-top: 12px; padding: 16px; background: white; border: 1px solid #e2e8f0; border-radius: 8px;">
           <h3 style="margin: 0 0 8px 0; color: #002E47; font-size: 15px;">Steps to Reproduce</h3>
           <p style="margin: 0; color: #334155; white-space: pre-wrap;">${report.steps}</p>
+        </div>
+        ` : ""}
+
+        ${report.screenshotUrl ? `
+        <div style="margin-top: 12px; padding: 16px; background: white; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h3 style="margin: 0 0 8px 0; color: #002E47; font-size: 15px;">Screenshot</h3>
+          <a href="${report.screenshotUrl}" target="_blank" style="display: block;">
+            <img src="${report.screenshotUrl}" alt="Bug report screenshot" style="max-width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 4px;" />
+          </a>
+          <p style="margin: 8px 0 0 0; font-size: 12px;"><a href="${report.screenshotUrl}" target="_blank" style="color: #47A88D;">Open full size \u2192</a></p>
         </div>
         ` : ""}
       </div>
@@ -25914,3 +26386,402 @@ exports.onCoachingSessionCreated = require("firebase-functions/v2/firestore")
     logger.info(`[notifications.session] ${sessionId} fanned out to ${result.written} users`);
   });
 
+
+// ================================================================
+// LEADERREPS LAB — Viral Marketing Cloud Functions
+// ----------------------------------------------------------------
+// 1. recordBingoPlay              — public POST; logs anonymous Bad Boss Bingo plays
+// 2. aggregateStateOfLeadership   — admin POST; scans users/* and writes aggregates
+// 3. generateStateOfLeadershipPdf — admin POST; renders PDF using pdfkit → Storage
+// 4. requestStateOfLeadershipReport — public POST; email-gated lead capture → PDF URL
+// ================================================================
+// NOTE: PDFDocument (pdfkit) is already required earlier in this file (see
+// the Pulse Check PDF generator near line 12097). Buffer is a Node built-in
+// available globally. No re-declarations here.
+
+// Helper — verify an admin Firebase ID token from Authorization: Bearer header
+async function verifyAdminFromRequest(req) {
+  const authHeader = req.headers.authorization || "";
+  const match = authHeader.match(/^Bearer (.+)$/);
+  if (!match) return { ok: false, code: 401, error: "Missing auth token" };
+  try {
+    const decoded = await admin.auth().verifyIdToken(match[1]);
+    const email = (decoded.email || "").toLowerCase();
+    if (!email) return { ok: false, code: 403, error: "Token has no email" };
+    // Hardcoded admin list mirror — fall back to metadata/config adminemails.
+    const metaSnap = await db.doc("metadata/config").get();
+    const adminEmails = ((metaSnap.exists && metaSnap.data().adminemails) || []).map((e) => String(e).toLowerCase());
+    const isAdminUser = adminEmails.includes(email);
+    if (!isAdminUser) return { ok: false, code: 403, error: "Not an admin" };
+    return { ok: true, email, uid: decoded.uid };
+  } catch (err) {
+    return { ok: false, code: 401, error: "Invalid token: " + (err && err.message) };
+  }
+}
+
+// ----------------------------------------------------------------
+// 1. recordBingoPlay — public, anonymous play logging
+// ----------------------------------------------------------------
+exports.recordBingoPlay = onRequest(
+  { cors: true, invoker: "public" },
+  async (req, res) => {
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
+
+    try {
+      const {
+        markedSquareIds = [],
+        markedCount = 0,
+        bingo = false,
+        email = null,
+        referrer = null,
+      } = req.body || {};
+
+      if (!Array.isArray(markedSquareIds)) {
+        res.status(400).json({ error: "markedSquareIds must be an array" });
+        return;
+      }
+      if (markedSquareIds.length > 25) {
+        res.status(400).json({ error: "Too many squares" });
+        return;
+      }
+      const cleanIds = markedSquareIds
+        .filter((s) => typeof s === "string" && s.length < 64)
+        .slice(0, 25);
+      const cleanEmail = (typeof email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+        ? email.trim().toLowerCase()
+        : null;
+
+      const doc = {
+        markedSquareIds: cleanIds,
+        markedCount: Math.min(25, Math.max(0, Number(markedCount) || cleanIds.length)),
+        bingo: bingo === true,
+        email: cleanEmail,
+        referrer: typeof referrer === "string" ? referrer.slice(0, 200) : null,
+        userAgent: (req.headers["user-agent"] || "").slice(0, 200),
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+
+      const ref = await db.collection("bingo_plays").add(doc);
+      logger.info(`recordBingoPlay: ${ref.id} marked=${doc.markedCount} bingo=${doc.bingo} email=${doc.email ? "yes" : "no"}`);
+      res.status(200).json({ success: true, id: ref.id });
+    } catch (err) {
+      logger.error(`recordBingoPlay error: ${err && err.message}`);
+      res.status(500).json({ error: "Failed to record play" });
+    }
+  }
+);
+
+// ----------------------------------------------------------------
+// 2. aggregateStateOfLeadership — admin-only scan of platform data
+// ----------------------------------------------------------------
+exports.aggregateStateOfLeadership = onRequest(
+  { cors: true, invoker: "public", timeoutSeconds: 540, memory: "1GiB" },
+  async (req, res) => {
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
+
+    const auth = await verifyAdminFromRequest(req);
+    if (!auth.ok) { res.status(auth.code).json({ error: auth.error }); return; }
+
+    const year = Number((req.body || {}).year) || new Date().getFullYear();
+    const yearStart = new Date(year, 0, 1);
+    const yearEnd = new Date(year + 1, 0, 1);
+
+    try {
+      logger.info(`aggregateStateOfLeadership: year=${year} requested by ${auth.email}`);
+
+      // Pull all users (id only) — we'll fan out reads to subcollections.
+      const usersSnap = await db.collection("users").select().get();
+      const totalUsers = usersSnap.size;
+
+      let activeUsers = 0;
+      let totalReps = 0;
+      let totalReflections = 0;
+      let totalLogins = 0;
+      const skillCounts = {};
+      const themeBag = {};
+
+      // Process in chunks to stay under memory limits.
+      const CHUNK = 50;
+      for (let i = 0; i < usersSnap.docs.length; i += CHUNK) {
+        const chunk = usersSnap.docs.slice(i, i + CHUNK);
+        await Promise.all(chunk.map(async (uDoc) => {
+          const uid = uDoc.id;
+          let userActive = false;
+
+          // Daily logs in year
+          try {
+            const logsSnap = await db.collection("users").doc(uid)
+              .collection("dailyLogs")
+              .where("createdAt", ">=", admin.firestore.Timestamp.fromDate(yearStart))
+              .where("createdAt", "<", admin.firestore.Timestamp.fromDate(yearEnd))
+              .get();
+            if (logsSnap.size > 0) userActive = true;
+            logsSnap.docs.forEach((d) => {
+              const data = d.data();
+              totalReps += Number(data.repsCompleted || 0);
+              if (data.reflection && typeof data.reflection === "string") {
+                totalReflections += 1;
+                // crude theme bag — keywords only
+                ["feedback","conflict","trust","delegation","conversation","team","change","goal","conditioning","conviction"]
+                  .forEach((kw) => {
+                    if (data.reflection.toLowerCase().includes(kw)) {
+                      themeBag[kw] = (themeBag[kw] || 0) + 1;
+                    }
+                  });
+              }
+            });
+          } catch { /* missing subcoll OK */ }
+
+          // Rep completions in year
+          try {
+            const repsSnap = await db.collection("users").doc(uid)
+              .collection("repCompletions")
+              .where("completedAt", ">=", admin.firestore.Timestamp.fromDate(yearStart))
+              .where("completedAt", "<", admin.firestore.Timestamp.fromDate(yearEnd))
+              .get();
+            if (repsSnap.size > 0) userActive = true;
+            repsSnap.docs.forEach((d) => {
+              const data = d.data();
+              const skill = data.skillId || data.skill || data.contentId || "unknown";
+              skillCounts[skill] = (skillCounts[skill] || 0) + 1;
+            });
+          } catch { /* missing subcoll OK */ }
+
+          if (userActive) activeUsers += 1;
+        }));
+      }
+
+      const topSkills = Object.entries(skillCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([id, count]) => ({ id, count }));
+      const topThemes = Object.entries(themeBag)
+        .sort((a, b) => b[1] - a[1])
+        .map(([theme, count]) => ({ theme, count }));
+
+      const summary = {
+        year,
+        totalUsers,
+        activeUsers,
+        totalReps,
+        totalReflections,
+        totalLogins,
+        topSkills,
+        topThemes,
+        generatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        generatedBy: auth.email,
+      };
+
+      await db.collection("reports_sol").doc(String(year))
+        .collection("aggregates").doc("summary").set(summary);
+
+      logger.info(`aggregateStateOfLeadership: year=${year} users=${totalUsers} active=${activeUsers} reps=${totalReps}`);
+      res.status(200).json({ success: true, summary: { ...summary, generatedAt: new Date().toISOString() } });
+    } catch (err) {
+      logger.error(`aggregateStateOfLeadership error: ${err && err.message}`);
+      res.status(500).json({ error: "Aggregation failed: " + (err && err.message) });
+    }
+  }
+);
+
+// ----------------------------------------------------------------
+// 3. generateStateOfLeadershipPdf — render PDF → upload to Storage → signed URL
+// ----------------------------------------------------------------
+async function renderSolPdfBuffer({ report, aggregates }) {
+  return await new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: "LETTER", margin: 56 });
+    const chunks = [];
+    doc.on("data", (c) => chunks.push(c));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+
+    // Brand colors
+    const NAVY = "#002E47";
+    const TEAL = "#47A88D";
+    const ORANGE = "#E04E1B";
+
+    // Cover
+    doc.fillColor(NAVY).fontSize(36).text(report.title || `${report.year} State of Leadership`, { align: "center" });
+    doc.moveDown(0.5);
+    doc.fillColor(TEAL).fontSize(14).text("A LeaderReps Annual Report", { align: "center" });
+    doc.moveDown(3);
+    doc.fillColor("#666666").fontSize(11).text("Insights from thousands of leaders developing their craft on LeaderReps.", { align: "center" });
+
+    // Sections
+    const sections = Array.isArray(report.sections) ? report.sections : [];
+    sections.forEach((s) => {
+      doc.addPage();
+      doc.fillColor(TEAL).fontSize(10).text((s.type || "section").toUpperCase());
+      doc.moveDown(0.2);
+      doc.fillColor(NAVY).fontSize(24).text(s.title || "");
+      doc.moveDown(1);
+
+      if (s.type === "stat-highlight" && s.statValue) {
+        doc.fillColor(ORANGE).fontSize(72).text(s.statValue, { align: "center" });
+        doc.moveDown(0.3);
+        doc.fillColor(NAVY).fontSize(13).text(s.statLabel || "", { align: "center" });
+        doc.moveDown(1.5);
+      }
+
+      if (s.body) {
+        doc.fillColor("#222222").fontSize(12).text(s.body, { align: "left", lineGap: 4 });
+        doc.moveDown(1);
+      }
+
+      if (s.type === "chart" && aggregates) {
+        const dataRef = s.chartDataRef;
+        let dataset = null;
+        if (dataRef === "topSkills") dataset = aggregates.topSkills;
+        else if (dataRef === "topThemes") dataset = aggregates.topThemes;
+
+        if (Array.isArray(dataset) && dataset.length > 0) {
+          const max = Math.max(...dataset.map((d) => d.count));
+          dataset.slice(0, 10).forEach((row) => {
+            const label = row.id || row.theme || "";
+            const count = row.count || 0;
+            const pct = max > 0 ? count / max : 0;
+            doc.fillColor(NAVY).fontSize(10).text(label, { continued: false });
+            const barWidth = 360 * pct;
+            doc.rect(56, doc.y, barWidth, 8).fill(TEAL);
+            doc.moveDown(0.8);
+          });
+        } else {
+          doc.fillColor("#999999").fontSize(10).text(`(No data available for "${dataRef}")`, { italic: true });
+        }
+      }
+    });
+
+    // Aggregates appendix
+    if (aggregates) {
+      doc.addPage();
+      doc.fillColor(NAVY).fontSize(20).text("Appendix: Data Summary");
+      doc.moveDown(0.8);
+      doc.fillColor("#444444").fontSize(11)
+        .text(`Total users: ${aggregates.totalUsers || 0}`)
+        .text(`Active users: ${aggregates.activeUsers || 0}`)
+        .text(`Total reps completed: ${aggregates.totalReps || 0}`)
+        .text(`Total reflections logged: ${aggregates.totalReflections || 0}`);
+    }
+
+    // Footer on every page
+    const pages = doc.bufferedPageRange();
+    for (let i = pages.start; i < pages.start + pages.count; i++) {
+      doc.switchToPage(i);
+      doc.fillColor("#999999").fontSize(8).text(
+        `© ${new Date().getFullYear()} LeaderReps · leaderreps.com`,
+        56,
+        doc.page.height - 30,
+        { align: "center", width: doc.page.width - 112 }
+      );
+    }
+
+    doc.end();
+  });
+}
+
+exports.generateStateOfLeadershipPdf = onRequest(
+  { cors: true, invoker: "public", timeoutSeconds: 120, memory: "512MiB" },
+  async (req, res) => {
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
+
+    const auth = await verifyAdminFromRequest(req);
+    if (!auth.ok) { res.status(auth.code).json({ error: auth.error }); return; }
+
+    const year = Number((req.body || {}).year) || new Date().getFullYear();
+    try {
+      const reportSnap = await db.collection("reports_sol").doc(String(year)).get();
+      if (!reportSnap.exists) { res.status(404).json({ error: "Report not found for year " + year }); return; }
+      const report = { id: reportSnap.id, ...reportSnap.data() };
+
+      const aggSnap = await db.collection("reports_sol").doc(String(year))
+        .collection("aggregates").doc("summary").get();
+      const aggregates = aggSnap.exists ? aggSnap.data() : null;
+
+      const pdfBuffer = await renderSolPdfBuffer({ report, aggregates });
+
+      const bucket = admin.storage().bucket();
+      const filePath = `reports/state-of-leadership/${year}/state-of-leadership-${year}.pdf`;
+      const file = bucket.file(filePath);
+      await file.save(pdfBuffer, {
+        metadata: { contentType: "application/pdf", cacheControl: "public, max-age=300" },
+      });
+
+      // Signed URL valid 7 days
+      const [downloadUrl] = await file.getSignedUrl({
+        action: "read",
+        expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
+      });
+
+      await db.collection("reports_sol").doc(String(year)).set({
+        pdfPath: filePath,
+        pdfGeneratedAt: admin.firestore.FieldValue.serverTimestamp(),
+        pdfGeneratedBy: auth.email,
+      }, { merge: true });
+
+      logger.info(`generateStateOfLeadershipPdf: year=${year} → ${filePath}`);
+      res.status(200).json({ success: true, downloadUrl, path: filePath });
+    } catch (err) {
+      logger.error(`generateStateOfLeadershipPdf error: ${err && err.message}`);
+      res.status(500).json({ error: "PDF generation failed: " + (err && err.message) });
+    }
+  }
+);
+
+// ----------------------------------------------------------------
+// 4. requestStateOfLeadershipReport — public lead capture + returns signed PDF URL
+// ----------------------------------------------------------------
+exports.requestStateOfLeadershipReport = onRequest(
+  { cors: true, invoker: "public" },
+  async (req, res) => {
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+    if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
+
+    try {
+      const { email, name, company, year, referrer } = req.body || {};
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        res.status(400).json({ error: "Valid email required" });
+        return;
+      }
+      const targetYear = Number(year) || new Date().getFullYear();
+
+      // Verify report is published
+      const reportSnap = await db.collection("reports_sol").doc(String(targetYear)).get();
+      if (!reportSnap.exists || reportSnap.data().status !== "published") {
+        res.status(404).json({ error: "Report not available." });
+        return;
+      }
+      const report = reportSnap.data();
+      if (!report.pdfPath) {
+        res.status(503).json({ error: "Report PDF is not yet generated." });
+        return;
+      }
+
+      // Log lead
+      await db.collection("reports_sol_downloads").add({
+        email: email.trim().toLowerCase(),
+        name: typeof name === "string" ? name.trim().slice(0, 100) : null,
+        company: typeof company === "string" ? company.trim().slice(0, 100) : null,
+        year: targetYear,
+        referrer: typeof referrer === "string" ? referrer.slice(0, 200) : null,
+        userAgent: (req.headers["user-agent"] || "").slice(0, 200),
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      // Return a fresh 24h signed URL
+      const bucket = admin.storage().bucket();
+      const [downloadUrl] = await bucket.file(report.pdfPath).getSignedUrl({
+        action: "read",
+        expires: Date.now() + 24 * 60 * 60 * 1000,
+      });
+
+      logger.info(`requestStateOfLeadershipReport: ${email} → ${targetYear}`);
+      res.status(200).json({ success: true, downloadUrl });
+    } catch (err) {
+      logger.error(`requestStateOfLeadershipReport error: ${err && err.message}`);
+      res.status(500).json({ error: "Request failed" });
+    }
+  }
+);

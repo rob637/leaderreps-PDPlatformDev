@@ -33,6 +33,9 @@ import PulseRespond from './components/lab/PulseRespond.jsx';
 import LeaderStart from './components/lab/LeaderStart.jsx';
 import LeaderDashboard from './components/lab/LeaderDashboard.jsx';
 import IdentityBuilder from './components/lab/IdentityBuilder.jsx';
+import BadBossBingoPlay from './components/lab/BadBossBingoPlay.jsx';
+import PhrasebookPublic from './components/lab/PhrasebookPublic.jsx';
+import StateOfLeadershipPublic from './components/lab/StateOfLeadershipPublic.jsx';
 
 // --- New Structure ---
 // AuthPanel is lazy-loaded so an unauthenticated cold load doesn't pull
@@ -92,6 +95,10 @@ function App() {
     params.has('pulse-start') || params.has('pulse_start');
   const isIdentityStart =
     params.has('identity-start') || params.has('identity_start');
+  const isBingo = params.has('bingo');
+  const isPhrasebook = params.has('phrasebook');
+  const isStateOfLeadership =
+    params.has('state-of-leadership') || params.has('state_of_leadership');
 
   if (pulseCampaignId) {
     return <PulseRespond campaignId={pulseCampaignId} />;
@@ -104,6 +111,15 @@ function App() {
   }
   if (isIdentityStart) {
     return <IdentityBuilder />;
+  }
+  if (isBingo) {
+    return <BadBossBingoPlay />;
+  }
+  if (isPhrasebook) {
+    return <PhrasebookPublic />;
+  }
+  if (isStateOfLeadership) {
+    return <StateOfLeadershipPublic />;
   }
   return <MainApp />;
 }

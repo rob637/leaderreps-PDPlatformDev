@@ -363,6 +363,42 @@ export const BREADCRUMB_MAP = {
     { label: 'LeaderReps Lab', path: 'leaderreps-lab' },
     { label: 'Anonymous Team Pulse', path: null }
   ],
+  'lab-win-card': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Admin', path: 'admin-hub' },
+    { label: 'LeaderReps Lab', path: 'leaderreps-lab' },
+    { label: 'Win Card Generator', path: null }
+  ],
+  'lab-manager-multiplier': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Admin', path: 'admin-hub' },
+    { label: 'LeaderReps Lab', path: 'leaderreps-lab' },
+    { label: 'Manager Multiplier', path: null }
+  ],
+  'lab-pod-match': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Admin', path: 'admin-hub' },
+    { label: 'LeaderReps Lab', path: 'leaderreps-lab' },
+    { label: 'Pod Match Simulator', path: null }
+  ],
+  'lab-bad-boss-bingo': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Admin', path: 'admin-hub' },
+    { label: 'LeaderReps Lab', path: 'leaderreps-lab' },
+    { label: 'Bad Boss Bingo', path: null }
+  ],
+  'lab-phrasebook': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Admin', path: 'admin-hub' },
+    { label: 'LeaderReps Lab', path: 'leaderreps-lab' },
+    { label: 'Leadership Phrasebook', path: null }
+  ],
+  'lab-state-of-leadership': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Admin', path: 'admin-hub' },
+    { label: 'LeaderReps Lab', path: 'leaderreps-lab' },
+    { label: 'State of Leadership Report', path: null }
+  ],
   'admin-content-home': [
     { label: 'Home', path: 'dashboard' },
     { label: 'Admin', path: 'admin-portal' },

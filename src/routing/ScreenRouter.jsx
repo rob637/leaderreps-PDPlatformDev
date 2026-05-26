@@ -170,6 +170,25 @@ const ScreenMap = {
   'team-pulse': lazy(() =>
     import('../components/admin/TeamPulse.jsx')
   ),
+  // Viral Growth MVPs (Combos A/B/C) — admin-only Lab demos, no Firestore impact
+  'lab-win-card': lazy(() =>
+    import('../components/lab/WinCardDemo.jsx')
+  ),
+  'lab-manager-multiplier': lazy(() =>
+    import('../components/lab/ManagerMultiplierDemo.jsx')
+  ),
+  'lab-pod-match': lazy(() =>
+    import('../components/lab/PodMatchDemo.jsx')
+  ),
+  'lab-bad-boss-bingo': lazy(() =>
+    import('../components/admin/lab/BadBossBingoAdmin.jsx')
+  ),
+  'lab-phrasebook': lazy(() =>
+    import('../components/admin/lab/PhrasebookAdmin.jsx')
+  ),
+  'lab-state-of-leadership': lazy(() =>
+    import('../components/admin/lab/StateOfLeadershipAdmin.jsx')
+  ),
   'book-builder': lazy(() =>
     import('../components/admin/BookBuilder.jsx')
   ),

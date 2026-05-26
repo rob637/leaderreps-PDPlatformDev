@@ -234,6 +234,80 @@ service cloud.firestore {
       allow write: if false; // Only Cloud Functions can write
     }
 
+    // Kudos lead magnet — admin-composed, AI-moderated kudos sent to
+    // prospects from the admin Sales & Marketing Center. Created directly
+    // by authenticated admins (not by a Cloud Function), so admins are
+    // allowed to create. Recipients never see Firestore directly.
+    match /kudos_leads/{document} {
+      allow read: if isAdmin();
+      allow create: if isAdmin()
+        && request.resource.data.sentBy.uid == request.auth.uid;
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['leadStatus', 'emailDelivered', 'notes']);
+      allow delete: if false;
+    }
+
+    // Kudos consumer app — anonymous public kudos persisted by the
+    // sendKudos Cloud Function. The recipient view goes through the
+    // getKudos Cloud Function (sanitized projection), so direct
+    // Firestore reads/writes are not permitted for anyone except admins.
+    match /kudos_messages/{document} {
+      allow read: if isAdmin();
+      allow write: if false; // Cloud Functions only
+    }
+    match /kudos_chains/{document} {
+      allow read: if isAdmin();
+      allow write: if false; // Cloud Functions only
+    }
+    match /kudos_sender_counters/{document} {
+      allow read, write: if false; // Cloud Functions only (rate limiting)
+    }
+
+    // ---------------------------------------------------------------------
+    // LeaderReps Lab — Viral Marketing experiments
+    // ---------------------------------------------------------------------
+
+    // Bad Boss Bingo — square pool (public read for the public play page;
+    // admin write only). Plays are anonymous, written via Cloud Function.
+    match /bingo_squares/{squareId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /bingo_plays/{playId} {
+      allow read: if isAdmin();
+      allow write: if false; // Cloud Function only
+    }
+    match /bingo_config/{document} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Leadership Phrasebook — public read of published phrases (filtered
+    // client-side or via a public projection collection in a follow-up).
+    // Admin manages all drafts/edits.
+    match /phrasebook/{phraseId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // State of Leadership Report — admin-managed report metadata + sections.
+    // Public read so the /state-of-leadership/{year} landing page can render
+    // when status == 'published'. Aggregates and download leads are
+    // server-written via Cloud Functions.
+    match /reports_sol/{year} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /reports_sol/{year}/aggregates/{document=**} {
+      allow read: if isAdmin();
+      allow write: if false; // Cloud Function only
+    }
+    match /reports_sol_downloads/{leadId} {
+      allow read: if isAdmin();
+      allow write: if false; // Cloud Function only
+    }
+
     // Ascent — "Coming Soon" course waitlists (e.g. Lead Self, Lead Team v2)
     // Authenticated user can write/read their own signup; admins can read all.
     match /waitlists/{listId} {
