@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Bug, CheckCircle, AlertCircle, Loader } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bug, CheckCircle, AlertCircle, Loader, X, Image as ImageIcon } from 'lucide-react';
 import { 
   Modal, 
   ModalContent, 
@@ -12,14 +12,25 @@ import {
 } from '../ui';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import bugReportService from '../../services/bugReportService.js';
+import ScreenshotAnnotator from './ScreenshotAnnotator.jsx';
 
-const BugReportModal = ({ isOpen, onClose, currentScreen }) => {
+const BugReportModal = ({ isOpen, onClose, currentScreen, screenshotDataUrl, screenshotAttempted }) => {
   const { db, user, developmentPlanData } = useAppServices();
   const [description, setDescription] = useState('');
   const [steps, setSteps] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState(null);
+  const [includeScreenshot, setIncludeScreenshot] = useState(true);
+  const [annotatedScreenshot, setAnnotatedScreenshot] = useState(null);
+
+  // Reset "include screenshot" toggle each time a new screenshot is provided
+  useEffect(() => {
+    if (isOpen) {
+      setIncludeScreenshot(Boolean(screenshotDataUrl));
+      setAnnotatedScreenshot(screenshotDataUrl || null);
+    }
+  }, [isOpen, screenshotDataUrl]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -43,7 +54,10 @@ const BugReportModal = ({ isOpen, onClose, currentScreen }) => {
         description,
         steps,
         severity: 'medium', // Default
-        category: 'user_report'
+        category: 'user_report',
+        screenshotDataUrl: includeScreenshot
+          ? (annotatedScreenshot || screenshotDataUrl)
+          : null,
       }, systemInfo, {
         email: user?.email,
         displayName: user?.displayName
@@ -112,6 +126,51 @@ const BugReportModal = ({ isOpen, onClose, currentScreen }) => {
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg dark:bg-slate-900 focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal resize-none h-24 text-sm"
               />
             </div>
+
+            {screenshotAttempted && !screenshotDataUrl && (
+              <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 p-3 rounded-lg text-xs flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <span>
+                  We couldn’t auto-capture a screenshot of this page. Your report will still be sent — please describe what you saw.
+                </span>
+              </div>
+            )}
+
+            {screenshotDataUrl && (
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <ImageIcon className="w-4 h-4" />
+                    Screenshot (draw to highlight or redact)
+                  </label>
+                  {includeScreenshot && (
+                    <button
+                      type="button"
+                      onClick={() => setIncludeScreenshot(false)}
+                      className="text-xs text-slate-500 hover:text-red-600 flex items-center gap-1"
+                      aria-label="Remove screenshot"
+                    >
+                      <X className="w-3 h-3" />
+                      Remove
+                    </button>
+                  )}
+                </div>
+                {includeScreenshot ? (
+                  <ScreenshotAnnotator
+                    src={screenshotDataUrl}
+                    onChange={setAnnotatedScreenshot}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIncludeScreenshot(true)}
+                    className="w-full text-xs text-corporate-teal hover:underline text-left px-2 py-1"
+                  >
+                    Screenshot removed — click to include it again
+                  </button>
+                )}
+              </div>
+            )}
             
             <div className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg text-xs text-slate-500 dark:text-slate-400">
               <p>System info will be automatically included: Browser, OS, Screen Resolution, Current Page ({currentScreen}).</p>

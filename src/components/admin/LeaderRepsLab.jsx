@@ -22,6 +22,8 @@ import {
   Grid3x3,
   BookMarked,
   FileBarChart,
+  Heart,
+  BarChart3,
 } from 'lucide-react';
 import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
 import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
@@ -64,6 +66,19 @@ const ToolCard = ({ icon, title, status, children }) => {
   </div>
   );
 };
+
+const SectionHeader = ({ title, description }) => (
+  <div className="col-span-full mt-2 mb-1">
+    <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+      {title}
+    </h2>
+    {description && (
+      <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+        {description}
+      </p>
+    )}
+  </div>
+);
 
 const LeaderRepsLab = () => {
   const { user, isAdmin, navigate } = useAppServices();
@@ -111,24 +126,13 @@ const LeaderRepsLab = () => {
       {/* Tool Cards */}
       <div className="flex-1 overflow-y-auto p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 w-full">
-          {/* Tool 1 — SMS Tool (Live) */}
-          <ToolCard icon={MessageSquare} title="SMS Tool" status="Live">
-            <p>
-              Standalone SMS experiment. Hosted independently from the main
-              platform.
-            </p>
-            <a
-              href="https://leaderreps-lab.web.app/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
-            >
-              Open SMS Tool
-              <ExternalLink className="w-4 h-4" />
-            </a>
-          </ToolCard>
+          {/* ───────────────────────────────────────────── */}
+          <SectionHeader
+            title="Lead Magnets"
+            description="Public-facing experiments designed to capture leads. Promote winners; sunset the rest."
+          />
 
-          {/* Tool 2 — Anonymous Team Pulse (MVP) */}
+          {/* Anonymous Team Pulse */}
           <ToolCard
             icon={Users}
             title={'Anonymous Team Pulse — “What Is It Like to Be Led By Me?”'}
@@ -162,125 +166,7 @@ const LeaderRepsLab = () => {
             </p>
           </ToolCard>
 
-          {/* Viral Growth MVPs — Combos A / B / C (demo-only, no Firestore impact) */}
-          <ToolCard
-            icon={Share2}
-            title="Win Card Generator (Combo B)"
-            status="MVP"
-          >
-            <p>
-              "Strava for leaders" demo. Generates a brand-styled,
-              LinkedIn-shareable card from a leader's win. Validates whether
-              members will actually post growth artifacts to LinkedIn.
-            </p>
-            <button
-              onClick={() => navigate('lab-win-card')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
-            >
-              Open Win Card Generator
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </ToolCard>
-
-          <ToolCard
-            icon={UserPlus}
-            title="Manager Multiplier (Combo A)"
-            status="MVP"
-          >
-            <p>
-              Dropbox-style B2B referral demo. Manager invites direct reports →
-              both sides unlock value → Team Plan upsell. Visualizes the full
-              invite → accept → convert funnel with rewards.
-            </p>
-            <button
-              onClick={() => navigate('lab-manager-multiplier')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
-            >
-              Open Manager Multiplier
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </ToolCard>
-
-          <ToolCard
-            icon={Users2}
-            title="Pod Match Simulator (Combo C)"
-            status="MVP"
-          >
-            <p>
-              CrossFit-style "pods of 5" demo. Runs the matching algorithm on a
-              mock cohort, scores each pod for diversity, and previews the Pod
-              Home experience members would see.
-            </p>
-            <button
-              onClick={() => navigate('lab-pod-match')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
-            >
-              Open Pod Match Simulator
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </ToolCard>
-
-          {/* Viral Marketing — Bad Boss Bingo */}
-          <ToolCard
-            icon={Grid3x3}
-            title="Bad Boss Bingo"
-            status="MVP"
-          >
-            <p>
-              Shareable bingo card of bad-management patterns. Tongue-in-cheek
-              viral lead magnet — employees mark squares, share scores on
-              LinkedIn, and discover LeaderReps via a gentle CTA.
-            </p>
-            <button
-              onClick={() => navigate('lab-bad-boss-bingo')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
-            >
-              Open Bad Boss Bingo
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </ToolCard>
-
-          {/* Viral Marketing — Leadership Phrasebook */}
-          <ToolCard
-            icon={BookMarked}
-            title="Leadership Phrasebook"
-            status="MVP"
-          >
-            <p>
-              Public, growing library of <em>exact scripts</em> for hard
-              leadership moments. SEO-driven lead magnet. Each phrase deep-links
-              to a LeaderReps practice rep.
-            </p>
-            <button
-              onClick={() => navigate('lab-phrasebook')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
-            >
-              Open Phrasebook
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </ToolCard>
-
-          {/* Viral Marketing — State of Leadership Report */}
-          <ToolCard
-            icon={FileBarChart}
-            title="State of Leadership Report"
-            status="MVP"
-          >
-            <p>
-              Annual HBR-style report aggregating anonymized platform data
-              (“What 10,000 leaders struggled with most this year”). Free PDF,
-              email-gated — becomes a recurring industry reference.
-            </p>
-            <button
-              onClick={() => navigate('lab-state-of-leadership')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
-            >
-              Open State of Leadership
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </ToolCard>
-
-          {/* Tool 3 — Leadership Identity Statement Builder (MVP) */}
+          {/* Leadership Identity Statement Builder */}
           <ToolCard
             icon={Compass}
             title="Leadership Identity Statement Builder"
@@ -307,7 +193,155 @@ const LeaderRepsLab = () => {
             </p>
           </ToolCard>
 
-          {/* Tool 4 — Ascent 1 (Experimental) */}
+          {/* Bad Boss Bingo */}
+          <ToolCard icon={Grid3x3} title="Bad Boss Bingo" status="MVP">
+            <p>
+              Shareable bingo card of bad-management patterns. Tongue-in-cheek
+              viral lead magnet — employees mark squares, share scores on
+              LinkedIn, and discover LeaderReps via a gentle CTA.
+            </p>
+            <button
+              onClick={() => navigate('lab-bad-boss-bingo')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+            >
+              Open Bad Boss Bingo
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </ToolCard>
+
+          {/* Leadership Phrasebook */}
+          <ToolCard icon={BookMarked} title="Leadership Phrasebook" status="MVP">
+            <p>
+              Public, growing library of <em>exact scripts</em> for hard
+              leadership moments. SEO-driven lead magnet. Each phrase deep-links
+              to a LeaderReps practice rep.
+            </p>
+            <button
+              onClick={() => navigate('lab-phrasebook')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+            >
+              Open Phrasebook
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </ToolCard>
+
+          {/* State of Leadership Report */}
+          <ToolCard
+            icon={FileBarChart}
+            title="State of Leadership Report"
+            status="MVP"
+          >
+            <p>
+              Annual HBR-style report aggregating anonymized platform data
+              (“What 10,000 leaders struggled with most this year”). Free PDF,
+              email-gated — becomes a recurring industry reference.
+            </p>
+            <button
+              onClick={() => navigate('lab-state-of-leadership')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+            >
+              Open State of Leadership
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </ToolCard>
+
+          {/* Kudos (Beta) — moved here from Sales & Marketing */}
+          <ToolCard icon={Heart} title="Kudos (Beta)" status="MVP">
+            <p>
+              AI-moderated warm-touch lead magnet. Send a “kudos from the team
+              at LeaderReps” to a prospect; every send is logged as a warm
+              lead. Includes safety + voice filter and analytics dashboard.
+            </p>
+            <button
+              onClick={() => navigate('lab-kudos')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+            >
+              Open Kudos
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </ToolCard>
+
+          {/* Test Lead Magnets — moved here from Sales & Marketing */}
+          <ToolCard
+            icon={BarChart3}
+            title="Test Lead Magnets (DNA · ROI · Readiness)"
+            status="Experimental"
+          >
+            <p>
+              Lead viewers for three assessments still in test: Leadership DNA,
+              ROI Calculator, and Leadership Readiness. Live assessments (e.g.
+              Accountability) stay in Sales &amp; Marketing.
+            </p>
+            <button
+              onClick={() => navigate('lab-test-lead-magnets')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+            >
+              Open Test Lead Magnets
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </ToolCard>
+
+          {/* ───────────────────────────────────────────── */}
+          <SectionHeader
+            title="Viral Growth Demos"
+            description="Member-side funnel concepts (Combos A / B / C). Demo-only, no Firestore impact."
+          />
+
+          {/* Win Card Generator */}
+          <ToolCard icon={Share2} title="Win Card Generator (Combo B)" status="MVP">
+            <p>
+              "Strava for leaders" demo. Generates a brand-styled,
+              LinkedIn-shareable card from a leader's win. Validates whether
+              members will actually post growth artifacts to LinkedIn.
+            </p>
+            <button
+              onClick={() => navigate('lab-win-card')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+            >
+              Open Win Card Generator
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </ToolCard>
+
+          {/* Manager Multiplier */}
+          <ToolCard icon={UserPlus} title="Manager Multiplier (Combo A)" status="MVP">
+            <p>
+              Dropbox-style B2B referral demo. Manager invites direct reports →
+              both sides unlock value → Team Plan upsell. Visualizes the full
+              invite → accept → convert funnel with rewards.
+            </p>
+            <button
+              onClick={() => navigate('lab-manager-multiplier')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+            >
+              Open Manager Multiplier
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </ToolCard>
+
+          {/* Pod Match */}
+          <ToolCard icon={Users2} title="Pod Match Simulator (Combo C)" status="MVP">
+            <p>
+              CrossFit-style "pods of 5" demo. Runs the matching algorithm on a
+              mock cohort, scores each pod for diversity, and previews the Pod
+              Home experience members would see.
+            </p>
+            <button
+              onClick={() => navigate('lab-pod-match')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+            >
+              Open Pod Match Simulator
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </ToolCard>
+
+          {/* ───────────────────────────────────────────── */}
+          <SectionHeader
+            title="Experimental Platform Experiences"
+            description="Alternative product surfaces and learning-engine prototypes."
+          />
+
+          {/* Ascent 1 */}
           <ToolCard icon={Mountain} title="Ascent 1" status="MVP">
             <p>
               Original Ascent Arena experience. Moved here from the main
@@ -322,7 +356,7 @@ const LeaderRepsLab = () => {
             </button>
           </ToolCard>
 
-          {/* Tool 4 — Ascent 2 (Experimental) */}
+          {/* Ascent 2 */}
           <ToolCard icon={Mountain} title="Ascent 2" status="Experimental">
             <p>
               Ascent 2 prototype — admin preview of the next-generation
@@ -337,7 +371,24 @@ const LeaderRepsLab = () => {
             </button>
           </ToolCard>
 
-          {/* SRS Engine — Live external experiment */}
+          {/* SMS Tool */}
+          <ToolCard icon={MessageSquare} title="SMS Tool" status="Live">
+            <p>
+              Standalone SMS experiment. Hosted independently from the main
+              platform.
+            </p>
+            <a
+              href="https://leaderreps-lab.web.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+            >
+              Open SMS Tool
+              <ExternalLink className="w-4 h-4" />
+            </a>
+          </ToolCard>
+
+          {/* SRS Engine */}
           <ToolCard icon={FlaskConical} title="SRS Engine" status="Live">
             <p>
               Spaced Repetition System for leadership reps. Validates adaptive
@@ -354,7 +405,13 @@ const LeaderRepsLab = () => {
             </a>
           </ToolCard>
 
-          {/* Account Intelligence Engine — Concept */}
+          {/* ───────────────────────────────────────────── */}
+          <SectionHeader
+            title="Sales / GTM Concepts"
+            description="Design experiments for the revenue motion. Not yet built."
+          />
+
+          {/* Account Intelligence Engine */}
           <ToolCard icon={Brain} title="Account Intelligence Engine" status="Experimental">
             <p>
               Persistent dossiers on every target account, refreshed weekly.
@@ -368,7 +425,7 @@ const LeaderRepsLab = () => {
             </span>
           </ToolCard>
 
-          {/* Trigger → Talk Track Generator — Concept */}
+          {/* Trigger → Talk Track Generator */}
           <ToolCard icon={Zap} title="Trigger → Talk Track Generator" status="Experimental">
             <p>
               Auto-generates a personalized 3-touch outreach the moment a
@@ -380,7 +437,7 @@ const LeaderRepsLab = () => {
             </span>
           </ToolCard>
 
-          {/* Demo Auto-Pilot — Concept */}
+          {/* Demo Auto-Pilot */}
           <ToolCard icon={Presentation} title="Demo Auto-Pilot" status="Experimental">
             <p>
               Live ROI calculator + guided discovery during the sales call.
@@ -393,7 +450,7 @@ const LeaderRepsLab = () => {
             </span>
           </ToolCard>
 
-          {/* Champion Enablement Kits — Concept */}
+          {/* Champion Enablement Kits */}
           <ToolCard icon={Briefcase} title="Champion Enablement Kits" status="Experimental">
             <p>
               The “internal sale” tool. Generates a personalized board deck PDF

@@ -300,6 +300,19 @@ const ConditioningLight = () => {
         </div>
       </div>
 
+      {/* Your rep — show the leader's own submitted text so the debrief
+          has the rep in view alongside the verdict and feedback. */}
+      {transcript && (
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 mb-4">
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">
+            Your Rep
+          </h2>
+          <p className="text-slate-900 dark:text-slate-100 whitespace-pre-wrap leading-relaxed">
+            {transcript}
+          </p>
+        </div>
+      )}
+
       {!isInvalid && Object.keys(quickRead).length > 0 && (
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 mb-4">
           <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 uppercase tracking-wider">

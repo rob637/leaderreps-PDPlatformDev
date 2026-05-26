@@ -26,6 +26,7 @@ import MobilePWABanner from '../ui/MobilePWABanner.jsx';
 import BugReportModal from '../modals/BugReportModal.jsx';
 import AscentLaunchAnnouncementModal from '../modals/AscentLaunchAnnouncementModal.jsx';
 import NotificationBell from '../notifications/NotificationBell.jsx';
+import { captureScreenshot } from '../../lib/captureScreenshot.js';
 // UIVersionFloatingToggle removed May 2026 — app locked to v2.
 
 const AppContent = ({
@@ -49,6 +50,30 @@ const AppContent = ({
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isBugReportModalOpen, setIsBugReportModalOpen] = useState(false);
+  const [bugReportScreenshot, setBugReportScreenshot] = useState(null);
+  const [screenshotAttempted, setScreenshotAttempted] = useState(false);
+  const [isCapturingScreenshot, setIsCapturingScreenshot] = useState(false);
+
+  // Capture the current screen BEFORE opening the modal so the modal
+  // itself isn't in the screenshot. Best-effort — failure still opens
+  // the modal (with no attached screenshot).
+  const openBugReport = async () => {
+    setIsCapturingScreenshot(true);
+    setScreenshotAttempted(true);
+    try {
+      const dataUrl = await captureScreenshot();
+      setBugReportScreenshot(dataUrl);
+    } finally {
+      setIsCapturingScreenshot(false);
+      setIsBugReportModalOpen(true);
+    }
+  };
+
+  const closeBugReport = () => {
+    setIsBugReportModalOpen(false);
+    setBugReportScreenshot(null);
+    setScreenshotAttempted(false);
+  };
 
   // Ref for main scrollable content area - used for scroll-to-top on navigation
   const mainContentRef = useRef(null);
@@ -287,11 +312,12 @@ const AppContent = ({
                     ·
                   </span>
                   <button
-                    onClick={() => setIsBugReportModalOpen(true)}
-                    className="hover:text-corporate-teal-ink focus:text-corporate-teal-ink transition-colors duration-200 text-slate-700 dark:text-slate-300 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation"
+                    onClick={openBugReport}
+                    disabled={isCapturingScreenshot}
+                    className="hover:text-corporate-teal-ink focus:text-corporate-teal-ink transition-colors duration-200 text-slate-700 dark:text-slate-300 bg-transparent border-none cursor-pointer px-2 py-1 min-h-[44px] min-w-[44px] rounded-lg focus:outline-none focus:ring-2 focus:ring-corporate-teal focus:ring-offset-2 touch-manipulation disabled:opacity-60"
                     aria-label="Report a bug"
                   >
-                    Report Bug
+                    {isCapturingScreenshot ? 'Capturing…' : 'Report Bug'}
                   </button>
                 </nav>
               </footer>
@@ -310,8 +336,10 @@ const AppContent = ({
               {/* Global Bug Report Modal */}
               <BugReportModal
                 isOpen={isBugReportModalOpen}
-                onClose={() => setIsBugReportModalOpen(false)}
+                onClose={closeBugReport}
                 currentScreen={currentScreen}
+                screenshotDataUrl={bugReportScreenshot}
+                screenshotAttempted={screenshotAttempted}
               />
 
               {/* Ascent Revamp launch announcement (one-time per user) */}

@@ -1078,19 +1078,34 @@ const ScreenArtifacts = ({
   const [audioBlob, setAudioBlob] = useState(null);
   const [audioUrl, setAudioUrl] = useState(null);
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
+  const [recordingError, setRecordingError] = useState(null);
   const mediaRecorderRef = useRef(null);
+  const audioStreamRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const recordingMimeRef = useRef('audio/webm');
+  const recordingExtRef = useRef('webm');
   const timerRef = useRef(null);
   const audioPlayerRef = useRef(null);
 
   // Transcript State
   const [transcriptText, setTranscriptText] = useState('');
 
-  // Cleanup audio URL on unmount
+  // Cleanup audio URL + release mic on unmount. Releasing the underlying
+  // MediaStream tracks is critical on iOS — without it the red mic
+  // indicator stays on after the user navigates away mid-recording.
   useEffect(() => {
     return () => {
       if (audioUrl) URL.revokeObjectURL(audioUrl);
       if (timerRef.current) clearInterval(timerRef.current);
+      try {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
+      } catch (_) { /* ignore */ }
+      try {
+        audioStreamRef.current?.getTracks().forEach((t) => t.stop());
+      } catch (_) { /* ignore */ }
+      audioStreamRef.current = null;
     };
   }, [audioUrl]);
 
@@ -1150,46 +1165,183 @@ const ScreenArtifacts = ({
     }
   };
 
-  // Voice Recording Logic
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
-      audioChunksRef.current = [];
-
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorderRef.current.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        const url = URL.createObjectURL(blob);
-        setAudioBlob(blob);
-        setAudioUrl(url);
-        
-        // Stop all tracks to release mic
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorderRef.current.start();
-      setIsRecording(true);
-      setRecordingTime(0);
-      
-      timerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
-
-    } catch (err) {
-      console.error('Error accessing microphone:', err);
-      alert('Could not access microphone. Please check permissions.');
+  // Voice Recording Logic — cross-platform (iPhone, Android, desktop).
+  //
+  // iOS Safari does NOT support audio/webm. The previous implementation
+  // hardcoded 'audio/webm' which produced unplayable files on every
+  // iPhone. We now negotiate a supported MIME type via
+  // MediaRecorder.isTypeSupported, falling back to the browser default
+  // (empty string) when nothing in our preferred list is supported. iOS
+  // typically picks audio/mp4 (aac); Chrome/Android picks audio/webm.
+  const pickRecorderMime = () => {
+    if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) {
+      return { mime: '', ext: 'webm' };
     }
+    const candidates = [
+      { mime: 'audio/webm;codecs=opus', ext: 'webm' },
+      { mime: 'audio/webm', ext: 'webm' },
+      { mime: 'audio/mp4;codecs=mp4a.40.2', ext: 'm4a' },
+      { mime: 'audio/mp4', ext: 'm4a' },
+      { mime: 'audio/aac', ext: 'aac' },
+      { mime: 'audio/ogg;codecs=opus', ext: 'ogg' },
+    ];
+    for (const c of candidates) {
+      try {
+        if (MediaRecorder.isTypeSupported(c.mime)) return c;
+      } catch (_) { /* ignore */ }
+    }
+    // Let the browser pick. We default the extension to mp4 on iOS so
+    // the resulting blob is at least openable by the iOS Files app.
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    return { mime: '', ext: isIOS ? 'm4a' : 'webm' };
+  };
+
+  const startRecording = async () => {
+    setRecordingError(null);
+
+    // Guard: secure context + APIs present. iOS Safari requires HTTPS
+    // (or localhost) for getUserMedia.
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      setRecordingError(
+        'Audio recording is not available in this browser. Try Chrome on desktop or Safari on iOS.'
+      );
+      return;
+    }
+    if (typeof window !== 'undefined' && window.isSecureContext === false) {
+      setRecordingError(
+        'Audio recording requires a secure (HTTPS) connection.'
+      );
+      return;
+    }
+    if (typeof MediaRecorder === 'undefined') {
+      setRecordingError(
+        'Audio recording is not supported in this browser. Try a recent version of Safari or Chrome.'
+      );
+      return;
+    }
+
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      // Map standard DOMException names to user-friendly messages so the
+      // experience is consistent across iPhone, Android, and desktop.
+      // eslint-disable-next-line no-console
+      console.warn('[EvidenceCaptureWizard] mic permission error:', err?.name, err?.message);
+      const name = err?.name || '';
+      let message;
+      switch (name) {
+        case 'NotAllowedError':
+        case 'SecurityError':
+          message =
+            'Microphone access was blocked. Tap the lock/info icon in your address bar (or Settings → Safari/Chrome → Microphone) and allow this site, then try again.';
+          break;
+        case 'NotFoundError':
+        case 'DevicesNotFoundError':
+          message =
+            'No microphone was found. Connect a microphone or check that another app is not using it.';
+          break;
+        case 'NotReadableError':
+        case 'TrackStartError':
+          message =
+            'The microphone is in use by another app. Close other apps using the mic and try again.';
+          break;
+        case 'OverconstrainedError':
+          message = 'No microphone matches the requested settings.';
+          break;
+        default:
+          message = 'Could not access the microphone. Please check permissions and try again.';
+      }
+      setRecordingError(message);
+      return;
+    }
+
+    audioStreamRef.current = stream;
+    const { mime, ext } = pickRecorderMime();
+    recordingMimeRef.current = mime || 'audio/webm';
+    recordingExtRef.current = ext;
+
+    let recorder;
+    try {
+      recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('[EvidenceCaptureWizard] MediaRecorder ctor failed:', err);
+      // Try once more with no options (Safari sometimes rejects valid mimes).
+      try {
+        recorder = new MediaRecorder(stream);
+      } catch (err2) {
+        stream.getTracks().forEach((t) => t.stop());
+        audioStreamRef.current = null;
+        setRecordingError('Audio recording is not supported on this device.');
+        return;
+      }
+    }
+
+    mediaRecorderRef.current = recorder;
+    audioChunksRef.current = [];
+
+    recorder.ondataavailable = (event) => {
+      if (event.data && event.data.size > 0) {
+        audioChunksRef.current.push(event.data);
+      }
+    };
+
+    recorder.onerror = (event) => {
+      // eslint-disable-next-line no-console
+      console.error('[EvidenceCaptureWizard] MediaRecorder error:', event?.error || event);
+      setRecordingError('Recording failed. Please try again.');
+    };
+
+    recorder.onstop = () => {
+      const blobMime = recordingMimeRef.current || (audioChunksRef.current[0]?.type) || 'audio/webm';
+      const blob = new Blob(audioChunksRef.current, { type: blobMime });
+      const url = URL.createObjectURL(blob);
+      setAudioBlob(blob);
+      setAudioUrl(url);
+      // Always release mic tracks — leaving them open keeps the iOS red
+      // mic indicator on and drains battery on Android.
+      try {
+        audioStreamRef.current?.getTracks().forEach((t) => t.stop());
+      } catch (_) { /* ignore */ }
+      audioStreamRef.current = null;
+    };
+
+    try {
+      // 1s timeslice helps Safari/iOS reliably flush chunks for shorter
+      // recordings (otherwise no ondataavailable fires until stop).
+      recorder.start(1000);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[EvidenceCaptureWizard] recorder.start failed:', err);
+      stream.getTracks().forEach((t) => t.stop());
+      audioStreamRef.current = null;
+      setRecordingError('Could not start recording. Please try again.');
+      return;
+    }
+
+    setIsRecording(true);
+    setRecordingTime(0);
+    timerRef.current = setInterval(() => {
+      setRecordingTime((prev) => prev + 1);
+    }, 1000);
   };
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+      try {
+        if (mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('[EvidenceCaptureWizard] recorder.stop failed:', err);
+        // Force-release mic if stop didn't fire onstop cleanly.
+        try {
+          audioStreamRef.current?.getTracks().forEach((t) => t.stop());
+        } catch (_) { /* ignore */ }
+        audioStreamRef.current = null;
+      }
       setIsRecording(false);
       if (timerRef.current) clearInterval(timerRef.current);
     }
@@ -1203,8 +1355,10 @@ const ScreenArtifacts = ({
 
   const saveRecording = async () => {
     if (!audioBlob) return;
-    const filename = `voice-memo-${new Date().getTime()}.webm`;
-    const file = new File([audioBlob], filename, { type: 'audio/webm' });
+    const ext = recordingExtRef.current || 'webm';
+    const mime = recordingMimeRef.current || audioBlob.type || 'audio/webm';
+    const filename = `voice-memo-${new Date().getTime()}.${ext}`;
+    const file = new File([audioBlob], filename, { type: mime });
     await uploadFile(file);
   };
 
@@ -1235,7 +1389,19 @@ const ScreenArtifacts = ({
     setTranscriptText('');
     setIsRecording(false);
     setRecordingTime(0);
+    setRecordingError(null);
     if (timerRef.current) clearInterval(timerRef.current);
+    // Make sure any active mic stream is released. Without this, tapping
+    // "X" mid-recording would leave the iOS red mic indicator on.
+    try {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+    } catch (_) { /* ignore */ }
+    try {
+      audioStreamRef.current?.getTracks().forEach((t) => t.stop());
+    } catch (_) { /* ignore */ }
+    audioStreamRef.current = null;
   };
 
   return (
@@ -1319,7 +1485,16 @@ const ScreenArtifacts = ({
             <div className="text-3xl font-mono font-bold text-corporate-navy dark:text-white">
               {formatTime(recordingTime)}
             </div>
-            
+
+            {recordingError && (
+              <div
+                role="alert"
+                className="w-full px-3 py-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg text-xs text-red-700 dark:text-red-300"
+              >
+                {recordingError}
+              </div>
+            )}
+
             {/* Visualizer placeholder */}
             {isRecording && (
               <div className="flex items-end gap-1 h-8">

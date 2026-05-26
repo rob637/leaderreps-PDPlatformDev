@@ -399,6 +399,18 @@ export const BREADCRUMB_MAP = {
     { label: 'LeaderReps Lab', path: 'leaderreps-lab' },
     { label: 'State of Leadership Report', path: null }
   ],
+  'lab-test-lead-magnets': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Admin', path: 'admin-hub' },
+    { label: 'LeaderReps Lab', path: 'leaderreps-lab' },
+    { label: 'Test Lead Magnets', path: null }
+  ],
+  'lab-kudos': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Admin', path: 'admin-hub' },
+    { label: 'LeaderReps Lab', path: 'leaderreps-lab' },
+    { label: 'Kudos (Beta)', path: null }
+  ],
   'admin-content-home': [
     { label: 'Home', path: 'dashboard' },
     { label: 'Admin', path: 'admin-portal' },

@@ -182,9 +182,16 @@ const ASSESSMENT_CONFIG = {
   },
 };
 
-const AssessmentLeadsManager = () => {
+const ALL_TAB_IDS = ['accountability', 'leadership', 'roi', 'readiness'];
+
+const AssessmentLeadsManager = ({ availableTabs } = {}) => {
   const { db } = useAppServices();
-  const [activeTab, setActiveTab] = useState('accountability');
+  // Filter to allowed tabs (preserving canonical order) and fall back to all
+  // tabs for back-compat with existing call sites that pass no prop.
+  const allowedTabs = Array.isArray(availableTabs) && availableTabs.length > 0
+    ? ALL_TAB_IDS.filter((id) => availableTabs.includes(id))
+    : ALL_TAB_IDS;
+  const [activeTab, setActiveTab] = useState(allowedTabs[0] || 'accountability');
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -377,9 +384,11 @@ const AssessmentLeadsManager = () => {
 
   return (
     <div className="space-y-6">
-      {/* Tabs */}
+      {/* Tabs (only render if more than one allowed) */}
+      {allowedTabs.length > 1 && (
       <div className="border-b border-slate-200 dark:border-slate-700">
         <div className="flex gap-4 overflow-x-auto">
+          {allowedTabs.includes('accountability') && (
           <button
             onClick={() => setActiveTab('accountability')}
             className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
@@ -394,6 +403,8 @@ const AssessmentLeadsManager = () => {
               Live
             </span>
           </button>
+          )}
+          {allowedTabs.includes('leadership') && (
           <button
             onClick={() => setActiveTab('leadership')}
             className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
@@ -408,6 +419,8 @@ const AssessmentLeadsManager = () => {
               Test
             </span>
           </button>
+          )}
+          {allowedTabs.includes('roi') && (
           <button
             onClick={() => setActiveTab('roi')}
             className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
@@ -422,6 +435,8 @@ const AssessmentLeadsManager = () => {
               Test
             </span>
           </button>
+          )}
+          {allowedTabs.includes('readiness') && (
           <button
             onClick={() => setActiveTab('readiness')}
             className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
@@ -436,8 +451,10 @@ const AssessmentLeadsManager = () => {
               Test
             </span>
           </button>
+          )}
         </div>
       </div>
+      )}
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

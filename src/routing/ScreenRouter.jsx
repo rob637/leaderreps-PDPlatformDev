@@ -189,6 +189,12 @@ const ScreenMap = {
   'lab-state-of-leadership': lazy(() =>
     import('../components/admin/lab/StateOfLeadershipAdmin.jsx')
   ),
+  'lab-test-lead-magnets': lazy(() =>
+    import('../components/admin/lab/LabTestLeadMagnets.jsx')
+  ),
+  'lab-kudos': lazy(() =>
+    import('../components/admin/lab/LabKudos.jsx')
+  ),
   'book-builder': lazy(() =>
     import('../components/admin/BookBuilder.jsx')
   ),

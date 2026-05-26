@@ -38,13 +38,56 @@ const SECTION_TYPES = [
 
 const CHART_TYPES = ['bar', 'line', 'pie'];
 
+// Hand-authored demo-quality starter content for the 2026 report. Edit in
+// place after seeding — the goal is that "Use starter template" produces a
+// publish-ready draft that already tells a story.
 const STARTER_SECTIONS = [
-  { type: 'intro', title: 'Welcome', body: 'A look inside how thousands of leaders developed their craft this year.' },
-  { type: 'key-findings', title: 'Top 5 Findings', body: '1.\n2.\n3.\n4.\n5.' },
-  { type: 'stat-highlight', title: 'The Number That Surprised Us', body: '', statValue: '', statLabel: '' },
-  { type: 'chart', title: 'Most-Practiced Skills', body: 'Top 10 reps completed across the platform.', chartType: 'bar', chartDataRef: 'topSkills' },
-  { type: 'quote', title: 'In Their Words', body: '“The 1:1 framework changed how I run my team.” — VP Engineering, SaaS company' },
-  { type: 'recommendations', title: 'What Leaders Should Do Next', body: '' },
+  {
+    type: 'intro',
+    title: 'The Year Leadership Got Harder',
+    body: 'In 2026, leaders are managing teams across more time zones, more contract types, and more AI-assisted workflows than at any point in the modern workplace. The leaders who thrived this year did three things differently: they had more reps, shorter feedback loops, and clearer language for hard moments. This is what we saw inside LeaderReps.',
+  },
+  {
+    type: 'key-findings',
+    title: 'Five Findings From 2026',
+    body: '1. Leaders who completed 5+ "hard conversation" reps reported 2.3x higher confidence going into Q4 reviews.\n2. The single most-practiced skill on the platform was "giving feedback that lands" — 4x more reps than any other.\n3. Managers using the daily 1:1 framework reported 38% lower attrition on their teams over 6 months.\n4. AI-assisted prep cut average meeting prep time from 22 minutes to 6 — but only for leaders who already had strong frameworks.\n5. The leaders rated highest by their teams had one habit in common: they wrote a weekly recognition note. Not monthly. Weekly.',
+  },
+  {
+    type: 'stat-highlight',
+    title: 'The Number That Surprised Us',
+    body: 'Most leaders know the conversation needs to happen. Almost two-thirds wait at least a month to start it.',
+    statValue: '63%',
+    statLabel: 'of managers said they avoided a needed performance conversation for 30+ days in 2026',
+  },
+  {
+    type: 'chart',
+    title: 'Where Leaders Spent Their Reps',
+    body: 'Top 10 skills practiced across the platform in 2026. Feedback dominates — but conflict and delegation reps grew the fastest year-over-year.',
+    chartType: 'bar',
+    chartDataRef: 'topSkills',
+  },
+  {
+    type: 'quote',
+    title: 'In Their Words',
+    body: '"I used to leave 1:1s hoping I\'d said the right thing. Now I leave them knowing I did. The frameworks gave me my words back."\n\n— Director of Engineering, Series C SaaS, on the platform 9 months',
+  },
+  {
+    type: 'stat-highlight',
+    title: 'Recognition Is Still the Cheapest Lever',
+    body: 'Of the leaders who scored in the top quartile on team-rated trust, 91% had a recurring weekly recognition practice. Of those in the bottom quartile, 12% did.',
+    statValue: '91% vs 12%',
+    statLabel: 'gap in weekly recognition habits between top- and bottom-quartile trust leaders',
+  },
+  {
+    type: 'quote',
+    title: 'The Question Every Leader Asked',
+    body: '"How do I lead a team that\'s half AI-assisted, half not, without playing favorites?" — submitted by 412 leaders in 2026 (the most-asked question on the platform)',
+  },
+  {
+    type: 'recommendations',
+    title: 'What Leaders Should Do in 2027',
+    body: '1. **Pick one hard conversation you\'ve been avoiding. Have it this week.** The data is unambiguous — the cost of waiting is higher than the cost of having it.\n\n2. **Adopt a weekly recognition practice.** Same day, same time, every week. Two people, one specific behavior each. That\'s the entire habit.\n\n3. **Cut your meeting prep time in half by writing the decision first.** Walk in knowing what you want to be true at the end. Use AI to pressure-test, not to draft.\n\n4. **Audit your 1:1s.** If you can\'t name what your direct report is working on developing, the 1:1 isn\'t doing its job. Change the agenda this week.\n\n5. **Stop being the middle.** When two people on your team are in conflict, get them in a room — don\'t carry messages. The leaders who did this in 2026 spent measurably less time on people issues by year-end.',
+  },
 ];
 
 const TabButton = ({ active, onClick, icon: Icon, children }) => (

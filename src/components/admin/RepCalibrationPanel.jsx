@@ -13,6 +13,8 @@ import { getRepType } from '../../services/repTaxonomy';
 import {
   listReps,
   getCalibration,
+  getRepDoc,
+  getUserDisplayInfo,
   saveCalibration,
   getCalibrationStats,
 } from '../../services/calibrationService';
@@ -52,6 +54,7 @@ const RepCalibrationDrawer = ({ rep, onClose, onSaved }) => {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [repText, setRepText] = useState('');
 
   const repType = useMemo(() => getRepType(rep.repType), [rep.repType]);
   const rubric = repType?.rubric || [];
@@ -63,8 +66,12 @@ const RepCalibrationDrawer = ({ rep, onClose, onSaved }) => {
     (async () => {
       setLoading(true);
       try {
-        const existing = await getCalibration(db, rep.userId, rep.id);
+        const [existing, repDoc] = await Promise.all([
+          getCalibration(db, rep.userId, rep.id),
+          getRepDoc(db, rep.userId, rep.id),
+        ]);
         if (cancelled) return;
+        if (repDoc?.repText) setRepText(repDoc.repText);
         if (existing) {
           if (typeof existing.trainerScore === 'number') setTrainerScore(existing.trainerScore);
           if (typeof existing.trainerPassed === 'boolean') setTrainerPassed(existing.trainerPassed);
@@ -164,6 +171,22 @@ const RepCalibrationDrawer = ({ rep, onClose, onSaved }) => {
             </div>
           ) : (
             <>
+              {/* Rep text — the leader's actual submitted attempt */}
+              <section className="rounded-lg border border-corporate-navy/20 bg-white dark:bg-slate-800 p-3">
+                <p className="text-[10px] uppercase tracking-wider font-semibold text-corporate-navy dark:text-slate-300 mb-1">
+                  Rep Text (Leader's Submission)
+                </p>
+                {repText ? (
+                  <p className="text-sm text-slate-800 dark:text-slate-100 whitespace-pre-wrap leading-relaxed">
+                    {repText}
+                  </p>
+                ) : (
+                  <p className="text-xs italic text-slate-500">
+                    No rep text available for this submission.
+                  </p>
+                )}
+              </section>
+
               {/* Engine assessment */}
               <section className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 bg-slate-50 dark:bg-slate-800/60">
                 <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 mb-1">
@@ -413,6 +436,7 @@ const RepCalibrationPanel = () => {
   const { db } = useAppServices();
   const [reps, setReps] = useState([]);
   const [calibratedIds, setCalibratedIds] = useState(new Set());
+  const [userInfo, setUserInfo] = useState({}); // { [userId]: { name, email } }
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -431,6 +455,12 @@ const RepCalibrationPanel = () => {
         const c = await getCalibration(db, r.userId, r.id);
         return c ? `${r.userId}__${r.id}` : null;
       }));
+      // Fetch display names for the unique users in this batch.
+      const uniqueUsers = Array.from(new Set(repList.map((r) => r.userId)));
+      const infoEntries = await Promise.all(
+        uniqueUsers.map(async (uid) => [uid, await getUserDisplayInfo(db, uid)])
+      );
+      setUserInfo(Object.fromEntries(infoEntries));
       setCalibratedIds(new Set(ids.filter(Boolean)));
       setReps(repList);
       setStats(statsMap);
@@ -517,6 +547,8 @@ const RepCalibrationPanel = () => {
               {sorted.map((r) => {
                 const rt = getRepType(r.repType);
                 const isCalibrated = calibratedIds.has(`${r.userId}__${r.id}`);
+                const info = userInfo[r.userId] || {};
+                const displayName = info.name || `${r.userId.slice(0, 8)}…`;
                 return (
                   <tr key={`${r.userId}__${r.id}`} className="border-t border-slate-100 dark:border-slate-700">
                     <td className="px-3 py-2">
@@ -525,8 +557,13 @@ const RepCalibrationPanel = () => {
                       </div>
                       <div className="text-[11px] text-slate-500">{r.cohortId || 'no cohort'}</div>
                     </td>
-                    <td className="px-3 py-2 text-xs text-slate-600 dark:text-slate-300 font-mono">
-                      {r.userId.slice(0, 8)}…
+                    <td className="px-3 py-2 text-xs">
+                      <div className="font-medium text-slate-700 dark:text-slate-200">{displayName}</div>
+                      {info.email && (
+                        <div className="text-[11px] text-slate-500 truncate max-w-[180px]" title={info.email}>
+                          {info.email}
+                        </div>
+                      )}
                     </td>
                     <td className="px-3 py-2 text-xs">
                       <span className="font-semibold text-slate-700 dark:text-slate-200">

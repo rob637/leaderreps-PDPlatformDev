@@ -109,6 +109,219 @@ export const getCalibration = async (db, userId, repId) => {
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 };
 
+// Pretty-print a snake_case or camelCase key as a section header.
+const humanizeKey = (k) => String(k || '')
+  .replace(/[_-]+/g, ' ')
+  .replace(/([a-z])([A-Z])/g, '$1 $2')
+  .replace(/\b\w/g, (c) => c.toUpperCase())
+  .trim();
+
+// Recursively walk an evidence value and append any non-empty string
+// leaves to `parts` as `Label: value` lines. Skips known noise keys
+// (timestamps, ids, booleans, numbers without context).
+const NOISE_KEYS = new Set([
+  'submittedAt', 'createdAt', 'updatedAt', 'savedAt',
+  'level', 'inputMethod', 'isRequired',
+]);
+const walkEvidence = (val, parts, labelPath = []) => {
+  if (val == null) return;
+  if (typeof val === 'string') {
+    const s = val.trim();
+    if (!s) return;
+    const label = labelPath.length ? labelPath.map(humanizeKey).join(' › ') : 'Evidence';
+    parts.push(`${label}: ${s}`);
+    return;
+  }
+  if (typeof val === 'number' || typeof val === 'boolean') {
+    // Only include scalars when we have a meaningful label path.
+    if (labelPath.length) {
+      parts.push(`${labelPath.map(humanizeKey).join(' › ')}: ${val}`);
+    }
+    return;
+  }
+  if (Array.isArray(val)) {
+    val.forEach((item, i) => walkEvidence(item, parts, [...labelPath, String(i + 1)]));
+    return;
+  }
+  if (typeof val === 'object') {
+    Object.entries(val).forEach(([k, v]) => {
+      if (NOISE_KEYS.has(k)) return;
+      walkEvidence(v, parts, [...labelPath, k]);
+    });
+  }
+};
+
+// Build a human-readable rep text from any of the known rep schemas:
+//   - Conditioning Light: `transcript` / `transcriptText`
+//   - Legacy V1: `evidence.structured` (string or object) + `evidence.reflection`
+//   - V2 generic: `evidence.whatYouSaid` / `howTheyResponded` / `responses` /
+//                 `reflection.{whatWentWell,whatDifferent}` / `notes`
+//   - V2 typed:   `evidence.{sceEvidence,drfEvidence,fuwEvidence,redEvidence,
+//                            lwvEvidence}.responses` plus `selfAssessment.responses`,
+//                 `responseType`, `outcome`, `notes`
+//   - Prep:       `prep.{rubricResponses,riskResponses}`
+//   - Top-level:  `situation.customContext`, `person`, `scenario`
+const buildRepText = (data) => {
+  const parts = [];
+
+  // Conditioning Light voice / direct transcript.
+  if (typeof data.transcript === 'string' && data.transcript.trim()) {
+    parts.push(`Transcript: ${data.transcript.trim()}`);
+  } else if (typeof data.transcriptText === 'string' && data.transcriptText.trim()) {
+    parts.push(`Transcript: ${data.transcriptText.trim()}`);
+  }
+
+  // Top-level context the leader chose at commit time.
+  const sit = extractSituationText(data.situation);
+  if (sit) parts.push(`Situation: ${sit}`);
+  if (typeof data.person === 'string' && data.person.trim()) {
+    parts.push(`Person: ${data.person.trim()}`);
+  } else if (data.person && typeof data.person === 'object') {
+    const pn = data.person.name || data.person.label || data.person.role;
+    if (pn) parts.push(`Person: ${pn}`);
+  }
+  const scenario = extractSituationText(data.scenario);
+  if (scenario && scenario !== sit) parts.push(`Scenario: ${scenario}`);
+
+  // Prep responses (what they planned to say).
+  if (data.prep && typeof data.prep === 'object') {
+    const before = parts.length;
+    walkEvidence(data.prep.rubricResponses, parts, ['Prep', 'Rubric']);
+    walkEvidence(data.prep.riskResponses, parts, ['Prep', 'Risks']);
+    if (parts.length === before && data.prep.notes) {
+      parts.push(`Prep notes: ${data.prep.notes}`);
+    }
+  }
+
+  // Evidence — walk every known shape.
+  if (data.evidence && typeof data.evidence === 'object') {
+    const ev = data.evidence;
+    // Generic V2 fields first (clearer labels than recursion).
+    if (typeof ev.whatYouSaid === 'string' && ev.whatYouSaid.trim()) {
+      parts.push(`What you said: ${ev.whatYouSaid.trim()}`);
+    }
+    if (typeof ev.howTheyResponded === 'string' && ev.howTheyResponded.trim()) {
+      parts.push(`Their response: ${ev.howTheyResponded.trim()}`);
+    }
+    if (ev.reflection && typeof ev.reflection === 'object') {
+      if (ev.reflection.whatWentWell) parts.push(`What went well: ${ev.reflection.whatWentWell}`);
+      if (ev.reflection.whatDifferent) parts.push(`What I'd do differently: ${ev.reflection.whatDifferent}`);
+    } else if (typeof ev.reflection === 'string' && ev.reflection.trim()) {
+      parts.push(`Reflection: ${ev.reflection.trim()}`);
+    }
+    if (typeof ev.responseType === 'string' && ev.responseType.trim()) {
+      parts.push(`Response type: ${ev.responseType.trim()}`);
+    }
+    if (typeof ev.outcome === 'string' && ev.outcome.trim()) {
+      parts.push(`Outcome: ${ev.outcome.trim()}`);
+    }
+    if (typeof ev.otherResponseText === 'string' && ev.otherResponseText.trim()) {
+      parts.push(`Other response: ${ev.otherResponseText.trim()}`);
+    }
+    if (typeof ev.notes === 'string' && ev.notes.trim()) {
+      parts.push(`Notes: ${ev.notes.trim()}`);
+    }
+
+    // Structured (V1 legacy + free-form).
+    const s = ev.structured;
+    if (typeof s === 'string' && s.trim()) {
+      parts.push(`Structured: ${s.trim()}`);
+    } else if (s && typeof s === 'object') {
+      walkEvidence(s, parts, ['Structured']);
+    }
+
+    // Typed V2 evidence blocks (SCE/DRF/FUW/RED/LWV).
+    const typedKeys = ['sceEvidence', 'drfEvidence', 'fuwEvidence', 'redEvidence', 'lwvEvidence'];
+    typedKeys.forEach((tk) => {
+      const block = ev[tk];
+      if (!block || typeof block !== 'object') return;
+      const tag = tk.replace(/Evidence$/, '').toUpperCase();
+      if (block.situationBranch) parts.push(`${tag} branch: ${block.situationBranch}`);
+      if (block.responses && typeof block.responses === 'object') {
+        walkEvidence(block.responses, parts, [`${tag} responses`]);
+      }
+      // Catch any other string fields on the block.
+      Object.entries(block).forEach(([k, v]) => {
+        if (k === 'responses' || k === 'situationBranch') return;
+        if (typeof v === 'string' && v.trim()) {
+          parts.push(`${tag} ${humanizeKey(k)}: ${v.trim()}`);
+        }
+      });
+    });
+
+    // Self-assessment responses.
+    if (ev.selfAssessment && typeof ev.selfAssessment === 'object') {
+      walkEvidence(ev.selfAssessment.responses, parts, ['Self-assessment']);
+    }
+
+    // Generic `responses` map (some rep types stash answers here).
+    if (ev.responses && typeof ev.responses === 'object') {
+      walkEvidence(ev.responses, parts, ['Responses']);
+    }
+  }
+
+  // De-duplicate consecutive identical lines (e.g. when situation appears
+  // in both top-level and structured).
+  const seen = new Set();
+  const deduped = parts.filter((p) => {
+    if (seen.has(p)) return false;
+    seen.add(p);
+    return true;
+  });
+  return deduped.join('\n\n');
+};
+
+/**
+ * Fetch the underlying rep doc (and its leader-submitted text) from
+ * whichever collection it lives in. Returns `{ data, path, repText }` or
+ * null. `repText` is normalized across all known rep schemas so trainers
+ * always have something to read — see `buildRepText` for the full list.
+ */
+export const getRepDoc = async (db, userId, repId) => {
+  if (!db || !userId || !repId) return null;
+  for (const path of REP_PATHS) {
+    try {
+      const snap = await getDoc(doc(db, 'users', userId, path, repId));
+      if (!snap.exists()) continue;
+      const data = snap.data() || {};
+      const repText = buildRepText(data);
+      return { path, data, repText };
+    } catch {
+      // try next path
+    }
+  }
+  return null;
+};
+
+/**
+ * Fetch a user's display info (name + email) for the calibration queue.
+ * Returns `{ name, email }` — `name` falls back to email local-part, then
+ * to a short id. Never throws.
+ */
+export const getUserDisplayInfo = async (db, userId) => {
+  if (!db || !userId) return { name: '', email: '' };
+  try {
+    const snap = await getDoc(doc(db, 'users', userId));
+    if (!snap.exists()) {
+      return { name: `${userId.slice(0, 8)}…`, email: '' };
+    }
+    const d = snap.data() || {};
+    const profile = (d.profile && typeof d.profile === 'object') ? d.profile : {};
+    const first = profile.firstName || d.firstName || '';
+    const last = profile.lastName || d.lastName || '';
+    const combined = `${first} ${last}`.trim();
+    const email = d.email || profile.email || '';
+    const name = d.displayName
+      || profile.displayName
+      || combined
+      || (email ? email.split('@')[0] : '')
+      || `${userId.slice(0, 8)}…`;
+    return { name, email };
+  } catch {
+    return { name: `${userId.slice(0, 8)}…`, email: '' };
+  }
+};
+
 /**
  * Upsert a calibration row. `payload` should include trainerScore,
  * dimensionScores, feedback, tags, status. The trainer + rep identifiers
@@ -356,6 +569,8 @@ export const setRrAddendum = async (db, rrType, { text = '', trainerId, trainerE
 export default {
   listReps,
   getCalibration,
+  getRepDoc,
+  getUserDisplayInfo,
   saveCalibration,
   getCalibrationStats,
   getFewShotFlag,

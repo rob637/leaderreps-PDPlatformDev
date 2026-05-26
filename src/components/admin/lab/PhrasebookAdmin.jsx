@@ -14,7 +14,7 @@ import {
   Search, Eye, EyeOff, Loader2, Copy, Check,
 } from 'lucide-react';
 import {
-  collection, addDoc, doc, deleteDoc, updateDoc,
+  collection, addDoc, doc, deleteDoc, updateDoc, writeBatch,
   query, orderBy, onSnapshot, serverTimestamp,
 } from 'firebase/firestore';
 import { BreadcrumbNav } from '../../ui/BreadcrumbNav.jsx';
@@ -31,6 +31,213 @@ const CATEGORIES = [
 ];
 
 const TONES = ['Direct', 'Empathetic', 'Assertive'];
+
+// Hand-curated demo-quality starter library. Click the "Seed starter phrases"
+// button in the admin to bulk-write these as published phrases. Idempotent
+// guard: confirms if the collection is already populated.
+const SEED_PHRASES = [
+  // Feedback
+  {
+    situation: 'Telling a strong performer their work just slipped',
+    context: 'When someone you rely on missed the bar and you need to call it without breaking trust.',
+    script: "I want to flag something because I trust you to handle it directly. The deck you sent on Friday wasn't your usual standard \u2014 the analysis was thin in section two and the recommendation didn't land. What happened, and what do you need from me?",
+    whyItWorks: "Leads with trust, names the specific gap, asks an open question instead of accusing.",
+    tone: 'Direct',
+    category: 'Feedback',
+    tags: ['high performer', 'specific', 'open question'],
+    status: 'published',
+  },
+  {
+    situation: "Giving feedback to someone who reports to your peer",
+    context: "You don't manage them, but you saw the behavior and it affects your team.",
+    script: "Can I share an observation, not a complaint? In the standup today, when you cut Maria off twice, it landed as dismissive. I'm telling you because I'd want someone to tell me. What's your read?",
+    whyItWorks: "Frames it as observation not complaint, names specific behavior + impact, invites their perspective.",
+    tone: 'Empathetic',
+    category: 'Feedback',
+    tags: ['cross-team', 'observation', 'impact'],
+    status: 'published',
+  },
+  {
+    situation: "Following up when feedback hasn't changed behavior",
+    context: "You've raised it before. It's still happening. Time to escalate the conversation, not the volume.",
+    script: "We've talked twice now about you missing the Wednesday review. I haven't seen a change and I need to understand why \u2014 is this a priority issue, a calendar issue, or something else? I want to solve it with you before it becomes a performance conversation.",
+    whyItWorks: "Names the pattern, lists possible causes (gives them a way in), states the stakes clearly without threat.",
+    tone: 'Assertive',
+    category: 'Feedback',
+    tags: ['pattern', 'escalation', 'performance'],
+    status: 'published',
+  },
+  {
+    situation: "Praising someone in a way that actually lands",
+    context: "Generic praise is forgettable. This kind sticks.",
+    script: "I want to call out what you did in the client meeting today. When they pushed back on the timeline, you didn't get defensive \u2014 you asked what was driving the concern, and that completely shifted the conversation. That's the move. Do it again.",
+    whyItWorks: "Specific moment + specific behavior + why it mattered + reinforce. Beats \u201Cgreat job\u201D every time.",
+    tone: 'Direct',
+    category: 'Recognition',
+    tags: ['specific praise', 'reinforce'],
+    status: 'published',
+  },
+
+  // Difficult Conversations
+  {
+    situation: "Opening a hard conversation you've been avoiding",
+    context: "You've put it off for weeks. Use this to start it cleanly.",
+    script: "I owe you a conversation I've been putting off, and I'm sorry it's taken me this long. I want to talk about how the project handoff went last month \u2014 there's something I need to say, and I want to hear your side. Is now okay, or should we find time tomorrow?",
+    whyItWorks: "Owns the delay, names the topic, gives them a choice about timing. Disarms defensiveness up front.",
+    tone: 'Empathetic',
+    category: 'Difficult Conversations',
+    tags: ['avoidance', 'opener', 'consent'],
+    status: 'published',
+  },
+  {
+    situation: "Telling someone they're not ready for the promotion they want",
+    context: "Honesty now is kinder than vagueness for six more months.",
+    script: "I want to be straight with you because you deserve it: you're not ready for the Director role yet. Here's what's missing \u2014 you haven't led a cross-functional initiative end-to-end, and your last two stretch projects you handed back. I think you can get there in 12 months. Want to build a plan together?",
+    whyItWorks: "Direct verdict, specific gaps (not vibes), timeline, and an offer to invest in them.",
+    tone: 'Direct',
+    category: 'Difficult Conversations',
+    tags: ['promotion', 'career', 'development plan'],
+    status: 'published',
+  },
+  {
+    situation: "Addressing a teammate who keeps undercutting you in meetings",
+    context: "It's happened three times. Today you handle it.",
+    script: "I want to name a pattern I've noticed and check if I'm reading it right. In the last three product reviews, you've called out gaps in my proposal in front of the room without raising them with me first. It's chipping away at how I can lead. What's going on for you when that happens?",
+    whyItWorks: "Pattern + specific + impact + curious question. Doesn't accuse, doesn't avoid.",
+    tone: 'Assertive',
+    category: 'Conflict',
+    tags: ['peer', 'undermining', 'meetings'],
+    status: 'published',
+  },
+  {
+    situation: "Repairing a relationship after you blew up in a meeting",
+    context: "You lost your composure. Don't pretend it didn't happen.",
+    script: "I owe you an apology for how I reacted in the meeting yesterday. I got sharp, I cut you off, and that wasn't fair to you. I was frustrated about something that had nothing to do with you. I'm sorry. What can I do to make it right?",
+    whyItWorks: "Specific behavior, no \u201Cbut\u201D, takes responsibility for the cause, asks for repair.",
+    tone: 'Empathetic',
+    category: 'Difficult Conversations',
+    tags: ['apology', 'repair', 'composure'],
+    status: 'published',
+  },
+
+  // Saying No
+  {
+    situation: "Saying no to your boss without burning the bridge",
+    context: "They asked for one more thing. You're already underwater.",
+    script: "I want to help, and I have to be honest: if I take this on, something else is going to slip. Here's what's on my plate: [list]. Which two do you want me to prioritize, and what should drop?",
+    whyItWorks: "Doesn't refuse, doesn't agree blindly \u2014 makes the tradeoff visible and hands the decision back.",
+    tone: 'Assertive',
+    category: 'Saying No',
+    tags: ['workload', 'priorities', 'tradeoff'],
+    status: 'published',
+  },
+  {
+    situation: "Declining a meeting that has no agenda",
+    context: "Protecting your time without being precious about it.",
+    script: "I want to be useful here \u2014 can you send me the question you're trying to answer? If it needs me, I'll move things to be there. If it doesn't, I'll send my thoughts over Slack and free up the room.",
+    whyItWorks: "Forces clarity on purpose without saying no outright. Often the meeting evaporates.",
+    tone: 'Direct',
+    category: 'Saying No',
+    tags: ['meetings', 'agenda', 'time'],
+    status: 'published',
+  },
+  {
+    situation: "Telling a stakeholder their request isn't in scope",
+    context: "Polite, firm, no apologizing for protecting the work.",
+    script: "That's a great idea and it's outside what we committed to for this release. Two options: we can add it to the backlog for Q3, or we can swap it in now and push out [feature]. Which would you rather?",
+    whyItWorks: "Validates the idea, holds the line, offers a real tradeoff. No defensiveness.",
+    tone: 'Direct',
+    category: 'Saying No',
+    tags: ['scope', 'stakeholder', 'tradeoff'],
+    status: 'published',
+  },
+
+  // Delegation
+  {
+    situation: "Delegating something important without hovering",
+    context: "The job is theirs. You stay close without taking it back.",
+    script: "I'm giving you full ownership of the partner launch. The outcome we need: [X]. The constraints you can't cross: [Y]. Inside those, you decide. I'll check in on Thursdays for 15 minutes. If you need me sooner, come find me \u2014 I'd rather you ask than guess.",
+    whyItWorks: "Names outcome, names guardrails, defines cadence, opens the door for help. Real autonomy with a safety net.",
+    tone: 'Direct',
+    category: 'Delegation',
+    tags: ['ownership', 'autonomy', 'guardrails'],
+    status: 'published',
+  },
+  {
+    situation: "Pushing back when work bounces back to you",
+    context: "You delegated it. Now they're trying to hand it back.",
+    script: "I hear that this is harder than expected. Before I jump in, walk me through what you've tried and where you're stuck. I'd rather coach you through it than take it back \u2014 that's how you grow into the next role.",
+    whyItWorks: "Validates difficulty, redirects to coaching, frames it as development not punishment.",
+    tone: 'Empathetic',
+    category: 'Delegation',
+    tags: ['boomerang', 'coaching', 'growth'],
+    status: 'published',
+  },
+  {
+    situation: "Letting a team member fail on purpose (and on time)",
+    context: "Sometimes the lesson is the deadline.",
+    script: "I noticed the deck isn't ready and the meeting is in an hour. I'm not going to rescue it this time \u2014 you'll need to either ask the room for an extension or present what you have. Whichever you choose, we'll debrief tomorrow on what got us here.",
+    whyItWorks: "Clear that the rescue isn't coming, gives them agency on the recovery, sets up learning without shame.",
+    tone: 'Assertive',
+    category: 'Delegation',
+    tags: ['failure', 'accountability', 'debrief'],
+    status: 'published',
+  },
+
+  // Recognition
+  {
+    situation: "Recognizing quiet, behind-the-scenes work",
+    context: "The person who never asks for credit usually needs it most.",
+    script: "I want to make sure you know I see it. The way you've been mentoring the new analysts \u2014 the extra 1:1 time, the doc reviews, the late nights they don't mention \u2014 it's the reason that team is shipping. Thank you. I'm naming it in front of leadership tomorrow too.",
+    whyItWorks: "Specific invisible work, names impact, commits to making it visible upward.",
+    tone: 'Empathetic',
+    category: 'Recognition',
+    tags: ['quiet contributor', 'visibility', 'mentorship'],
+    status: 'published',
+  },
+  {
+    situation: "Recognizing someone in a 1:1 vs. publicly",
+    context: "Public praise embarrasses some people. Don't assume.",
+    script: "Before we get into the agenda \u2014 I want you to hear from me directly that the way you handled the customer escalation last week was outstanding. I won't make a thing of it in the team channel because I know that's not your style, but it mattered, and I wanted you to know I noticed.",
+    whyItWorks: "Respects preference, gives concrete praise, makes the leader's noticing the gift.",
+    tone: 'Empathetic',
+    category: 'Recognition',
+    tags: ['1:1', 'preference', 'private'],
+    status: 'published',
+  },
+
+  // Conflict
+  {
+    situation: "De-escalating a heated debate in the room",
+    context: "Two people are talking past each other. You're the manager. Step in.",
+    script: "I want to pause us. We're both passionate about this and we're starting to argue positions instead of solving the problem. Let's reset \u2014 what's the decision we actually need to make today, and what does each of us need to feel good about it?",
+    whyItWorks: "Names the dynamic without blame, refocuses on the decision, surfaces underlying needs.",
+    tone: 'Empathetic',
+    category: 'Conflict',
+    tags: ['de-escalate', 'meeting', 'reset'],
+    status: 'published',
+  },
+  {
+    situation: "Mediating between two people on your team",
+    context: "They keep complaining about each other to you. Time to stop being the middle.",
+    script: "I've heard each of you raise concerns about the other, and I'm not the right person to solve it from the middle. Here's what we're going to do: the three of us, 30 minutes tomorrow, each of you brings one thing you need from the other. I'll facilitate, but the conversation is yours.",
+    whyItWorks: "Stops triangulation, sets structure, holds them accountable for the relationship.",
+    tone: 'Assertive',
+    category: 'Conflict',
+    tags: ['mediation', 'triangulation', 'team'],
+    status: 'published',
+  },
+  {
+    situation: "Disagreeing with your boss in front of others",
+    context: "Diplomatic, direct \u2014 doesn't undermine, doesn't capitulate.",
+    script: "I want to offer a different read on this before we lock it in. From where I sit, [perspective]. I might be missing context you have \u2014 but I'd rather raise it now than after the decision. Happy to take it offline if that's better.",
+    whyItWorks: "Signals respect, names your position, leaves room for their authority, offers a graceful exit.",
+    tone: 'Assertive',
+    category: 'Conflict',
+    tags: ['boss', 'public disagreement', 'respect'],
+    status: 'published',
+  },
+];
 
 const PROJECT_ID = import.meta.env.VITE_FIREBASE_PROJECT_ID;
 // geminiProxy has a built-in Claude fallback — no standalone claudeProxy exists.
@@ -378,6 +585,29 @@ const PhrasebookAdmin = () => {
     });
   };
 
+  const handleSeed = async () => {
+    if (phrases.length > 0) {
+      if (!window.confirm(`There are already ${phrases.length} phrases. Add ${SEED_PHRASES.length} starter phrases anyway?`)) return;
+    }
+    setBusy(true);
+    try {
+      const batch = writeBatch(db);
+      SEED_PHRASES.forEach((p) => {
+        const ref = doc(collection(db, 'phrasebook'));
+        batch.set(ref, {
+          ...p,
+          relatedRepId: null,
+          views: 0,
+          shares: 0,
+          createdAt: serverTimestamp(),
+          createdBy: user?.email || null,
+          seeded: true,
+        });
+      });
+      await batch.commit();
+    } finally { setBusy(false); }
+  };
+
   if (!isAdmin) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center">
@@ -441,6 +671,15 @@ const PhrasebookAdmin = () => {
           >
             <Plus className="w-4 h-4" />
             New Phrase
+          </button>
+          <button
+            onClick={handleSeed}
+            disabled={busy}
+            title={`Bulk-add ${SEED_PHRASES.length} hand-curated starter phrases (all published)`}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-slate-800 border border-corporate-teal text-corporate-teal text-sm font-semibold hover:bg-corporate-teal/5 disabled:opacity-50"
+          >
+            <Sparkles className="w-4 h-4" />
+            Seed {SEED_PHRASES.length} starter phrases
           </button>
         </div>
 

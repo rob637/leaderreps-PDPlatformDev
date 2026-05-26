@@ -163,7 +163,7 @@ const SalesMarketingCenter = () => {
         );
       case 'assessment-leads': 
       case 'roi-calculator-leads':
-        return <AssessmentLeadsManager />;
+        return <AssessmentLeadsManager availableTabs={['accountability']} />;
       case 'assessment-insights':
         return <AccountabilityInsights />;
       case 'social-media':

@@ -111,7 +111,7 @@ export default function BadBossBingoPlay() {
         if (db) {
           try {
             const snap = await getDocs(
-              query(collection(db, 'bingo_squares'), where('status', '==', 'active'))
+              query(collection(db, 'bingo_squares'), where('active', '==', true))
             );
             pool = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
           } catch (e) {

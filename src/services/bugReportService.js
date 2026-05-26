@@ -6,8 +6,10 @@ import {
   query, 
   where, 
   orderBy, 
-  limit 
+  limit,
 } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { dataUrlToBlob } from '../lib/captureScreenshot.js';
 
 /**
  * Service for handling bug reports.
@@ -27,6 +29,33 @@ const bugReportService = {
     if (!db) throw new Error('Firestore instance is required');
     
     try {
+      // Upload screenshot FIRST so the URL is present when the doc is
+      // created. The Cloud Function trigger (`onBugReportCreated`) fires
+      // on document creation and sends the email immediately, so anything
+      // added via a follow-up updateDoc would miss that email.
+      let screenshotUrl = null;
+      let screenshotPath = null;
+      if (reportData.screenshotDataUrl) {
+        try {
+          const blob = dataUrlToBlob(reportData.screenshotDataUrl);
+          if (blob) {
+            const storage = getStorage();
+            // Random ID keeps each report's screenshot at a unique path.
+            const fileId =
+              (typeof crypto !== 'undefined' && crypto.randomUUID)
+                ? crypto.randomUUID()
+                : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+            screenshotPath = `bug-reports/${fileId}/screenshot.jpg`;
+            const storageRef = ref(storage, screenshotPath);
+            await uploadBytes(storageRef, blob, { contentType: 'image/jpeg' });
+            screenshotUrl = await getDownloadURL(storageRef);
+          }
+        } catch (uploadErr) {
+          console.warn('Bug report screenshot upload failed:', uploadErr);
+          // Continue without the screenshot — never block the report itself.
+        }
+      }
+
       const report = {
         userId,
         // Store user info for follow-up capability
@@ -43,6 +72,8 @@ const bugReportService = {
           timestamp: new Date().toISOString(),
           url: window.location.href,
         },
+        screenshotUrl,
+        screenshotPath,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
