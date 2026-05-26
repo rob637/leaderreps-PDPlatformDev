@@ -117,6 +117,7 @@ const SquareForm = ({ initial, onSave, onCancel }) => {
   const [category, setCategory] = useState(initial?.category || CATEGORIES[0]);
   const [severity, setSeverity] = useState(initial?.severity || 2);
   const [active, setActive] = useState(initial?.active !== false);
+  const [tip, setTip] = useState(initial?.tip || '');
 
   const canSave = text.trim().length > 0;
 
@@ -130,6 +131,20 @@ const SquareForm = ({ initial, onSave, onCancel }) => {
         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-white"
         maxLength={140}
       />
+      <div>
+        <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+          Rep — what a great leader does instead{' '}
+          <span className="font-normal text-slate-400">(optional; falls back to category default)</span>
+        </label>
+        <textarea
+          value={tip}
+          onChange={(e) => setTip(e.target.value)}
+          placeholder="e.g. Name the contribution publicly in the next leadership meeting. Specific credit, specific person."
+          rows={2}
+          maxLength={240}
+          className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-white"
+        />
+      </div>
       <div className="grid grid-cols-3 gap-3">
         <div>
           <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">Category</label>
@@ -174,7 +189,7 @@ const SquareForm = ({ initial, onSave, onCancel }) => {
           Cancel
         </button>
         <button
-          onClick={() => onSave({ text: text.trim(), category, severity, active })}
+          onClick={() => onSave({ text: text.trim(), category, severity, active, tip: tip.trim() })}
           disabled={!canSave}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-white bg-corporate-teal hover:bg-corporate-teal/90 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed rounded-lg"
         >

@@ -26,10 +26,80 @@ import {
   Linkedin,
   Twitter,
   Loader,
+  Printer,
+  Send,
+  Edit2,
+  Lightbulb,
 } from 'lucide-react';
 
 const PROJECT_ID = import.meta.env.VITE_FIREBASE_PROJECT_ID;
 const RECORD_URL = `https://us-central1-${PROJECT_ID}.cloudfunctions.net/recordBingoPlay`;
+const CONTACT_EMAIL = 'team@leaderreps.com';
+const BRAND_URL = 'https://leaderreps.com';
+const LOGO_URL = '/leaderreps-logo.png';
+
+// Build a UTM-tagged share URL so we can measure where plays come from.
+function buildShareUrl(source) {
+  const base =
+    typeof window !== 'undefined' ? `${window.location.origin}/?bingo` : `${BRAND_URL}/?bingo`;
+  const params = new URLSearchParams({
+    utm_source: source,
+    utm_medium: 'bingo',
+    utm_campaign: 'bad_boss_bingo',
+  });
+  return `${base}&${params.toString()}`;
+}
+
+// Load an image as a Promise; resolves null on failure so PNG export still works.
+function loadImage(src) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
+// Human-readable label for the current week, e.g. "Week of May 26".
+function currentWeekLabel(date = new Date()) {
+  const d = new Date(date);
+  const day = d.getDay(); // 0 Sun .. 6 Sat
+  // Treat Monday as start of week; if Sunday, go back 6 days.
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return `Week of ${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+}
+
+// Fallback "what a great leader does instead" tips by category. Used when a
+// square doesn't have a hand-authored `tip` field in Firestore.
+const TIP_BY_CATEGORY = {
+  Micromanagement:
+    'Replace the check-in with a clear outcome + deadline. Trust the how. Inspect the what.',
+  Communication:
+    'Say the thing directly. One message, one decision, one owner — then get out of the way.',
+  Recognition:
+    'Name the behavior, not just the result. Recognition that\'s specific is recognition that sticks.',
+  Meetings:
+    'No agenda, no meeting. Default to async. Protect your team\'s focus like it\'s your own.',
+  Feedback:
+    'Feedback in private, praise in public. Tell them the gap, then ask what they need to close it.',
+  Trust:
+    'Do what you said you would. Then do it again. Trust is built in tiny, boring increments.',
+  Workload:
+    'Pick what NOT to do. \"Yes\" to one thing is \"no\" to another — name the trade-off out loud.',
+  Politics:
+    'Cover your team, surface their wins, take the heat. Loyalty flows down before it flows up.',
+};
+const GENERIC_TIP =
+  'Name the behavior. Own your part. Replace it with the leadership move it\'s hiding.';
+
+function tipForSquare(sq) {
+  if (!sq) return GENERIC_TIP;
+  if (sq.tip && typeof sq.tip === 'string' && sq.tip.trim()) return sq.tip.trim();
+  if (sq.category && TIP_BY_CATEGORY[sq.category]) return TIP_BY_CATEGORY[sq.category];
+  return GENERIC_TIP;
+}
 
 function getStandaloneFirestore() {
   const config =
@@ -101,6 +171,31 @@ export default function BadBossBingoPlay() {
   const [emailSent, setEmailSent] = useState(false);
   const [emailBusy, setEmailBusy] = useState(false);
   const cardRef = useRef(null);
+
+  // Personalization — name persists in localStorage; week label auto-computed.
+  const [playerName, setPlayerName] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    try { return localStorage.getItem('bbb_player_name') || ''; } catch { return ''; }
+  });
+  const [editingName, setEditingName] = useState(false);
+  const weekLabel = useMemo(() => currentWeekLabel(), []);
+  const savePlayerName = (v) => {
+    const next = (v || '').trim().slice(0, 32);
+    setPlayerName(next);
+    try { localStorage.setItem('bbb_player_name', next); } catch {
+      // ignore quota / privacy mode errors — personalization is non-essential
+    }
+  };
+  const cardTitleLine = playerName
+    ? `${playerName}'s ${weekLabel.toLowerCase()}`
+    : weekLabel;
+
+  // Reps panel toggle ("What a great leader does instead").
+  const [showReps, setShowReps] = useState(false);
+  // Auto-open reps panel on first BINGO so the punchline lands.
+  useEffect(() => {
+    if (hasBingo) setShowReps(true);
+  }, [hasBingo]);
 
   // Load squares from Firestore (public read). Fallback to seed list if empty.
   useEffect(() => {
@@ -202,14 +297,23 @@ export default function BadBossBingoPlay() {
   // Render PNG of the card via canvas
   const buildPng = async () => {
     const size = 1080;
+    const footerH = 260; // room for brand lockup, contact, QR
     const canvas = document.createElement('canvas');
     canvas.width = size;
-    canvas.height = size + 180;
+    canvas.height = size + footerH;
     const ctx = canvas.getContext('2d');
 
     // Background
     ctx.fillStyle = '#FFFAF8';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Logo (top-left). Falls back gracefully if image fails to load.
+    const logo = await loadImage(LOGO_URL);
+    if (logo) {
+      const logoH = 64;
+      const logoW = (logo.width / logo.height) * logoH;
+      ctx.drawImage(logo, 40, 30, logoW, logoH);
+    }
 
     // Header
     ctx.fillStyle = '#002E47';
@@ -219,6 +323,11 @@ export default function BadBossBingoPlay() {
     ctx.fillStyle = '#47A88D';
     ctx.font = '24px "Nunito Sans", Arial, sans-serif';
     ctx.fillText('Tally your week. Then go build something better.', size / 2, 110);
+
+    // Personalization line (name + week)
+    ctx.fillStyle = '#475569';
+    ctx.font = 'italic 20px "Nunito Sans", Arial, sans-serif';
+    ctx.fillText(cardTitleLine, size / 2, 138);
 
     // Grid
     const gridSize = 900;
@@ -265,17 +374,58 @@ export default function BadBossBingoPlay() {
       });
     }
 
-    // Footer
+    // ---- Branded footer block ----
+    const footerTop = gridY + gridSize + 30;
+
+    // Headline
+    ctx.textAlign = 'center';
     ctx.fillStyle = '#002E47';
-    ctx.font = 'bold 28px "Nunito Sans", Arial, sans-serif';
+    ctx.font = 'bold 30px "Nunito Sans", Arial, sans-serif';
     ctx.fillText(
-      hasBingo ? '🎉 BINGO! Now go build the boss they actually deserve.' : 'Play along at leaderreps.com',
+      hasBingo
+        ? '🎉 BINGO! Now go build the boss your team deserves.'
+        : 'Become the leader you wish you had.',
       size / 2,
-      gridY + gridSize + 60
+      footerTop + 30
     );
+
+    // QR code (right side) — pulled from public QR service; falls back silently.
+    const qrUrl = buildShareUrl('png');
+    const qrImg = await loadImage(
+      `https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=0&data=${encodeURIComponent(
+        qrUrl
+      )}`
+    );
+    const qrSize = 150;
+    const qrX = size - qrSize - 50;
+    const qrY = footerTop + 60;
+    if (qrImg) {
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(qrX - 8, qrY - 8, qrSize + 16, qrSize + 16);
+      ctx.strokeStyle = '#002E47';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(qrX - 8, qrY - 8, qrSize + 16, qrSize + 16);
+      ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+      ctx.fillStyle = '#002E47';
+      ctx.font = '14px "Nunito Sans", Arial, sans-serif';
+      ctx.fillText('Scan to play', qrX + qrSize / 2, qrY + qrSize + 24);
+    }
+
+    // Contact / brand line (left-aligned block, vertically centered with QR)
+    ctx.textAlign = 'left';
+    const textX = 60;
+    let textY = qrY + 24;
     ctx.fillStyle = '#47A88D';
-    ctx.font = '20px "Nunito Sans", Arial, sans-serif';
-    ctx.fillText('leaderreps.com', size / 2, gridY + gridSize + 100);
+    ctx.font = 'bold 24px "Nunito Sans", Arial, sans-serif';
+    ctx.fillText('LeaderReps', textX, textY);
+    textY += 32;
+    ctx.fillStyle = '#002E47';
+    ctx.font = '18px "Nunito Sans", Arial, sans-serif';
+    ctx.fillText('Daily reps for everyday leaders.', textX, textY);
+    textY += 28;
+    ctx.fillStyle = '#475569';
+    ctx.font = '16px "Nunito Sans", Arial, sans-serif';
+    ctx.fillText('leaderreps.com  ·  team@leaderreps.com', textX, textY);
 
     return await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
   };
@@ -296,17 +446,28 @@ export default function BadBossBingoPlay() {
   const shareText = hasBingo
     ? 'I got BINGO on Bad Boss Bingo this week 😅 Tally yours: '
     : 'Bad Boss Bingo. Tally your week, then build something better: ';
-  const shareUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/?bingo`
-    : 'https://leaderreps.com/?bingo';
 
   const shareLinkedIn = () => {
-    const u = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+    const url = buildShareUrl('linkedin');
+    const u = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
     window.open(u, '_blank', 'noopener');
   };
   const shareTwitter = () => {
-    const u = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+    const url = buildShareUrl('twitter');
+    const u = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(url)}`;
     window.open(u, '_blank', 'noopener');
+  };
+  const shareEmailToFriend = () => {
+    const url = buildShareUrl('email');
+    const subject = 'You need to play Bad Boss Bingo';
+    const body =
+      `Saw this and immediately thought of our last all-hands.\n\n` +
+      `Bad Boss Bingo — tally your week, laugh a little, then go lead better:\n${url}\n\n` +
+      `(Made by LeaderReps — daily reps for everyday leaders.)`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
+  const printCard = () => {
+    if (typeof window !== 'undefined') window.print();
   };
 
   const submitEmail = async (e) => {
@@ -335,10 +496,26 @@ export default function BadBossBingoPlay() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFAF8] dark:bg-slate-950">
-      <header className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div>
+    <div className="min-h-screen bg-[#FFFAF8] dark:bg-slate-950 bbb-root">
+      {/* Print-specific styles: hide chrome, scale grid to fit one page, add brand lockup. */}
+      <style>{`
+        @media print {
+          @page { size: auto; margin: 0.5in; }
+          html, body { background: #fff !important; }
+          .bbb-no-print { display: none !important; }
+          .bbb-root { background: #fff !important; min-height: auto !important; }
+          .bbb-print-only { display: block !important; }
+          .bbb-card-grid { box-shadow: none !important; border: 1px solid #002E47 !important; page-break-inside: avoid; }
+          .bbb-card-grid button { color: #002E47 !important; background: #fff !important; border: 1px solid #cbd5e1 !important; }
+          .bbb-card-grid button[disabled] { background: #47A88D !important; color: #fff !important; }
+          .bbb-card-marked { background: #E04E1B !important; color: #fff !important; }
+        }
+        .bbb-print-only { display: none; }
+      `}</style>
+
+      <header className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-10 bbb-no-print">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
+          <div className="min-w-0">
             <h1 className="text-xl md:text-2xl font-extrabold text-corporate-navy dark:text-white">
               Bad Boss Bingo
             </h1>
@@ -346,15 +523,36 @@ export default function BadBossBingoPlay() {
               Tally your week. Laugh a little. Then go lead better.
             </p>
           </div>
-          <button
-            onClick={reshuffle}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-corporate-navy dark:text-white border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
-          >
-            <RefreshCw className="w-4 h-4" />
-            New card
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <a
+              href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Hi from Bad Boss Bingo')}`}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-corporate-teal hover:underline"
+            >
+              <Mail className="w-4 h-4" />
+              Talk to us
+            </a>
+            <button
+              onClick={reshuffle}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-corporate-navy dark:text-white border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
+            >
+              <RefreshCw className="w-4 h-4" />
+              New card
+            </button>
+          </div>
         </div>
       </header>
+
+      {/* Print-only brand header */}
+      <div className="bbb-print-only max-w-4xl mx-auto px-6 pt-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-2xl font-extrabold text-corporate-navy">Bad Boss Bingo</div>
+            <div className="text-sm text-slate-600">Tally your week. Then go build something better.</div>
+            <div className="text-sm italic text-slate-500 mt-1">{cardTitleLine}</div>
+          </div>
+          <img src={LOGO_URL} alt="LeaderReps" style={{ height: 40 }} />
+        </div>
+      </div>
 
       <main className="max-w-4xl mx-auto px-4 py-6 md:py-10">
         {loading && (
@@ -372,9 +570,40 @@ export default function BadBossBingoPlay() {
 
         {!loading && !error && (
           <>
+            {/* Personalization bar (name + week) */}
+            <div className="mb-3 flex items-center justify-center gap-2 text-sm bbb-no-print">
+              {editingName ? (
+                <form
+                  onSubmit={(e) => { e.preventDefault(); setEditingName(false); }}
+                  className="flex items-center gap-2"
+                >
+                  <input
+                    autoFocus
+                    type="text"
+                    value={playerName}
+                    onChange={(e) => savePlayerName(e.target.value)}
+                    onBlur={() => setEditingName(false)}
+                    placeholder="Your first name"
+                    maxLength={32}
+                    className="px-2 py-1 border border-slate-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 text-corporate-navy dark:text-white text-sm w-44"
+                  />
+                  <span className="text-slate-500 dark:text-slate-400">· {weekLabel}</span>
+                </form>
+              ) : (
+                <button
+                  onClick={() => setEditingName(true)}
+                  className="inline-flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-corporate-teal"
+                  title="Add your name"
+                >
+                  <span className="italic">{cardTitleLine}</span>
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
             <div
               ref={cardRef}
-              className="grid grid-cols-5 gap-1.5 md:gap-2 bg-white dark:bg-slate-900 p-2 md:p-3 rounded-2xl shadow-card border border-slate-200 dark:border-slate-800"
+              className="bbb-card-grid grid grid-cols-5 gap-1.5 md:gap-2 bg-white dark:bg-slate-900 p-2 md:p-3 rounded-2xl shadow-card border border-slate-200 dark:border-slate-800"
             >
               {squares.map((sq, idx) => {
                 const isMarked = marked.has(idx);
@@ -388,7 +617,7 @@ export default function BadBossBingoPlay() {
                       ${isFree
                         ? 'bg-corporate-teal text-white cursor-default'
                         : isMarked
-                          ? 'bg-corporate-orange text-white shadow-inner'
+                          ? 'bg-corporate-orange text-white shadow-inner bbb-card-marked'
                           : 'bg-slate-50 dark:bg-slate-800 text-corporate-navy dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-95'
                       }`}
                   >
@@ -409,24 +638,82 @@ export default function BadBossBingoPlay() {
             </div>
 
             {/* Counter */}
-            <div className="mt-4 text-center text-sm text-slate-500 dark:text-slate-400">
+            <div className="mt-4 text-center text-sm text-slate-500 dark:text-slate-400 bbb-no-print">
               {marked.size - 1} marked
               {hasBingo && <span className="ml-2 text-corporate-orange font-bold">· BINGO! 🎉</span>}
             </div>
 
+            {/* Leadership reps reveal — the "so what" pivot */}
+            {marked.size > 1 && (
+              <div className="mt-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-card overflow-hidden bbb-no-print">
+                <button
+                  onClick={() => setShowReps((v) => !v)}
+                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800"
+                >
+                  <div className="flex items-start gap-3">
+                    <Lightbulb className="w-5 h-5 text-corporate-teal mt-0.5 shrink-0" />
+                    <div>
+                      <div className="font-bold text-corporate-navy dark:text-white">
+                        What a great leader does instead
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
+                        {marked.size - 1} rep{marked.size - 1 === 1 ? '' : 's'} — one for each square you marked.
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-corporate-teal text-sm font-semibold shrink-0 ml-3">
+                    {showReps ? 'Hide' : 'Show'}
+                  </span>
+                </button>
+                {showReps && (
+                  <ol className="px-5 pb-5 space-y-3">
+                    {Array.from(marked)
+                      .filter((idx) => idx !== 12)
+                      .map((idx) => {
+                        const sq = squares[idx];
+                        if (!sq) return null;
+                        return (
+                          <li key={`tip-${idx}`} className="border-l-2 border-corporate-teal pl-3">
+                            <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                              “{sq.text}”
+                            </div>
+                            <div className="text-sm text-slate-600 dark:text-slate-300 mt-0.5">
+                              <span className="font-semibold text-corporate-teal">Rep:</span>{' '}
+                              {tipForSquare(sq)}
+                            </div>
+                          </li>
+                        );
+                      })}
+                  </ol>
+                )}
+              </div>
+            )}
+
             {/* Share row */}
-            <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-2 bbb-no-print">
               <button
                 onClick={downloadPng}
                 className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-corporate-navy rounded-lg hover:bg-corporate-navy/90"
               >
-                <Download className="w-4 h-4" /> PNG
+                <Download className="w-4 h-4" /> Download PNG
+              </button>
+              <button
+                onClick={printCard}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-corporate-navy dark:text-white bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700"
+              >
+                <Printer className="w-4 h-4" /> Print
+              </button>
+              <button
+                onClick={shareEmailToFriend}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-corporate-teal rounded-lg hover:opacity-90"
+              >
+                <Send className="w-4 h-4" /> Email a friend
               </button>
               <button
                 onClick={shareLinkedIn}
                 className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-[#0A66C2] rounded-lg hover:opacity-90"
               >
-                <Linkedin className="w-4 h-4" /> Share
+                <Linkedin className="w-4 h-4" /> LinkedIn
               </button>
               <button
                 onClick={shareTwitter}
@@ -436,10 +723,11 @@ export default function BadBossBingoPlay() {
               </button>
               <button
                 onClick={() => {
+                  const url = buildShareUrl('native');
                   if (navigator.share) {
-                    navigator.share({ title: 'Bad Boss Bingo', text: shareText, url: shareUrl }).catch(() => {});
+                    navigator.share({ title: 'Bad Boss Bingo', text: shareText, url }).catch(() => {});
                   } else {
-                    navigator.clipboard.writeText(shareText + shareUrl).catch(() => {});
+                    navigator.clipboard.writeText(shareText + url).catch(() => {});
                   }
                 }}
                 className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-corporate-navy dark:text-white bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700"
@@ -449,7 +737,7 @@ export default function BadBossBingoPlay() {
             </div>
 
             {/* Email capture */}
-            <div className="mt-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 md:p-6 shadow-card">
+            <div className="mt-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 md:p-6 shadow-card bbb-no-print">
               {emailSent ? (
                 <div className="flex items-center gap-3 text-corporate-teal">
                   <Check className="w-5 h-5" />
@@ -495,8 +783,21 @@ export default function BadBossBingoPlay() {
             </div>
 
             {/* Footer */}
-            <div className="mt-10 text-center text-xs text-slate-400">
-              Made by <a href="https://leaderreps.com" className="font-bold text-corporate-teal hover:underline">LeaderReps</a> — daily reps for everyday leaders.
+            <div className="mt-10 text-center text-xs text-slate-400 bbb-no-print">
+              Made by{' '}
+              <a href={BRAND_URL} className="font-bold text-corporate-teal hover:underline">
+                LeaderReps
+              </a>{' '}
+              — daily reps for everyday leaders. ·{' '}
+              <a href={`mailto:${CONTACT_EMAIL}`} className="hover:underline">
+                {CONTACT_EMAIL}
+              </a>
+            </div>
+
+            {/* Print-only footer brand lockup */}
+            <div className="bbb-print-only mt-6 pt-4 border-t border-slate-300 text-center text-sm text-slate-600">
+              <div className="font-bold text-corporate-navy">LeaderReps — daily reps for everyday leaders.</div>
+              <div>leaderreps.com  ·  team@leaderreps.com</div>
             </div>
           </>
         )}
