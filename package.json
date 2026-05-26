@@ -20,6 +20,7 @@
     "deploy:kudos:test": "bash ./scripts/deploy-kudos.sh test",
     "deploy:kudos:prod": "bash ./scripts/deploy-kudos.sh prod",
     "deploy:prod": "bash ./scripts/deploy.sh prod",
+    "ship": "bash ./scripts/ship.sh",
     "deploy": "echo '❌ Use deploy:dev, deploy:test, or deploy:prod instead' && exit 1",
     "deploy:quick": "echo '❌ Use deploy:dev, deploy:test, or deploy:prod instead' && exit 1",
     "sync:test": "./scripts/deploy/sync-dev-to-test.sh",
