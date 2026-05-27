@@ -149,7 +149,7 @@ const LeaderRepsLab = () => {
                 onClick={() => navigate('team-pulse')}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
               >
-                Manage campaigns + leads
+                Manage
                 <ArrowRight className="w-4 h-4" />
               </button>
               <a
@@ -158,7 +158,7 @@ const LeaderRepsLab = () => {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-corporate-teal text-corporate-teal-ink text-sm font-semibold hover:bg-corporate-teal/5 transition-colors w-fit"
               >
-                View public landing
+                Preview public landing
                 <ExternalLink className="w-4 h-4" />
               </a>
             </div>
@@ -185,7 +185,7 @@ const LeaderRepsLab = () => {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
               >
-                Open public landing
+                Preview public landing
                 <ExternalLink className="w-4 h-4" />
               </a>
             </div>
@@ -202,22 +202,22 @@ const LeaderRepsLab = () => {
               LinkedIn, and discover LeaderReps via a gentle CTA.
             </p>
             <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate('lab-bad-boss-bingo')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+              >
+                Manage
+                <ArrowRight className="w-4 h-4" />
+              </button>
               <a
                 href="/?bingo"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-corporate-teal text-corporate-teal-ink text-sm font-semibold hover:bg-corporate-teal/5 transition-colors w-fit"
               >
-                Play the card
+                Preview public landing
                 <ExternalLink className="w-4 h-4" />
               </a>
-              <button
-                onClick={() => navigate('lab-bad-boss-bingo')}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-corporate-teal text-corporate-teal text-sm font-semibold hover:bg-corporate-teal/10 transition-colors w-fit"
-              >
-                Manage squares
-                <ArrowRight className="w-4 h-4" />
-              </button>
             </div>
             <p className="text-xs text-slate-400">
               Public link to share: <code className="text-slate-600">/?bingo</code>
@@ -231,13 +231,27 @@ const LeaderRepsLab = () => {
               leadership moments. SEO-driven lead magnet. Each phrase deep-links
               to a LeaderReps practice rep.
             </p>
-            <button
-              onClick={() => navigate('lab-phrasebook')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
-            >
-              Open Phrasebook
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate('lab-phrasebook')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+              >
+                Manage
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              <a
+                href="/?phrasebook"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-corporate-teal text-corporate-teal-ink text-sm font-semibold hover:bg-corporate-teal/5 transition-colors w-fit"
+              >
+                Preview public landing
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </div>
+            <p className="text-xs text-slate-400">
+              Public link to share: <code className="text-slate-600">/?phrasebook</code>
+            </p>
           </ToolCard>
 
           {/* State of Leadership Report */}
@@ -251,13 +265,27 @@ const LeaderRepsLab = () => {
               (“What 10,000 leaders struggled with most this year”). Free PDF,
               email-gated — becomes a recurring industry reference.
             </p>
-            <button
-              onClick={() => navigate('lab-state-of-leadership')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
-            >
-              Open State of Leadership
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate('lab-state-of-leadership')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+              >
+                Manage
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              <a
+                href="/?state-of-leadership"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-corporate-teal text-corporate-teal-ink text-sm font-semibold hover:bg-corporate-teal/5 transition-colors w-fit"
+              >
+                Preview public landing
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </div>
+            <p className="text-xs text-slate-400">
+              Public link to share: <code className="text-slate-600">/?state-of-leadership</code>
+            </p>
           </ToolCard>
 
           {/* Kudos — moved here from Sales & Marketing */}
@@ -267,13 +295,18 @@ const LeaderRepsLab = () => {
               at LeaderReps” to a prospect; every send is logged as a warm
               lead. Includes safety + voice filter and analytics dashboard.
             </p>
-            <button
-              onClick={() => navigate('lab-kudos')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
-            >
-              Open Kudos
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate('lab-kudos')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+              >
+                Manage
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-400">
+              Admin-only — send composer + analytics dashboard.
+            </p>
           </ToolCard>
 
           {/* Constructive Nudges — Kudos's twin, but for upward feedback */}
@@ -289,13 +322,18 @@ const LeaderRepsLab = () => {
               ever revealing who sent it. Attacks, accusations, and identifying
               details are blocked before send.
             </p>
-            <button
-              onClick={() => navigate('lab-nudges')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
-            >
-              Open Constructive Nudges
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate('lab-nudges')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+              >
+                Manage
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-400">
+              Admin-only — send composer + analytics dashboard.
+            </p>
           </ToolCard>
 
           {/* Test Lead Magnets — moved here from Sales & Marketing */}
@@ -309,13 +347,18 @@ const LeaderRepsLab = () => {
               ROI Calculator, and Leadership Readiness. Live assessments (e.g.
               Accountability) stay in Sales &amp; Marketing.
             </p>
-            <button
-              onClick={() => navigate('lab-test-lead-magnets')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
-            >
-              Open Test Lead Magnets
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate('lab-test-lead-magnets')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+              >
+                Manage
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-400">
+              Admin-only — lead viewers for DNA, ROI, and Readiness.
+            </p>
           </ToolCard>
 
           {/* ───────────────────────────────────────────── */}
