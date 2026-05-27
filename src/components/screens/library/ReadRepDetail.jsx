@@ -299,30 +299,47 @@ Keep responses concise (3-5 sentences), actionable, and directly answer the ques
               <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-200 h-full">
                 {(book.details?.pdfUrl || book.metadata?.pdfUrl) ? (
                    (() => {
-                     const pdfUrl = book.details?.pdfUrl || book.metadata?.pdfUrl;
-                     const isFirebaseStorage = pdfUrl.includes('firebasestorage.googleapis.com') || 
-                                               pdfUrl.includes('firebasestorage.app') ||
-                                               pdfUrl.includes('token=');
+                     const rawPdfUrl = book.details?.pdfUrl || book.metadata?.pdfUrl;
+                     const isFirebaseStorage = rawPdfUrl.includes('firebasestorage.googleapis.com') ||
+                                               rawPdfUrl.includes('firebasestorage.app') ||
+                                               rawPdfUrl.includes('token=');
+                     // For Firebase Storage URLs, force inline preview + correct
+                     // content-type via response-* query params, otherwise files
+                     // uploaded with contentDisposition: attachment (or a wrong
+                     // content-type) will trigger a download instead of rendering.
+                     let pdfUrl = rawPdfUrl;
+                     if (isFirebaseStorage) {
+                       try {
+                         const urlObj = new URL(rawPdfUrl);
+                         if (!urlObj.searchParams.has('response-content-disposition')) {
+                           urlObj.searchParams.set('response-content-disposition', 'inline');
+                         }
+                         if (!urlObj.searchParams.has('response-content-type')) {
+                           urlObj.searchParams.set('response-content-type', 'application/pdf');
+                         }
+                         pdfUrl = urlObj.toString();
+                       } catch (e) {
+                         // Fall back to the raw URL if parsing fails
+                         pdfUrl = rawPdfUrl;
+                       }
+                     }
                      return (
                        <div className="h-[70vh] w-full bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden relative">
                          {isFirebaseStorage ? (
-                           // Use native browser PDF viewer for Firebase Storage URLs
-                           <object
-                             data={pdfUrl}
-                             type="application/pdf"
+                           // Native browser PDF viewer. Use a single <iframe>
+                           // (not <object> with a nested <iframe> fallback) so
+                           // the browser only fetches the file once — the
+                           // nested fallback was causing duplicate downloads.
+                           <iframe
+                             src={pdfUrl}
                              className="w-full h-full"
-                           >
-                             <iframe 
-                               src={pdfUrl}
-                               className="w-full h-full" 
-                               title="Document"
-                             />
-                           </object>
+                             title="Document"
+                           />
                          ) : (
                            // Use Google Docs Viewer for public URLs
-                           <iframe 
+                           <iframe
                              src={`https://docs.google.com/gview?url=${encodeURIComponent(pdfUrl)}&embedded=true`}
-                             className="w-full h-full" 
+                             className="w-full h-full"
                              title="Document"
                            />
                          )}
