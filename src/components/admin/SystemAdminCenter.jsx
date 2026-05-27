@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Wrench, LayoutDashboard, Activity, FlaskConical, Settings,
-  TestTube2, Eye, BookOpen, ShieldAlert,
+  TestTube2, Eye, BookOpen, ShieldAlert, Bug,
 } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
 import SystemDiagnostics from './SystemDiagnostics';
@@ -13,6 +13,7 @@ import SystemWidgets from './SystemWidgets';
 import TestCenter from './TestCenter';
 import UxAuditPanel from './UxAuditPanel';
 import DocumentationCenter from './DocumentationCenter';
+import BugReports from './BugReports';
 import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
 import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
 import { useAppServices } from '../../services/useAppServices';
@@ -24,6 +25,7 @@ const TABS = [
   { id: 'features', label: 'Widget Lab', icon: FlaskConical },
   { id: 'system', label: 'System', icon: Settings },
   { id: 'tests', label: 'Test Center', icon: TestTube2 },
+  { id: 'bug-reports', label: 'Bug Reports', icon: Bug },
   { id: 'ux-audit', label: 'UX Audit Lab', icon: Eye },
   { id: 'docs', label: 'Documentation', icon: BookOpen },
 ];
@@ -53,6 +55,7 @@ const SystemAdminCenter = () => {
       case 'features': return <FeatureManager />;
       case 'system': return <SystemWidgets />;
       case 'tests': return <TestCenter />;
+      case 'bug-reports': return <BugReports />;
       case 'ux-audit': return <UxAuditPanel />;
       case 'docs': return <DocumentationCenter />;
       default: return <AdminDashboard />;
