@@ -260,8 +260,8 @@ const LeaderRepsLab = () => {
             </button>
           </ToolCard>
 
-          {/* Kudos (Beta) — moved here from Sales & Marketing */}
-          <ToolCard icon={Heart} title="Kudos (Beta)" status="MVP">
+          {/* Kudos — moved here from Sales & Marketing */}
+          <ToolCard icon={Heart} title="Kudos" status="MVP">
             <p>
               AI-moderated warm-touch lead magnet. Send a “kudos from the team
               at LeaderReps” to a prospect; every send is logged as a warm
@@ -276,11 +276,11 @@ const LeaderRepsLab = () => {
             </button>
           </ToolCard>
 
-          {/* Constructive Nudges (Beta) — Kudos's twin, but for upward feedback */}
+          {/* Constructive Nudges — Kudos's twin, but for upward feedback */}
           <ToolCard
             icon={MessageSquareWarning}
-            title="Constructive Nudges (Beta)"
-            status="Beta"
+            title="Constructive Nudges"
+            status="MVP"
           >
             <p>
               Anonymous, AI-moderated upward feedback. A logged-in user picks
@@ -302,7 +302,7 @@ const LeaderRepsLab = () => {
           <ToolCard
             icon={BarChart3}
             title="Test Lead Magnets (DNA · ROI · Readiness)"
-            status="Experimental"
+            status="MVP"
           >
             <p>
               Lead viewers for three assessments still in test: Leadership DNA,
