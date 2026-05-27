@@ -127,41 +127,6 @@ export const useLeaderProfile = () => {
         });
       }
 
-      // Sync identity fields (email, name) to main user doc so they stay in
-      // sync with the User Management list, which reads from users/{uid}.
-      // NOTE: This only updates the Firestore mirror — the Firebase Auth email
-      // is unchanged. Admin must update the Auth email separately if needed.
-      if (
-        profileData.email !== undefined ||
-        profileData.firstName !== undefined ||
-        profileData.lastName !== undefined
-      ) {
-        const userRef = doc(db, 'users', user.uid);
-        const identityUpdates = {};
-        if (typeof profileData.email === 'string' && profileData.email.trim()) {
-          identityUpdates.email = profileData.email.trim();
-        }
-        if (typeof profileData.firstName === 'string') {
-          identityUpdates.firstName = profileData.firstName;
-        }
-        if (typeof profileData.lastName === 'string') {
-          identityUpdates.lastName = profileData.lastName;
-        }
-        const fullName = [profileData.firstName, profileData.lastName]
-          .filter((s) => typeof s === 'string' && s.trim())
-          .join(' ')
-          .trim();
-        if (fullName) {
-          identityUpdates.displayName = fullName;
-          identityUpdates.name = fullName;
-        }
-        if (Object.keys(identityUpdates).length > 0) {
-          await updateDoc(userRef, identityUpdates).catch((err) =>
-            console.warn('Failed to sync identity fields to user doc', err)
-          );
-        }
-      }
-
       // Sync notification settings to main user doc (used by NotificationSettingsWidget in Locker)
       if (profileData.notificationSettings || profileData.phoneNumber || profileData.timezone) {
         const userRef = doc(db, 'users', user.uid);

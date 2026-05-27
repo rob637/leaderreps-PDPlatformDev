@@ -325,62 +325,7 @@ const UserManagement = () => {
 
   // Delete user completely (Firestore + Auth) via Cloud Function
   const [deletingUser, setDeletingUser] = useState(null);
-  const [editingEmailUserId, setEditingEmailUserId] = useState(null);
-
-  const handleChangeEmail = async (userObj) => {
-    if (!userObj || userObj.type === 'invite') {
-      alert('Email cannot be changed on a pending invitation. Delete the invite and re-send it with the new email.');
-      return;
-    }
-    const currentEmail = userObj.email || '';
-    const newEmailRaw = window.prompt(
-      `Change email address for ${userObj.displayName || currentEmail}.\n\nCurrent: ${currentEmail}\n\nEnter new email:`,
-      currentEmail
-    );
-    if (newEmailRaw == null) return;
-    const newEmail = String(newEmailRaw).trim().toLowerCase();
-    if (!newEmail) return;
-    if (newEmail === currentEmail.toLowerCase()) {
-      alert('New email matches current email — nothing to change.');
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
-      alert('That does not look like a valid email address.');
-      return;
-    }
-    const confirmMsg = `Change email from:\n  ${currentEmail}\nto:\n  ${newEmail}\n\nThis updates Firebase Auth, the user record, and the admin list. The user will need to use the new email at next sign-in. Continue?`;
-    if (!window.confirm(confirmMsg)) return;
-
-    setEditingEmailUserId(userObj.id);
-    try {
-      const functions = getFunctions();
-      const adminUpdateUserEmail = httpsCallable(functions, 'adminUpdateUserEmail');
-      const result = await adminUpdateUserEmail({
-        userId: userObj.id,
-        oldEmail: currentEmail,
-        newEmail,
-      });
-      console.log('[UserManagement] Email update result:', result.data);
-
-      // Optimistic update
-      setUsers(prev => prev.map(u =>
-        u.id === userObj.id ? { ...u, email: newEmail } : u
-      ));
-      if (adminEmails.some(e => e.toLowerCase() === currentEmail.toLowerCase())) {
-        setAdminEmails(prev => [
-          ...prev.filter(e => e.toLowerCase() !== currentEmail.toLowerCase()),
-          newEmail,
-        ]);
-      }
-      alert(`Email updated to ${newEmail}.`);
-    } catch (error) {
-      console.error('[UserManagement] Error updating email:', error);
-      alert(`Failed to update email: ${error.message}`);
-    } finally {
-      setEditingEmailUserId(null);
-    }
-  };
-
+  
   const handleDeleteUser = async (userEmail, userName) => {
     const confirmMsg = `⚠️ PERMANENTLY DELETE USER\n\nThis will delete:\n• Firebase Auth account\n• All Firestore data\n• All subcollections (progress, video history, etc.)\n\nUser: ${userName || userEmail}\nEmail: ${userEmail}\n\nThis cannot be undone. Are you sure?`;
     
@@ -1287,19 +1232,6 @@ const UserManagement = () => {
                         <div className="flex items-center justify-end gap-2">
                           {user.type === 'user' ? (
                             <>
-                              <button
-                                onClick={() => handleChangeEmail(user)}
-                                disabled={editingEmailUserId === user.id}
-                                className="text-xs font-medium px-3 py-1 rounded-md transition-colors bg-slate-50 dark:bg-slate-800 text-slate-700 hover:bg-slate-100 disabled:opacity-50 flex items-center gap-1"
-                                title="Change email address"
-                              >
-                                {editingEmailUserId === user.id ? (
-                                  <RefreshCw className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <Edit className="w-3 h-3" />
-                                )}
-                                Email
-                              </button>
                               <button
                                 onClick={() => setSelectedUserForNotifications(user)}
                                 className="text-xs font-medium px-3 py-1 rounded-md transition-colors bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100"
