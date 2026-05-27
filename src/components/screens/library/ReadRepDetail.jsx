@@ -4,7 +4,7 @@ import { useContentAccess } from '../../../hooks/useContentAccess';
 import { doc, getDoc } from '../../../services/firebaseUtils';
 import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
 import { PageLayout } from '../../ui/PageLayout.jsx';
-import { Loader, BookOpen, Clock, Target, CheckCircle, AlertTriangle, FileText, Layers, Zap, Lock, Sparkles } from 'lucide-react';
+import { Loader, BookOpen, Clock, Target, CheckCircle, AlertTriangle, FileText, Layers, Zap, Lock, Sparkles, ExternalLink, Download } from 'lucide-react';
 import { Button } from '../../screens/developmentplan/DevPlanComponents.jsx';
 
 const COMPLEXITY_MAP = {
@@ -300,48 +300,100 @@ Keep responses concise (3-5 sentences), actionable, and directly answer the ques
                 {(book.details?.pdfUrl || book.metadata?.pdfUrl) ? (
                    (() => {
                      const rawPdfUrl = book.details?.pdfUrl || book.metadata?.pdfUrl;
-                     const isFirebaseStorage = rawPdfUrl.includes('firebasestorage.googleapis.com') ||
-                                               rawPdfUrl.includes('firebasestorage.app') ||
-                                               rawPdfUrl.includes('token=');
-                     // For Firebase Storage URLs, force inline preview + correct
-                     // content-type via response-* query params, otherwise files
-                     // uploaded with contentDisposition: attachment (or a wrong
-                     // content-type) will trigger a download instead of rendering.
+                     const isFirebaseStorage =
+                       rawPdfUrl.includes('firebasestorage.googleapis.com') ||
+                       rawPdfUrl.includes('firebasestorage.app');
+
+                     // Sniff the file extension from the URL path (ignore
+                     // query string). If it's clearly not a PDF, we don't
+                     // even try to embed — we just show the open/download
+                     // controls.
+                     let pathname = rawPdfUrl;
+                     let host = '';
+                     try {
+                       const u = new URL(rawPdfUrl);
+                       pathname = u.pathname;
+                       host = u.host;
+                     } catch (_) {
+                       // not a parseable URL — proceed with raw string
+                     }
+                     const lowerPath = pathname.toLowerCase();
+                     const looksLikePdf =
+                       lowerPath.endsWith('.pdf') ||
+                       lowerPath.includes('.pdf?') ||
+                       isFirebaseStorage; // Firebase URLs hide the extension
+                     const nonPdfExt = (lowerPath.match(/\.(docx?|epub|pptx?|xlsx?|txt|md)(?:\?|$)/i) || [])[1];
+
+                     // For Firebase Storage URLs, force inline preview +
+                     // correct content-type via response-* query params so
+                     // files uploaded with contentDisposition: attachment
+                     // (or a wrong content-type) don't trigger a download.
                      let pdfUrl = rawPdfUrl;
                      if (isFirebaseStorage) {
                        try {
                          const urlObj = new URL(rawPdfUrl);
-                         if (!urlObj.searchParams.has('response-content-disposition')) {
-                           urlObj.searchParams.set('response-content-disposition', 'inline');
-                         }
-                         if (!urlObj.searchParams.has('response-content-type')) {
-                           urlObj.searchParams.set('response-content-type', 'application/pdf');
-                         }
+                         urlObj.searchParams.set('response-content-disposition', 'inline');
+                         urlObj.searchParams.set('response-content-type', 'application/pdf');
                          pdfUrl = urlObj.toString();
-                       } catch (e) {
-                         // Fall back to the raw URL if parsing fails
+                       } catch (_) {
                          pdfUrl = rawPdfUrl;
                        }
                      }
+
+                     const openInNewTab = (
+                       <a
+                         href={pdfUrl}
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-corporate-teal text-white hover:bg-corporate-teal/90 transition"
+                       >
+                         <ExternalLink className="w-3.5 h-3.5" />
+                         Open in new tab
+                       </a>
+                     );
+                     const downloadLink = (
+                       <a
+                         href={rawPdfUrl}
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+                       >
+                         <Download className="w-3.5 h-3.5" />
+                         Download
+                       </a>
+                     );
+
                      return (
-                       <div className="h-[70vh] w-full bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden relative">
-                         {isFirebaseStorage ? (
-                           // Native browser PDF viewer. Use a single <iframe>
-                           // (not <object> with a nested <iframe> fallback) so
-                           // the browser only fetches the file once — the
-                           // nested fallback was causing duplicate downloads.
-                           <iframe
-                             src={pdfUrl}
-                             className="w-full h-full"
-                             title="Document"
-                           />
+                       <div className="flex flex-col gap-3">
+                         <div className="flex items-center justify-between gap-3 flex-wrap">
+                           <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                             {host ? <>Source: <span className="font-mono">{host}</span></> : null}
+                           </div>
+                           <div className="flex items-center gap-2">
+                             {openInNewTab}
+                             {downloadLink}
+                           </div>
+                         </div>
+                         {looksLikePdf ? (
+                           <div className="h-[70vh] w-full bg-slate-100 dark:bg-slate-700 rounded-lg overflow-hidden relative">
+                             <iframe
+                               src={pdfUrl}
+                               className="w-full h-full"
+                               title="Document"
+                             />
+                           </div>
                          ) : (
-                           // Use Google Docs Viewer for public URLs
-                           <iframe
-                             src={`https://docs.google.com/gview?url=${encodeURIComponent(pdfUrl)}&embedded=true`}
-                             className="w-full h-full"
-                             title="Document"
-                           />
+                           <div className="h-[40vh] w-full bg-slate-50 dark:bg-slate-800/40 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg flex flex-col items-center justify-center text-center px-6">
+                             <FileText className="w-12 h-12 text-slate-400 mb-3" />
+                             <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                               {nonPdfExt
+                                 ? `This document is a .${nonPdfExt.toLowerCase()} file and can't be previewed inline.`
+                                 : "This document can't be previewed inline."}
+                             </p>
+                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                               Use the buttons above to open or download it.
+                             </p>
+                           </div>
                          )}
                        </div>
                      );

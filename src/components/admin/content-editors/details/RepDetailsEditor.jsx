@@ -279,6 +279,9 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
               PDF URL (Optional)
             </label>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+              Must be a <strong>.pdf</strong> file. Other formats (.docx, .doc, .epub) won't preview inline in the app.
+            </p>
             <div className="space-y-2">
               <div className="flex gap-2">
                 <input
@@ -286,6 +289,7 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
                   name="pdfUrl"
                   value={details.pdfUrl || ''}
                   onChange={handleChange}
+                  placeholder="https://...filename.pdf"
                   className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 />
                 <button
@@ -298,6 +302,22 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
                   Select from Media Vault
                 </button>
               </div>
+              {details.pdfUrl && (() => {
+                // Strip query string before checking extension
+                const path = (() => {
+                  try { return new URL(details.pdfUrl).pathname.toLowerCase(); }
+                  catch (_) { return String(details.pdfUrl).toLowerCase().split('?')[0]; }
+                })();
+                const isFirebaseStorage = String(details.pdfUrl).includes('firebasestorage');
+                const looksLikePdf = path.endsWith('.pdf') || isFirebaseStorage;
+                const nonPdfExt = (path.match(/\.(docx?|epub|pptx?|xlsx?|txt|md)$/i) || [])[1];
+                if (looksLikePdf && !nonPdfExt) return null;
+                return (
+                  <div className="px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-200">
+                    ⚠️ This URL{nonPdfExt ? ` points to a .${nonPdfExt.toLowerCase()} file` : " doesn't appear to be a PDF"}. It won't preview inline in the app — convert it to a PDF and re-upload before saving.
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </>
