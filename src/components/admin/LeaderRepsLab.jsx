@@ -190,6 +190,8 @@ const LeaderRepsLab = () => {
             </div>
             <p className="text-xs text-slate-400">
               Public link to share: <code className="text-slate-600">/?identity-start</code>
+              <br />
+              <span className="italic">No admin manage screen — fully client-side, no curation needed.</span>
             </p>
           </ToolCard>
 
@@ -286,6 +288,12 @@ const LeaderRepsLab = () => {
               Public link to share: <code className="text-slate-600">/?state-of-leadership</code>
             </p>
           </ToolCard>
+
+          {/* ───────────────────────────────────────────── */}
+          <SectionHeader
+            title="Lead Generation — Admin Tools"
+            description="Internal composers and viewers that feed the funnel. Admin-only — no public landing pages."
+          />
 
           {/* Kudos — moved here from Sales & Marketing */}
           <ToolCard icon={Heart} title="Kudos" status="MVP">
