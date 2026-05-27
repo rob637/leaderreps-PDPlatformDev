@@ -332,6 +332,12 @@ export const BREADCRUMB_MAP = {
     { label: 'Admin', path: 'admin-hub' },
     { label: 'Ascent 2', path: null }
   ],
+  'ascent-arena': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Admin', path: 'admin-hub' },
+    { label: 'LeaderReps Lab', path: 'leaderreps-lab' },
+    { label: 'Ascent 1', path: null }
+  ],
   'config-center': [
     { label: 'Home', path: 'dashboard' },
     { label: 'Admin', path: 'admin-hub' },

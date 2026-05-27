@@ -7,7 +7,6 @@ import {
   FlaskConical,
   ShieldAlert,
   ExternalLink,
-  MessageSquare,
   Users,
   Mountain,
   Compass,
@@ -442,13 +441,18 @@ const LeaderRepsLab = () => {
               Original Ascent Arena experience. Moved here from the main
               navigator while we evaluate the next iteration.
             </p>
-            <button
-              onClick={() => navigate('ascent-arena')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
-            >
-              Open Ascent 1
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate('ascent-arena')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+              >
+                Open
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-400">
+              Open to logged-in users — under evaluation.
+            </p>
           </ToolCard>
 
           {/* Ascent 2 */}
@@ -457,47 +461,42 @@ const LeaderRepsLab = () => {
               Ascent 2 prototype — admin preview of the next-generation
               development arc.
             </p>
-            <button
-              onClick={() => navigate('ascent-2')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
-            >
-              Open Ascent 2
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate('ascent-2')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+              >
+                Open
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-400">
+              Admin-only — next-generation development arc preview.
+            </p>
           </ToolCard>
 
-          {/* SMS Tool */}
-          <ToolCard icon={MessageSquare} title="SMS Tool" status="Live">
+          {/* Leadership Lab — cohort SMS + spaced-repetition experiment (consolidated from SMS Tool + SRS Engine) */}
+          <ToolCard icon={FlaskConical} title="Leadership Lab (SMS + SRS Experiment)" status="Live">
             <p>
-              Standalone SMS experiment. Hosted independently from the main
+              Separate cohort-engagement app. Delivers leadership reps over SMS
+              with spaced-repetition cadence — validates both the SMS channel
+              and the SRS schedule before promoting features into the main
               platform.
             </p>
-            <a
-              href="https://leaderreps-lab.web.app/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
-            >
-              Open SMS Tool
-              <ExternalLink className="w-4 h-4" />
-            </a>
-          </ToolCard>
-
-          {/* SRS Engine */}
-          <ToolCard icon={FlaskConical} title="SRS Engine" status="Live">
-            <p>
-              Spaced Repetition System for leadership reps. Validates adaptive
-              scheduling intervals before features roll into the main platform.
+            <div className="flex flex-wrap gap-2">
+              <a
+                href="https://leaderreps-lab.web.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+              >
+                Open external app
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </div>
+            <p className="text-xs text-slate-400">
+              External experiment: <code className="text-slate-600">leaderreps-lab.web.app</code>
             </p>
-            <a
-              href="https://leaderreps-lab.web.app/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
-            >
-              Launch SRS Engine
-              <ExternalLink className="w-4 h-4" />
-            </a>
           </ToolCard>
 
           {/* ───────────────────────────────────────────── */}
