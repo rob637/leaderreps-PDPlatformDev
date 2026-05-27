@@ -26785,3 +26785,474 @@ exports.requestStateOfLeadershipReport = onRequest(
     }
   }
 );
+
+// ================================================================
+// CONSTRUCTIVE NUDGES — moderateNudge + sendNudge
+// ----------------------------------------------------------------
+// Anonymous-to-recipient, traceable-to-LeaderReps constructive feedback
+// tool. A logged-in user composes a private nudge for their manager
+// (or peer); we moderate it for constructive tone, persist sanitized,
+// and email the recipient. Sender identity is logged for audit but
+// NEVER revealed to the recipient.
+//
+// Differences vs Kudos:
+//   - sendNudge is onCall (requires Firebase Auth) — no anonymous public
+//     submission. Sender's uid + email come from request.auth.
+//   - No public viewer (no /n/<id> page). Email-only delivery.
+//   - Composer-side enriches with picked issues + suggested reps from
+//     src/data/nudgeCatalog.js. We trust the labels passed in but store
+//     them with each doc.
+// ================================================================
+const {
+  moderateNudgeText,
+  MAX_INPUT_LENGTH: NUDGE_MAX_LEN,
+} = require('./nudgeModeration');
+
+const NUDGE_SEND_RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const NUDGE_SEND_RATE_MAX = 3;                    // per uid per hour
+
+function _isValidEmailForNudge(s) {
+  return typeof s === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+}
+
+function _escapeHtmlForNudge(s) {
+  return String(s || '').replace(/[<>&]/g, (c) =>
+    c === '<' ? '&lt;' : c === '>' ? '&gt;' : '&amp;'
+  );
+}
+
+function buildNudgeEmail({
+  recipientName,
+  message,
+  issues = [],
+  suggestions = [],
+  reps = [],
+}) {
+  const safeName = (recipientName || 'there').replace(/[<>]/g, '');
+  const safeMsg = _escapeHtmlForNudge(message);
+
+  // Plain text version ---------------------------------------------
+  const textLines = [
+    `Hi ${safeName},`,
+    ``,
+    `Someone on your team sent you a constructive, anonymous nudge.`,
+    `It's private — only you can see it — and it's meant in good faith.`,
+    ``,
+    `What they wanted to flag:`,
+    ...(issues.length
+      ? issues.map((i) => `  • ${i}`)
+      : ['  (general feedback)']),
+    ``,
+    `Their note:`,
+    message,
+  ];
+  if (suggestions.length) {
+    textLines.push(``, `Suggested ways to lean in:`);
+    suggestions.forEach((s) => textLines.push(`  • ${s}`));
+  }
+  if (reps.length) {
+    textLines.push(``, `LeaderReps Reps that build this muscle:`);
+    reps.forEach((r) => textLines.push(`  • ${r}`));
+  }
+  textLines.push(
+    ``,
+    `— Delivered by LeaderReps on behalf of someone who works with you.`,
+    `https://leaderreps.com`
+  );
+  const text = textLines.join('\n');
+
+  // HTML version ---------------------------------------------------
+  const issuesHtml = issues.length
+    ? `<ul style="margin:0 0 16px 18px;padding:0;">${issues
+        .map((i) => `<li style="margin:4px 0;">${_escapeHtmlForNudge(i)}</li>`)
+        .join('')}</ul>`
+    : `<p style="margin:0 0 16px;color:#5b6b75;font-style:italic;">General feedback (no specific area selected).</p>`;
+
+  const suggestionsHtml = suggestions.length
+    ? `<h3 style="margin:24px 0 8px;font-size:15px;color:#002E47;">Suggested ways to lean in</h3>
+       <ul style="margin:0 0 16px 18px;padding:0;">${suggestions
+         .map(
+           (s) => `<li style="margin:4px 0;">${_escapeHtmlForNudge(s)}</li>`
+         )
+         .join('')}</ul>`
+    : '';
+
+  const repsHtml = reps.length
+    ? `<h3 style="margin:24px 0 8px;font-size:15px;color:#002E47;">LeaderReps Reps that build this muscle</h3>
+       <ul style="margin:0 0 16px 18px;padding:0;">${reps
+         .map(
+           (r) => `<li style="margin:4px 0;">${_escapeHtmlForNudge(r)}</li>`
+         )
+         .join('')}</ul>`
+    : '';
+
+  const html = `
+    <div style="font-family:'Nunito Sans',Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#002E47;background:#F7FAFA;">
+      <div style="text-align:center;margin-bottom:20px;">
+        <div style="display:inline-block;width:52px;height:52px;line-height:52px;border-radius:26px;background:#002E47;color:#fff;font-size:22px;font-weight:700;">↑</div>
+        <h1 style="margin:14px 0 4px;font-size:22px;">Hi ${safeName} — a constructive nudge from your team</h1>
+        <p style="margin:0;color:#5b6b75;font-size:13px;max-width:480px;margin:0 auto;">
+          Anonymous on purpose, delivered through LeaderReps. Reviewed for tone before sending.
+        </p>
+      </div>
+
+      <div style="background:#fff;border-radius:14px;padding:24px;box-shadow:0 4px 14px rgba(0,46,71,0.08);">
+        <h3 style="margin:0 0 8px;font-size:15px;color:#002E47;">What they wanted to flag</h3>
+        ${issuesHtml}
+
+        <h3 style="margin:24px 0 8px;font-size:15px;color:#002E47;">Their note</h3>
+        <div style="background:#F7FAFA;border-left:4px solid #47A88D;border-radius:8px;padding:14px 16px;font-size:15px;line-height:1.55;white-space:pre-wrap;">${safeMsg}</div>
+
+        ${suggestionsHtml}
+        ${repsHtml}
+      </div>
+
+      <div style="background:#fff;border-radius:14px;padding:16px 20px;margin-top:16px;box-shadow:0 4px 14px rgba(0,46,71,0.05);font-size:13px;color:#5b6b75;line-height:1.5;">
+        <strong style="color:#002E47;">Why anonymous?</strong> So the person could be honest without
+        risking the relationship. Receiving feedback well — without trying to figure out who sent it —
+        is itself a rep.
+      </div>
+
+      <p style="text-align:center;color:#5b6b75;font-size:12px;margin-top:20px;">
+        Delivered by <a href="https://leaderreps.com" style="color:#47A88D;text-decoration:none;font-weight:700;">LeaderReps</a>
+        on behalf of someone who works with you.
+      </p>
+    </div>
+  `;
+
+  return { text, html };
+}
+
+// ----------------------------------------------------------------
+// moderateNudge — HTTP POST endpoint
+// Returns { success, decision, reason, rewritten, concerns,
+//           deAnonymizationRisk, tone, provider, model }
+// ----------------------------------------------------------------
+exports.moderateNudge = onRequest(
+  {
+    cors: true,
+    invoker: 'public',
+    secrets: ['GEMINI_API_KEY', 'ANTHROPIC_API_KEY'],
+  },
+  async (req, res) => {
+    if (req.method === 'OPTIONS') {
+      res.status(204).send('');
+      return;
+    }
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    const { text, model } = req.body || {};
+    if (!text || typeof text !== 'string') {
+      res.status(400).json({ error: 'Field "text" is required (string).' });
+      return;
+    }
+    if (text.length > NUDGE_MAX_LEN) {
+      res.status(413).json({
+        error: `Message too long (max ${NUDGE_MAX_LEN} characters).`,
+        code: 'too-long',
+      });
+      return;
+    }
+
+    try {
+      const result = await moderateNudgeText(text, {
+        geminiKey: process.env.GEMINI_API_KEY,
+        anthropicKey: process.env.ANTHROPIC_API_KEY,
+        model,
+      });
+      logger.info(
+        `moderateNudge: decision=${result.decision} provider=${result._provider} ` +
+          `risk=${result.deAnonymizationRisk} tone=${result.tone} len=${text.length}`
+      );
+      res.status(200).json({
+        success: true,
+        decision: result.decision,
+        reason: result.reason,
+        rewritten: result.rewritten,
+        concerns: result.concerns,
+        deAnonymizationRisk: result.deAnonymizationRisk,
+        tone: result.tone,
+        provider: result._provider,
+        model: result._model,
+      });
+    } catch (err) {
+      const code = err && err.code ? err.code : 'internal';
+      const status = code === 'empty' || code === 'too-long' ? 400 : 500;
+      logger.error(`moderateNudge: ${code} — ${err && err.message}`);
+      res.status(status).json({
+        error: err && err.message ? err.message : 'Moderation failed',
+        code,
+      });
+    }
+  }
+);
+
+// ----------------------------------------------------------------
+// sendNudge — onCall (requires Firebase Auth)
+// Input:
+//   {
+//     recipientName: string,
+//     recipientEmail: string,
+//     message: string,
+//     selectedIssueIds: string[],   // catalog ids
+//     selectedIssueLabels: string[],
+//     suggestions: string[],        // improvement bullets to include in email
+//     reps: string[],               // suggested rep names to include in email
+//   }
+// Output: { success, nudgeId, decision, reason?, rewritten?, concerns }
+// ----------------------------------------------------------------
+exports.sendNudge = onCall(
+  {
+    cors: true,
+    region: 'us-central1',
+    secrets: ['GEMINI_API_KEY', 'ANTHROPIC_API_KEY'],
+  },
+  async (request) => {
+    if (!request.auth || !request.auth.uid) {
+      throw new HttpsError(
+        'unauthenticated',
+        'You must be signed in to send a nudge.'
+      );
+    }
+
+    const uid = request.auth.uid;
+    const senderEmail = (request.auth.token && request.auth.token.email) || null;
+
+    const data = request.data || {};
+    const recipientName = String(data.recipientName || '').trim();
+    const recipientEmail = String(data.recipientEmail || '').trim().toLowerCase();
+    const message = String(data.message || '').trim();
+    const selectedIssueIds = Array.isArray(data.selectedIssueIds)
+      ? data.selectedIssueIds.map(String).slice(0, 5)
+      : [];
+    const selectedIssueLabels = Array.isArray(data.selectedIssueLabels)
+      ? data.selectedIssueLabels.map((s) => String(s).slice(0, 200)).slice(0, 5)
+      : [];
+    const suggestions = Array.isArray(data.suggestions)
+      ? data.suggestions.map((s) => String(s).slice(0, 280)).slice(0, 12)
+      : [];
+    const reps = Array.isArray(data.reps)
+      ? data.reps.map((s) => String(s).slice(0, 120)).slice(0, 8)
+      : [];
+
+    // ----- validation
+    if (!recipientName) {
+      throw new HttpsError('invalid-argument', 'recipientName is required');
+    }
+    if (!_isValidEmailForNudge(recipientEmail)) {
+      throw new HttpsError(
+        'invalid-argument',
+        'recipientEmail must be a valid email'
+      );
+    }
+    if (senderEmail && senderEmail.toLowerCase() === recipientEmail) {
+      throw new HttpsError(
+        'invalid-argument',
+        'You cannot send a nudge to yourself.'
+      );
+    }
+    if (!message || message.length < 10) {
+      throw new HttpsError('invalid-argument', 'Message is too short.');
+    }
+    if (message.length > NUDGE_MAX_LEN) {
+      throw new HttpsError(
+        'invalid-argument',
+        `Message too long (max ${NUDGE_MAX_LEN} characters).`
+      );
+    }
+
+    // ----- rate limit per uid
+    try {
+      const now = Date.now();
+      const counterRef = db.collection('nudge_sender_counters').doc(uid);
+      const counter = await db.runTransaction(async (tx) => {
+        const snap = await tx.get(counterRef);
+        const d = snap.exists ? snap.data() : { windowStart: 0, count: 0 };
+        if (now - (d.windowStart || 0) > NUDGE_SEND_RATE_WINDOW_MS) {
+          d.windowStart = now;
+          d.count = 0;
+        }
+        d.count = (d.count || 0) + 1;
+        d.lastAt = now;
+        tx.set(counterRef, d, { merge: true });
+        return d;
+      });
+      if (counter.count > NUDGE_SEND_RATE_MAX) {
+        throw new HttpsError(
+          'resource-exhausted',
+          'Too many nudges sent recently. Try again in an hour.'
+        );
+      }
+    } catch (err) {
+      if (err instanceof HttpsError) throw err;
+      logger.warn(`sendNudge rate-limit check failed: ${err && err.message}`);
+      // Fail open on infra issues — moderation is the real gatekeeper.
+    }
+
+    // ----- moderation
+    let mod;
+    try {
+      mod = await moderateNudgeText(message, {
+        geminiKey: process.env.GEMINI_API_KEY,
+        anthropicKey: process.env.ANTHROPIC_API_KEY,
+      });
+    } catch (err) {
+      logger.error(`sendNudge moderation error: ${err && err.message}`);
+      throw new HttpsError(
+        'internal',
+        'Moderation failed. Please try again.'
+      );
+    }
+
+    if (mod.decision === 'reject') {
+      logger.info(
+        `sendNudge rejected: uid=${uid} concerns=${(mod.concerns || []).join(',')}`
+      );
+      // Persist the rejected attempt for audit/dashboard purposes,
+      // but do NOT send the email.
+      try {
+        await db.collection('nudges_messages').add({
+          recipientName: recipientName.slice(0, 80),
+          recipientEmail,
+          message,
+          originalMessage: message,
+          selectedIssueIds,
+          selectedIssueLabels,
+          suggestions,
+          reps,
+          moderation: {
+            decision: mod.decision,
+            reason: mod.reason || null,
+            concerns: mod.concerns || [],
+            deAnonymizationRisk: mod.deAnonymizationRisk || null,
+            tone: mod.tone || null,
+            provider: mod._provider || null,
+            model: mod._model || null,
+          },
+          senderUid: uid,
+          senderEmail: senderEmail || null,
+          emailDelivered: false,
+          status: 'rejected',
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      } catch (err) {
+        logger.warn(`sendNudge rejected-log failed: ${err && err.message}`);
+      }
+      return {
+        success: false,
+        decision: 'reject',
+        reason: mod.reason,
+        concerns: mod.concerns || [],
+      };
+    }
+
+    const finalMessage =
+      mod.decision === 'rewrite' && mod.rewritten ? mod.rewritten : message;
+
+    // ----- persist sanitized nudge
+    const docRef = db.collection('nudges_messages').doc();
+    const nudgeId = docRef.id;
+
+    const fingerprint = require('crypto')
+      .createHash('sha256')
+      .update(uid)
+      .digest('hex')
+      .slice(0, 16);
+
+    await docRef.set({
+      nudgeId,
+      recipientName: recipientName.slice(0, 80),
+      recipientEmail,
+      message: finalMessage,
+      originalMessage: message,
+      selectedIssueIds,
+      selectedIssueLabels,
+      suggestions,
+      reps,
+      moderation: {
+        decision: mod.decision,
+        reason: mod.reason || null,
+        concerns: mod.concerns || [],
+        deAnonymizationRisk: mod.deAnonymizationRisk || null,
+        tone: mod.tone || null,
+        provider: mod._provider || null,
+        model: mod._model || null,
+      },
+      // Sender info — PRIVATE. Only readable by admins via Firestore rules.
+      senderUid: uid,
+      senderEmail: senderEmail || null,
+      senderFingerprint: fingerprint,
+      emailDelivered: false,
+      status: 'queued',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // ----- send email via Gmail SMTP (same nodemailer pattern as Kudos)
+    let emailDelivered = false;
+    try {
+      const emailUser = process.env.EMAIL_USER;
+      const emailPass = process.env.EMAIL_PASS;
+      if (!emailUser || !emailPass) {
+        throw new Error('EMAIL_USER / EMAIL_PASS not configured');
+      }
+      const { text, html } = buildNudgeEmail({
+        recipientName,
+        message: finalMessage,
+        issues: selectedIssueLabels,
+        suggestions,
+        reps,
+      });
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user: emailUser, pass: emailPass },
+      });
+      const firstName = recipientName.split(/\s+/)[0] || 'there';
+      await transporter.sendMail({
+        from: `"Nudges by LeaderReps" <arena@leaderreps.com>`,
+        sender: emailUser,
+        to: recipientEmail,
+        subject: `${firstName} — a constructive nudge from your team`,
+        text,
+        html,
+      });
+      emailDelivered = true;
+    } catch (err) {
+      logger.error(`sendNudge email send failed: ${err && err.message}`);
+    }
+
+    if (emailDelivered) {
+      try {
+        await docRef.update({
+          emailDelivered: true,
+          status: 'sent',
+          deliveredAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      } catch (err) {
+        logger.warn(`sendNudge delivery flag update failed: ${err && err.message}`);
+      }
+    } else {
+      try {
+        await docRef.update({ status: 'delivery-failed' });
+      } catch (_) {
+        // noop
+      }
+    }
+
+    logger.info(
+      `sendNudge ok: id=${nudgeId} uid=${uid} decision=${mod.decision} delivered=${emailDelivered}`
+    );
+
+    return {
+      success: true,
+      nudgeId,
+      decision: mod.decision,
+      reason: mod.reason || null,
+      rewritten: mod.decision === 'rewrite' ? finalMessage : null,
+      concerns: mod.concerns || [],
+      emailDelivered,
+    };
+  }
+);

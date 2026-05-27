@@ -195,6 +195,9 @@ const ScreenMap = {
   'lab-kudos': lazy(() =>
     import('../components/admin/lab/LabKudos.jsx')
   ),
+  'lab-nudges': lazy(() =>
+    import('../components/admin/lab/LabNudges.jsx')
+  ),
   'book-builder': lazy(() =>
     import('../components/admin/BookBuilder.jsx')
   ),

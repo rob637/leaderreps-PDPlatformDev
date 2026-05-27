@@ -264,6 +264,21 @@ service cloud.firestore {
       allow read, write: if false; // Cloud Functions only (rate limiting)
     }
 
+    // Constructive Nudges — anonymous-to-recipient, traceable-to-LeaderReps
+    // upward feedback. Written exclusively by the sendNudge Cloud Function
+    // (which requires Firebase Auth). Admins can read everything for
+    // moderation review; senders can read their own past nudges to populate
+    // the composer's "recent" list. Recipients never see Firestore.
+    match /nudges_messages/{document} {
+      allow read: if isAdmin()
+        || (request.auth != null
+            && resource.data.senderUid == request.auth.uid);
+      allow write: if false; // Cloud Function only
+    }
+    match /nudge_sender_counters/{document} {
+      allow read, write: if false; // Cloud Function only (rate limiting)
+    }
+
     // ---------------------------------------------------------------------
     // LeaderReps Lab — Viral Marketing experiments
     // ---------------------------------------------------------------------

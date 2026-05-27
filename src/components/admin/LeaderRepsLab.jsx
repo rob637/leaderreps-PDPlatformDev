@@ -24,6 +24,7 @@ import {
   FileBarChart,
   Heart,
   BarChart3,
+  MessageSquareWarning,
 } from 'lucide-react';
 import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
 import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
@@ -271,6 +272,28 @@ const LeaderRepsLab = () => {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
             >
               Open Kudos
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </ToolCard>
+
+          {/* Constructive Nudges (Beta) — Kudos's twin, but for upward feedback */}
+          <ToolCard
+            icon={MessageSquareWarning}
+            title="Constructive Nudges (Beta)"
+            status="Beta"
+          >
+            <p>
+              Anonymous, AI-moderated upward feedback. A logged-in user picks
+              issues from a curated catalog, gets auto-suggested improvements
+              and Reps, and sends a constructive nudge to their boss — without
+              ever revealing who sent it. Attacks, accusations, and identifying
+              details are blocked before send.
+            </p>
+            <button
+              onClick={() => navigate('lab-nudges')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+            >
+              Open Constructive Nudges
               <ArrowRight className="w-4 h-4" />
             </button>
           </ToolCard>
