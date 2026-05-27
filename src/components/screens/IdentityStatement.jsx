@@ -1305,7 +1305,7 @@ const IdentityStatement = ({ embedded = false, onClose } = {}) => {
                   qualities={qualities}
                   setQualities={setQualities}
                   onBack={() =>
-                    isComplete(existing) ? setMode('view') : setMode('ex1')
+                    isComplete(existing) ? setMode('view') : setMode('manual')
                   }
                   onNext={() => setMode('ex2')}
                 />
