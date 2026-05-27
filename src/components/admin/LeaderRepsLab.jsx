@@ -374,13 +374,18 @@ const LeaderRepsLab = () => {
               LinkedIn-shareable card from a leader's win. Validates whether
               members will actually post growth artifacts to LinkedIn.
             </p>
-            <button
-              onClick={() => navigate('lab-win-card')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
-            >
-              Open Win Card Generator
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate('lab-win-card')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+              >
+                Open demo
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-400">
+              Admin-only — demo state, no Firestore writes.
+            </p>
           </ToolCard>
 
           {/* Manager Multiplier */}
@@ -390,13 +395,18 @@ const LeaderRepsLab = () => {
               both sides unlock value → Team Plan upsell. Visualizes the full
               invite → accept → convert funnel with rewards.
             </p>
-            <button
-              onClick={() => navigate('lab-manager-multiplier')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
-            >
-              Open Manager Multiplier
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate('lab-manager-multiplier')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+              >
+                Open demo
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-400">
+              Admin-only — demo state, no Firestore writes.
+            </p>
           </ToolCard>
 
           {/* Pod Match */}
@@ -406,13 +416,18 @@ const LeaderRepsLab = () => {
               mock cohort, scores each pod for diversity, and previews the Pod
               Home experience members would see.
             </p>
-            <button
-              onClick={() => navigate('lab-pod-match')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
-            >
-              Open Pod Match Simulator
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate('lab-pod-match')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+              >
+                Open demo
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-400">
+              Admin-only — demo state, no Firestore writes.
+            </p>
           </ToolCard>
 
           {/* ───────────────────────────────────────────── */}

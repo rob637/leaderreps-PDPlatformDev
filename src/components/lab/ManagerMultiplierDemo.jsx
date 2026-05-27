@@ -8,7 +8,7 @@
 
 import React, { useMemo, useState } from 'react';
 import {
-  Users,
+  UserPlus,
   Mail,
   Plus,
   X,
@@ -151,7 +151,7 @@ const ManagerMultiplierDemo = () => {
             <ArrowLeft className="w-5 h-5 text-slate-500" />
           </button>
           <div className="p-2.5 bg-corporate-teal/10 rounded-xl">
-            <Users className="w-6 h-6 text-corporate-teal" />
+            <UserPlus className="w-6 h-6 text-corporate-teal" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-corporate-navy dark:text-white">
