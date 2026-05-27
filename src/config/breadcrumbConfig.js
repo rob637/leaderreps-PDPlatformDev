@@ -417,6 +417,12 @@ export const BREADCRUMB_MAP = {
     { label: 'LeaderReps Lab', path: 'leaderreps-lab' },
     { label: 'Kudos (Beta)', path: null }
   ],
+  'lab-identity-builder': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Admin', path: 'admin-hub' },
+    { label: 'LeaderReps Lab', path: 'leaderreps-lab' },
+    { label: 'Identity Statement Builder', path: null }
+  ],
   'lab-nudges': [
     { label: 'Home', path: 'dashboard' },
     { label: 'Admin', path: 'admin-hub' },

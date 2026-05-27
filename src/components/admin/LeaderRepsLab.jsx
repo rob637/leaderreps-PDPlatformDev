@@ -178,11 +178,18 @@ const LeaderRepsLab = () => {
               Aspirational). Optional email capture for the printable card.
             </p>
             <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate('lab-identity-builder')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+              >
+                Manage
+                <ArrowRight className="w-4 h-4" />
+              </button>
               <a
                 href="/?identity-start"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-corporate-teal text-corporate-teal-ink text-sm font-semibold hover:bg-corporate-teal/5 transition-colors w-fit"
               >
                 Preview public landing
                 <ExternalLink className="w-4 h-4" />
@@ -190,8 +197,6 @@ const LeaderRepsLab = () => {
             </div>
             <p className="text-xs text-slate-400">
               Public link to share: <code className="text-slate-600">/?identity-start</code>
-              <br />
-              <span className="italic">No admin manage screen — fully client-side, no curation needed.</span>
             </p>
           </ToolCard>
 
