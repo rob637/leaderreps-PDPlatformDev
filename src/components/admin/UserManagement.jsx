@@ -323,6 +323,51 @@ const UserManagement = () => {
     }
   };
 
+  // Admin force-override of a user's email (bypasses verifyBeforeUpdateEmail).
+  const [updatingEmailUid, setUpdatingEmailUid] = useState(null);
+
+  const handleAdminUpdateEmail = async (targetUser) => {
+    if (!targetUser?.id) {
+      alert('Cannot update email: missing uid for this row (likely a pending invite).');
+      return;
+    }
+    const current = targetUser.email || '';
+    const newEmail = window.prompt(
+      `Force-update login email for ${targetUser.displayName || current}.\n\n` +
+      `This bypasses the verification email and immediately changes their Firebase Auth login.\n\n` +
+      `Current: ${current}\nNew email:`,
+      current
+    );
+    if (!newEmail) return;
+    const trimmed = newEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      alert('Invalid email address.');
+      return;
+    }
+    if (trimmed.toLowerCase() === current.toLowerCase()) {
+      alert('That is already the current email.');
+      return;
+    }
+    if (!window.confirm(`Force login email to "${trimmed}"?\n\nThe user will sign in with this email immediately.`)) {
+      return;
+    }
+
+    setUpdatingEmailUid(targetUser.id);
+    try {
+      const functions = getFunctions();
+      const adminUpdateUserEmail = httpsCallable(functions, 'adminUpdateUserEmail');
+      const result = await adminUpdateUserEmail({ uid: targetUser.id, newEmail: trimmed });
+      console.log('[UserManagement] adminUpdateUserEmail result:', result.data);
+      setUsers(users.map(u => u.id === targetUser.id ? { ...u, email: trimmed } : u));
+      alert(`Login email updated to ${trimmed}. The user can sign in with it now.`);
+    } catch (err) {
+      console.error('[UserManagement] adminUpdateUserEmail error:', err);
+      alert(`Failed to update email: ${err.message}`);
+    } finally {
+      setUpdatingEmailUid(null);
+    }
+  };
+
   // Delete user completely (Firestore + Auth) via Cloud Function
   const [deletingUser, setDeletingUser] = useState(null);
   
@@ -1237,6 +1282,14 @@ const UserManagement = () => {
                                 className="text-xs font-medium px-3 py-1 rounded-md transition-colors bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100"
                               >
                                 Notifications
+                              </button>
+                              <button
+                                onClick={() => handleAdminUpdateEmail(user)}
+                                disabled={updatingEmailUid === user.id}
+                                className="text-xs font-medium px-3 py-1 rounded-md transition-colors bg-amber-50 dark:bg-amber-900/20 text-amber-700 hover:bg-amber-100 disabled:opacity-50"
+                                title="Force-update login email (bypasses verification)"
+                              >
+                                {updatingEmailUid === user.id ? 'Saving…' : 'Edit Email'}
                               </button>
                               <button
                                 onClick={() => handleToggleUserStatus(user.id, user.disabled)}

@@ -10364,6 +10364,164 @@ exports.deleteTestUser = onCall({
 });
 
 /**
+ * adminUpdateUserEmail — admin-only force-override of a user's email.
+ *
+ * Bypasses Firebase Auth's verifyBeforeUpdateEmail flow (which requires
+ * the user to click a link in the new inbox). Updates both:
+ *   - Firebase Auth: email + emailVerified=true
+ *   - Firestore users/{uid}.email + leader_profile.email
+ *   - metadata/config.adminemails (if target was an admin)
+ *
+ * Useful when:
+ *   - the verification email never arrives
+ *   - an admin needs to fix a user's email on their behalf
+ *   - testing with multiple plus-addressed inboxes
+ */
+exports.adminUpdateUserEmail = onCall({
+  cors: true,
+  region: "us-central1",
+  invoker: "public"
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Must be authenticated.');
+  }
+
+  const callerEmail = request.auth.token.email?.toLowerCase();
+  const hardcodedAdmins = [
+    'rob@sagecg.com', 'rob@leaderreps.com',
+    'cristina@leaderreps.com', 'cristina@leaderreps.biz',
+    'ryan@leaderreps.com', 'ryan@leaderreps.biz',
+    'jeff@leaderreps.com', 'jeff@leaderreps.biz'
+  ];
+
+  let isAdmin = hardcodedAdmins.includes(callerEmail);
+  if (!isAdmin) {
+    try {
+      const configDoc = await db.collection('metadata').doc('config').get();
+      if (configDoc.exists) {
+        const adminEmails = configDoc.data().adminemails || [];
+        isAdmin = adminEmails.map(e => String(e).toLowerCase()).includes(callerEmail);
+      }
+    } catch (err) {
+      logger.warn('[adminUpdateUserEmail] Could not check dynamic admin list:', err.message);
+    }
+  }
+
+  if (!isAdmin) {
+    throw new HttpsError('permission-denied', 'Admin access required.');
+  }
+
+  const { uid, newEmail } = request.data || {};
+
+  if (!uid || typeof uid !== 'string') {
+    throw new HttpsError('invalid-argument', 'uid is required.');
+  }
+  if (!newEmail || typeof newEmail !== 'string') {
+    throw new HttpsError('invalid-argument', 'newEmail is required.');
+  }
+
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const newEmailTrim = newEmail.trim();
+  if (!emailRe.test(newEmailTrim)) {
+    throw new HttpsError('invalid-argument', 'newEmail is not a valid email address.');
+  }
+  const newLower = newEmailTrim.toLowerCase();
+
+  logger.info(`[adminUpdateUserEmail] ${callerEmail} forcing email update for uid=${uid} -> ${newLower}`);
+
+  // 1. Look up current auth user (for old email + existence check)
+  let oldEmail = null;
+  try {
+    const authUser = await admin.auth().getUser(uid);
+    oldEmail = (authUser.email || '').toLowerCase();
+  } catch (err) {
+    if (err.code === 'auth/user-not-found') {
+      throw new HttpsError('not-found', `No Firebase Auth user with uid: ${uid}`);
+    }
+    throw new HttpsError('internal', `Auth lookup failed: ${err.message}`);
+  }
+
+  // 2. Check the new email isn't already taken by a different auth user
+  try {
+    const existing = await admin.auth().getUserByEmail(newLower);
+    if (existing.uid !== uid) {
+      throw new HttpsError('already-exists', `Another account already uses ${newLower}.`);
+    }
+  } catch (err) {
+    if (err.code !== 'auth/user-not-found') {
+      if (err instanceof HttpsError) throw err;
+      throw new HttpsError('internal', `Email-collision check failed: ${err.message}`);
+    }
+  }
+
+  // 3. Update Firebase Auth (force, mark verified)
+  try {
+    await admin.auth().updateUser(uid, {
+      email: newEmailTrim,
+      emailVerified: true,
+    });
+  } catch (err) {
+    throw new HttpsError('internal', `Auth update failed: ${err.message}`);
+  }
+
+  // 4. Sync Firestore users/{uid}.email
+  try {
+    await db.collection('users').doc(uid).set({
+      email: newEmailTrim,
+      emailUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      emailUpdatedBy: callerEmail,
+    }, { merge: true });
+  } catch (err) {
+    logger.warn('[adminUpdateUserEmail] users doc sync failed:', err.message);
+  }
+
+  // 5. Sync leader_profile email if present
+  try {
+    await db.doc(`user_data/${uid}/leader_profile/current`).set({
+      email: newEmailTrim,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+  } catch (err) {
+    logger.warn('[adminUpdateUserEmail] leader_profile sync failed:', err.message);
+  }
+
+  // 6. Sync admin allowlist if target user was an admin
+  try {
+    const cfgRef = db.collection('metadata').doc('config');
+    const cfgSnap = await cfgRef.get();
+    const list = (cfgSnap.exists && Array.isArray(cfgSnap.data().adminemails))
+      ? cfgSnap.data().adminemails
+      : [];
+    const targetWasAdmin = oldEmail && list.some(e => String(e).toLowerCase() === oldEmail);
+    if (targetWasAdmin) {
+      await cfgRef.update({ adminemails: admin.firestore.FieldValue.arrayRemove(oldEmail) });
+      await cfgRef.update({ adminemails: admin.firestore.FieldValue.arrayUnion(newLower) });
+    }
+  } catch (err) {
+    logger.warn('[adminUpdateUserEmail] admin allowlist sync failed:', err.message);
+  }
+
+  // 7. Audit log
+  try {
+    await db.collection('admin_logs').add({
+      action: 'admin_update_user_email',
+      uid,
+      oldEmail: oldEmail || null,
+      newEmail: newLower,
+      changedBy: callerEmail,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (_) {}
+
+  return {
+    success: true,
+    uid,
+    oldEmail: oldEmail || null,
+    newEmail: newLower,
+  };
+});
+
+/**
  * Helper: Calculate the next valid send window start.
  * Advances to the next valid weekday (if weekdaysOnly) and sets the hour
  * to startHour in the given timezone.
