@@ -19817,6 +19817,188 @@ ${recentContextStr}`,
 }
 
 // ============================================================================
+// LEADERSHIP LAB — Reinforcing Feedback ("RF Kudos") Coach
+// ============================================================================
+
+/**
+ * labRfKudosAssist — Coach a leader's reinforcing-feedback draft.
+ *
+ * Companion to the anonymous Kudos product, but built for the *specific*,
+ * identified, behavior-anchored recognition leaders practice in Week 1
+ * (Reinforcing). The client passes the SBI parts (situation, behavior,
+ * impact) and a composed draft; we return:
+ *   - quality bucket
+ *   - 1-5 scores for specificity / behavioral clarity / impact
+ *   - what's working
+ *   - what to sharpen
+ *   - a polished version they can adopt or ignore
+ *
+ * No persistence — this is a one-shot coaching call.
+ */
+exports.labRfKudosAssist = onCall(
+  {
+    secrets: LL_SECRETS,
+    cors: true,
+    region: "us-central1",
+    invoker: "public",
+    maxInstances: 5,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be authenticated");
+    }
+
+    const {
+      recipientName = "",
+      situation = "",
+      behavior = "",
+      impact = "",
+      draft = "",
+    } = request.data || {};
+
+    const name = String(recipientName || "").trim().slice(0, 80);
+    const sit = String(situation || "").trim().slice(0, 800);
+    const beh = String(behavior || "").trim().slice(0, 1200);
+    const imp = String(impact || "").trim().slice(0, 1200);
+    const composed = String(draft || "").trim().slice(0, 3500);
+
+    if (!sit || !beh || !imp) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Situation, behavior, and impact are all required."
+      );
+    }
+
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      throw new HttpsError("failed-precondition", "AI service not configured");
+    }
+
+    const system = `You are a precise, warm coach helping a leader give STRONG reinforcing feedback (the good kind, done well).
+
+You evaluate a draft against the SBI frame (Situation → Behavior → Impact) and three quality dimensions:
+
+  1. SPECIFICITY (1-5) — Is it anchored in a real moment? Could a stranger picture it? Or is it vague ("great work", "you're amazing")?
+  2. BEHAVIORAL CLARITY (1-5) — Does it name OBSERVABLE actions (what they said, did, asked, decided)? Or does it use labels and judgments ("you're a great leader", "you're so smart")?
+  3. IMPACT (1-5) — Does it explain why it mattered — to the work, the team, the person giving feedback? Or is the "so what" missing?
+
+Rules for the polished version:
+  - Preserve the leader's voice, tone, and warmth. Don't sanitize into HR fluff.
+  - Keep it under 120 words.
+  - Address the recipient by their first name if provided.
+  - Strip evaluative labels ("you're brilliant"). Replace them with observed behavior + impact.
+  - If the draft is already strong, the polished version should be a light pass — not a rewrite.
+  - Do NOT invent specifics the leader didn't provide. If a part is missing, surface that in "suggestions" instead of fabricating it.
+
+Quality buckets:
+  - "strong" — all three scores >= 4
+  - "needs-work" — any score <= 2, OR draft contains evaluative labels with no behavior
+  - "good" — otherwise
+
+Return ONLY valid JSON, no markdown fences:
+
+{
+  "quality": "strong" | "good" | "needs-work",
+  "summary": "<one or two sentences — direct, kind, no hedging>",
+  "scores": { "specificity": 1-5, "behavioral": 1-5, "impact": 1-5 },
+  "strengths": ["<short phrase>", "..."],
+  "suggestions": ["<short, actionable phrase>", "..."],
+  "polished": "<the cleaned-up message the leader can deliver>"
+}`;
+
+    const userMessage = `RECIPIENT (first name): ${name || "(not provided)"}
+
+SITUATION:
+${sit}
+
+BEHAVIOR:
+${beh}
+
+IMPACT:
+${imp}
+
+COMPOSED DRAFT (situation + behavior + impact joined):
+"""
+${composed || `${sit} ${beh} ${imp}`}
+"""
+
+Evaluate and coach this draft. Return ONLY the JSON.`;
+
+    let resultText = "";
+    try {
+      const anthropic = new Anthropic({ apiKey });
+      const response = await anthropic.messages.create({
+        model: "claude-haiku-4-5",
+        max_tokens: 1024,
+        system,
+        messages: [{ role: "user", content: userMessage }],
+      });
+      resultText = response.content?.[0]?.text || "";
+    } catch (err) {
+      logger.error("labRfKudosAssist anthropic error", err);
+      throw new HttpsError("internal", "Coaching service unavailable. Please try again.");
+    }
+
+    // Tolerant JSON parse — strip accidental markdown fences.
+    const cleaned = resultText
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```\s*$/i, "")
+      .trim();
+
+    let parsed;
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch {
+      logger.warn("labRfKudosAssist failed to parse JSON", { resultText });
+      // Fail soft — give the user something useful even if the model went off-format.
+      parsed = {
+        quality: "good",
+        summary: "We couldn't fully parse the coach's response, but your draft is below — read it back and check it against the SBI frame.",
+        scores: { specificity: 3, behavioral: 3, impact: 3 },
+        strengths: [],
+        suggestions: [
+          "Try the AI coach again — the response came back malformed.",
+        ],
+        polished: composed,
+      };
+    }
+
+    // Normalize / clamp.
+    const clamp = (n) => {
+      const v = Number(n);
+      if (!Number.isFinite(v)) return 3;
+      return Math.max(1, Math.min(5, Math.round(v)));
+    };
+    const scores = parsed.scores || {};
+    const out = {
+      quality: ["strong", "good", "needs-work"].includes(parsed.quality)
+        ? parsed.quality
+        : "good",
+      summary: String(parsed.summary || "").slice(0, 600),
+      scores: {
+        specificity: clamp(scores.specificity),
+        behavioral: clamp(scores.behavioral),
+        impact: clamp(scores.impact),
+      },
+      strengths: Array.isArray(parsed.strengths)
+        ? parsed.strengths.slice(0, 6).map((s) => String(s).slice(0, 240))
+        : [],
+      suggestions: Array.isArray(parsed.suggestions)
+        ? parsed.suggestions.slice(0, 6).map((s) => String(s).slice(0, 240))
+        : [],
+      polished: String(parsed.polished || composed).slice(0, 2400),
+    };
+
+    logger.info(
+      `labRfKudosAssist ok: uid=${request.auth.uid} quality=${out.quality} ` +
+      `scores=${out.scores.specificity}/${out.scores.behavioral}/${out.scores.impact}`
+    );
+
+    return out;
+  }
+);
+
+// ============================================================================
 // LEADERSHIP LAB — Content Prescription System
 // ============================================================================
 

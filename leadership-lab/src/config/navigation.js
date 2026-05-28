@@ -5,6 +5,7 @@ export const SCREENS = {
   MIRROR: 'mirror',
   LAB: 'lab',
   PRACTICE: 'practice',
+  RF_KUDOS: 'rf-kudos',
   COHORT: 'cohort',
   STORY: 'story',
   ONBOARDING: 'onboarding',

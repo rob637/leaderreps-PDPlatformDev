@@ -4,6 +4,7 @@ import { functions } from '../config/firebase.js';
 const labCoach = httpsCallable(functions, 'labCoach');
 const labCompleteOnboarding = httpsCallable(functions, 'labCompleteOnboarding');
 const labUpdateProfile = httpsCallable(functions, 'labUpdateProfile');
+const labRfKudosAssist = httpsCallable(functions, 'labRfKudosAssist');
 
 /**
  * Send a message to the AI coach and get a response.
@@ -46,5 +47,31 @@ export async function completeOnboarding(conversationId) {
  */
 export async function updateProfile() {
   const result = await labUpdateProfile({});
+  return result.data;
+}
+
+/**
+ * Coach a reinforcing-feedback ("RF Kudos") draft.
+ *
+ * Returns specificity/behavioral/impact scores, what's working, what to
+ * sharpen, and a polished version the user can adopt or ignore.
+ *
+ * @param {object} payload
+ * @param {string} payload.recipientName
+ * @param {string} payload.situation
+ * @param {string} payload.behavior
+ * @param {string} payload.impact
+ * @param {string} [payload.draft]  composed full-text draft (optional)
+ * @returns {Promise<{
+ *   quality: 'strong'|'good'|'needs-work',
+ *   summary: string,
+ *   scores: { specificity: number, behavioral: number, impact: number },
+ *   strengths: string[],
+ *   suggestions: string[],
+ *   polished: string,
+ * }>}
+ */
+export async function getRfKudosFeedback(payload) {
+  const result = await labRfKudosAssist(payload);
   return result.data;
 }

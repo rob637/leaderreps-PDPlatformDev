@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FlaskConical, Play, BookOpen, Lightbulb, RotateCw, PenTool, BookOpenCheck, ChevronDown, ChevronUp, Beaker } from 'lucide-react';
+import { FlaskConical, Play, BookOpen, Lightbulb, RotateCw, PenTool, BookOpenCheck, ChevronDown, ChevronUp, Beaker, Award } from 'lucide-react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../config/firebase.js';
 import { useAuth } from '../../hooks/useAuth.js';
@@ -159,6 +159,21 @@ export default function PracticeScreen() {
             <h3 className="font-semibold text-lab-navy">Deep Coaching</h3>
             <p className="text-sm text-stone-500 mt-0.5">
               An open conversation — go deeper than texts allow.
+            </p>
+          </div>
+        </button>
+
+        <button
+          onClick={() => navigate(SCREENS.RF_KUDOS)}
+          className="w-full glass-card p-5 mt-3 flex items-center gap-4 hover:shadow-card-hover transition-shadow text-left"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+            <Award className="text-amber-600" size={24} />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-lab-navy">Reinforcing Feedback</h3>
+            <p className="text-sm text-stone-500 mt-0.5">
+              Craft specific, behavioral recognition that actually lands.
             </p>
           </div>
         </button>

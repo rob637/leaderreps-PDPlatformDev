@@ -4,6 +4,7 @@ import FeedScreen from '../screens/FeedScreen.jsx';
 import ConversationScreen from '../screens/ConversationScreen.jsx';
 import MirrorScreen from '../screens/MirrorScreen.jsx';
 import PracticeScreen from '../screens/PracticeScreen.jsx';
+import RFKudosScreen from '../screens/RFKudosScreen.jsx';
 import CohortScreen from '../screens/CohortScreen.jsx';
 import OnboardingScreen from '../screens/OnboardingScreen.jsx';
 import WarRoomScreen from '../screens/WarRoomScreen.jsx';
@@ -17,6 +18,7 @@ const SCREEN_MAP = {
   [SCREENS.CONVERSATION]: ConversationScreen,
   [SCREENS.MIRROR]: MirrorScreen,
   [SCREENS.PRACTICE]: PracticeScreen,
+  [SCREENS.RF_KUDOS]: RFKudosScreen,
   // Legacy aliases for backward compat with old nav keys
   [SCREENS.LAB]: PracticeScreen,
   [SCREENS.STORY]: MirrorScreen,
