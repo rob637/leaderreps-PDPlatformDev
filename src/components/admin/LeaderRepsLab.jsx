@@ -282,8 +282,8 @@ const LeaderRepsLab = () => {
 
           {/* ───────────────────────────────────────────── */}
           <SectionHeader
-            title="Lead Generation — Admin Tools"
-            description="Internal composers and viewers that feed the funnel. Admin-only — no public landing pages."
+            title="Lead Generation"
+            description="Public lead magnets and the admin tools that send, view, or analyze the leads they produce."
           />
 
           {/* Kudos — moved here from Sales & Marketing */}
@@ -301,6 +301,15 @@ const LeaderRepsLab = () => {
                 Manage
                 <ArrowRight className="w-4 h-4" />
               </button>
+              <a
+                href="https://leaderreps-kudos.web.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-corporate-teal text-corporate-teal-ink text-sm font-semibold hover:bg-corporate-teal/5 transition-colors w-fit"
+              >
+                Preview public landing
+                <ExternalLink className="w-4 h-4" />
+              </a>
             </div>
             <p className="text-xs text-slate-400">
               Admin-only — send composer + analytics dashboard.
@@ -353,9 +362,18 @@ const LeaderRepsLab = () => {
                 Manage
                 <ArrowRight className="w-4 h-4" />
               </button>
+              <a
+                href="/?nudge-start"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-corporate-teal text-corporate-teal-ink text-sm font-semibold hover:bg-corporate-teal/5 transition-colors w-fit"
+              >
+                Preview public landing
+                <ExternalLink className="w-4 h-4" />
+              </a>
             </div>
             <p className="text-xs text-slate-400">
-              Admin-only — send composer + analytics dashboard.
+              Public marketing landing routes visitors to free sign-up → in-platform composer. Send is auth-gated by design.
             </p>
           </ToolCard>
 
@@ -378,6 +396,33 @@ const LeaderRepsLab = () => {
                 Manage
                 <ArrowRight className="w-4 h-4" />
               </button>
+              <a
+                href="https://leaderreps-assessment.web.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-corporate-teal text-corporate-teal-ink text-xs font-semibold hover:bg-corporate-teal/5 transition-colors w-fit"
+              >
+                Preview · DNA
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+              <a
+                href="https://leaderreps-roi.web.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-corporate-teal text-corporate-teal-ink text-xs font-semibold hover:bg-corporate-teal/5 transition-colors w-fit"
+              >
+                Preview · ROI
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+              <a
+                href="https://leaderreps-readiness.web.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-corporate-teal text-corporate-teal-ink text-xs font-semibold hover:bg-corporate-teal/5 transition-colors w-fit"
+              >
+                Preview · Readiness
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
             </div>
             <p className="text-xs text-slate-400">
               Admin-only — lead viewers for DNA, ROI, and Readiness.

@@ -36,6 +36,7 @@ import IdentityBuilder from './components/lab/IdentityBuilder.jsx';
 import BadBossBingoPlay from './components/lab/BadBossBingoPlay.jsx';
 import PhrasebookPublic from './components/lab/PhrasebookPublic.jsx';
 import StateOfLeadershipPublic from './components/lab/StateOfLeadershipPublic.jsx';
+import NudgePublicStart from './components/lab/NudgePublicStart.jsx';
 
 // --- New Structure ---
 // AuthPanel is lazy-loaded so an unauthenticated cold load doesn't pull
@@ -99,6 +100,8 @@ function App() {
   const isPhrasebook = params.has('phrasebook');
   const isStateOfLeadership =
     params.has('state-of-leadership') || params.has('state_of_leadership');
+  const isNudgeStart =
+    params.has('nudge-start') || params.has('nudge_start');
 
   if (pulseCampaignId) {
     return <PulseRespond campaignId={pulseCampaignId} />;
@@ -120,6 +123,9 @@ function App() {
   }
   if (isStateOfLeadership) {
     return <StateOfLeadershipPublic />;
+  }
+  if (isNudgeStart) {
+    return <NudgePublicStart />;
   }
   return <MainApp />;
 }
