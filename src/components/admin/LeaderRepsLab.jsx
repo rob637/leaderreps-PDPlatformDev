@@ -161,9 +161,6 @@ const LeaderRepsLab = () => {
                 <ExternalLink className="w-4 h-4" />
               </a>
             </div>
-            <p className="text-xs text-slate-400">
-              Public link to share: <code className="text-slate-600">/?pulse-start</code>
-            </p>
           </ToolCard>
 
           {/* Leadership Identity Statement Builder */}
@@ -195,9 +192,6 @@ const LeaderRepsLab = () => {
                 <ExternalLink className="w-4 h-4" />
               </a>
             </div>
-            <p className="text-xs text-slate-400">
-              Public link to share: <code className="text-slate-600">/?identity-start</code>
-            </p>
           </ToolCard>
 
           {/* Bad Boss Bingo */}
@@ -225,9 +219,6 @@ const LeaderRepsLab = () => {
                 <ExternalLink className="w-4 h-4" />
               </a>
             </div>
-            <p className="text-xs text-slate-400">
-              Public link to share: <code className="text-slate-600">/?bingo</code>
-            </p>
           </ToolCard>
 
           {/* Leadership Phrasebook */}
@@ -255,9 +246,6 @@ const LeaderRepsLab = () => {
                 <ExternalLink className="w-4 h-4" />
               </a>
             </div>
-            <p className="text-xs text-slate-400">
-              Public link to share: <code className="text-slate-600">/?phrasebook</code>
-            </p>
           </ToolCard>
 
           {/* State of Leadership Report */}
@@ -289,9 +277,6 @@ const LeaderRepsLab = () => {
                 <ExternalLink className="w-4 h-4" />
               </a>
             </div>
-            <p className="text-xs text-slate-400">
-              Public link to share: <code className="text-slate-600">/?state-of-leadership</code>
-            </p>
           </ToolCard>
 
           {/* ───────────────────────────────────────────── */}
