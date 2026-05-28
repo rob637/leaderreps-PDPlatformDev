@@ -37,6 +37,7 @@ import BadBossBingoPlay from './components/lab/BadBossBingoPlay.jsx';
 import PhrasebookPublic from './components/lab/PhrasebookPublic.jsx';
 import StateOfLeadershipPublic from './components/lab/StateOfLeadershipPublic.jsx';
 import NudgePublicStart from './components/lab/NudgePublicStart.jsx';
+import RFKudosPublicStart from './components/lab/RFKudosPublicStart.jsx';
 
 // --- New Structure ---
 // AuthPanel is lazy-loaded so an unauthenticated cold load doesn't pull
@@ -102,6 +103,8 @@ function App() {
     params.has('state-of-leadership') || params.has('state_of_leadership');
   const isNudgeStart =
     params.has('nudge-start') || params.has('nudge_start');
+  const isRFKudosStart =
+    params.has('rf-kudos-start') || params.has('rf_kudos_start');
 
   if (pulseCampaignId) {
     return <PulseRespond campaignId={pulseCampaignId} />;
@@ -126,6 +129,9 @@ function App() {
   }
   if (isNudgeStart) {
     return <NudgePublicStart />;
+  }
+  if (isRFKudosStart) {
+    return <RFKudosPublicStart />;
   }
   return <MainApp />;
 }
