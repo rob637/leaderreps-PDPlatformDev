@@ -22,6 +22,7 @@ import {
   BookMarked,
   FileBarChart,
   Heart,
+  ThumbsUp,
   BarChart3,
   MessageSquareWarning,
 } from 'lucide-react';
@@ -303,6 +304,31 @@ const LeaderRepsLab = () => {
             </div>
             <p className="text-xs text-slate-400">
               Admin-only — send composer + analytics dashboard.
+            </p>
+          </ToolCard>
+
+          {/* Reinforcing Feedback Kudos — leader-facing practice, lives in leadership-lab sub-app */}
+          <ToolCard icon={ThumbsUp} title="Reinforcing Feedback Kudos" status="MVP">
+            <p>
+              Leader-facing practice rep. A logged-in leader drafts a piece of
+              reinforcing feedback (a “kudos”) and an AI coach evaluates the
+              draft for specificity, behavior-anchoring, and impact — then
+              suggests stronger versions. Lives in the separate Leadership Lab
+              sub-app.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <a
+                href="https://leaderreps-lab.web.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+              >
+                Open external app
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </div>
+            <p className="text-xs text-slate-400">
+              External experiment · leader-facing AI-coached practice (not an admin send tool).
             </p>
           </ToolCard>
 
