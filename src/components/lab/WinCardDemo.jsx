@@ -1,6 +1,6 @@
 // src/components/lab/WinCardDemo.jsx
 //
-// LeaderReps Lab — Win Card Generator (Combo B MVP demo)
+// LeaderReps Lab — Win Card Generator MVP demo
 //
 // Demo-only: admin-gated, fully client-side, no Firestore writes.
 // Purpose: validate whether a polished, LinkedIn-shareable artifact
@@ -278,7 +278,7 @@ const WinCardDemo = () => {
               Win Card Generator
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Combo B MVP — "Strava for leaders." Generates a brand-styled,
+              MVP — "Strava for leaders." Generates a brand-styled,
               LinkedIn-shareable card from a leader's win.
             </p>
           </div>

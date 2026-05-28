@@ -1,6 +1,6 @@
 // src/components/lab/PodMatchDemo.jsx
 //
-// LeaderReps Lab — Pod Match Simulator (Combo C MVP demo)
+// LeaderReps Lab — Pod Match Simulator MVP demo
 //
 // Demo-only: admin-gated, fully client-side, no Firestore writes.
 // Purpose: visualize the pods-of-5 matching algorithm using a seeded
@@ -325,7 +325,7 @@ const PodMatchDemo = () => {
               Pod Match Simulator
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Combo C MVP — CrossFit-style "pods of 5." Runs the matching
+              MVP — CrossFit-style "pods of 5." Runs the matching
               algorithm on a mock cohort so we can evaluate groupings.
             </p>
           </div>

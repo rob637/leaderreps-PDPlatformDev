@@ -173,7 +173,7 @@ const ScreenMap = {
   'team-pulse': lazy(() =>
     import('../components/admin/TeamPulse.jsx')
   ),
-  // Viral Growth MVPs (Combos A/B/C) — admin-only Lab demos, no Firestore impact
+  // Viral Growth MVPs — admin-only Lab demos, no Firestore impact
   'lab-win-card': lazy(() =>
     import('../components/lab/WinCardDemo.jsx')
   ),

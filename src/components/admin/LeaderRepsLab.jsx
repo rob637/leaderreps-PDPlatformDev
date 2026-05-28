@@ -387,11 +387,11 @@ const LeaderRepsLab = () => {
           {/* ───────────────────────────────────────────── */}
           <SectionHeader
             title="Viral Growth Demos"
-            description="Member-side funnel concepts (Combos A / B / C). Demo-only, no Firestore impact."
+            description="Member-side funnel concepts. Demo-only, no Firestore impact."
           />
 
           {/* Win Card Generator */}
-          <ToolCard icon={Share2} title="Win Card Generator (Combo B)" status="MVP">
+          <ToolCard icon={Share2} title="Win Card Generator" status="MVP">
             <p>
               "Strava for leaders" demo. Generates a brand-styled,
               LinkedIn-shareable card from a leader's win. Validates whether
@@ -412,7 +412,7 @@ const LeaderRepsLab = () => {
           </ToolCard>
 
           {/* Manager Multiplier */}
-          <ToolCard icon={UserPlus} title="Manager Multiplier (Combo A)" status="MVP">
+          <ToolCard icon={UserPlus} title="Manager Multiplier" status="MVP">
             <p>
               Dropbox-style B2B referral demo. Manager invites direct reports →
               both sides unlock value → Team Plan upsell. Visualizes the full
@@ -433,7 +433,7 @@ const LeaderRepsLab = () => {
           </ToolCard>
 
           {/* Pod Match */}
-          <ToolCard icon={Users2} title="Pod Match Simulator (Combo C)" status="MVP">
+          <ToolCard icon={Users2} title="Pod Match Simulator" status="MVP">
             <p>
               CrossFit-style "pods of 5" demo. Runs the matching algorithm on a
               mock cohort, scores each pod for diversity, and previews the Pod

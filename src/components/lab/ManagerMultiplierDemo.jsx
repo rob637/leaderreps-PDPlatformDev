@@ -1,6 +1,6 @@
 // src/components/lab/ManagerMultiplierDemo.jsx
 //
-// LeaderReps Lab — Manager Multiplier (Combo A MVP demo)
+// LeaderReps Lab — Manager Multiplier MVP demo
 //
 // Demo-only: admin-gated, fully client-side, no Firestore writes.
 // Purpose: visualize the manager-invites-direct-reports referral loop
@@ -158,7 +158,7 @@ const ManagerMultiplierDemo = () => {
               Manager Multiplier
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Combo A MVP — Dropbox-style "invite your direct reports → both
+              MVP — Dropbox-style "invite your direct reports → both
               sides unlock value." Demo of the funnel + reward loop.
             </p>
           </div>
