@@ -191,7 +191,7 @@ export default function StateOfLeadershipPublic() {
           </h1>
           <p className="mt-4 text-base md:text-lg text-white/80 max-w-2xl">
             {report?.subtitle ||
-              'What thousands of leaders practicing on LeaderReps actually struggle with, work on, and break through this year.'}
+              "A synthesis of the year's most credible leadership research, paired with early signals from inside LeaderReps. Every statistic is sourced."}
           </p>
         </div>
       </header>

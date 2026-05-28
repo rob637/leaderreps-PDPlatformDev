@@ -38,55 +38,71 @@ const SECTION_TYPES = [
 
 const CHART_TYPES = ['bar', 'line', 'pie'];
 
-// Hand-authored demo-quality starter content for the 2026 report. Edit in
-// place after seeding — the goal is that "Use starter template" produces a
-// publish-ready draft that already tells a story.
+// Starter template: a research-synthesis report. Every statistic is sourced
+// to a real, public, citable study so the report can be published with
+// integrity before LeaderReps has its own first-party data set. As platform
+// usage grows, future editions will lean more on internal signals.
+const STARTER_SUBTITLE =
+  "A synthesis of the year's most credible leadership research, paired with early signals from inside LeaderReps. Every statistic is sourced.";
+
 const STARTER_SECTIONS = [
   {
     type: 'intro',
-    title: 'The Year Leadership Got Harder',
-    body: 'In 2026, leaders are managing teams across more time zones, more contract types, and more AI-assisted workflows than at any point in the modern workplace. The leaders who thrived this year did three things differently: they had more reps, shorter feedback loops, and clearer language for hard moments. This is what we saw inside LeaderReps.',
+    title: 'The Year the Manager Bench Buckled',
+    body: '2026 is the year the data caught up to what every leader already felt: the job got harder, the support got thinner, and the people doing the hardest work — frontline managers — got squeezed the most.\n\nThis report is a synthesis of the year\'s most credible research on the state of leadership, paired with early signals from inside LeaderReps. Every statistic is sourced. Where our platform data is too early to be statistically meaningful, we say so plainly.',
   },
   {
     type: 'key-findings',
-    title: 'Five Findings From 2026',
-    body: '1. Leaders who completed 5+ "hard conversation" reps reported 2.3x higher confidence going into Q4 reviews.\n2. The single most-practiced skill on the platform was "giving feedback that lands" — 4x more reps than any other.\n3. Managers using the daily 1:1 framework reported 38% lower attrition on their teams over 6 months.\n4. AI-assisted prep cut average meeting prep time from 22 minutes to 6 — but only for leaders who already had strong frameworks.\n5. The leaders rated highest by their teams had one habit in common: they wrote a weekly recognition note. Not monthly. Weekly.',
+    title: 'Five Things That Defined Leadership in 2026',
+    body: '1. **Engagement is in retreat.** Gallup\'s 2024 State of the Global Workplace clocked the first global engagement decline since 2009 — falling from 23% to 21% — and the drop was steepest among managers, who fell from 30% to 27%.\n\n2. **Manager bench strength is at a decade low.** DDI\'s 2025 Global Leadership Forecast — surveying more than 11,000 leaders across 50 countries — found only 12% of organizations rate their leadership pipeline as strong. It is the lowest reading in the survey\'s history.\n\n3. **AI is here; the playbook isn\'t.** Microsoft and LinkedIn\'s 2024 Work Trend Index found 75% of global knowledge workers now use AI at work, up from 46% just six months earlier. Yet 60% of leaders say their organization still lacks a clear AI vision and plan.\n\n4. **The "broken rung" is still broken.** McKinsey and LeanIn\'s 2024 Women in the Workplace report shows only 81 women promoted to first-level manager for every 100 men — a gap nearly unchanged in a decade.\n\n5. **Feedback is collapsing into silence.** Workhuman\'s 2024 Human Workplace Index found only 14% of employees strongly agree their performance reviews inspire them to improve. The reps aren\'t happening — and when they do, they don\'t land.',
   },
   {
     type: 'stat-highlight',
-    title: 'The Number That Surprised Us',
-    body: 'Most leaders know the conversation needs to happen. Almost two-thirds wait at least a month to start it.',
-    statValue: '63%',
-    statLabel: 'of managers said they avoided a needed performance conversation for 30+ days in 2026',
+    title: 'The Number Every CHRO Should Read Twice',
+    body: 'DDI\'s Global Leadership Forecast 2025 surveyed more than 11,000 leaders in 50 countries. The leadership bench-strength score is now the lowest it has been in the decade DDI has run the survey — and 40% of those leaders said they are considering leaving their current role within a year.',
+    statValue: '12%',
+    statLabel: 'of organizations rate their leadership bench as strong — a 10-year low (DDI Global Leadership Forecast 2025)',
+  },
+  {
+    type: 'key-findings',
+    title: 'Where the Pressure Is Coming From',
+    body: 'Three forces are stacking on the modern manager at once.\n\n**Span of control is expanding.** Gartner\'s 2024 HR Priorities research found 75% of HR leaders agree managers are overwhelmed by the growth in job responsibilities, with the average manager now overseeing more direct reports than at any point in the last decade.\n\n**Hybrid friction hasn\'t resolved.** Microsoft\'s 2024 Work Trend Index found 53% of leaders say productivity must increase, while 68% of employees report they don\'t have enough time and energy to do their jobs. The gap between those two numbers is the conflict every manager is being asked to absorb.\n\n**AI is adding work before it removes it.** 78% of workers using AI at work now bring their own tools (Microsoft + LinkedIn WTI 2024), forcing managers to oversee shadow workflows on top of sanctioned ones — usually without policy, training, or air cover from above.',
+  },
+  {
+    type: 'stat-highlight',
+    title: 'The Cheapest Lever No One Is Pulling',
+    body: 'Zenger Folkman\'s analysis of more than 50,000 360° leadership assessments found that managers who give frequent, candid feedback rank in the 86th percentile of overall leadership effectiveness — versus the 25th percentile for those who do not. The intervention costs nothing. Workhuman\'s 2024 data shows most leaders still skip it.',
+    statValue: '14%',
+    statLabel: 'of employees say their performance review inspired them to improve (Workhuman 2024). The other 86% are getting feedback that doesn\'t land.',
+  },
+  {
+    type: 'quote',
+    title: 'A Pattern Researchers Keep Finding',
+    body: '"In every team I\'ve studied, the highest-performing ones aren\'t the ones with the smartest people. They\'re the ones where it\'s safe to admit you don\'t know something."\n\n— Amy Edmondson, Harvard Business School\n\nHer foundational research on psychological safety — confirmed by Google\'s Project Aristotle and replicated across hundreds of studies since — remains the single most predictive variable for team performance in 2026. Every other leadership lever multiplies through it.',
   },
   {
     type: 'chart',
-    title: 'Where Leaders Spent Their Reps',
-    body: 'Top 10 skills practiced across the platform in 2026. Feedback dominates — but conflict and delegation reps grew the fastest year-over-year.',
+    title: 'What Leaders Are Actually Practicing',
+    body: 'Early signals from LeaderReps members. We flag this clearly: our cohort is still small and growing. We include it because the early pattern matches what the field is reporting — feedback conversations dominate, with conflict and delegation reps growing fastest. Future editions will replace this preview with the full data set.',
     chartType: 'bar',
     chartDataRef: 'topSkills',
   },
   {
-    type: 'quote',
-    title: 'In Their Words',
-    body: '"I used to leave 1:1s hoping I\'d said the right thing. Now I leave them knowing I did. The frameworks gave me my words back."\n\n— Director of Engineering, Series C SaaS, on the platform 9 months',
-  },
-  {
     type: 'stat-highlight',
-    title: 'Recognition Is Still the Cheapest Lever',
-    body: 'Of the leaders who scored in the top quartile on team-rated trust, 91% had a recurring weekly recognition practice. Of those in the bottom quartile, 12% did.',
-    statValue: '91% vs 12%',
-    statLabel: 'gap in weekly recognition habits between top- and bottom-quartile trust leaders',
-  },
-  {
-    type: 'quote',
-    title: 'The Question Every Leader Asked',
-    body: '"How do I lead a team that\'s half AI-assisted, half not, without playing favorites?" — submitted by 412 leaders in 2026 (the most-asked question on the platform)',
+    title: 'The Recognition Gap Is Real',
+    body: 'Workhuman and Gallup\'s ongoing recognition research — corroborated by Achievers\' 2024 Workforce Engagement Report — converges on the same finding: employees who feel recognized at least monthly are 5x more likely to feel connected to their company culture and 4x more likely to be engaged. Recognition is the single best-ROI leadership behavior. It is also the one most managers under-do.',
+    statValue: '5×',
+    statLabel: 'higher culture connection for employees recognized at least monthly vs. less often (Workhuman + Gallup, 2024)',
   },
   {
     type: 'recommendations',
-    title: 'What Leaders Should Do in 2027',
-    body: '1. **Pick one hard conversation you\'ve been avoiding. Have it this week.** The data is unambiguous — the cost of waiting is higher than the cost of having it.\n\n2. **Adopt a weekly recognition practice.** Same day, same time, every week. Two people, one specific behavior each. That\'s the entire habit.\n\n3. **Cut your meeting prep time in half by writing the decision first.** Walk in knowing what you want to be true at the end. Use AI to pressure-test, not to draft.\n\n4. **Audit your 1:1s.** If you can\'t name what your direct report is working on developing, the 1:1 isn\'t doing its job. Change the agenda this week.\n\n5. **Stop being the middle.** When two people on your team are in conflict, get them in a room — don\'t carry messages. The leaders who did this in 2026 spent measurably less time on people issues by year-end.',
+    title: 'Five Things to Do in 2027',
+    body: 'The research is clear enough to act on. Pick one. Start this week.\n\n**1. Re-anchor your 1:1 around development, not status.** Workhuman and Gallup data both show that managers who use 1:1s to discuss growth — not just to status-check work — have teams with measurably higher engagement and lower attrition.\n\n**2. Build a weekly recognition habit.** Same day, same time, two people, one specific behavior each. The research-backed payoff (5× culture connection) is wildly disproportionate to the time cost.\n\n**3. Have the conversation you have been avoiding.** Reframe avoidance: every week you wait is a week the rest of the team watches the standard erode.\n\n**4. Put a stake in the ground on AI.** Microsoft\'s data is unambiguous — your team is already using AI. The question is whether you are shaping the practice or letting shadow patterns set the norm. Pick three workflows. Define what "good" looks like for each.\n\n**5. Sponsor someone publicly.** The broken-rung gap will not fix itself. The leaders who close it most reliably are the ones who name the person and the next role out loud, in meetings where decisions actually get made.',
+  },
+  {
+    type: 'intro',
+    title: 'About This Report',
+    body: 'The 2026 State of Leadership is a synthesis of the year\'s most credible public research on managers, teams, and organizational behavior — paired with early platform signals from LeaderReps.\n\nSources cited inline:\n• Gallup — State of the Global Workplace 2024\n• DDI — Global Leadership Forecast 2025\n• McKinsey + LeanIn.Org — Women in the Workplace 2024\n• Microsoft + LinkedIn — Work Trend Index Annual Report 2024\n• Workhuman — Human Workplace Index 2024\n• Zenger Folkman — 360° leadership effectiveness research\n• Gartner — HR Priorities Survey 2024\n• Achievers — Workforce Engagement Report 2024\n• Amy Edmondson (Harvard Business School) — foundational work on psychological safety; corroborated by Google\'s Project Aristotle\n\nAs the LeaderReps platform community grows, future editions will lean more heavily on first-party data from members. Today\'s edition combines the best of the field with the early shape of what we are seeing inside the practice.',
   },
 ];
 
@@ -240,7 +256,8 @@ const StateOfLeadershipAdmin = () => {
     } finally { setSaving(false); }
   };
 
-  const initWithStarter = () => saveReport({ sections: STARTER_SECTIONS });
+  const initWithStarter = () =>
+    saveReport({ sections: STARTER_SECTIONS, subtitle: STARTER_SUBTITLE });
 
   const updateSection = (idx, newSection) => {
     const next = [...sections];
@@ -437,15 +454,28 @@ const StateOfLeadershipAdmin = () => {
 
         {activeTab === 'builder' && report && (
           <div className="space-y-4">
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
-              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">Report title</label>
-              <input
-                value={report.title || ''}
-                onChange={(e) => setReport({ ...report, title: e.target.value })}
-                onBlur={() => saveReport({ title: report.title })}
-                placeholder={`${year} State of Leadership`}
-                className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-base font-bold text-slate-900 dark:text-white"
-              />
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">Report title</label>
+                <input
+                  value={report.title || ''}
+                  onChange={(e) => setReport({ ...report, title: e.target.value })}
+                  onBlur={() => saveReport({ title: report.title })}
+                  placeholder={`${year} State of Leadership`}
+                  className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-base font-bold text-slate-900 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">Subtitle (shown on hero + email)</label>
+                <textarea
+                  value={report.subtitle || ''}
+                  onChange={(e) => setReport({ ...report, subtitle: e.target.value })}
+                  onBlur={() => saveReport({ subtitle: report.subtitle })}
+                  placeholder="A one- to two-sentence hook for the report."
+                  rows={2}
+                  className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-200"
+                />
+              </div>
             </div>
 
             {sections.map((s, i) => (
