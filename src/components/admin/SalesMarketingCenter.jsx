@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Megaphone, Globe, Users, BarChart3,
-  ShieldAlert, ExternalLink, Sparkles, BookOpen,
+  ShieldAlert, ExternalLink, Sparkles, BookOpen, LineChart,
 } from 'lucide-react';
 import SocialMediaManager from './SocialMediaManager';
 import AssessmentLeadsManager from './AssessmentLeadsManager';
@@ -40,6 +40,12 @@ const TAB_GROUPS = [
     label: 'Content',
     tabs: [
       { id: 'book-builder', label: 'Book Builder', icon: BookOpen },
+    ],
+  },
+  {
+    label: 'Analytics',
+    tabs: [
+      { id: 'content-metrics', label: 'Content Metrics', icon: LineChart },
     ],
   },
 ];
@@ -188,6 +194,31 @@ const SalesMarketingCenter = () => {
               >
                 <BookOpen className="w-5 h-5" />
                 Open Book Builder
+              </button>
+            </div>
+          </div>
+        );
+      case 'content-metrics':
+        return (
+          <div className="flex flex-col items-center justify-center h-96 gap-6">
+            <div className="p-6 bg-gradient-to-br from-corporate-teal to-emerald-600 rounded-2xl shadow-xl">
+              <LineChart className="w-16 h-16 text-white" />
+            </div>
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+                Content Metrics
+              </h2>
+              <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md">
+                Silent opens / unique opens / completions for every content piece.
+                Toggle the social-proof badge per item (e.g. &ldquo;read by 143 leaders&rdquo;)
+                once counts are meaningful.
+              </p>
+              <button
+                onClick={() => navigate('admin-content-metrics')}
+                className="px-6 py-3 bg-[#47A88D] hover:bg-[#3d9179] text-white font-semibold rounded-xl shadow-lg transition-all flex items-center gap-2 mx-auto"
+              >
+                <BarChart3 className="w-5 h-5" />
+                Open Content Metrics
               </button>
             </div>
           </div>
