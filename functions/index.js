@@ -3072,7 +3072,7 @@ ${draft}
 
 Grade this draft.`;
 
-  const model = 'gemini-2.0-flash-exp';
+  const model = 'gemini-2.0-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
 
   const body = {
