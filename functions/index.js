@@ -2984,6 +2984,273 @@ exports.getKudos = onRequest(
 );
 
 // ================================================================
+// GRADE RF KUDOS — Public lead-magnet AI coaching for Reinforcing
+// Feedback Kudos. Anonymous (no Firebase Auth required) but
+// rate-limited by leader email. Grades the leader's draft against
+// the same DRF rubric used inside the platform (Behavior / Impact /
+// Reinforcement, 0-3 each) and returns scores + a stronger version.
+//
+// Identity model (different from anonymous Kudos!):
+//   - This kudos is ATTRIBUTED to the leader. We capture their name +
+//     email and pass it through into the response. We do NOT email the
+//     recipient — the leader copies the stronger version and sends it
+//     themselves from their own channel.
+//
+// Lead capture: every grade call writes to rfkudos_leads/{id}.
+//
+// Request body: { leaderName, leaderEmail, recipientName, draft }
+// Response 200: { success, scores, overall, pass, strongerVersion,
+//                 tips, provider, model }
+// Response 4xx/5xx: { error, code? }
+// ================================================================
+
+const RFKUDOS_RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const RFKUDOS_RATE_MAX = 15;                    // per leaderEmail per hour
+const RFKUDOS_MAX_DRAFT_LEN = 1500;
+const RFKUDOS_MAX_NAME_LEN = 80;
+
+function rfkIsValidEmail(s) {
+  return typeof s === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+}
+
+async function gradeRFKudosWithGemini({ leaderName, recipientName, draft, geminiKey }) {
+  if (!geminiKey) {
+    const err = new Error('AI grader is not configured');
+    err.code = 'no-grader';
+    throw err;
+  }
+
+  const systemPrompt = `You are an expert leadership coach grading a piece of REINFORCING FEEDBACK (a "kudos") a manager is about to give to one of their direct reports.
+
+Score the draft on three dimensions, each 0-3:
+
+1. BEHAVIOR (critical) — Does the kudos name a specific, observable action?
+   3 = Specific: names a single discrete action with enough detail another observer could recognize it (who, what, when/where).
+   2 = Present: names an action but missing some specifics (time, place, or exact wording).
+   1 = Vague: names a category, trait, or pattern — not a discrete instance.
+   0 = Missing: only feelings, traits, or outcomes; no behavior referenced.
+
+2. IMPACT — Does the kudos name the concrete consequence the behavior produced?
+   3 = Concrete: quantified or vivid downstream effect.
+   2 = Named: effect named but general.
+   1 = Vague: vague positive framing without a clear effect.
+   0 = Missing: no impact mentioned.
+
+3. REINFORCEMENT — Does the kudos signal "do this again"?
+   3 = Explicit: direct ask to do it again, naming it as a strength to lean into, or committing to notice it.
+   2 = Implicit: clear positive framing that signals "more of this."
+   1 = Generic: generic praise without a "do it again" signal.
+   0 = Missing: no reinforcing language.
+
+PASS RULE: total >= 5 AND no fail rule triggered AND Behavior >= 2.
+FAIL RULES: Behavior <= 1 → fail. Impact == 0 → fail.
+
+Then produce a STRONGER VERSION of the kudos — keep the leader's voice, just sharpen behavior specificity, name the impact, and add an explicit reinforcement signal. Same length or slightly longer. Do not invent facts not implied by the draft.
+
+Then produce 1-3 short, concrete TIPS the leader can use next time (not generic platitudes).
+
+Return STRICT JSON only:
+{
+  "scores": { "behavior": int 0-3, "impact": int 0-3, "reinforcement": int 0-3 },
+  "behaviorLabel": "Specific|Present|Vague|Missing",
+  "impactLabel": "Concrete|Named|Vague|Missing",
+  "reinforcementLabel": "Explicit|Implicit|Generic|Missing",
+  "overall": int 0-9,
+  "pass": boolean,
+  "headline": "one-sentence summary of the grade (e.g. 'Strong on warmth, light on specifics')",
+  "strongerVersion": "the improved kudos text, in the leader's voice",
+  "tips": ["tip 1", "tip 2"]
+}`;
+
+  const userPrompt = `Leader: ${leaderName}
+Recipient (their direct report): ${recipientName}
+
+Draft kudos:
+"""
+${draft}
+"""
+
+Grade this draft.`;
+
+  const model = 'gemini-2.0-flash-exp';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
+
+  const body = {
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+    generationConfig: {
+      temperature: 0.4,
+      maxOutputTokens: 1200,
+      responseMimeType: 'application/json',
+    },
+  };
+
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!resp.ok) {
+    const errText = await resp.text().catch(() => '');
+    const err = new Error(`Gemini error ${resp.status}: ${errText.slice(0, 200)}`);
+    err.code = 'grader-failed';
+    throw err;
+  }
+  const data = await resp.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    const err = new Error('Grader returned non-JSON');
+    err.code = 'grader-parse';
+    throw err;
+  }
+  return { ...parsed, _provider: 'gemini', _model: model };
+}
+
+exports.gradeRFKudos = onRequest(
+  {
+    cors: true,
+    invoker: 'public',
+    secrets: ['GEMINI_API_KEY'],
+  },
+  async (req, res) => {
+    if (req.method === 'OPTIONS') {
+      res.status(204).send('');
+      return;
+    }
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    const { leaderName, leaderEmail, recipientName, draft } = req.body || {};
+
+    if (!leaderName || typeof leaderName !== 'string' || leaderName.trim().length === 0) {
+      res.status(400).json({ error: 'leaderName is required' });
+      return;
+    }
+    if (!rfkIsValidEmail(leaderEmail)) {
+      res.status(400).json({ error: 'leaderEmail must be a valid email' });
+      return;
+    }
+    if (!recipientName || typeof recipientName !== 'string' || recipientName.trim().length === 0) {
+      res.status(400).json({ error: 'recipientName is required' });
+      return;
+    }
+    if (!draft || typeof draft !== 'string' || draft.trim().length < 10) {
+      res.status(400).json({ error: 'draft is required (min 10 chars)' });
+      return;
+    }
+    if (leaderName.length > RFKUDOS_MAX_NAME_LEN || recipientName.length > RFKUDOS_MAX_NAME_LEN) {
+      res.status(413).json({ error: 'Name too long', code: 'too-long' });
+      return;
+    }
+    if (draft.length > RFKUDOS_MAX_DRAFT_LEN) {
+      res.status(413).json({
+        error: `Draft too long (max ${RFKUDOS_MAX_DRAFT_LEN} characters).`,
+        code: 'too-long',
+      });
+      return;
+    }
+
+    const normalizedEmail = leaderEmail.trim().toLowerCase();
+
+    // ----- rate limit on leaderEmail (same windowed-counter pattern as sendKudos)
+    try {
+      const now = Date.now();
+      const counterRef = db.collection('rfkudos_sender_counters').doc(
+        normalizedEmail.replace(/[^a-z0-9._-]+/g, '_')
+      );
+      const counter = await db.runTransaction(async (tx) => {
+        const snap = await tx.get(counterRef);
+        const data = snap.exists ? snap.data() : { windowStart: 0, count: 0 };
+        if (now - (data.windowStart || 0) > RFKUDOS_RATE_WINDOW_MS) {
+          data.windowStart = now;
+          data.count = 0;
+        }
+        data.count = (data.count || 0) + 1;
+        data.lastAt = now;
+        tx.set(counterRef, data, { merge: true });
+        return data;
+      });
+      if (counter.count > RFKUDOS_RATE_MAX) {
+        res.status(429).json({
+          error: 'Too many grading requests from this email recently. Try again in an hour.',
+        });
+        return;
+      }
+    } catch (err) {
+      logger.warn(`gradeRFKudos rate-limit check failed: ${err && err.message}`);
+      // Fail open on infra issues — the grader call itself is the real cost cap.
+    }
+
+    // ----- grade
+    let result;
+    try {
+      result = await gradeRFKudosWithGemini({
+        leaderName: leaderName.trim(),
+        recipientName: recipientName.trim(),
+        draft: draft.trim(),
+        geminiKey: process.env.GEMINI_API_KEY,
+      });
+    } catch (err) {
+      const code = err && err.code ? err.code : 'internal';
+      logger.error(`gradeRFKudos: ${code} — ${err && err.message}`);
+      res.status(500).json({
+        error: err && err.message ? err.message : 'Grading failed',
+        code,
+      });
+      return;
+    }
+
+    // ----- persist lead (best effort — never block the response)
+    try {
+      const leadRef = db.collection('rfkudos_leads').doc();
+      await leadRef.set({
+        leadId: leadRef.id,
+        leaderName: leaderName.trim(),
+        leaderEmail: normalizedEmail,
+        recipientName: recipientName.trim(),
+        draft: draft.trim(),
+        scores: result.scores || null,
+        overall: typeof result.overall === 'number' ? result.overall : null,
+        pass: !!result.pass,
+        headline: result.headline || '',
+        strongerVersion: result.strongerVersion || '',
+        tips: Array.isArray(result.tips) ? result.tips : [],
+        provider: result._provider || 'gemini',
+        model: result._model || '',
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        source: 'rf-kudos-public-landing',
+        leadStatus: 'new',
+      });
+      logger.info(`gradeRFKudos: lead=${leadRef.id} overall=${result.overall} pass=${result.pass}`);
+    } catch (err) {
+      logger.warn(`gradeRFKudos lead persist failed: ${err && err.message}`);
+      // Continue — the user still gets their grade.
+    }
+
+    res.status(200).json({
+      success: true,
+      scores: result.scores,
+      behaviorLabel: result.behaviorLabel,
+      impactLabel: result.impactLabel,
+      reinforcementLabel: result.reinforcementLabel,
+      overall: result.overall,
+      pass: result.pass,
+      headline: result.headline,
+      strongerVersion: result.strongerVersion,
+      tips: result.tips,
+      provider: result._provider,
+      model: result._model,
+    });
+  }
+);
+
+
+// ================================================================
 // DRF EVALUATION FUNCTION
 // Implements the LeaderReps AI Evaluation Specification for 
 // Deliver Reinforcing Feedback Real Reps

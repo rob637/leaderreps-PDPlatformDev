@@ -346,7 +346,7 @@ const LeaderRepsLab = () => {
               </a>
             </div>
             <p className="text-xs text-slate-400">
-              Public marketing landing routes visitors to Leadership Lab sign-up → in-Lab practice rep. The tool itself is sign-in gated by design.
+              Public AI-coaching lead magnet (no login required) — leader drafts a kudos, gets graded against the DRF rubric, captures lead. The full practice-tracking experience lives in Leadership Lab (sign-in).
             </p>
           </ToolCard>
 
