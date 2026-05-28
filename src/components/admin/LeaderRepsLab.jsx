@@ -454,7 +454,7 @@ const LeaderRepsLab = () => {
           </ToolCard>
 
           {/* Ascent 2 */}
-          <ToolCard icon={Mountain} title="Ascent 2" status="Experimental">
+          <ToolCard icon={Mountain} title="Ascent 2" status="MVP">
             <p>
               Ascent 2 prototype — admin preview of the next-generation
               development arc.
@@ -474,7 +474,7 @@ const LeaderRepsLab = () => {
           </ToolCard>
 
           {/* Leadership Lab — cohort SMS + spaced-repetition experiment (consolidated from SMS Tool + SRS Engine) */}
-          <ToolCard icon={FlaskConical} title="Leadership Lab (SMS + SRS Experiment)" status="Live">
+          <ToolCard icon={FlaskConical} title="Leadership Lab (SMS + SRS Experiment)" status="MVP">
             <p>
               Separate cohort-engagement app. Delivers leadership reps over SMS
               with spaced-repetition cadence — validates both the SMS channel
