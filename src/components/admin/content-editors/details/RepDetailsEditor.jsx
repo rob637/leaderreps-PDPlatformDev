@@ -81,7 +81,7 @@ const RepDetailsEditor = ({ details, onChange, type }) => {
 
       const payload = {
         prompt: prompt,
-        model: GEMINI_MODEL || 'gemini-2.0-flash',
+        model: GEMINI_MODEL || 'gemini-2.5-flash',
       };
 
       const result = await callSecureGeminiAPI(payload);

@@ -15,7 +15,7 @@
 const PROJECT_ID = import.meta.env.VITE_FIREBASE_PROJECT_ID;
 const GEMINI_PROXY_URL = `https://us-central1-${PROJECT_ID}.cloudfunctions.net/geminiProxy`;
 
-const DEFAULT_MODEL = 'gemini-2.0-flash';
+const DEFAULT_MODEL = 'gemini-2.5-flash';
 
 async function callGemini({ prompt, systemInstruction, model = DEFAULT_MODEL }) {
   const res = await fetch(GEMINI_PROXY_URL, {

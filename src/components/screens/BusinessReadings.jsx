@@ -95,7 +95,7 @@ async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmittin
 
     const payload = {
         contents: [{ role: 'user', parts: [{ text: systemPrompt }] }],
-        model: services.GEMINI_MODEL || 'gemini-2.0-flash',
+        model: services.GEMINI_MODEL || 'gemini-2.5-flash',
         generationConfig: { temperature: 0.6, maxOutputTokens: 150 }
     };
 

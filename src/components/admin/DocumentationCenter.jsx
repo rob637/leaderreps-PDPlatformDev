@@ -552,7 +552,7 @@ The output should be ready to save directly as the .md file.
 
       const result = await callSecureGeminiAPI({
         prompt,
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         systemInstruction: 'You are an expert technical writer. Output ONLY the complete updated markdown documentation. No explanations, no preamble - just the full updated .md file content.'
       });
 
@@ -655,7 +655,7 @@ Format your response as:
 
       const result = await callSecureGeminiAPI({
         prompt,
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         systemInstruction: 'You are a technical documentation expert focused on accuracy and continuous improvement (Kaizen). Always ground your suggestions in the provided code context, especially copilot-instructions.md.'
       });
 

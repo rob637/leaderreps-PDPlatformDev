@@ -96,7 +96,7 @@ Keep responses concise (3-5 sentences), actionable, and directly answer the ques
 
       const payload = {
         prompt: q,
-        model: GEMINI_MODEL || 'gemini-2.0-flash',
+        model: GEMINI_MODEL || 'gemini-2.5-flash',
         systemInstruction
       };
 

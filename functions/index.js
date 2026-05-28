@@ -2422,7 +2422,7 @@ exports.geminiProxy = onRequest(
       return;
     }
 
-    const { prompt, model = "gemini-2.0-flash", systemInstruction } = req.body || {};
+    const { prompt, model = "gemini-2.5-flash", systemInstruction } = req.body || {};
 
     if (!prompt) {
       res.status(400).json({ error: "Prompt is required" });
@@ -3072,7 +3072,7 @@ ${draft}
 
 Grade this draft.`;
 
-  const model = 'gemini-2.0-flash';
+  const model = 'gemini-2.5-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
 
   const body = {
@@ -3466,7 +3466,7 @@ Respond ONLY with valid JSON in this exact format:
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-flash',
       generationConfig: {
         responseMimeType: 'application/json'
       }
@@ -3748,7 +3748,7 @@ Respond ONLY with valid JSON in this exact format:
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-flash',
       generationConfig: {
         responseMimeType: 'application/json'
       }
@@ -4020,7 +4020,7 @@ Respond ONLY with valid JSON in this exact format:
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-flash',
       generationConfig: {
         responseMimeType: 'application/json'
       }
@@ -4337,7 +4337,7 @@ Respond ONLY with valid JSON in this exact format:
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-flash',
       generationConfig: {
         responseMimeType: 'application/json'
       }
@@ -4832,7 +4832,7 @@ Respond ONLY with valid JSON in this exact format:
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-flash',
       generationConfig: {
         responseMimeType: 'application/json'
       }
@@ -5104,7 +5104,7 @@ Respond with JSON only:
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-flash',
       generationConfig: {
         responseMimeType: 'application/json'
       }
@@ -5440,7 +5440,7 @@ Respond ONLY with valid JSON in this exact format:
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ 
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         generationConfig: {
           responseMimeType: 'application/json'
         }
@@ -11249,7 +11249,7 @@ const fetchAllPlatformPosts = async (maxAge = 48) => {
  * Generate AI response for a post using Gemini
  */
 const generateSocialResponse = async (post, genAI) => {
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
   
   const prompt = `You are helping respond to social media posts about leadership development.
 
@@ -11300,7 +11300,7 @@ Generate a helpful, authentic response to this post.`;
  * Returns true if the post is relevant, false otherwise
  */
 const checkLeadershipRelevance = async (post, genAI) => {
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
   
   const prompt = `You are a content classifier for a leadership development platform.
 
@@ -11813,7 +11813,7 @@ const generateLeadershipInsights = async (results, firstName) => {
   }
 
   const genAI = new GoogleGenerativeAI(geminiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const topDims = results.topDimensions || [];
   const scores = results.scores || {};
@@ -12102,7 +12102,7 @@ const generateROIInsights = async (inputs, results) => {
   }
 
   const genAI = new GoogleGenerativeAI(geminiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   // Use results.totalInvestment (calculated value) since inputs only has investmentPerLeader
   const totalInvestment = results.totalInvestment || (inputs.investmentPerLeader * inputs.numLeaders) || 0;
@@ -12481,7 +12481,7 @@ const generateAccountabilityInsights = async (results, firstName) => {
   }
 
   const genAI = new GoogleGenerativeAI(geminiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const yesCount = Number(results.yesCount || 0);
   const totalQuestions = Number(results.totalQuestions || 7);
@@ -13338,7 +13338,7 @@ const generateReadinessInsights = async (results, firstName) => {
   }
 
   const genAI = new GoogleGenerativeAI(geminiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const topDims = results.topDimensions || [];
   const growthArea = results.growthArea || 'selfAwareness';
@@ -14077,7 +14077,7 @@ ${chapterSummary || '(No content provided)'}`;
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: "gemini-2.5-flash",
         systemInstruction: `You are an expert book writer specializing in leadership and business content. You write in a clear, engaging style suitable for publication. You synthesize source materials into original prose rather than simply quoting them.`
       });
 
@@ -14442,7 +14442,7 @@ exports.transcribeVideo = onCall(
         
         // For YouTube, Gemini can process directly with the watch URL
         const model = genAI.getGenerativeModel({
-          model: "gemini-2.0-flash",
+          model: "gemini-2.5-flash",
           systemInstruction: `You are a professional transcriptionist. Your task is to create an accurate, readable transcript of the video content.`
         });
 
@@ -14544,7 +14544,7 @@ Return ONLY the transcript text, no commentary or metadata.`
         
         // Generate transcript
         const model = genAI.getGenerativeModel({
-          model: "gemini-2.0-flash",
+          model: "gemini-2.5-flash",
           systemInstruction: `You are a professional transcriptionist. Your task is to create an accurate, readable transcript of the video content.`
         });
 
@@ -14707,7 +14707,7 @@ exports.extractDocumentText = onCall(
         
         // Extract text
         const model = genAI.getGenerativeModel({
-          model: "gemini-2.0-flash",
+          model: "gemini-2.5-flash",
           systemInstruction: `You are a professional document transcriber. Your task is to extract all text content from documents accurately while maintaining structure and readability.`
         });
 
@@ -14900,7 +14900,7 @@ exports.generateFullBook = onCall(
       // Step 2: Generate chapter outline using AI
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: "gemini-2.5-flash",
         systemInstruction: `You are an expert book strategist and author specializing in leadership development content. You create compelling, practical book structures.`
       });
 
@@ -16154,7 +16154,7 @@ Do NOT continue the role-play under any circumstances.`;
       throw new Error("Both AI providers unavailable");
     }
     const genAI = new GoogleGenerativeAI(geminiKey);
-    const geminiModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const geminiModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     // Convert messages to Gemini format
     const geminiHistory = claudeMessages.slice(0, -1).map((m) => ({
       role: m.role === "assistant" ? "model" : "user",
@@ -17767,7 +17767,7 @@ async function transcribeVoiceMemo(mediaUrl, mimeType) {
 
   // Use Gemini for transcription — it natively understands audio
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const result = await model.generateContent([
     {
@@ -25923,7 +25923,7 @@ exports.generateIdentityStatement = onCall(
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         systemInstruction,
         generationConfig: {
           temperature: 0.8,
@@ -26080,7 +26080,7 @@ exports.suggestLisFromReps = onCall(
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         systemInstruction,
         generationConfig: { temperature: 0.7, responseMimeType: 'application/json' },
       });
