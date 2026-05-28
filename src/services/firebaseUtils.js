@@ -27,5 +27,8 @@ export {
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  verifyBeforeUpdateEmail,
+  EmailAuthProvider,
+  reauthenticateWithCredential
 } from 'firebase/auth';

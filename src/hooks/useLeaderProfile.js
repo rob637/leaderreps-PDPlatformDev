@@ -112,6 +112,39 @@ export const useLeaderProfile = () => {
 
       await setDoc(profileRef, dataToSave, { merge: true });
 
+      // Mirror displayed identity (email / displayName) to users/{uid} so
+      // admin views and other features that read users/{uid} stay in sync.
+      // NOTE: This does NOT update the Firebase Auth login email — that
+      // requires email verification and is done from App Settings via
+      // services/userEmailService.js. The login email may temporarily lag
+      // behind the displayed email until the user verifies.
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        const identityUpdate = {};
+        if (profileData.email && profileData.email.trim()) {
+          identityUpdate.email = profileData.email.trim();
+        }
+        const firstName = (profileData.firstName || '').trim();
+        const lastName = (profileData.lastName || '').trim();
+        const fullName = [firstName, lastName].filter(Boolean).join(' ');
+        if (fullName) {
+          identityUpdate.displayName = fullName;
+        }
+        if (Object.keys(identityUpdate).length > 0) {
+          identityUpdate.emailUpdatedAt = serverTimestamp();
+          await updateDoc(userRef, identityUpdate).catch(async (err) => {
+            // Fall back to setDoc with merge if the user doc doesn't exist yet.
+            if (err?.code === 'not-found') {
+              await setDoc(userRef, identityUpdate, { merge: true });
+            } else {
+              throw err;
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('[useLeaderProfile] Failed to mirror identity to users/{uid}:', e);
+      }
+
       // Set prepStatus flag on user doc for unified tracking
       if (markComplete) {
         const userRef = doc(db, 'users', user.uid);

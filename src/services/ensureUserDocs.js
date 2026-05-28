@@ -34,11 +34,19 @@ export const ensureUserDocs = async (db, uidOrUser) => {
             _createdAt: serverTimestamp()
         }, true); // merge: true to preserve cohortId/role from AuthPanel
     } else {
-        // Update existing profile with latest user info (in case name/email changed)
+        // Update existing profile with latest user info (in case name/photo changed)
+        // NOTE: We intentionally do NOT sync email from auth.user.email here.
+        // Users can change their displayed/contact email from App Settings
+        // (see services/userEmailService.js). Auth email updates require the
+        // user to click a verification link in the new inbox, so during the
+        // window between "user typed a new email" and "user clicked the link"
+        // the Firestore copy is the source of truth — overwriting it from
+        // auth.user.email would silently revert their change.
         const existingData = userProfileSnap.data();
         const updates = {};
-        
-        if (user?.email && user.email !== existingData.email) {
+
+        // Only seed email from auth if Firestore has none yet (legacy users).
+        if (user?.email && !existingData.email) {
             updates.email = user.email;
         }
         if (user?.displayName && user.displayName !== existingData.displayName) {
