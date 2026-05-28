@@ -330,14 +330,14 @@ const LeaderRepsLab = () => {
                 href="https://leaderreps-lab.web.app/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-corporate-teal text-corporate-teal-ink text-sm font-semibold hover:bg-corporate-teal/5 transition-colors w-fit"
               >
-                Open external app
+                Preview public landing
                 <ExternalLink className="w-4 h-4" />
               </a>
             </div>
             <p className="text-xs text-slate-400">
-              External experiment · leader-facing AI-coached practice (not an admin send tool).
+              Leader-facing practice rep — no admin send composer (the leader does the work, AI coaches the draft).
             </p>
           </ToolCard>
 
