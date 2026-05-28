@@ -2,90 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { User, Lock, Code, Cpu, Settings, Shield, LogOut, Key, Mail, Bell, BellOff, CheckCircle, X, AlertTriangle } from 'lucide-react';
+import { User, Lock, Code, Cpu, Settings, Shield, LogOut, Key, Mail, Bell, BellOff, CheckCircle, X, AlertTriangle, Info } from 'lucide-react';
 import { sendPasswordResetEmail, doc, getDoc } from '../../services/firebaseUtils';
 import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
 import { Button, Card } from '../ui';
 import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
 import { notificationService } from '../../services/notificationService';
-import { changeUserEmail, isValidEmail } from '../../services/userEmailService';
 
 const AppSettingsScreen = () => {
   const { user, API_KEY, auth, navigate, isAdmin, db } = useAppServices();
   const [notificationStatus, setNotificationStatus] = useState('checking');
   const [isEnablingNotifications, setIsEnablingNotifications] = useState(false);
-
-  // Change-email modal state
-  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
-  const [newEmail, setNewEmail] = useState('');
-  const [confirmEmail, setConfirmEmail] = useState('');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [needsPassword, setNeedsPassword] = useState(false);
-  const [emailSaving, setEmailSaving] = useState(false);
-  const [emailError, setEmailError] = useState('');
-  const [emailSuccess, setEmailSuccess] = useState('');
-
-  const openEmailModal = () => {
-    setNewEmail('');
-    setConfirmEmail('');
-    setCurrentPassword('');
-    setNeedsPassword(false);
-    setEmailError('');
-    setEmailSuccess('');
-    setIsEmailModalOpen(true);
-  };
-
-  const handleSubmitEmailChange = async () => {
-    setEmailError('');
-    setEmailSuccess('');
-
-    if (!isValidEmail(newEmail)) {
-      setEmailError('Please enter a valid email address.');
-      return;
-    }
-    if (newEmail.trim().toLowerCase() !== confirmEmail.trim().toLowerCase()) {
-      setEmailError('The two email addresses do not match.');
-      return;
-    }
-    if (newEmail.trim().toLowerCase() === (user?.email || '').toLowerCase()) {
-      setEmailError('That is already your current email.');
-      return;
-    }
-
-    setEmailSaving(true);
-    try {
-      const result = await changeUserEmail({
-        db,
-        auth,
-        uid: user.uid,
-        currentEmail: user.email,
-        newEmail: newEmail.trim(),
-        password: needsPassword ? currentPassword : undefined,
-      });
-
-      if (result.authStatus === 'verification_sent') {
-        setEmailSuccess(
-          `Updated. A verification link was sent to ${newEmail.trim()} — click it to also update your login email. Your displayed/contact email is updated immediately.`
-        );
-        setNeedsPassword(false);
-      } else if (result.authStatus === 'requires_reauth') {
-        setNeedsPassword(true);
-        setEmailError(
-          'For security, please re-enter your current password to change your login email.'
-        );
-      } else if (result.authStatus === 'failed') {
-        setEmailSuccess(
-          `Your displayed email was updated. However, we could not start the login-email change: ${result.authError || 'unknown error'}.`
-        );
-      } else {
-        setEmailSuccess('Your displayed email has been updated.');
-      }
-    } catch (err) {
-      setEmailError(err?.message || 'Failed to update email.');
-    } finally {
-      setEmailSaving(false);
-    }
-  };
 
   useEffect(() => {
     checkNotificationStatus();
@@ -187,11 +114,11 @@ const AppSettingsScreen = () => {
                     <div className="p-4 bg-slate-50/80 dark:bg-slate-800/80 rounded-xl border border-slate-100">
                         <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Email Address</p>
                         <p className="font-medium text-corporate-navy">{user?.email || 'N/A'}</p>
+                        <div className="mt-2 flex items-start gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                            <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                            <span>To change your login email, contact your administrator.</span>
+                        </div>
                     </div>
-                    <Button onClick={openEmailModal} variant="outline" size="sm" className="w-full justify-center">
-                        <Mail className="w-4 h-4" />
-                        Change Email Address
-                    </Button>
                     <Button onClick={handleResetPassword} variant="outline" size="sm" className="w-full justify-center">
                         <Key className="w-4 h-4" />
                         Send Password Reset Email
@@ -322,141 +249,6 @@ const AppSettingsScreen = () => {
 
         </div>
       </div>
-
-      {/* Change Email Modal */}
-      {isEmailModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={() => !emailSaving && setIsEmailModalOpen(false)}
-        >
-          <div
-            className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-5 bg-[#002E47] flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <Mail className="w-5 h-5 text-white/90" />
-                <h3 className="text-lg font-bold text-white">Change Email Address</h3>
-              </div>
-              <button
-                onClick={() => !emailSaving && setIsEmailModalOpen(false)}
-                className="p-2 -mr-1 hover:bg-white/10 rounded-lg text-white/80 hover:text-white transition-colors"
-                aria-label="Close"
-                disabled={emailSaving}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-4">
-              <div className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/40 p-3 rounded-lg">
-                Your displayed and contact email will update everywhere immediately
-                (including the admin Users list). Your <strong>login</strong> email
-                will change only after you click the verification link sent to your
-                new inbox.
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                  Current Email
-                </label>
-                <input
-                  type="email"
-                  value={user?.email || ''}
-                  disabled
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 text-slate-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                  New Email <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder="name@company.com"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-corporate-teal"
-                  disabled={emailSaving}
-                  autoComplete="email"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                  Confirm New Email <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  value={confirmEmail}
-                  onChange={(e) => setConfirmEmail(e.target.value)}
-                  placeholder="name@company.com"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-corporate-teal"
-                  disabled={emailSaving}
-                  autoComplete="email"
-                />
-              </div>
-
-              {needsPassword && (
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                    Current Password <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-corporate-teal"
-                    disabled={emailSaving}
-                    autoComplete="current-password"
-                  />
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Required by Firebase when your last sign-in was a while ago.
-                  </p>
-                </div>
-              )}
-
-              {emailError && (
-                <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 p-3 rounded-lg">
-                  <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <span>{emailError}</span>
-                </div>
-              )}
-
-              {emailSuccess && (
-                <div className="flex items-start gap-2 text-sm text-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/40 p-3 rounded-lg">
-                  <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                  <span>{emailSuccess}</span>
-                </div>
-              )}
-
-              <div className="flex gap-3 pt-2">
-                <Button
-                  onClick={() => setIsEmailModalOpen(false)}
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 justify-center"
-                  disabled={emailSaving}
-                >
-                  {emailSuccess ? 'Close' : 'Cancel'}
-                </Button>
-                {!emailSuccess && (
-                  <Button
-                    onClick={handleSubmitEmailChange}
-                    variant="primary"
-                    size="sm"
-                    className="flex-1 justify-center"
-                    disabled={emailSaving || !newEmail || !confirmEmail || (needsPassword && !currentPassword)}
-                  >
-                    {emailSaving ? 'Updating...' : 'Update Email'}
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
