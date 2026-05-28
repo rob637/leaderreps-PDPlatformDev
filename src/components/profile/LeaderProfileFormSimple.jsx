@@ -349,8 +349,20 @@ const LeaderProfileFormSimple = ({ onComplete, onClose, isModal = true }) => {
               <InputField field="firstName" label="First Name" required placeholder="John" value={formData.firstName} onChange={handleChange} error={errors.firstName} />
               <InputField field="lastName" label="Last Name" required placeholder="Smith" value={formData.lastName} onChange={handleChange} error={errors.lastName} />
             </div>
-            {/* Email */}
-            <InputField field="email" label="Email" type="email" required placeholder="john@company.com" value={formData.email} onChange={handleChange} error={errors.email} />
+            {/* Email — read-only; admin-managed */}
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-corporate-navy dark:text-white">Email</label>
+              <input
+                type="email"
+                value={formData.email || ''}
+                disabled
+                readOnly
+                className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 text-slate-500 cursor-not-allowed"
+              />
+              <p className="text-xs text-slate-500 dark:text-slate-400 italic">
+                To change your login email, contact your administrator.
+              </p>
+            </div>
             {/* Phone Number */}
             <div className="space-y-1">
               <label className="block text-sm font-medium text-corporate-navy dark:text-white">
