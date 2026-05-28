@@ -434,6 +434,12 @@ export const BREADCRUMB_MAP = {
     { label: 'Admin', path: 'admin-portal' },
     { label: 'Content Home', path: null }
   ],
+  'admin-content-metrics': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Admin', path: 'admin-portal' },
+    { label: 'Content Home', path: 'admin-content-home' },
+    { label: 'Content Metrics', path: null }
+  ],
   'admin-content-manager': [
     { label: 'Home', path: 'dashboard' },
     { label: 'Admin', path: 'admin-portal' },

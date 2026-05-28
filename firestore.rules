@@ -941,6 +941,39 @@ service cloud.firestore {
       allow read: if isAdmin();
     }
 
+    // Content Metrics — silent open/view tracking for social proof
+    //
+    // Event kinds (validated below):
+    //   open       — id `${uid}_${YYYYMMDD}_open`   (per-user-per-day dedup)
+    //   first_open — id `${uid}_first_open`          (per-user-forever dedup)
+    //   complete   — id `${uid}_complete`            (per-user-forever dedup)
+    //   coach_ask  — id `${uid}_${YYYYMMDD}_*_ask`   (no dedup)
+    //   share      — id `${uid}_${YYYYMMDD}_*_share` (no dedup)
+    //
+    // - `content_metrics/{contentId}` aggregate doc: any authed user can read
+    //   (so SocialProofBadge can render); only admins (or backend via Admin
+    //   SDK) can write. The aggregator Cloud Function uses Admin SDK, bypassing
+    //   rules.
+    // - Events: users may create their OWN events only (id MUST start with uid)
+    //   and the `userId` field in the payload MUST match. Update/delete is
+    //   admin-only. Reads are admin-only.
+    match /content_metrics/{contentId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+      match /events/{eventId} {
+        allow read: if isAdmin();
+        allow create: if request.auth != null
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.kind in
+               ['open', 'first_open', 'complete', 'coach_ask', 'share']
+          && eventId.matches(
+               '^' + request.auth.uid +
+               '_([0-9]{8}_open|first_open|complete|[0-9]{8}_[a-z0-9]+_(ask|share))$'
+             );
+        allow update, delete: if isAdmin();
+      }
+    }
+
     // Deny all other access
     match /{document=**} {
       allow read, write: if false;

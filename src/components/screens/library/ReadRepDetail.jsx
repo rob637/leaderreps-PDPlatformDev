@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAppServices } from '../../../services/useAppServices.jsx';
 import { useContentAccess } from '../../../hooks/useContentAccess';
 import { doc, getDoc } from '../../../services/firebaseUtils';
 import { UNIFIED_COLLECTION } from '../../../services/unifiedContentService';
+import { createContentMetricsService } from '../../../services/contentMetricsService';
 import { PageLayout } from '../../ui/PageLayout.jsx';
 import { Loader, BookOpen, Clock, Target, CheckCircle, AlertTriangle, FileText, Layers, Zap, Lock, Sparkles, ExternalLink, Download } from 'lucide-react';
 import { Button } from '../../screens/developmentplan/DevPlanComponents.jsx';
@@ -14,16 +15,21 @@ const COMPLEXITY_MAP = {
 };
 
 const ReadRepDetail = (props) => {
-  const { db, navigate, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices();
+  const { db, navigate, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, user, userId } = useAppServices();
   const { isContentUnlocked } = useContentAccess();
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('brief'); // brief, action
-  
+
   // AI Coach state
   const [aiQuery, setAiQuery] = useState('');
   const [aiResponse, setAiResponse] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
+
+  // Content metrics — silent collection. Track at most one open per session
+  // (per content id) to avoid duplicate fires on re-render.
+  const metrics = useMemo(() => createContentMetricsService(db), [db]);
+  const trackedRef = useRef(null);
 
   // Handle both direct props (from spread) and navParams prop (legacy/wrapper)
   const bookId = props.id || props.navParams?.id;
@@ -51,6 +57,19 @@ const ReadRepDetail = (props) => {
 
     fetchBook();
   }, [db, bookId]);
+
+  // Fire-and-forget open tracking once per content-id per mount.
+  useEffect(() => {
+    if (!book?.id || !userId) return;
+    if (trackedRef.current === book.id) return;
+    trackedRef.current = book.id;
+    metrics.trackOpen(book.id, {
+      userId,
+      userEmail: user?.email || null,
+      cohortId: user?.cohortId || null,
+      surface: 'field-guide',
+    });
+  }, [book?.id, userId, user?.email, user?.cohortId, metrics]);
 
   // Handle AI Coach submission
   const handleAskCoach = async () => {
@@ -84,6 +103,15 @@ Keep responses concise (3-5 sentences), actionable, and directly answer the ques
       const result = await callSecureGeminiAPI(payload);
       const text = result?.text || 'No response received.';
       setAiResponse(text.trim());
+      // Track AI coach question (silent, fire-and-forget).
+      if (book?.id && userId) {
+        metrics.trackCoachAsk(book.id, {
+          userId,
+          userEmail: user?.email || null,
+          cohortId: user?.cohortId || null,
+          surface: 'field-guide',
+        });
+      }
     } catch (err) {
       setAiResponse(`**Error:** ${err.message}`);
     } finally {

@@ -17,23 +17,45 @@
 // function (typically from useActionProgress) and an `idResolver(item)` so
 // the hook stays decoupled from any particular item shape.
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import UniversalResourceViewer from '../components/ui/UniversalResourceViewer';
 import { VideoSeriesPlayer } from '../components/video';
 import { useAppServices } from '../services/useAppServices';
+import { createContentMetricsService } from '../services/contentMetricsService';
 
 const AUTO_COMPLETE_TYPES = new Set([
   'DOCUMENT', 'TOOL', 'READ_REP', 'PDF', 'GUIDE', 'ARTICLE',
 ]);
 
 const useResourceOpener = ({ completeItem, idResolver, phaseKey } = {}) => {
-  const { db } = useAppServices();
+  const { db, user, userId } = useAppServices();
   const [viewingResource, setViewingResource] = useState(null);
   const [viewingSeriesId, setViewingSeriesId] = useState(null);
   const [viewingSeriesItem, setViewingSeriesItem] = useState(null);
   const [loadingResource, setLoadingResource] = useState(null);
+
+  // Content metrics — silent open/complete tracking.
+  const metrics = useMemo(() => createContentMetricsService(db), [db]);
+  const trackContentOpen = useCallback((contentId, surface) => {
+    if (!contentId || !userId) return;
+    metrics.trackOpen(contentId, {
+      userId,
+      userEmail: user?.email || null,
+      cohortId: user?.cohortId || null,
+      surface: surface || 'resource-opener',
+    });
+  }, [metrics, userId, user?.email, user?.cohortId]);
+  const trackContentComplete = useCallback((contentId, surface) => {
+    if (!contentId || !userId) return;
+    metrics.trackComplete(contentId, {
+      userId,
+      userEmail: user?.email || null,
+      cohortId: user?.cohortId || null,
+      surface: surface || 'resource-opener',
+    });
+  }, [metrics, userId, user?.email, user?.cohortId]);
 
   const markComplete = useCallback((item, extras = {}) => {
     if (typeof completeItem !== 'function') return;
@@ -46,7 +68,10 @@ const useResourceOpener = ({ completeItem, idResolver, phaseKey } = {}) => {
       category: item?.category || 'content',
       ...extras,
     });
-  }, [completeItem, idResolver, phaseKey]);
+    // Mirror to content metrics. Prefer the underlying content resource id.
+    const contentId = item?.resourceId || item?.contentItemId || id;
+    trackContentComplete(contentId);
+  }, [completeItem, idResolver, phaseKey, trackContentComplete]);
 
   const openResource = useCallback(async (item) => {
     if (!item) return;
@@ -57,6 +82,9 @@ const useResourceOpener = ({ completeItem, idResolver, phaseKey } = {}) => {
     if (item.url) {
       setViewingResource({ ...item, type: item.resourceType || 'link' });
       const t = (item.resourceType || item.type || '').toUpperCase();
+      // Track open against the resource id when known, else fall back to item id.
+      const trackId = item.resourceId || item.contentItemId || item.id;
+      trackContentOpen(trackId, 'inline-link');
       if (AUTO_COMPLETE_TYPES.has(t)) markComplete(item);
       return;
     }
@@ -71,6 +99,10 @@ const useResourceOpener = ({ completeItem, idResolver, phaseKey } = {}) => {
     if (item.resourceType === 'video_series' && resourceId) {
       setViewingSeriesItem(item);
       setViewingSeriesId(resourceId);
+      // VideoSeriesPlayer also tracks opens internally; this is for any
+      // surface that opens the series via this hook without the player
+      // mounting (e.g. early-close races). Cheap and idempotent per day.
+      trackContentOpen(resourceId, 'video-series');
       return;
     }
 
@@ -126,6 +158,9 @@ const useResourceOpener = ({ completeItem, idResolver, phaseKey } = {}) => {
 
       setViewingResource(resourceData);
 
+      // Track content open against the underlying content_library id.
+      trackContentOpen(resourceId, (data.type || 'content').toLowerCase());
+
       if (AUTO_COMPLETE_TYPES.has(type)) markComplete(item);
     } catch (err) {
       // eslint-disable-next-line no-console
@@ -135,7 +170,7 @@ const useResourceOpener = ({ completeItem, idResolver, phaseKey } = {}) => {
     } finally {
       setLoadingResource(null);
     }
-  }, [db, markComplete]);
+  }, [db, markComplete, trackContentOpen]);
 
   const handleVideoComplete = useCallback((resource) => {
     // resource here is the data we passed to UniversalResourceViewer; our

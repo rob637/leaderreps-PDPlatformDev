@@ -2,7 +2,7 @@
 // Admin dashboard for content management
 
 import React from 'react';
-import { BookOpen, Film, GraduationCap, Settings, Users, BrainCircuit, ClipboardEdit, Wrench } from 'lucide-react';
+import { BookOpen, Film, GraduationCap, Settings, Users, BrainCircuit, ClipboardEdit, Wrench, BarChart3 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
 import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
@@ -527,6 +527,29 @@ const ContentAdminHome = () => {
           <li>• Changes take effect immediately across all user sessions</li>
         </ul>
       </div>
+
+      {/* Content Metrics */}
+      <button
+        type="button"
+        onClick={() => navigate('admin-content-metrics')}
+        className="mt-6 w-full p-5 bg-white dark:bg-slate-800 rounded-xl shadow-lg hover:shadow-xl transition-all text-left border-2 border-corporate-teal/30 flex items-center gap-4"
+      >
+        <div
+          className="w-12 h-12 rounded-lg flex items-center justify-center"
+          style={{ backgroundColor: `${COLORS.TEAL}20` }}
+        >
+          <BarChart3 className="w-6 h-6" style={{ color: COLORS.TEAL }} />
+        </div>
+        <div className="flex-1">
+          <h2 className="text-lg font-bold text-corporate-navy">
+            Content Metrics
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Silent opens/views tracking. Toggle social-proof badges per item
+            ("Read by 143 leaders").
+          </p>
+        </div>
+      </button>
     </div>
   );
 };

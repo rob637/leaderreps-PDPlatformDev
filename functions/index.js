@@ -14,7 +14,8 @@
 
 // const { setGlobalOptions } = require("firebase-functions");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
-const { onRequest, onCall, HttpsError } = require("firebase-functions/v2/https"); 
+const { onRequest, onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const cors = require("cors")({ origin: true });
 // const functions = require("firebase-functions"); 
 const functionsV1 = require("firebase-functions/v1"); 
@@ -27436,5 +27437,246 @@ exports.sendNudge = onCall(
       concerns: mod.concerns || [],
       emailDelivered,
     };
+  }
+);
+
+// ============================================================================
+// CONTENT METRICS — silent open/view tracking for social proof
+// ============================================================================
+//
+// Architecture:
+//   - Clients write to `content_metrics/{contentId}/events/{eventId}` directly
+//     via Firestore. Security rules enforce that the event id starts with the
+//     user's uid, that `userId` in the payload matches the caller, and that
+//     `kind` is one of the allowed values.
+//   - Event-kind model (id pattern → counter driven):
+//        open       `${uid}_${YYYYMMDD}_open`       → opens (user-day count)
+//        first_open `${uid}_first_open`             → uniqueOpens (distinct
+//                                                     users, ever)
+//        complete   `${uid}_complete`               → completions
+//        coach_ask  `${uid}_${YYYYMMDD}_*_ask`      → coachAsks (no dedup)
+//        share      `${uid}_${YYYYMMDD}_*_share`    → shares    (no dedup)
+//     Because Firestore `create` only succeeds when the doc does not exist,
+//     dedup is enforced by id alone.
+//   - This trigger fires once per event and increments the aggregate doc at
+//     `content_metrics/{contentId}` using Admin SDK (bypassing rules). It
+//     also slices by surface, ISO week, and cohort for the admin dashboard.
+//   - Admins are excluded from counts so internal usage doesn't pollute data.
+//   - Collection / display behavior is gated by feature flags on
+//     `config/contentMetrics`: { collectionEnabled, displayEnabled,
+//     displayThreshold }. When `collectionEnabled` is false the trigger marks
+//     the event excluded and skips increments — but events still write, so we
+//     can backfill counts if we change our mind later.
+//   - Per-content display gate lives on the aggregate doc as `displayPublicly`
+//     (admin toggle).
+//
+// All work is best-effort: failures here must never break the user UX.
+// ----------------------------------------------------------------------------
+
+const CONTENT_METRICS_CONFIG_PATH = "config/contentMetrics";
+
+const isAdminEmailLowered = async (email) => {
+  if (!email) return false;
+  const lowered = String(email).toLowerCase();
+  const hardcoded = new Set([
+    "rob@sagecg.com",
+    "admin@leaderreps.com",
+    "ryan@leaderreps.com",
+    "cristina@leaderreps.com",
+  ]);
+  if (hardcoded.has(lowered)) return true;
+  try {
+    const cfg = await db.collection("metadata").doc("config").get();
+    const list = cfg.exists ? cfg.data().adminemails : null;
+    if (Array.isArray(list) && list.some((e) => String(e).toLowerCase() === lowered)) {
+      return true;
+    }
+  } catch (_) {
+    // ignore
+  }
+  try {
+    const cfg2 = await db.collection("global").doc("metadata").get();
+    const list2 = cfg2.exists ? cfg2.data().adminemails : null;
+    if (Array.isArray(list2) && list2.some((e) => String(e).toLowerCase() === lowered)) {
+      return true;
+    }
+  } catch (_) {
+    // ignore
+  }
+  return false;
+};
+
+const loadContentMetricsConfig = async () => {
+  try {
+    const snap = await db.doc(CONTENT_METRICS_CONFIG_PATH).get();
+    if (!snap.exists) {
+      return {
+        collectionEnabled: true,
+        displayEnabled: false,
+        displayThreshold: 25,
+      };
+    }
+    const data = snap.data() || {};
+    return {
+      collectionEnabled: data.collectionEnabled !== false,
+      displayEnabled: !!data.displayEnabled,
+      displayThreshold:
+        typeof data.displayThreshold === "number" ? data.displayThreshold : 25,
+    };
+  } catch (err) {
+    logger.warn("loadContentMetricsConfig failed:", err && err.message);
+    return { collectionEnabled: true, displayEnabled: false, displayThreshold: 25 };
+  }
+};
+
+exports.aggregateContentMetricEvent = onDocumentCreated(
+  {
+    document: "content_metrics/{contentId}/events/{eventId}",
+    region: "us-central1",
+  },
+  async (event) => {
+    const snap = event.data;
+    if (!snap) return;
+    const { contentId, eventId } = event.params;
+    const data = snap.data() || {};
+    const userId = data.userId;
+    const kind = typeof data.kind === "string" ? data.kind : "open";
+
+    try {
+      const config = await loadContentMetricsConfig();
+
+      // Resolve user email for admin check (event payload may include it).
+      let email = data.userEmail || null;
+      if (!email && userId) {
+        try {
+          const userRec = await admin.auth().getUser(userId);
+          email = userRec.email || null;
+        } catch (_) {
+          // ignore — anonymous or deleted user
+        }
+      }
+      const isAdminUser = await isAdminEmailLowered(email);
+
+      // Mark up the event with resolved state for auditability.
+      const excluded = !config.collectionEnabled || isAdminUser;
+      const annotation = {
+        processedAt: admin.firestore.FieldValue.serverTimestamp(),
+        excluded,
+        excludedReason: !config.collectionEnabled
+          ? "collection_disabled"
+          : isAdminUser
+          ? "admin_user"
+          : null,
+      };
+
+      if (excluded) {
+        await snap.ref.update(annotation);
+        logger.info(
+          `aggregateContentMetricEvent: skipped contentId=${contentId} eventId=${eventId} kind=${kind} reason=${annotation.excludedReason}`
+        );
+        return;
+      }
+
+      const aggregateRef = db.collection("content_metrics").doc(contentId);
+      const inc = admin.firestore.FieldValue.increment(1);
+      const now = admin.firestore.FieldValue.serverTimestamp();
+      const cohortId =
+        typeof data.cohortId === "string" && data.cohortId
+          ? data.cohortId.replace(/[^a-zA-Z0-9_-]/g, "_")
+          : null;
+
+      const aggregateUpdate = {
+        contentId,
+        lastEventAt: now,
+      };
+
+      // Branch per event kind. Each kind drives a different set of counters.
+      switch (kind) {
+        case "open": {
+          // Per-user-per-day event → drives total opens (user-day count).
+          const surface =
+            typeof data.surface === "string" ? data.surface : "unknown";
+          const surfaceKey = `bySurface.${surface.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+          const d = new Date();
+          const oneJan = new Date(d.getFullYear(), 0, 1);
+          const week = Math.ceil(
+            ((d - oneJan) / 86400000 + oneJan.getDay() + 1) / 7
+          );
+          const weekKey = `byWeek.${d.getFullYear()}-W${String(week).padStart(2, "0")}`;
+
+          aggregateUpdate.opens = inc;
+          aggregateUpdate.lastOpenAt = now;
+          aggregateUpdate[surfaceKey] = inc;
+          aggregateUpdate[weekKey] = inc;
+          if (cohortId) {
+            aggregateUpdate[`byCohort.${cohortId}.opens`] = inc;
+          }
+          break;
+        }
+        case "first_open": {
+          // Per-user-forever dedup → true unique-user count.
+          aggregateUpdate.uniqueOpens = inc;
+          if (cohortId) {
+            aggregateUpdate[`byCohort.${cohortId}.uniqueOpens`] = inc;
+          }
+          break;
+        }
+        case "complete": {
+          // Per-user-forever dedup → completions == uniqueCompletions.
+          aggregateUpdate.completions = inc;
+          aggregateUpdate.uniqueCompletions = inc;
+          aggregateUpdate.lastCompleteAt = now;
+          if (cohortId) {
+            aggregateUpdate[`byCohort.${cohortId}.completions`] = inc;
+          }
+          break;
+        }
+        case "coach_ask": {
+          aggregateUpdate.coachAsks = inc;
+          aggregateUpdate.lastCoachAskAt = now;
+          if (cohortId) {
+            aggregateUpdate[`byCohort.${cohortId}.coachAsks`] = inc;
+          }
+          break;
+        }
+        case "share": {
+          aggregateUpdate.shares = inc;
+          aggregateUpdate.lastShareAt = now;
+          if (cohortId) {
+            aggregateUpdate[`byCohort.${cohortId}.shares`] = inc;
+          }
+          break;
+        }
+        default: {
+          // Unknown kind — annotate and skip aggregation.
+          await snap.ref.update({
+            ...annotation,
+            excluded: true,
+            excludedReason: `unknown_kind:${kind}`,
+          });
+          logger.warn(
+            `aggregateContentMetricEvent: unknown kind=${kind} contentId=${contentId} eventId=${eventId}`
+          );
+          return;
+        }
+      }
+
+      // Only set firstOpenAt + displayPublicly defaults if the aggregate
+      // doesn't exist yet. Done as a single read to keep this trigger cheap.
+      const aggSnap = await aggregateRef.get();
+      if (!aggSnap.exists) {
+        if (kind === "open") aggregateUpdate.firstOpenAt = now;
+        aggregateUpdate.displayPublicly = false;
+        aggregateUpdate.createdAt = now;
+      }
+
+      await aggregateRef.set(aggregateUpdate, { merge: true });
+      await snap.ref.update(annotation);
+    } catch (err) {
+      logger.error(
+        `aggregateContentMetricEvent failed contentId=${contentId} eventId=${eventId} kind=${kind}:`,
+        err && err.message ? err.message : err
+      );
+    }
   }
 );

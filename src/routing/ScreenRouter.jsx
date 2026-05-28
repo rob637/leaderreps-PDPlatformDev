@@ -119,6 +119,9 @@ const ScreenMap = {
   'admin-content-home': lazy(() =>
     import('../components/admin/ContentAdminHome.jsx')
   ),
+  'admin-content-metrics': lazy(() =>
+    import('../components/admin/ContentMetricsDashboard.jsx')
+  ),
   'admin-content-manager': lazy(() =>
     import('../components/admin/ContentManager.jsx')
   ),

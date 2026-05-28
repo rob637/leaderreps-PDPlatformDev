@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
+import { createContentMetricsService } from '../../services/contentMetricsService';
 import {
   getSeriesById,
   getSeriesProgress,
@@ -98,6 +99,22 @@ export default function VideoSeriesPlayer({
   const currentVideoIndexRef = useRef(initialVideoIndex);
   const iframeRef = useRef(null);
   const shouldAutoPlayRef = useRef(false); // Track if we should autoplay on next render
+
+  // Content metrics — silent open tracking once per series per mount.
+  const metrics = useMemo(() => createContentMetricsService(db), [db]);
+  const trackedSeriesRef = useRef(null);
+  useEffect(() => {
+    const sid = series?.id;
+    if (!sid || !user?.uid) return;
+    if (trackedSeriesRef.current === sid) return;
+    trackedSeriesRef.current = sid;
+    metrics.trackOpen(sid, {
+      userId: user.uid,
+      userEmail: user?.email || null,
+      cohortId: user?.cohortId || null,
+      surface: 'video-series',
+    });
+  }, [series?.id, user?.uid, user?.email, user?.cohortId, metrics]);
 
   // Load series data if not provided
   useEffect(() => {
