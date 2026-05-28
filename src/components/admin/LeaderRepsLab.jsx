@@ -332,12 +332,12 @@ const LeaderRepsLab = () => {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-corporate-teal text-corporate-teal-ink text-sm font-semibold hover:bg-corporate-teal/5 transition-colors w-fit"
               >
-                Preview public landing
+                Open Leadership Lab
                 <ExternalLink className="w-4 h-4" />
               </a>
             </div>
             <p className="text-xs text-slate-400">
-              Leader-facing practice rep — no admin send composer (the leader does the work, AI coaches the draft).
+              Leader-facing practice rep in the Leadership Lab sub-app — sign-in required. No public landing or admin send composer yet.
             </p>
           </ToolCard>
 
