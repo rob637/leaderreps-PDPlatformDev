@@ -13,6 +13,8 @@ import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
 import NotificationPreferencesWidget from './NotificationPreferencesWidget';
 import SmsPrefsRow from './SmsPrefsRow';
 import BaselineAssessmentSimple from '../screens/developmentplan/BaselineAssessmentSimple';
+import { buildLatestSummary } from '../../services/assessmentScoring';
+import { useNavigation } from '../../providers/NavigationProvider';
 const IdentityStatement = lazy(() => import('../screens/IdentityStatement'));
 import { logActivity, ACTIVITY_TYPES } from '../../services/activityLogger';
 import PWAInstall from '../ui/PWAInstall';
@@ -36,6 +38,7 @@ const STRATEGY_DISPLAY = {
  * 2. user_data/{uid}/leader_profile/current.notificationSettings - user preferences
  */
 const MySettingsWidget = () => {
+  const { navigate } = useNavigation();
   const [showProfileForm, setShowProfileForm] = useState(false);
   const [showBaselineForm, setShowBaselineForm] = useState(false);
   const [showIdentityForm, setShowIdentityForm] = useState(false);
@@ -218,15 +221,28 @@ const MySettingsWidget = () => {
               <div className="text-left">
                 <h4 className="font-medium text-corporate-navy dark:text-white text-sm">Leadership Skills Baseline</h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {hasCompletedBaseline 
-                    ? `Completed ${baselineDate}` 
+                  {hasCompletedBaseline
+                    ? `${assessmentHistory.length} take${assessmentHistory.length !== 1 ? 's' : ''} · latest ${baselineDate}`
                     : 'Complete to unlock your plan'}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-1 text-corporate-teal-ink">
-              <span className="text-xs font-medium">{hasCompletedBaseline ? 'Edit' : 'Start'}</span>
-              <Edit2 className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-3">
+              {hasCompletedBaseline && (
+                <span
+                  role="link"
+                  tabIndex={0}
+                  onClick={(e) => { e.stopPropagation(); navigate('assessment-history'); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); navigate('assessment-history'); } }}
+                  className="text-xs font-medium text-corporate-teal-ink hover:underline"
+                >
+                  View history
+                </span>
+              )}
+              <div className="flex items-center gap-1 text-corporate-teal-ink">
+                <span className="text-xs font-medium">{hasCompletedBaseline ? 'Retake' : 'Start'}</span>
+                <Edit2 className="w-3.5 h-3.5" />
+              </div>
             </div>
           </button>
 
@@ -410,7 +426,8 @@ const MySettingsWidget = () => {
                   const newHistory = [...assessmentHistory, assessment];
                   await updateDevelopmentPlanData({
                     assessmentHistory: newHistory,
-                    currentAssessment: assessment
+                    currentAssessment: assessment,
+                    latestAssessmentSummary: buildLatestSummary(assessment)
                   });
                   if (db && user) {
                     logActivity(db, ACTIVITY_TYPES.ASSESSMENT_COMPLETE, {
@@ -426,7 +443,7 @@ const MySettingsWidget = () => {
                 setShowBaselineForm(false);
               }}
               onClose={() => setShowBaselineForm(false)}
-              initialData={latestAssessment}
+              initialData={hasCompletedBaseline ? { cycle: latestAssessment?.cycle ?? assessmentHistory.length } : null}
             />
           </div>
         </div>,

@@ -140,8 +140,14 @@ const BaselineAssessmentWidget = () => {
           )}
 
           {!growth && assessmentHistory.length === 1 && (
-            <div className="border-t border-slate-200 dark:border-slate-700 px-4 py-2.5 text-xs text-slate-500">
-              Take this again later to see your growth over time.
+            <div className="border-t border-slate-200 dark:border-slate-700 px-4 py-2.5 flex items-center justify-between gap-3">
+              <span className="text-xs text-slate-500">Take this again later to see your growth over time.</span>
+              <button
+                onClick={() => navigate('assessment-history')}
+                className="flex-shrink-0 text-xs font-medium text-corporate-teal-ink hover:underline whitespace-nowrap"
+              >
+                View history →
+              </button>
             </div>
           )}
         </Card>
