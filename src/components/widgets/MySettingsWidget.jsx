@@ -14,7 +14,6 @@ import NotificationPreferencesWidget from './NotificationPreferencesWidget';
 import SmsPrefsRow from './SmsPrefsRow';
 import BaselineAssessmentSimple from '../screens/developmentplan/BaselineAssessmentSimple';
 import { buildLatestSummary } from '../../services/assessmentScoring';
-import { useNavigation } from '../../providers/NavigationProvider';
 const IdentityStatement = lazy(() => import('../screens/IdentityStatement'));
 import { logActivity, ACTIVITY_TYPES } from '../../services/activityLogger';
 import PWAInstall from '../ui/PWAInstall';
@@ -38,7 +37,6 @@ const STRATEGY_DISPLAY = {
  * 2. user_data/{uid}/leader_profile/current.notificationSettings - user preferences
  */
 const MySettingsWidget = () => {
-  const { navigate } = useNavigation();
   const [showProfileForm, setShowProfileForm] = useState(false);
   const [showBaselineForm, setShowBaselineForm] = useState(false);
   const [showIdentityForm, setShowIdentityForm] = useState(false);
