@@ -121,10 +121,10 @@ const AssessmentHistory = () => {
     return (
       <div className="max-w-4xl mx-auto p-4 sm:p-6">
         <button
-          onClick={() => navigate('development-plan')}
+          onClick={() => navigate('locker')}
           className="flex items-center gap-2 text-sm text-corporate-teal-ink hover:underline mb-4"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Development Plan
+          <ArrowLeft className="w-4 h-4" /> Back to Locker
         </button>
         <Card accent="NAVY">
           <div className="p-8 text-center">
@@ -134,7 +134,7 @@ const AssessmentHistory = () => {
               Complete the Leadership Skills Baseline to start tracking growth.
             </p>
             <div className="mt-4">
-              <Button onClick={() => navigate('development-plan')}>Go to Development Plan</Button>
+              <Button onClick={() => navigate('locker')}>Go to Locker</Button>
             </div>
           </div>
         </Card>
@@ -146,10 +146,10 @@ const AssessmentHistory = () => {
     <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <button
-          onClick={() => navigate('development-plan')}
+          onClick={() => navigate('locker')}
           className="flex items-center gap-2 text-sm text-corporate-teal-ink hover:underline"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Development Plan
+          <ArrowLeft className="w-4 h-4" /> Back to Locker
         </button>
         <span className="text-xs text-slate-500">{history.length} assessment{history.length !== 1 ? 's' : ''}</span>
       </div>

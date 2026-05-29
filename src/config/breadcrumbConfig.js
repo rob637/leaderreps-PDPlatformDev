@@ -16,6 +16,11 @@ export const BREADCRUMB_MAP = {
     { label: 'Locker', path: 'locker' },
     { label: 'Leadership Identity', path: null }
   ],
+  'assessment-history': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Locker', path: 'locker' },
+    { label: 'Leadership Skills — Growth', path: null }
+  ],
   'daily-practice': [
     { label: 'Home', path: 'dashboard' },
     { label: 'Daily Practice', path: null }
