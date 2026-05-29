@@ -23,6 +23,7 @@ import { useFeatures } from '../../providers/FeatureProvider';
 import { CONTENT_COLLECTIONS } from '../../services/contentService';
 import LeaderProfileFormSimple from '../profile/LeaderProfileFormSimple';
 import BaselineAssessmentSimple from '../screens/developmentplan/BaselineAssessmentSimple';
+import { buildLatestSummary } from '../../services/assessmentScoring';
 import IdentityStatement from '../screens/IdentityStatement';
 import NotificationPreferencesWidget from './NotificationPreferencesWidget';
 import FoundationCommitmentWidget from './FoundationCommitmentWidget';
@@ -2156,24 +2157,30 @@ const ThisWeeksActionsWidget = ({ helpText }) => {
   const handleBaselineComplete = async (assessment) => {
     setSavingBaseline(true);
     try {
-      const newHistory = [...(developmentPlanData?.assessmentHistory || []), assessment];
+      const priorHistory = developmentPlanData?.assessmentHistory || [];
+      const isFirstCompletion = priorHistory.length === 0;
+      const newHistory = [...priorHistory, assessment];
       await updateDevelopmentPlanData({
         assessmentHistory: newHistory,
+        currentAssessment: assessment,
+        latestAssessmentSummary: buildLatestSummary(assessment),
         'currentPlan.focusAreas': assessment.focusAreas || []
       });
-      // Set prepStatus flag for unified tracking
+      // Set prepStatus flag for unified tracking (idempotent — safe to repeat)
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, { 'prepStatus.baselineAssessment': true }).catch(e => console.warn('Could not set prepStatus:', e));
-      
-      // Sync to carryover storage immediately - eliminates race conditions
-      // NOTE: Label must match content definition exactly for deduplication to work
-      await syncCompletionToCarryover(db, user.uid, 'baseline-assessment', {
-        label: 'Complete Leadership Skills Baseline',
-        category: 'Preparation',
-        prepSection: 'onboarding',
-        handlerType: 'baseline-assessment'
-      });
-      
+
+      // Carryover should only fire on the FIRST completion. Retakes don't
+      // re-trigger the prep gate completion event.
+      if (isFirstCompletion) {
+        await syncCompletionToCarryover(db, user.uid, 'baseline-assessment', {
+          label: 'Complete Leadership Skills Baseline',
+          category: 'Preparation',
+          prepSection: 'onboarding',
+          handlerType: 'baseline-assessment'
+        });
+      }
+
       setShowBaselineModal(false);
     } catch (error) {
       console.error('Error saving baseline assessment:', error);

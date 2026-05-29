@@ -5,33 +5,23 @@ import React, { useState, useEffect, useRef } from 'react';
 import { CheckCircle, Loader, ClipboardCheck, X } from 'lucide-react';
 import { Button } from '../../ui';
 import VoiceTextarea from '../../conditioning/VoiceTextarea';
+import {
+  FREQUENCY_QUESTIONS,
+  AGREEMENT_QUESTIONS,
+  OPEN_TEXT_QUESTION,
+  MULTI_SELECT_QUESTION,
+  ALL_SCORED_QUESTIONS,
+  TOTAL_REQUIRED,
+  CURRENT_QUESTION_VERSION,
+  computeScores,
+} from '../../../services/assessmentScoring';
 
-// --- Questions 1-10: Frequency Scale (last 30 days) ---
-const FREQUENCY_QUESTIONS = [
-  { id: 'q1', text: 'I clearly defined the criteria for success when I assigned work.', category: 'Clarity' },
-  { id: 'q2', text: 'I explicitly named ownership of the outcome and confirmed that my direct accepted it.', category: 'Ownership' },
-  { id: 'q3', text: 'I gave reinforcing (positive) feedback tied to a specific behavior and impact.', category: 'Feedback' },
-  { id: 'q4', text: 'I gave redirecting (correcting) feedback when behavior missed the standard.', category: 'Feedback' },
-  { id: 'q5', text: 'I followed up on work rather than assuming it was on track.', category: 'Follow-Through' },
-  { id: 'q6', text: 'I modeled vulnerability by acknowledging a mistake, gap, or miss of my own.', category: 'Vulnerability' },
-  { id: 'q7', text: 'I intentionally checked after giving feedback to confirm whether the behavior changed.', category: 'Follow-Through' },
-  { id: 'q8', text: 'I noticed patterns early rather than waiting until issues escalated.', category: 'Awareness' },
-  { id: 'q9', text: 'I asked my direct report for their plan when progress stalled or mistakes happened on their assigned work.', category: 'Ownership' },
-  { id: 'q10', text: 'I adjusted my approach when I met resistance during feedback.', category: 'Adaptability' },
-];
-
+// Option UI (labels + Tailwind classes) stays local to the form.
 const FREQUENCY_OPTIONS = [
   { value: 1, label: 'Never', shortLabel: 'Never', color: 'bg-red-100 dark:bg-red-900/30 border-red-300 text-red-700 hover:bg-red-200' },
   { value: 2, label: 'Seldom', shortLabel: 'Seldom', color: 'bg-orange-100 dark:bg-orange-900/30 border-orange-300 text-orange-700 hover:bg-orange-200' },
   { value: 3, label: 'Often', shortLabel: 'Often', color: 'bg-teal-100 dark:bg-teal-900/30 border-teal-300 text-teal-700 hover:bg-teal-200' },
   { value: 4, label: 'Always', shortLabel: 'Always', color: 'bg-green-100 dark:bg-green-900/30 border-green-300 text-green-700 hover:bg-green-200' },
-];
-
-// --- Questions 11-13: Agreement Scale ---
-const AGREEMENT_QUESTIONS = [
-  { id: 'q11', text: 'I have a clear intention for how I want to show up when navigating a difficult leadership moment.', category: 'Intentionality' },
-  { id: 'q12', text: 'I have practical tools to handle difficult conversations with my direct report(s).', category: 'Tools' },
-  { id: 'q13', text: 'I hold regular one-on-ones with my direct report(s) and allow them to set the agenda.', category: 'Structure' },
 ];
 
 const AGREEMENT_OPTIONS = [
@@ -40,33 +30,6 @@ const AGREEMENT_OPTIONS = [
   { value: 3, label: 'Agree', shortLabel: 'Agree', color: 'bg-teal-100 dark:bg-teal-900/30 border-teal-300 text-teal-700 hover:bg-teal-200' },
   { value: 4, label: 'Strongly Agree', shortLabel: 'Strongly Agree', color: 'bg-green-100 dark:bg-green-900/30 border-green-300 text-green-700 hover:bg-green-200' },
 ];
-
-// --- Question 14: Open Text ---
-const OPEN_TEXT_QUESTION = {
-  id: 'q14',
-  text: 'What leadership situation is currently challenging or frustrating for you?',
-  category: 'Reflection',
-};
-
-// --- Question 15: Multi-Select ---
-const MULTI_SELECT_QUESTION = {
-  id: 'q15',
-  text: 'Which important leadership moments do you tend to delay, soften, or avoid?',
-  subtitle: 'Check all that apply. There are no "right" or "wrong" answers.',
-  category: 'Self-Awareness',
-  options: [
-    'Redirecting poor performance.',
-    'Clarifying expectations when things feel awkward.',
-    'Holding someone who is well-liked accountable.',
-    'Letting someone struggle instead of stepping in.',
-    'Following up when I expect resistance.',
-    'I rarely avoid these moments. I tend to act quickly.',
-  ],
-};
-
-// All scored (radio) questions
-const ALL_SCORED_QUESTIONS = [...FREQUENCY_QUESTIONS, ...AGREEMENT_QUESTIONS];
-const TOTAL_REQUIRED = ALL_SCORED_QUESTIONS.length + 2; // +1 open text + 1 multi-select = 15
 
 const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, initialData = null }) => {
   const validIds = ALL_SCORED_QUESTIONS.map(q => q.id);
@@ -119,11 +82,18 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
         ...(multiSelectOther.trim() ? { q15_other: multiSelectOther.trim() } : {}),
       };
 
+      const date = new Date().toISOString();
+      const cycle = initialData?.cycle ? initialData.cycle + 1 : 1;
+      const version = CURRENT_QUESTION_VERSION;
+
       const assessment = {
-        date: new Date().toISOString(),
+        id: `ba_${Date.now()}`,
+        date,
+        cycle,
+        version,
         answers: allAnswers,
         openEnded: [openText.trim()],
-        cycle: initialData?.cycle ? initialData.cycle + 1 : 1,
+        scores: computeScores(allAnswers, version),
       };
 
       setIsGenerating(false);
@@ -390,7 +360,7 @@ const BaselineAssessmentSimple = ({ onComplete, onClose, isLoading = false, init
             }`}
           >
             {isTotalLoading ? <Loader className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-            {isTotalLoading ? 'Saving...' : (initialData ? 'Update' : 'Complete')}
+            {isTotalLoading ? 'Saving...' : (initialData?.answers ? 'Update' : 'Complete')}
           </Button>
         </div>
       </div>

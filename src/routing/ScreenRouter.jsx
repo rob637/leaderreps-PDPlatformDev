@@ -28,6 +28,9 @@ const ScreenMap = {
   'development-plan': lazy(() =>
     import('../components/screens/DevelopmentPlan.jsx')
   ),
+  'assessment-history': lazy(() =>
+    import('../components/screens/developmentplan/AssessmentHistory.jsx')
+  ),
   'coaching-lab': lazy(() => import('../components/screens/CoachingHub.jsx')),
   'coaching-hub': lazy(() => import('../components/screens/CoachingHub.jsx')),
   'locker': lazy(() => import('../components/screens/Locker.jsx')),

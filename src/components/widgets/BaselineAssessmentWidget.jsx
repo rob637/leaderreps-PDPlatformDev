@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   ClipboardCheck, CheckCircle, ChevronRight, Clock, Target, 
-  BarChart2
+  BarChart2, TrendingUp, TrendingDown, Minus
 } from 'lucide-react';
 import { Card } from '../ui';
 import { useAppServices } from '../../services/useAppServices';
+import { useNavigation } from '../../providers/NavigationProvider';
 import BaselineAssessmentSimple from '../screens/developmentplan/BaselineAssessmentSimple';
+import { buildLatestSummary, diffAssessments, enrichAssessment } from '../../services/assessmentScoring';
 import { logActivity, ACTIVITY_TYPES } from '../../services/activityLogger';
 
 /**
@@ -16,6 +18,7 @@ import { logActivity, ACTIVITY_TYPES } from '../../services/activityLogger';
  */
 const BaselineAssessmentWidget = () => {
   const { developmentPlanData, updateDevelopmentPlanData, db, user } = useAppServices();
+  const { navigate } = useNavigation();
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -35,7 +38,8 @@ const BaselineAssessmentWidget = () => {
       const newHistory = [...assessmentHistory, assessment];
       await updateDevelopmentPlanData({
         assessmentHistory: newHistory,
-        currentAssessment: assessment
+        currentAssessment: assessment,
+        latestAssessmentSummary: buildLatestSummary(assessment)
       });
       
       // Log activity for admin visibility
@@ -67,6 +71,25 @@ const BaselineAssessmentWidget = () => {
       ? new Date(latestAssessment.date).toLocaleDateString() 
       : 'Recently';
     const goalCount = latestAssessment?.openEnded?.length || 0;
+
+    // Growth snapshot: first → latest
+    const enrichedLatest = enrichAssessment(latestAssessment);
+    const firstAssessment = assessmentHistory.length > 1 ? enrichAssessment(assessmentHistory[0]) : null;
+    const growth = firstAssessment ? diffAssessments(firstAssessment, enrichedLatest) : null;
+    let topImproved = null;
+    if (growth) {
+      const entries = Object.entries(growth.byCategory);
+      if (entries.length > 0) {
+        topImproved = entries.reduce((best, cur) => (cur[1].delta > best[1].delta ? cur : best));
+      }
+    }
+    const overallDelta = growth?.overall.delta ?? 0;
+    const DeltaIcon = overallDelta > 0 ? TrendingUp : overallDelta < 0 ? TrendingDown : Minus;
+    const deltaColor = overallDelta > 0
+      ? 'text-green-700 bg-green-100 dark:bg-green-900/30 dark:text-green-400'
+      : overallDelta < 0
+        ? 'text-red-700 bg-red-100 dark:bg-red-900/30 dark:text-red-400'
+        : 'text-slate-600 bg-slate-100 dark:bg-slate-700 dark:text-slate-300';
     
     return (
       <>
@@ -81,18 +104,49 @@ const BaselineAssessmentWidget = () => {
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400" style={{ fontFamily: 'var(--font-body)' }}>
                 Completed {completedDate} • {goalCount} goal{goalCount !== 1 ? 's' : ''} set
+                {enrichedLatest?.scores?.overall ? ` • Overall ${enrichedLatest.scores.overall.toFixed(2)}/4` : ''}
               </p>
             </div>
             <button
               onClick={() => setShowModal(true)}
               className="text-sm font-medium text-corporate-teal-ink hover:text-corporate-teal/80 hover:underline transition-colors"
             >
-              View or Update
+              Retake
             </button>
           </div>
+
+          {/* Growth snapshot — shown once a second assessment exists */}
+          {growth && (
+            <div className="border-t border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${deltaColor}`}>
+                  <DeltaIcon className="w-3 h-3" />
+                  {overallDelta > 0 ? '+' : ''}{overallDelta.toFixed(2)} overall
+                </span>
+                {topImproved && topImproved[1].delta !== 0 && (
+                  <span className="text-xs text-slate-600 dark:text-slate-300 truncate">
+                    Biggest shift: <span className="font-medium text-corporate-navy dark:text-white">{topImproved[0]}</span>
+                    {' '}({topImproved[1].delta > 0 ? '+' : ''}{topImproved[1].delta.toFixed(2)})
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => navigate('assessment-history')}
+                className="flex-shrink-0 text-xs font-medium text-corporate-teal-ink hover:underline whitespace-nowrap"
+              >
+                See growth →
+              </button>
+            </div>
+          )}
+
+          {!growth && assessmentHistory.length === 1 && (
+            <div className="border-t border-slate-200 dark:border-slate-700 px-4 py-2.5 text-xs text-slate-500">
+              Take this again later to see your growth over time.
+            </div>
+          )}
         </Card>
 
-        {/* Modal for viewing/updating */}
+        {/* Modal for retake (blank form, continues cycle counter) */}
         {showModal && typeof document !== 'undefined' && createPortal(
           <div className="fixed inset-0 z-[1000] flex items-start justify-center p-4 pt-8 pb-safe bg-black/50 backdrop-blur-sm overflow-y-auto">
             <div className="relative max-w-xl w-full my-auto">
@@ -100,7 +154,7 @@ const BaselineAssessmentWidget = () => {
                 onComplete={handleAssessmentComplete}
                 onClose={() => setShowModal(false)}
                 isLoading={saving}
-                initialData={latestAssessment}
+                initialData={{ cycle: latestAssessment?.cycle ?? assessmentHistory.length }}
               />
             </div>
           </div>,
