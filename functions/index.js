@@ -3080,8 +3080,12 @@ Grade this draft.`;
     contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
     generationConfig: {
       temperature: 0.4,
-      maxOutputTokens: 1200,
+      maxOutputTokens: 4096,
       responseMimeType: 'application/json',
+      // gemini-2.5-flash enables "thinking" by default which silently
+      // consumes the output budget and returns empty text. Disable it —
+      // this is a structured grading task, not a reasoning one.
+      thinkingConfig: { thinkingBudget: 0 },
     },
   };
 
@@ -3097,12 +3101,21 @@ Grade this draft.`;
     throw err;
   }
   const data = await resp.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const candidate = data?.candidates?.[0];
+  const text = candidate?.content?.parts?.[0]?.text || '';
   let parsed;
   try {
     parsed = JSON.parse(text);
   } catch {
-    const err = new Error('Grader returned non-JSON');
+    const finishReason = candidate?.finishReason || 'unknown';
+    logger.warn(
+      `gradeRFKudos parse failure: finishReason=${finishReason} textLen=${text.length} snippet=${text.slice(0, 200)}`
+    );
+    const err = new Error(
+      finishReason === 'MAX_TOKENS'
+        ? 'Grader exceeded token budget'
+        : 'Grader returned non-JSON'
+    );
     err.code = 'grader-parse';
     throw err;
   }
