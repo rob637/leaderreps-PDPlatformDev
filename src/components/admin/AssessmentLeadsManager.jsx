@@ -5,9 +5,9 @@ import React, { useState, useEffect } from 'react';
 import {
   Users, Download, Mail, Search, RefreshCw, ExternalLink,
   TrendingUp, Calendar, Target, Award, ChevronDown, ChevronUp,
-  Copy, Check, Filter, Dna, ShieldCheck, Calculator, DollarSign, Building2, Compass
+  Copy, Check, Filter, Dna, ShieldCheck, Calculator, DollarSign, Building2, Compass, Trash2
 } from 'lucide-react';
-import { collection, query, orderBy, getDocs, limit, startAfter } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, limit, startAfter, doc, deleteDoc } from 'firebase/firestore';
 import { useAppServices } from '../../services/useAppServices';
 
 // Leadership DNA Assessment Archetypes
@@ -201,6 +201,7 @@ const AssessmentLeadsManager = ({ availableTabs } = {}) => {
   const [stats, setStats] = useState({ total: 0, today: 0, thisWeek: 0, avgROI: 0, totalSavings: 0 });
   const [lastDoc, setLastDoc] = useState(null);
   const [hasMore, setHasMore] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
 
   const config = ASSESSMENT_CONFIG[activeTab];
 
@@ -293,6 +294,26 @@ const AssessmentLeadsManager = ({ availableTabs } = {}) => {
     await navigator.clipboard.writeText(email);
     setCopiedEmail(email);
     setTimeout(() => setCopiedEmail(null), 2000);
+  };
+
+  const deleteLead = async (lead) => {
+    if (!db) return;
+    const label = lead.email || lead.firstName || lead.id;
+    if (!window.confirm(`Delete lead "${label}"?\n\nThis permanently removes the entry from ${config.collection} and from related insight stats. This cannot be undone.`)) {
+      return;
+    }
+    setDeletingId(lead.id);
+    try {
+      await deleteDoc(doc(db, config.collection, lead.id));
+      setLeads((prev) => prev.filter((l) => l.id !== lead.id));
+      setStats((prev) => ({ ...prev, total: Math.max(0, prev.total - 1) }));
+      if (expandedLead === lead.id) setExpandedLead(null);
+    } catch (err) {
+      console.error('Failed to delete lead', err);
+      window.alert(`Could not delete lead: ${err.message || err}`);
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const exportToCsv = () => {
@@ -665,6 +686,18 @@ const AssessmentLeadsManager = ({ availableTabs } = {}) => {
                         <Check className="w-4 h-4 text-green-500" />
                       ) : (
                         <Copy className="w-4 h-4" />
+                      )}
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deleteLead(lead); }}
+                      disabled={deletingId === lead.id}
+                      className="p-1.5 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50"
+                      title="Delete lead"
+                    >
+                      {deletingId === lead.id ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
                       )}
                     </button>
                     {expandedLead === lead.id ? (
