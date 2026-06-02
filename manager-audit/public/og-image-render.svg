@@ -1,0 +1,79 @@
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#C8DDD9"/>
+      <stop offset="55%" style="stop-color:#EDE8E2"/>
+      <stop offset="100%" style="stop-color:#DFCEC5"/>
+    </linearGradient>
+    <filter id="shadow" x="-5%" y="-5%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="16" flood-color="rgba(0,46,71,0.13)"/>
+    </filter>
+  </defs>
+
+  <!-- Background gradient -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- White card -->
+  <rect x="100" y="60" width="780" height="510" rx="24" fill="white" filter="url(#shadow)"/>
+
+  <!-- Logo mark: outer teal chevron -->
+  <polygon points="196,150 234,115 272,150 257,150 234,130 211,150" fill="#47A88D"/>
+  <!-- Logo mark: inner navy chevron -->
+  <polygon points="205,150 234,128 263,150 248,150 234,136 220,150" fill="#002E47"/>
+  <!-- LeaderReps wordmark -->
+  <text x="284" y="150" fill="#002E47" font-family="DejaVu-Sans" font-size="38" font-weight="800">Leader</text>
+  <text x="460" y="150" fill="#47A88D" font-family="DejaVu-Sans" font-size="38" font-weight="800">Reps</text>
+
+  <!-- Eyebrow pill -->
+  <rect x="148" y="177" width="366" height="36" rx="18" fill="rgba(183,72,37,0.1)"/>
+  <circle cx="168" cy="195" r="7" fill="none" stroke="#B84825" stroke-width="1.5"/>
+  <text x="185" y="201" fill="#B84825" font-family="DejaVu-Sans" font-size="15" font-weight="600">The Accountability System Pulse Check</text>
+
+  <!-- Main headline -->
+  <text x="148" y="268" fill="#002E47" font-family="DejaVu-Sans" font-size="48" font-weight="800">How Strong Is Your Team&#39;s</text>
+  <text x="148" y="330" fill="#002E47" font-family="DejaVu-Sans" font-size="48" font-weight="800">Accountability System?</text>
+
+  <!-- Sub-headline in orange -->
+  <text x="148" y="384" fill="#B84825" font-family="DejaVu-Sans" font-size="32" font-weight="700">Take the 3-Minute Assessment</text>
+
+  <!-- Body -->
+  <text x="148" y="428" fill="#475569" font-family="DejaVu-Sans" font-size="20">Find out where your system is strong, and where it&#39;s leaking.</text>
+
+  <!-- Badge: 3 minutes -->
+  <rect x="148" y="454" width="164" height="38" rx="19" fill="white" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="230" y="478" text-anchor="middle" fill="#002E47" font-family="DejaVu-Sans" font-size="16" font-weight="600">&#9679; 3 minutes</text>
+
+  <!-- Badge: 5 questions -->
+  <rect x="324" y="454" width="178" height="38" rx="19" fill="white" stroke="#E2E8F0" stroke-width="1.5"/>
+  <text x="413" y="478" text-anchor="middle" fill="#002E47" font-family="DejaVu-Sans" font-size="16" font-weight="600">&#10003; 5 questions</text>
+
+  <!-- CTA button -->
+  <rect x="148" y="512" width="298" height="48" rx="10" fill="#B84825"/>
+  <text x="297" y="542" text-anchor="middle" fill="white" font-family="DejaVu-Sans" font-size="19" font-weight="700">Start the Pulse Check  &#8594;</text>
+
+  <!-- Right side score cards -->
+  <!-- Execution Engine -->
+  <rect x="930" y="80" width="222" height="138" rx="14" fill="white" filter="url(#shadow)"/>
+  <rect x="930" y="80" width="6" height="138" rx="3" fill="#47A88D"/>
+  <text x="950" y="117" fill="#277A68" font-family="DejaVu-Sans" font-size="13" font-weight="700" letter-spacing="1.5">4&#8211;5 YES</text>
+  <text x="950" y="143" fill="#002E47" font-family="DejaVu-Sans" font-size="18" font-weight="800">Execution Engine</text>
+  <text x="950" y="163" fill="#64748b" font-family="DejaVu-Sans" font-size="13">Your system is doing</text>
+  <text x="950" y="180" fill="#64748b" font-family="DejaVu-Sans" font-size="13">real work.</text>
+
+  <!-- Leaky System -->
+  <rect x="930" y="240" width="222" height="138" rx="14" fill="white" filter="url(#shadow)"/>
+  <rect x="930" y="240" width="6" height="138" rx="3" fill="#B84825"/>
+  <text x="950" y="277" fill="#B84825" font-family="DejaVu-Sans" font-size="13" font-weight="700" letter-spacing="1.5">2&#8211;3 YES</text>
+  <text x="950" y="303" fill="#002E47" font-family="DejaVu-Sans" font-size="18" font-weight="800">Leaky System</text>
+  <text x="950" y="323" fill="#64748b" font-family="DejaVu-Sans" font-size="13">Gaps are showing up.</text>
+  <text x="950" y="340" fill="#64748b" font-family="DejaVu-Sans" font-size="13">These are fixable.</text>
+
+  <!-- System Not Yet Installed -->
+  <rect x="930" y="400" width="222" height="138" rx="14" fill="white" filter="url(#shadow)"/>
+  <rect x="930" y="400" width="6" height="138" rx="3" fill="#002E47"/>
+  <text x="950" y="437" fill="#002E47" font-family="DejaVu-Sans" font-size="13" font-weight="700" letter-spacing="1.5">0&#8211;1 YES</text>
+  <text x="950" y="463" fill="#002E47" font-family="DejaVu-Sans" font-size="18" font-weight="800">System Not Yet</text>
+  <text x="950" y="485" fill="#002E47" font-family="DejaVu-Sans" font-size="18" font-weight="800">Installed</text>
+  <text x="950" y="505" fill="#64748b" font-family="DejaVu-Sans" font-size="13">Time to rebuild.</text>
+
+</svg>

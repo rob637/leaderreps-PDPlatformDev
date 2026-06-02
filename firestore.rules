@@ -230,6 +230,22 @@ service cloud.firestore {
       allow write: if false; // Only Cloud Functions can write
     }
 
+    // Manager Accountability Audit leads
+    // Admin read + isTest toggle + delete, Cloud Functions create/update
+    match /manager-audit-leads/{document} {
+      allow read: if isAdmin();
+      allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isTest']);
+      allow delete: if isAdmin();
+      allow create: if false; // Only Cloud Functions can create
+    }
+
+    // Manager Accountability Audit aggregate stats
+    // Admin read-only, Cloud Functions write
+    match /manager-audit-stats/{document} {
+      allow read: if isAdmin();
+      allow write: if false; // Only Cloud Functions can write
+    }
+
     // Leadership Readiness Assessment leads
     // Admin read + delete, Cloud Functions write
     match /readiness-leads/{document} {

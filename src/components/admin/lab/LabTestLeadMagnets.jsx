@@ -50,7 +50,7 @@ const LabTestLeadMagnets = () => {
 
       <div className="flex-1 overflow-y-auto p-6">
         <AssessmentLeadsManager
-          availableTabs={['leadership', 'roi', 'readiness']}
+          availableTabs={['leadership', 'roi', 'readiness', 'manager-audit']}
         />
       </div>
     </div>

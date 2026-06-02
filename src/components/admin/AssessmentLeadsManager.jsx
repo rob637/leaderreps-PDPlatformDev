@@ -97,6 +97,19 @@ const READINESS_ARCHETYPE_NAMES = {
   'emerging-leader': 'Emerging Leader',
 };
 
+// Manager Accountability Audit Bands
+const MANAGER_AUDIT_BAND_COLORS = {
+  gap: '#B84825',
+  developing: '#C9913A',
+  strong: '#277A68',
+};
+
+const MANAGER_AUDIT_BAND_NAMES = {
+  gap: 'Accountability Gap (1.0–2.4)',
+  developing: 'Developing (2.5–3.4)',
+  strong: 'Strong (3.5–5.0)',
+};
+
 const formatCurrency = (num) => 
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(num || 0);
 
@@ -180,9 +193,29 @@ const ASSESSMENT_CONFIG = {
       'Segment by readiness level for targeted nurture campaigns',
     ],
   },
+  'manager-audit': {
+    collection: 'manager-audit-leads',
+    title: 'Manager Accountability Audit',
+    subtitle: 'Leads from The Manager Accountability Audit',
+    icon: ShieldCheck,
+    accentColor: 'orange',
+    archetypeColors: MANAGER_AUDIT_BAND_COLORS,
+    archetypeNames: MANAGER_AUDIT_BAND_NAMES,
+    assessmentUrl: 'https://leaderreps-manager-audit.web.app',
+    scoresLabel: 'Audit Scores',
+    filterLabel: 'Bands',
+    isROI: false,
+    marketingTips: [
+      'Segment follow-up by band (gap, developing, strong)',
+      'Send per-category deep-dives for whichever rep scored weakest',
+      'Invite Gap and Developing leaders to a Foundation info session',
+      'Surface aggregate stats in marketing content (e.g. "X% of leaders scored Gap on follow-up")',
+      'Track conversion by band into Foundation cohorts',
+    ],
+  },
 };
 
-const ALL_TAB_IDS = ['accountability', 'leadership', 'roi', 'readiness'];
+const ALL_TAB_IDS = ['accountability', 'leadership', 'roi', 'readiness', 'manager-audit'];
 
 const AssessmentLeadsManager = ({ availableTabs } = {}) => {
   const { db } = useAppServices();
@@ -270,10 +303,13 @@ const AssessmentLeadsManager = ({ availableTabs } = {}) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db, activeTab]);
 
-  // Get category value based on tab type (archetype for assessments, industry for ROI)
+  // Get category value based on tab type (archetype for assessments, industry for ROI, band for manager-audit)
   const getLeadCategory = (lead) => {
     if (config.isROI) {
       return lead.inputs?.industry;
+    }
+    if (activeTab === 'manager-audit') {
+      return lead.results?.band;
     }
     return lead.results?.archetype;
   };
@@ -471,6 +507,19 @@ const AssessmentLeadsManager = ({ availableTabs } = {}) => {
             <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 uppercase tracking-wide">
               Test
             </span>
+          </button>
+          )}
+          {allowedTabs.includes('manager-audit') && (
+          <button
+            onClick={() => setActiveTab('manager-audit')}
+            className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
+              activeTab === 'manager-audit'
+                ? 'border-orange-600 text-orange-600'
+                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4" />
+            Manager Audit
           </button>
           )}
         </div>

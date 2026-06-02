@@ -4,8 +4,15 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  Megaphone, Globe, Users, BarChart3,
-  ShieldAlert, ExternalLink, Sparkles, BookOpen, LineChart,
+  Megaphone,
+  Globe,
+  Users,
+  BarChart3,
+  ShieldAlert,
+  ExternalLink,
+  Sparkles,
+  BookOpen,
+  LineChart,
 } from 'lucide-react';
 import SocialMediaManager from './SocialMediaManager';
 import AssessmentLeadsManager from './AssessmentLeadsManager';
@@ -19,28 +26,26 @@ import { useNavigation } from '../../providers/NavigationProvider';
 const TAB_GROUPS = [
   {
     label: 'CRM',
-    tabs: [
-      { id: 'crm-full', label: 'CRM', icon: Sparkles, fullCRM: true },
-    ],
+    tabs: [{ id: 'crm-full', label: 'CRM', icon: Sparkles, fullCRM: true }],
   },
   {
     label: 'Lead Magnets',
     tabs: [
       { id: 'assessment-leads', label: 'Accountability Leads', icon: Users },
-      { id: 'assessment-insights', label: 'Accountability Insights', icon: BarChart3 },
+      {
+        id: 'assessment-insights',
+        label: 'Accountability Insights',
+        icon: BarChart3,
+      },
     ],
   },
   {
     label: 'Social Media',
-    tabs: [
-      { id: 'social-media', label: 'Social Media Monitor', icon: Globe },
-    ],
+    tabs: [{ id: 'social-media', label: 'Social Media Monitor', icon: Globe }],
   },
   {
     label: 'Content',
-    tabs: [
-      { id: 'book-builder', label: 'Book Builder', icon: BookOpen },
-    ],
+    tabs: [{ id: 'book-builder', label: 'Book Builder', icon: BookOpen }],
   },
   {
     label: 'Analytics',
@@ -53,10 +58,19 @@ const TAB_GROUPS = [
 const STATUS_STYLES = {
   Live: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
   Beta: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  Concept: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+  Concept:
+    'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
 };
 
-const ExperimentCard = ({ icon: Icon, title, status, tagline, description, primaryAction, gradient }) => {
+const ExperimentCard = ({
+  icon: Icon,
+  title,
+  status,
+  tagline,
+  description,
+  primaryAction,
+  gradient,
+}) => {
   const ActionIcon = primaryAction?.icon;
   const statusClass = STATUS_STYLES[status] || STATUS_STYLES.Concept;
 
@@ -68,13 +82,19 @@ const ExperimentCard = ({ icon: Icon, title, status, tagline, description, prima
 
   return (
     <div className="flex flex-col items-center justify-center h-full gap-6 py-12">
-      <div className={`p-6 bg-gradient-to-br ${gradient} rounded-2xl shadow-xl`}>
+      <div
+        className={`p-6 bg-gradient-to-br ${gradient} rounded-2xl shadow-xl`}
+      >
         <Icon className="w-16 h-16 text-white" />
       </div>
       <div className="text-center max-w-xl">
         <div className="flex items-center justify-center gap-3 mb-3">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{title}</h2>
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusClass}`}>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+            {title}
+          </h2>
+          <span
+            className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusClass}`}
+          >
             {status}
           </span>
         </div>
@@ -84,8 +104,8 @@ const ExperimentCard = ({ icon: Icon, title, status, tagline, description, prima
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
           {description}
         </p>
-        {primaryAction && (
-          primaryAction.href ? (
+        {primaryAction &&
+          (primaryAction.href ? (
             <a
               href={primaryAction.href}
               target="_blank"
@@ -106,8 +126,7 @@ const ExperimentCard = ({ icon: Icon, title, status, tagline, description, prima
               {ActionIcon && <ActionIcon className="w-5 h-5" />}
               {primaryAction.label}
             </button>
-          )
-        )}
+          ))}
       </div>
     </div>
   );
@@ -127,17 +146,19 @@ const SalesMarketingCenter = () => {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center">
         <ShieldAlert className="w-16 h-16 text-red-500 mb-4" />
-        <h1 className="text-2xl font-bold text-corporate-navy mb-2">Access Denied</h1>
+        <h1 className="text-2xl font-bold text-corporate-navy mb-2">
+          Access Denied
+        </h1>
       </div>
     );
   }
-  
+
   // Show full CRM overlay (portaled to body so it escapes the page-transition
   // stacking context created by Framer Motion's will-change: transform)
   if (showFullCRM) {
     return createPortal(
       <CRMApp user={user} onClose={() => setShowFullCRM(false)} />,
-      document.body
+      document.body,
     );
   }
 
@@ -154,7 +175,7 @@ const SalesMarketingCenter = () => {
                 CRM
               </h2>
               <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md">
-                Full-featured CRM with Apollo integration, email automation, 
+                Full-featured CRM with Apollo integration, email automation,
                 LinkedIn outreach, analytics, and more.
               </p>
               <button
@@ -167,7 +188,7 @@ const SalesMarketingCenter = () => {
             </div>
           </div>
         );
-      case 'assessment-leads': 
+      case 'assessment-leads':
       case 'roi-calculator-leads':
         return <AssessmentLeadsManager availableTabs={['accountability']} />;
       case 'assessment-insights':
@@ -185,8 +206,8 @@ const SalesMarketingCenter = () => {
                 Book Builder
               </h2>
               <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md">
-                Create your leadership book with AI-powered drafting, source management, 
-                chapter organization, and export to markdown.
+                Create your leadership book with AI-powered drafting, source
+                management, chapter organization, and export to markdown.
               </p>
               <button
                 onClick={() => navigate('book-builder')}
@@ -209,9 +230,9 @@ const SalesMarketingCenter = () => {
                 Content Metrics
               </h2>
               <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md">
-                Silent opens / unique opens / completions for every content piece.
-                Toggle the social-proof badge per item (e.g. &ldquo;read by 143 leaders&rdquo;)
-                once counts are meaningful.
+                Silent opens / unique opens / completions for every content
+                piece. Toggle the social-proof badge per item (e.g. &ldquo;read
+                by 143 leaders&rdquo;) once counts are meaningful.
               </p>
               <button
                 onClick={() => navigate('admin-content-metrics')}
@@ -247,7 +268,9 @@ const SalesMarketingCenter = () => {
             <h1 className="text-lg font-bold text-corporate-navy dark:text-white">
               Sales & Marketing
             </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {user.email}
+            </p>
           </div>
         </div>
       </div>
@@ -265,19 +288,23 @@ const SalesMarketingCenter = () => {
                   {group.tabs.map((tab) => {
                     const Icon = tab.icon;
                     const isActive = activeTab === tab.id;
-                    
+
                     return (
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`
                           w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                          ${isActive
-                            ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
-                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'}
+                          ${
+                            isActive
+                              ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+                          }
                         `}
                       >
-                        <Icon className={`w-4 h-4 ${isActive ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400'}`} />
+                        <Icon
+                          className={`w-4 h-4 ${isActive ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400'}`}
+                        />
                         {tab.label}
                       </button>
                     );
@@ -289,9 +316,7 @@ const SalesMarketingCenter = () => {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {renderContent()}
-        </div>
+        <div className="flex-1 overflow-y-auto p-6">{renderContent()}</div>
       </div>
     </div>
   );

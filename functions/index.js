@@ -13301,6 +13301,371 @@ exports.analyzeAccountabilityAssessment = onRequest(
 );
 
 // ========================================
+// Manager Accountability Audit Functions
+// ========================================
+
+/**
+ * Per-category diagnostic copy for the Manager Accountability Audit email.
+ * Kept in sync with manager-audit/src/data/questions.js.
+ */
+const MANAGER_AUDIT_CATEGORIES = {
+  'clear-expectations': { label: 'Set Clear Expectations', order: 1 },
+  'follow-up': { label: 'Follow-Up on the Work', order: 2 },
+  'reinforcing-feedback': { label: 'Reinforcing Feedback', order: 3 },
+  'redirecting-feedback': { label: 'Redirecting Feedback', order: 4 },
+};
+
+const MANAGER_AUDIT_DIAGNOSTICS = {
+  'clear-expectations': {
+    headline: "Your managers aren't setting expectations the team can actually act on.",
+    body: "When expectations are vague, the team improvises — and improvisation is where standards quietly drop. People are working hard, but not necessarily on the right things, in the right way, by the right time.",
+    rep: "Before assigning the next piece of work, your manager names the outcome, the standard, and the deadline out loud — and asks the person to repeat it back in their own words.",
+    youWillSee: "Less rework. Fewer 'I didn't know that's what you meant' conversations. Faster handoffs.",
+  },
+  'follow-up': {
+    headline: "Work is being delegated, but no one is closing the loop.",
+    body: "When follow-up is inconsistent, the team learns that some things matter more than others — and they're the ones deciding which. The manager ends up doing the work themselves 'just this once' until that becomes the system.",
+    rep: "Every time your manager delegates, they put the check-in on the calendar in the same conversation — a specific time before the work is due.",
+    youWillSee: "Fewer end-of-week fire drills. Issues surface days earlier. The manager stops being the bottleneck.",
+  },
+  'reinforcing-feedback': {
+    headline: "Good work is happening, but it's invisible.",
+    body: "When strong work goes unrecognized, top performers start to wonder if it matters. Average becomes the new standard because that's what gets the same response as great.",
+    rep: "When your manager sees the behavior they want more of, they name it on the spot — the specific action, the impact it had, and why it matters.",
+    youWillSee: "Standards lift. The behaviors you want spread across the team. Engagement scores move.",
+  },
+  'redirecting-feedback': {
+    headline: "Performance problems are being tolerated, not addressed.",
+    body: "When managers avoid the hard conversation, the team feels it. The strongest people lose respect. Under-performers learn the line is somewhere else. The longer the delay, the bigger the conversation has to be.",
+    rep: "Within 24 hours of seeing a behavior that misses the standard, your manager addresses it directly — what they observed, why it matters, what good looks like, what changes next.",
+    youWillSee: "Issues get smaller, not bigger. The team self-corrects. You stop being the one who has to 'finally have the conversation.'",
+  },
+};
+
+const MANAGER_AUDIT_STRONG_NOTES = {
+  'clear-expectations': "Your managers are setting expectations the team can act on. Keep reinforcing the standard.",
+  'follow-up': "Your managers are closing the loop on delegated work. The team knows follow-up is real.",
+  'reinforcing-feedback': "Your managers are catching good work and naming it. That's how standards rise.",
+  'redirecting-feedback': "Your managers are addressing performance issues directly and on time. That's rare — protect it.",
+};
+
+const MANAGER_AUDIT_BAND_COLORS = {
+  gap: { bg: 'rgba(184,72,37,0.12)', text: '#B84825' },
+  developing: { bg: 'rgba(201,145,58,0.14)', text: '#C9913A' },
+  strong: { bg: 'rgba(39,122,104,0.12)', text: '#277A68' },
+};
+
+const MANAGER_AUDIT_BAND_LABELS = {
+  gap: 'Accountability Gap',
+  developing: 'Developing',
+  strong: 'Strong',
+};
+
+/**
+ * Build the HTML email for Manager Accountability Audit results.
+ */
+const buildManagerAuditEmail = (firstName, results) => {
+  const escapeHtml = (str) => String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  const overall = Number(results.overallScore || 0).toFixed(1);
+  const band = results.band || 'developing';
+  const bandColors = MANAGER_AUDIT_BAND_COLORS[band] || MANAGER_AUDIT_BAND_COLORS.developing;
+  const bandLabel = MANAGER_AUDIT_BAND_LABELS[band] || 'Developing';
+  const headline = results.headline || '';
+  const summary = results.summary || '';
+  const categoryScores = results.categoryScores || {};
+
+  const summaryHtml = String(summary).split('\n\n').map((para) =>
+    `<p style="margin: 0 0 16px 0; color: #002E47; font-size: 15px; line-height: 1.7;">${escapeHtml(para)}</p>`
+  ).join('');
+
+  const orderedCats = Object.entries(MANAGER_AUDIT_CATEGORIES)
+    .sort((a, b) => a[1].order - b[1].order);
+
+  const categoryRows = orderedCats.map(([catId, cat]) => {
+    const score = Number(categoryScores[catId] || 0);
+    const isStrong = score >= 3.5;
+
+    if (isStrong) {
+      return `
+        <div style="margin-top: 16px; padding: 18px; border-radius: 12px; background: rgba(39,122,104,0.06); border: 1px solid rgba(39,122,104,0.25);">
+          <p style="margin: 0 0 4px 0; color: #277A68; font-size: 10px; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase;">${escapeHtml(cat.label)}</p>
+          <p style="margin: 0 0 8px 0; color: #002E47; font-size: 15px; font-weight: 800;">Strong &middot; ${score.toFixed(1)}/5</p>
+          <p style="margin: 0; color: #475569; font-size: 14px; line-height: 1.6;">${escapeHtml(MANAGER_AUDIT_STRONG_NOTES[catId] || '')}</p>
+        </div>
+      `;
+    }
+
+    const diag = MANAGER_AUDIT_DIAGNOSTICS[catId] || {};
+    const subBand = score >= 2.5 ? 'Developing' : 'Gap';
+    const accent = score >= 2.5 ? '#C9913A' : '#B84825';
+    return `
+      <div style="margin-top: 20px; padding: 22px; border-radius: 12px; background: #FFFFFF; border: 1px solid #e2e8f0;">
+        <p style="margin: 0 0 4px 0; color: ${accent}; font-size: 10px; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase;">${escapeHtml(cat.label)}</p>
+        <p style="margin: 0 0 12px 0; color: #002E47; font-size: 15px; font-weight: 800;">${subBand} &middot; ${score.toFixed(1)}/5</p>
+        <h3 style="margin: 0 0 8px 0; color: #002E47; font-size: 17px; font-weight: 800; line-height: 1.3;">${escapeHtml(diag.headline || '')}</h3>
+        <p style="margin: 0 0 14px 0; color: #475569; font-size: 14px; line-height: 1.6;">${escapeHtml(diag.body || '')}</p>
+        <div style="margin: 0 0 12px 0; padding: 14px; background: #002E47; color: #fff; border-radius: 10px;">
+          <p style="margin: 0 0 4px 0; color: #47A88D; font-size: 10px; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase;">The rep that closes the gap</p>
+          <p style="margin: 0; color: #fff; font-size: 14px; line-height: 1.6;">${escapeHtml(diag.rep || '')}</p>
+        </div>
+        <div style="padding: 12px 14px; background: #F8FAFC; border-radius: 10px; border: 1px solid #e2e8f0;">
+          <p style="margin: 0 0 4px 0; color: #64748b; font-size: 10px; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase;">What you&rsquo;ll see when this strengthens</p>
+          <p style="margin: 0; color: #334155; font-size: 14px; line-height: 1.6;">${escapeHtml(diag.youWillSee || '')}</p>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Manager Accountability Audit Results</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #FFFFFF;">
+  <div style="max-width: 640px; margin: 0 auto; background: #FFFFFF;">
+    <div style="background: #FFFFFF; padding: 32px; text-align: center;">
+      <img src="https://leaderreps-prod.web.app/logo-email.png" alt="LeaderReps" style="height: 40px;">
+    </div>
+
+    <div style="background: #FAF8F5; padding: 32px 28px 8px 28px; text-align: center;">
+      <p style="margin: 0 0 6px 0; color: #64748b; font-size: 11px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase;">Your Manager Accountability Audit</p>
+      <h1 style="margin: 0 0 14px 0; color: #002E47; font-size: 26px; font-weight: 800; line-height: 1.25;">
+        Overall score: ${overall}/5
+      </h1>
+      <div style="margin-bottom: 16px;">
+        <span style="display: inline-block; padding: 8px 18px; background: ${bandColors.bg}; color: ${bandColors.text}; border-radius: 999px; font-weight: 900; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;">
+          ${escapeHtml(bandLabel)}
+        </span>
+      </div>
+      ${headline ? `
+      <h2 style="margin: 0 0 8px 0; color: #002E47; font-size: 20px; font-weight: 800; line-height: 1.3;">
+        ${escapeHtml(headline)}
+      </h2>
+      ` : ''}
+    </div>
+
+    <div style="background: #FAF8F5; padding: 8px 28px 24px 28px;">
+      ${summaryHtml}
+    </div>
+
+    <div style="background: #FAF8F5; padding: 0 28px 32px 28px;">
+      <p style="margin: 0 0 4px 0; color: #002E47; font-size: 11px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase;">The Four Reps</p>
+      ${categoryRows}
+    </div>
+
+    <div style="background: #002E47; padding: 32px 28px; text-align: left;">
+      <p style="margin: 0 0 8px 0; color: #47A88D; font-size: 11px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase;">Next Step</p>
+      <h3 style="margin: 0 0 12px 0; color: #fff; font-size: 22px; font-weight: 800; line-height: 1.3;">
+        Your audit showed you the gaps. Foundation is where you close them.
+      </h3>
+      <p style="margin: 0 0 18px 0; color: rgba(255,255,255,0.8); font-size: 15px; line-height: 1.6;">
+        Foundation is a small-cohort program where managers practice the exact reps you just scored &mdash; setting expectations, following up, reinforcing what works, redirecting what doesn&rsquo;t. Live reps, not theory.
+      </p>
+      <a href="https://www.leaderreps.com/foundation" style="display: inline-block; padding: 14px 24px; background: #E04E1B; color: #fff; text-decoration: none; border-radius: 10px; font-size: 14px; font-weight: 700;">
+        Learn about Foundation
+      </a>
+    </div>
+
+    <div style="background: #FFFFFF; padding: 24px; text-align: center;">
+      <p style="margin: 0; color: #aaa; font-size: 12px;">
+        &copy; ${new Date().getFullYear()} LeaderReps. All rights reserved.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+};
+
+/**
+ * Cloud Function: Analyze Manager Accountability Audit and send results email.
+ * Called from the manager-audit Vite app after the leader completes the audit
+ * and submits their email.
+ */
+exports.analyzeManagerAudit = onRequest(
+  {
+    region: "us-central1",
+    timeoutSeconds: 60,
+    memory: "512MiB",
+    cors: true,
+  },
+  async (req, res) => {
+    if (req.method === 'OPTIONS') {
+      res.set('Access-Control-Allow-Origin', '*');
+      res.set('Access-Control-Allow-Methods', 'POST');
+      res.set('Access-Control-Allow-Headers', 'Content-Type');
+      res.status(204).send('');
+      return;
+    }
+
+    res.set('Access-Control-Allow-Origin', '*');
+
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    const { email, firstName, company, answers, results } = req.body || {};
+
+    if (!email || !results) {
+      res.status(400).json({ error: 'Missing required fields: email and results' });
+      return;
+    }
+
+    logger.info(`Processing manager audit for ${email}`);
+
+    const {
+      overallScore = 0,
+      band = 'developing',
+      kitTag = '',
+      categoryScores = {},
+      categoryBands = {},
+      questionResults = [],
+      gutCheckAnswers = [],
+      totalQuestions = 10,
+      headline = '',
+      summary = '',
+    } = results;
+
+    try {
+      // 1. Send results email
+      const emailUser = process.env.EMAIL_TEAM_USER || process.env.EMAIL_USER;
+      const emailPass = process.env.EMAIL_TEAM_PASS || process.env.EMAIL_PASS;
+      let emailSent = false;
+
+      if (emailUser && emailPass) {
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: { user: emailUser, pass: emailPass },
+        });
+
+        const htmlEmail = buildManagerAuditEmail(firstName, results);
+
+        await transporter.sendMail({
+          from: `"LeaderReps" <arena@leaderreps.com>`,
+          to: email,
+          subject: `Your Manager Accountability Audit results from LeaderReps`,
+          html: htmlEmail,
+        });
+
+        emailSent = true;
+        logger.info(`Manager audit results email sent to ${email}`);
+      } else {
+        logger.warn("Email credentials not configured - skipping email");
+      }
+
+      // 2. Upsert lead in Firestore (keyed by lowercase email)
+      const sanitizedResults = {
+        overallScore: Number(overallScore) || 0,
+        band,
+        bandLabel: MANAGER_AUDIT_BAND_LABELS[band] || 'Developing',
+        categoryScores,
+        categoryBands,
+        questionResults: Array.isArray(questionResults) ? questionResults : [],
+        gutCheckAnswers: Array.isArray(gutCheckAnswers) ? gutCheckAnswers : [],
+        totalQuestions,
+        headline,
+        summary,
+      };
+
+      try {
+        const existingSnapshot = await db.collection('manager-audit-leads')
+          .where('email', '==', email.toLowerCase())
+          .limit(1)
+          .get();
+
+        const leadData = {
+          email: email.toLowerCase(),
+          firstName: firstName || '',
+          company: company || '',
+          results: sanitizedResults,
+          source: 'manager-audit',
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          marketingOptIn: true,
+          emailSent,
+          kitTag,
+          runCount: admin.firestore.FieldValue.increment(1),
+        };
+
+        let docRef;
+        if (!existingSnapshot.empty) {
+          docRef = existingSnapshot.docs[0].ref;
+          await docRef.update(leadData);
+          logger.info(`Manager audit lead updated for ${email}, docId: ${docRef.id}`);
+        } else {
+          const { runCount, updatedAt, ...createData } = leadData;
+          docRef = await db.collection('manager-audit-leads').add({
+            ...createData,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            runCount: 1,
+          });
+          logger.info(`Manager audit lead created for ${email}, docId: ${docRef.id}`);
+        }
+
+        // Anonymous aggregate stats
+        try {
+          const statsRef = db.collection('manager-audit-stats').doc('global');
+          const statsUpdate = {
+            totalSubmissions: admin.firestore.FieldValue.increment(1),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            [`bands.${band}`]: admin.firestore.FieldValue.increment(1),
+          };
+          Object.entries(categoryScores).forEach(([catId, score]) => {
+            const subBand = score >= 3.5 ? 'strong' : score >= 2.5 ? 'developing' : 'gap';
+            statsUpdate[`categories.${catId}.${subBand}`] =
+              admin.firestore.FieldValue.increment(1);
+            statsUpdate[`categories.${catId}.scoreSum`] =
+              admin.firestore.FieldValue.increment(Number(score) || 0);
+            statsUpdate[`categories.${catId}.count`] =
+              admin.firestore.FieldValue.increment(1);
+          });
+          await statsRef.set(statsUpdate, { merge: true });
+        } catch (statsErr) {
+          logger.warn(`Manager audit stats aggregation failed for ${email}:`, statsErr.message);
+        }
+
+        // Kit sync — best effort
+        try {
+          const kitSource = `manager-audit-${band}`;
+          const kitResult = await syncLeadToKit(email, firstName, kitSource, {
+            audit_band: band,
+            audit_score: String(Number(overallScore).toFixed(2)),
+            audit_company: company || '',
+            audit_tag: kitTag,
+          });
+          if (kitResult && kitResult.success) {
+            await docRef.update({
+              kitSyncedAt: admin.firestore.FieldValue.serverTimestamp(),
+              kitSubscriberId: kitResult.subscriberId,
+            });
+            logger.info(`Kit sync complete for ${email}, subscriberId: ${kitResult.subscriberId}`);
+          } else if (kitResult) {
+            logger.warn(`Kit sync skipped for ${email}: ${kitResult.reason}`);
+          }
+        } catch (kitErr) {
+          logger.warn(`Kit sync error for ${email}:`, kitErr.message);
+        }
+      } catch (firestoreErr) {
+        logger.error(`Manager audit Firestore write FAILED for ${email}:`, firestoreErr);
+      }
+
+      res.json({
+        success: true,
+        message: 'Manager audit processed successfully',
+      });
+    } catch (err) {
+      logger.error("Manager audit processing failed:", err);
+      res.status(500).json({ error: 'Processing failed', details: err.message });
+    }
+  }
+);
+
+// ========================================
 // Leadership Readiness Assessment Functions
 // ========================================
 

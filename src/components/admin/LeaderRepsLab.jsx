@@ -246,207 +246,38 @@ const LeaderRepsLab = () => {
             description="Public-facing experiments designed to capture leads. Promote winners; sunset the rest."
           />
 
-          {/* Concept: Manager Accountability Audit */}
+          {/* Manager Accountability Audit */}
           <ToolCard
             icon={ClipboardCheck}
-            title="Concept — The Manager Accountability Audit"
-            status="Concept"
+            title="The Manager Accountability Audit"
+            status="MVP"
           >
             <p>
-              Spec for an upcoming lead magnet. Same interaction pattern as the{' '}
+              3-minute, 10-question audit aimed at leaders evaluating their{' '}
+              <em>management team</em>. Likert 1&ndash;5 scale across four
+              accountability reps (set expectations, follow-up, reinforce,
+              redirect) + 2 gut-check questions. Instant score with
+              per-category diagnostics + email-gated full report. Lead captured
+              to <code>manager-audit-leads</code> and synced to Kit.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate('lab-test-lead-magnets')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+              >
+                Manage leads
+                <ArrowRight className="w-4 h-4" />
+              </button>
               <a
-                href="https://leaderreps-accountability.web.app/"
+                href="https://leaderreps-manager-audit.web.app"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-corporate-teal-ink underline"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-corporate-teal text-corporate-teal-ink text-sm font-semibold hover:bg-corporate-teal/5 transition-colors w-fit"
               >
-                Accountability System Pulse Check
+                Preview public landing
+                <ExternalLink className="w-4 h-4" />
               </a>
-              , but aimed at leaders evaluating their <em>management team</em>.
-              10 questions, 5-point agreement scale, instant score, email gate
-              for the PDF + Accountability System Blueprint.
-            </p>
-
-            <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-2">
-              <div className="text-xs font-bold uppercase tracking-wider text-corporate-navy dark:text-slate-200">
-                Landing copy
-              </div>
-              <p className="text-sm font-semibold text-corporate-navy dark:text-white">
-                The Manager Accountability Audit
-              </p>
-              <p className="text-sm text-slate-700 dark:text-slate-200">
-                Find out where your management team is leaving performance on
-                the table.
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Subhead: Strong teams run on a strong accountability system.
-                This audit shows you where yours has room to grow.
-                <br />
-                Meta: 3 minutes · 10 questions · Instant score
-                <br />
-                CTA button: <em>Start the Audit</em> (teal)
-              </p>
             </div>
-
-            <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-2">
-              <div className="text-xs font-bold uppercase tracking-wider text-corporate-navy dark:text-slate-200">
-                Scale (all questions)
-              </div>
-              <p className="text-xs text-slate-600 dark:text-slate-300">
-                1 Rarely · 2 Occasionally · 3 Sometimes · 4 Usually · 5
-                Consistently
-              </p>
-            </div>
-
-            <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-3">
-              <div className="text-xs font-bold uppercase tracking-wider text-corporate-navy dark:text-slate-200">
-                Questions (4 categories × 2 statements + 2 gut-check)
-              </div>
-
-              <div>
-                <p className="text-sm font-semibold text-corporate-navy dark:text-white">
-                  Set Clear Expectations
-                </p>
-                <ul className="list-disc list-inside text-sm text-slate-700 dark:text-slate-200 space-y-1 mt-1">
-                  <li>
-                    My managers define what "done" looks like before work
-                    begins, not after it comes back wrong.
-                  </li>
-                  <li>
-                    My managers confirm ownership is clear before a project
-                    starts.
-                  </li>
-                </ul>
-              </div>
-
-              <div>
-                <p className="text-sm font-semibold text-corporate-navy dark:text-white">
-                  Follow-Up on the Work
-                </p>
-                <ul className="list-disc list-inside text-sm text-slate-700 dark:text-slate-200 space-y-1 mt-1">
-                  <li>
-                    My managers follow up on the work itself, not just on
-                    whether people feel good about it.
-                  </li>
-                  <li>
-                    When something goes wrong, my managers coach the person
-                    through it instead of taking the work back.
-                  </li>
-                </ul>
-              </div>
-
-              <div>
-                <p className="text-sm font-semibold text-corporate-navy dark:text-white">
-                  Reinforcing Feedback
-                </p>
-                <ul className="list-disc list-inside text-sm text-slate-700 dark:text-slate-200 space-y-1 mt-1">
-                  <li>
-                    My managers name specific behaviors when they recognize
-                    strong performance, not just "great job."
-                  </li>
-                  <li>
-                    When someone on the team does something worth repeating,
-                    their manager tells them exactly what it was and why it
-                    mattered.
-                  </li>
-                </ul>
-              </div>
-
-              <div>
-                <p className="text-sm font-semibold text-corporate-navy dark:text-white">
-                  Redirecting Feedback
-                </p>
-                <ul className="list-disc list-inside text-sm text-slate-700 dark:text-slate-200 space-y-1 mt-1">
-                  <li>
-                    My managers address behavior gaps when they notice them,
-                    not after they've let it go too long.
-                  </li>
-                  <li>
-                    My managers follow up after a feedback conversation to
-                    confirm the behavior actually changed.
-                  </li>
-                </ul>
-              </div>
-
-              <div>
-                <p className="text-sm font-semibold text-corporate-navy dark:text-white">
-                  Gut-check
-                </p>
-                <ul className="list-disc list-inside text-sm text-slate-700 dark:text-slate-200 space-y-1 mt-1">
-                  <li>
-                    My managers are having the conversations I'd have if I were
-                    in their seat.
-                  </li>
-                  <li>
-                    I've been compensating for gaps more than I should be.
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-2">
-              <div className="text-xs font-bold uppercase tracking-wider text-corporate-navy dark:text-slate-200">
-                Scoring
-              </div>
-              <p className="text-sm text-slate-700 dark:text-slate-200">
-                Each category: 2 statements × 5 pts = 10 max. Convert to 1–5
-                by dividing by 2. Overall = average of the four category
-                scores.
-              </p>
-              <ul className="text-sm text-slate-700 dark:text-slate-200 space-y-1">
-                <li>
-                  <span className="font-semibold text-red-700 dark:text-red-300">
-                    1.0–2.4 Gap
-                  </span>{' '}
-                  — needs attention; likely costing more than realized.
-                </li>
-                <li>
-                  <span className="font-semibold text-amber-700 dark:text-amber-300">
-                    2.5–3.4 Developing
-                  </span>{' '}
-                  — running inconsistently; room to strengthen.
-                </li>
-                <li>
-                  <span className="font-semibold text-emerald-700 dark:text-emerald-300">
-                    3.5–5.0 Strong
-                  </span>{' '}
-                  — managers run this rep consistently.
-                </li>
-              </ul>
-            </div>
-
-            <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-2">
-              <div className="text-xs font-bold uppercase tracking-wider text-corporate-navy dark:text-slate-200">
-                Email gate
-              </div>
-              <p className="text-sm text-slate-700 dark:text-slate-200">
-                Enter email to get the PDF + Accountability System Blueprint
-                (one-page reference). Also subscribed to{' '}
-                <em>One More Rep</em> (free weekly newsletter, unsubscribe
-                anytime). Button: <em>Send me the Blueprint</em>.
-              </p>
-            </div>
-
-            <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-2">
-              <div className="text-xs font-bold uppercase tracking-wider text-corporate-navy dark:text-slate-200">
-                Results summary (after email)
-              </div>
-              <p className="text-sm text-slate-700 dark:text-slate-200">
-                Strong categories: single-line acknowledgment at top
-                ("Your managers are running this rep consistently. Keep
-                reinforcing it."). Gap/Developing categories each get the full
-                diagnostic block: <em>The rep that closes this gap</em> +{' '}
-                <em>What you'll see when this strengthens</em>. Footer:{' '}
-                <em>"What this looks like as a system"</em> framing the four
-                reps as a loop, then CTA to book a call with Jeff (Calendly)
-                to introduce Foundation.
-              </p>
-            </div>
-
-            <p className="text-xs text-slate-400">
-              Not built yet — full spec captured here until promotion. Match
-              the Accountability Pulse Check interaction + visual treatment.
-            </p>
           </ToolCard>
 
           {/* Anonymous Team Pulse */}
