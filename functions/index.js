@@ -13493,6 +13493,7 @@ exports.analyzeManagerAudit = onRequest(
     timeoutSeconds: 60,
     memory: "512MiB",
     cors: true,
+    invoker: "public",
   },
   async (req, res) => {
     if (req.method === 'OPTIONS') {
