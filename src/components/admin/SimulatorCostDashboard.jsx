@@ -138,7 +138,7 @@ function DashboardBody({ navigate }) {
   return (
     <div className="min-h-full">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
-        <BreadcrumbNav items={getBreadcrumbs('simulator-cost-dashboard', { navigate })} />
+        <BreadcrumbNav items={getBreadcrumbs('simulator-cost-dashboard')} navigate={navigate} />
       </div>
 
       <header className="bg-corporate-navy text-white">

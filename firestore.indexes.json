@@ -1,6 +1,20 @@
 {
   "indexes": [
     {
+      "collectionGroup": "simulator-sessions",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "createdAtMs", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "simulator-sessions",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "createdAtMs", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "rep_calibrations",
       "queryScope": "COLLECTION",
       "fields": [

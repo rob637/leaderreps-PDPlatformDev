@@ -417,7 +417,7 @@ function SimulatorBody({ user, navigate }) {
   return (
     <div className="min-h-full">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4">
-        <BreadcrumbNav items={getBreadcrumbs('conversation-simulator', { navigate })} />
+        <BreadcrumbNav items={getBreadcrumbs('conversation-simulator')} navigate={navigate} />
       </div>
 
       <header className="bg-corporate-navy text-white">
