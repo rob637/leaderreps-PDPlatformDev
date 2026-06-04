@@ -176,7 +176,7 @@ const LeaderRepsLab = () => {
             </p>
             <div className="relative w-full rounded-lg overflow-hidden bg-black" style={{ paddingTop: '56.25%' }}>
               <iframe
-                src="https://www.youtube.com/embed/vX3PFPqlr8w"
+                src="https://www.youtube.com/embed/8vEL9dEyf68"
                 title="Promo Video — 60 seconds"
                 className="absolute inset-0 w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -185,7 +185,7 @@ const LeaderRepsLab = () => {
             </div>
             <div className="flex flex-wrap gap-2">
               <a
-                href="https://youtu.be/vX3PFPqlr8w"
+                href="https://youtu.be/8vEL9dEyf68"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-corporate-teal text-corporate-teal-ink text-sm font-semibold hover:bg-corporate-teal/5 transition-colors w-fit"
