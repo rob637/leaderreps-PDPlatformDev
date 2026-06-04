@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 import {
   ASSESSMENT_QUESTIONS,
   CATEGORIES,
-  LIKERT_OPTIONS,
+  getOptionsForQuestion,
 } from '../data/questions';
 
 const ProgressBar = ({ current, total }) => {
@@ -19,7 +19,7 @@ const ProgressBar = ({ current, total }) => {
       </div>
       <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
         <motion.div
-          className="h-full bg-[#277A68]"
+          className="h-full bg-[#47A88D]"
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
           transition={{ duration: 0.3 }}
@@ -29,35 +29,31 @@ const ProgressBar = ({ current, total }) => {
   );
 };
 
-const LikertButton = ({ option, selected, onSelect }) => {
+const OptionButton = ({ option, selected, onSelect, showNumber }) => {
   return (
     <button
       type="button"
       onClick={() => onSelect(option.value)}
       className={`group w-full text-left rounded-2xl border-2 px-5 py-4 transition-all ${
         selected
-          ? 'border-[#277A68] bg-[#277A68]/10'
-          : 'border-slate-200 bg-white hover:border-[#277A68]/60 hover:bg-[#277A68]/5'
+          ? 'border-[#47A88D] bg-[#47A88D]/10'
+          : 'border-slate-200 bg-white hover:border-[#47A88D]/60 hover:bg-[#47A88D]/5'
       }`}
     >
       <div className="flex items-center gap-4">
-        <div
-          className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-base ${
-            selected
-              ? 'bg-[#277A68] text-white'
-              : 'bg-slate-100 text-slate-600 group-hover:bg-[#277A68]/20 group-hover:text-[#277A68]'
-          }`}
-        >
-          {option.value}
-        </div>
-        <div className="flex-1">
+        {showNumber && (
           <div
-            className={`font-bold text-[#002E47] ${
-              selected ? '' : ''
+            className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-base ${
+              selected
+                ? 'bg-[#47A88D] text-white'
+                : 'bg-slate-100 text-slate-600 group-hover:bg-[#47A88D]/20 group-hover:text-[#47A88D]'
             }`}
           >
-            {option.label}
+            {option.value}
           </div>
+        )}
+        <div className="flex-1">
+          <div className="font-bold text-[#002E47]">{option.label}</div>
         </div>
       </div>
     </button>
@@ -72,6 +68,8 @@ const AssessmentFlow = ({ onComplete, onBack }) => {
   const question = ASSESSMENT_QUESTIONS[index];
   const category = CATEGORIES[question.category];
   const currentAnswer = answers[question.id];
+  const options = getOptionsForQuestion(question);
+  const isLikert = question.optionsType !== 'agree-disagree';
 
   const canAdvance = useMemo(
     () => currentAnswer !== undefined && currentAnswer !== null,
@@ -116,9 +114,9 @@ const AssessmentFlow = ({ onComplete, onBack }) => {
               className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-widest uppercase"
               style={{
                 backgroundColor: category.scored
-                  ? 'rgba(39,122,104,0.10)'
+                  ? 'rgba(71,168,141,0.12)'
                   : 'rgba(0,46,71,0.08)',
-                color: category.scored ? '#277A68' : '#002E47',
+                color: category.scored ? '#47A88D' : '#002E47',
               }}
             >
               {category.label}
@@ -143,16 +141,17 @@ const AssessmentFlow = ({ onComplete, onBack }) => {
               </h2>
 
               <p className="mt-3 text-xs font-semibold uppercase tracking-widest text-slate-400">
-                How often is this true?
+                {isLikert ? 'How often is this true?' : 'Choose one'}
               </p>
 
               <div className="mt-4 space-y-2">
-                {LIKERT_OPTIONS.map((opt) => (
-                  <LikertButton
+                {options.map((opt) => (
+                  <OptionButton
                     key={opt.value}
                     option={opt}
                     selected={currentAnswer === opt.value}
                     onSelect={handleSelect}
+                    showNumber={isLikert}
                   />
                 ))}
               </div>
@@ -175,7 +174,7 @@ const AssessmentFlow = ({ onComplete, onBack }) => {
               disabled={!canAdvance}
               className={`inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
                 canAdvance
-                  ? 'bg-[#E04E1B] hover:bg-[#C04313] text-white shadow-sm'
+                  ? 'bg-[#47A88D] hover:bg-[#3a8a73] text-white shadow-sm'
                   : 'bg-slate-200 text-slate-400 cursor-not-allowed'
               }`}
             >

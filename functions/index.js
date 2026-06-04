@@ -13309,44 +13309,43 @@ exports.analyzeAccountabilityAssessment = onRequest(
  * Kept in sync with manager-audit/src/data/questions.js.
  */
 const MANAGER_AUDIT_CATEGORIES = {
-  'clear-expectations': { label: 'Set Clear Expectations', order: 1 },
-  'follow-up': { label: 'Follow-Up on the Work', order: 2 },
-  'reinforcing-feedback': { label: 'Reinforcing Feedback', order: 3 },
-  'redirecting-feedback': { label: 'Redirecting Feedback', order: 4 },
+  'clear-expectations': { label: 'Setting Clear Expectations', order: 1 },
+  'follow-up': { label: 'Following Up on the Work', order: 2 },
+  'reinforcing-feedback': { label: 'Delivering Reinforcing Feedback', order: 3 },
+  'redirecting-feedback': { label: 'Delivering Redirecting Feedback', order: 4 },
 };
 
+// Per-category diagnostic copy. Locked — do not let AI rewrite.
 const MANAGER_AUDIT_DIAGNOSTICS = {
   'clear-expectations': {
-    headline: "Your managers aren't setting expectations the team can actually act on.",
-    body: "When expectations are vague, the team improvises — and improvisation is where standards quietly drop. People are working hard, but not necessarily on the right things, in the right way, by the right time.",
-    rep: "Before assigning the next piece of work, your manager names the outcome, the standard, and the deadline out loud — and asks the person to repeat it back in their own words.",
-    youWillSee: "Less rework. Fewer 'I didn't know that's what you meant' conversations. Faster handoffs.",
+    body: "When managers skip defining what done looks like, work comes back wrong. The cost is invisible because it looks like an execution problem, not an expectations problem. When ownership isn't confirmed before a project starts, it defaults to whoever follows up first. Usually that's you.",
+    rep: "Before any work begins, managers define the outcome, confirm what success looks like, and explicitly transfer ownership.",
+    youWillSee: "Fewer projects that require re-work, clearer accountability conversations, and less time spent clarifying work that should have been clean from the start.",
   },
   'follow-up': {
-    headline: "Work is being delegated, but no one is closing the loop.",
-    body: "When follow-up is inconsistent, the team learns that some things matter more than others — and they're the ones deciding which. The manager ends up doing the work themselves 'just this once' until that becomes the system.",
-    rep: "Every time your manager delegates, they put the check-in on the calendar in the same conversation — a specific time before the work is due.",
-    youWillSee: "Fewer end-of-week fire drills. Issues surface days earlier. The manager stops being the bottleneck.",
+    body: "When managers follow up on how people feel about the work instead of the work itself, they get reassurance instead of visibility. Problems surface at the deadline instead of before it. And when something does go wrong, managers who take the work back instead of coaching through it train their team to wait for rescue instead of owning the outcome.",
+    rep: "Anchoring every check-in to the work directly — where are you with X, what's left, what might slow this down — and leaving ownership with the direct even when execution gets hard.",
+    youWillSee: "Risks surface earlier, your managers feel less pressure to step in and fix things themselves, and your team develops stronger ownership over time.",
   },
   'reinforcing-feedback': {
-    headline: "Good work is happening, but it's invisible.",
-    body: "When strong work goes unrecognized, top performers start to wonder if it matters. Average becomes the new standard because that's what gets the same response as great.",
-    rep: "When your manager sees the behavior they want more of, they name it on the spot — the specific action, the impact it had, and why it matters.",
-    youWillSee: "Standards lift. The behaviors you want spread across the team. Engagement scores move.",
+    body: "When managers default to \u201cgreat job\u201d without naming the behavior, strong performers don't know what to repeat. The behavior may continue, or it may not. Generic recognition feels good in the moment but doesn\u2019t build anything. The behaviors worth repeating on your team are invisible to the people doing them.",
+    rep: "Naming the specific observable behavior, connecting it to why it mattered, and signaling clearly that it should continue. That's what turns a strong moment into a repeatable standard.",
+    youWillSee: "Strong behaviors repeat more consistently, your team develops a clearer shared standard for what good looks like, and recognition becomes a performance tool instead of a morale gesture.",
   },
   'redirecting-feedback': {
-    headline: "Performance problems are being tolerated, not addressed.",
-    body: "When managers avoid the hard conversation, the team feels it. The strongest people lose respect. Under-performers learn the line is somewhere else. The longer the delay, the bigger the conversation has to be.",
-    rep: "Within 24 hours of seeing a behavior that misses the standard, your manager addresses it directly — what they observed, why it matters, what good looks like, what changes next.",
-    youWillSee: "Issues get smaller, not bigger. The team self-corrects. You stop being the one who has to 'finally have the conversation.'",
+    body: "When managers let behavior gaps slide, two things happen: the gap widens, and the conversation gets harder. Every day a manager waits, the behavior becomes more entrenched and the feedback feels more like an accusation. And when feedback does happen without a follow-up, there's no way to know if the behavior actually changed, or if the conversation just cleared the air.",
+    rep: "Addressing the behavior when it happens, making an explicit request for what changes, and following up to confirm the behavior actually shifted. Feedback isn't complete until the behavior changes.",
+    youWillSee: "Behavior gaps close faster, difficult conversations become more controlled and less emotional, and your managers stop carrying issues they've been avoiding.",
   },
 };
 
-const MANAGER_AUDIT_STRONG_NOTES = {
-  'clear-expectations': "Your managers are setting expectations the team can act on. Keep reinforcing the standard.",
-  'follow-up': "Your managers are closing the loop on delegated work. The team knows follow-up is real.",
-  'reinforcing-feedback': "Your managers are catching good work and naming it. That's how standards rise.",
-  'redirecting-feedback': "Your managers are addressing performance issues directly and on time. That's rare — protect it.",
+// Strong sections in the email show only a single-line acknowledgment of the
+// category name. Detailed copy is intentionally omitted per spec.
+const MANAGER_AUDIT_STRONG_LABELS = {
+  'clear-expectations': 'Setting Clear Expectations',
+  'follow-up': 'Following Up on the Work',
+  'reinforcing-feedback': 'Delivering Reinforcing Feedback',
+  'redirecting-feedback': 'Delivering Redirecting Feedback',
 };
 
 const MANAGER_AUDIT_BAND_COLORS = {
@@ -13356,7 +13355,7 @@ const MANAGER_AUDIT_BAND_COLORS = {
 };
 
 const MANAGER_AUDIT_BAND_LABELS = {
-  gap: 'Accountability Gap',
+  gap: 'Significant Gap',
   developing: 'Developing',
   strong: 'Strong',
 };
@@ -13374,51 +13373,97 @@ const buildManagerAuditEmail = (firstName, results) => {
   const band = results.band || 'developing';
   const bandColors = MANAGER_AUDIT_BAND_COLORS[band] || MANAGER_AUDIT_BAND_COLORS.developing;
   const bandLabel = MANAGER_AUDIT_BAND_LABELS[band] || 'Developing';
-  const headline = results.headline || '';
   const summary = results.summary || '';
   const categoryScores = results.categoryScores || {};
-
-  const summaryHtml = String(summary).split('\n\n').map((para) =>
-    `<p style="margin: 0 0 16px 0; color: #002E47; font-size: 15px; line-height: 1.7;">${escapeHtml(para)}</p>`
-  ).join('');
 
   const orderedCats = Object.entries(MANAGER_AUDIT_CATEGORIES)
     .sort((a, b) => a[1].order - b[1].order);
 
-  const categoryRows = orderedCats.map(([catId, cat]) => {
+  // Split into strong vs gap/developing
+  const strongCats = [];
+  const weakCats = [];
+  orderedCats.forEach(([catId, cat]) => {
     const score = Number(categoryScores[catId] || 0);
-    const isStrong = score >= 3.5;
+    if (score >= 3.5) strongCats.push({ catId, cat, score });
+    else weakCats.push({ catId, cat, score });
+  });
 
-    if (isStrong) {
+  const strongSection = strongCats.length === 0 ? '' : `
+    <div style="background: #FFFFFF; padding: 24px 28px; border-radius: 12px; margin-top: 20px;">
+      <h2 style="margin: 0 0 8px 0; color: #002E47; font-size: 18px; font-weight: 800;">
+        Where your managers are strong
+      </h2>
+      <p style="margin: 0 0 14px 0; color: #475569; font-size: 14px; line-height: 1.6;">
+        Your managers are running ${strongCats.length === 1 ? 'this rep' : 'these reps'} consistently. Keep reinforcing ${strongCats.length === 1 ? 'it' : 'them'}.
+      </p>
+      ${strongCats.map(({ catId, score }) => `
+        <p style="margin: 6px 0 0 0; color: #277A68; font-size: 14px; font-weight: 700;">
+          ${escapeHtml(MANAGER_AUDIT_STRONG_LABELS[catId] || '')} &middot; ${score.toFixed(1)}/5
+        </p>
+      `).join('')}
+    </div>
+  `;
+
+  const weakSection = weakCats.length === 0 ? '' : `
+    <div style="margin-top: 28px;">
+      <h2 style="margin: 0 0 4px 0; color: #002E47; font-size: 18px; font-weight: 800;">
+        Where your managers have room to get stronger
+      </h2>
+    </div>
+    ${weakCats.map(({ catId, cat, score }) => {
+      const diag = MANAGER_AUDIT_DIAGNOSTICS[catId] || {};
+      const subBand = score >= 2.5 ? 'Developing' : 'Gap';
+      const accent = score >= 2.5 ? '#C9913A' : '#B84825';
       return `
-        <div style="margin-top: 16px; padding: 18px; border-radius: 12px; background: rgba(39,122,104,0.06); border: 1px solid rgba(39,122,104,0.25);">
-          <p style="margin: 0 0 4px 0; color: #277A68; font-size: 10px; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase;">${escapeHtml(cat.label)}</p>
-          <p style="margin: 0 0 8px 0; color: #002E47; font-size: 15px; font-weight: 800;">Strong &middot; ${score.toFixed(1)}/5</p>
-          <p style="margin: 0; color: #475569; font-size: 14px; line-height: 1.6;">${escapeHtml(MANAGER_AUDIT_STRONG_NOTES[catId] || '')}</p>
+        <div style="background: #FFFFFF; padding: 26px 28px; border-radius: 12px; margin-top: 16px;">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px;">
+            <h3 style="margin: 0; color: ${accent}; font-size: 18px; font-weight: 800; line-height: 1.3;">
+              ${escapeHtml(cat.label)} &mdash; ${score.toFixed(1)}/5
+            </h3>
+            <span style="display: inline-block; padding: 4px 12px; background: ${accent}1A; color: ${accent}; border-radius: 999px; font-weight: 900; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;">
+              ${subBand}
+            </span>
+          </div>
+          <p style="margin: 0 0 16px 0; color: #334155; font-size: 14px; line-height: 1.7;">
+            ${escapeHtml(diag.body || '')}
+          </p>
+          <p style="margin: 0 0 6px 0; color: #002E47; font-size: 14px; font-weight: 800;">
+            The rep that closes this gap:
+          </p>
+          <p style="margin: 0 0 16px 0; color: #334155; font-size: 14px; line-height: 1.7;">
+            ${escapeHtml(diag.rep || '')}
+          </p>
+          <p style="margin: 0 0 6px 0; color: #002E47; font-size: 14px; font-weight: 800;">
+            What you&rsquo;ll see when this strengthens:
+          </p>
+          <p style="margin: 0; color: #334155; font-size: 14px; line-height: 1.7;">
+            ${escapeHtml(diag.youWillSee || '')}
+          </p>
         </div>
       `;
-    }
+    }).join('')}
+  `;
 
-    const diag = MANAGER_AUDIT_DIAGNOSTICS[catId] || {};
-    const subBand = score >= 2.5 ? 'Developing' : 'Gap';
-    const accent = score >= 2.5 ? '#C9913A' : '#B84825';
-    return `
-      <div style="margin-top: 20px; padding: 22px; border-radius: 12px; background: #FFFFFF; border: 1px solid #e2e8f0;">
-        <p style="margin: 0 0 4px 0; color: ${accent}; font-size: 10px; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase;">${escapeHtml(cat.label)}</p>
-        <p style="margin: 0 0 12px 0; color: #002E47; font-size: 15px; font-weight: 800;">${subBand} &middot; ${score.toFixed(1)}/5</p>
-        <h3 style="margin: 0 0 8px 0; color: #002E47; font-size: 17px; font-weight: 800; line-height: 1.3;">${escapeHtml(diag.headline || '')}</h3>
-        <p style="margin: 0 0 14px 0; color: #475569; font-size: 14px; line-height: 1.6;">${escapeHtml(diag.body || '')}</p>
-        <div style="margin: 0 0 12px 0; padding: 14px; background: #002E47; color: #fff; border-radius: 10px;">
-          <p style="margin: 0 0 4px 0; color: #47A88D; font-size: 10px; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase;">The rep that closes the gap</p>
-          <p style="margin: 0; color: #fff; font-size: 14px; line-height: 1.6;">${escapeHtml(diag.rep || '')}</p>
-        </div>
-        <div style="padding: 12px 14px; background: #F8FAFC; border-radius: 10px; border: 1px solid #e2e8f0;">
-          <p style="margin: 0 0 4px 0; color: #64748b; font-size: 10px; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase;">What you&rsquo;ll see when this strengthens</p>
-          <p style="margin: 0; color: #334155; font-size: 14px; line-height: 1.6;">${escapeHtml(diag.youWillSee || '')}</p>
-        </div>
-      </div>
-    `;
-  }).join('');
+  const systemSection = `
+    <div style="background: #FFFFFF; padding: 26px 28px; border-radius: 12px; margin-top: 28px;">
+      <h2 style="margin: 0 0 12px 0; color: #002E47; font-size: 18px; font-weight: 800;">
+        What this looks like as a system
+      </h2>
+      <p style="margin: 0 0 12px 0; color: #334155; font-size: 14px; line-height: 1.7;">
+        The four reps work as a loop. Expectations set the standard. Follow-up creates visibility. Reinforcing feedback locks in what&rsquo;s working. Redirecting feedback closes the gaps. When one rep is weak, the others carry the load, imperfectly.
+      </p>
+      <p style="margin: 0; color: #334155; font-size: 14px; line-height: 1.7;">
+        Managers who run this system consistently don&rsquo;t just get better outcomes. They build teams that hold themselves accountable.
+      </p>
+    </div>
+  `;
+
+  // PDF download assets are not yet hosted — section omitted until they are
+  // available. When the Blueprint PDF and per-user results PDF are uploaded
+  // to hosting, re-enable a download section here.
+  const downloadSection = '';
+
+  const greeting = firstName ? `Hi ${escapeHtml(firstName)},` : 'Hi there,';
 
   return `<!DOCTYPE html>
 <html>
@@ -13427,53 +13472,60 @@ const buildManagerAuditEmail = (firstName, results) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Your Manager Accountability Audit Results</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #FFFFFF;">
-  <div style="max-width: 640px; margin: 0 auto; background: #FFFFFF;">
-    <div style="background: #FFFFFF; padding: 32px; text-align: center;">
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #FAF8F5;">
+  <div style="max-width: 640px; margin: 0 auto; background: #FAF8F5;">
+
+    <div style="background: #FAF8F5; padding: 28px 28px 8px 28px; text-align: center;">
       <img src="https://leaderreps-prod.web.app/logo-email.png" alt="LeaderReps" style="height: 40px;">
     </div>
 
-    <div style="background: #FAF8F5; padding: 32px 28px 8px 28px; text-align: center;">
-      <p style="margin: 0 0 6px 0; color: #64748b; font-size: 11px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase;">Your Manager Accountability Audit</p>
-      <h1 style="margin: 0 0 14px 0; color: #002E47; font-size: 26px; font-weight: 800; line-height: 1.25;">
-        Overall score: ${overall}/5
-      </h1>
-      <div style="margin-bottom: 16px;">
-        <span style="display: inline-block; padding: 8px 18px; background: ${bandColors.bg}; color: ${bandColors.text}; border-radius: 999px; font-weight: 900; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;">
-          ${escapeHtml(bandLabel)}
-        </span>
-      </div>
-      ${headline ? `
-      <h2 style="margin: 0 0 8px 0; color: #002E47; font-size: 20px; font-weight: 800; line-height: 1.3;">
-        ${escapeHtml(headline)}
-      </h2>
-      ` : ''}
-    </div>
-
-    <div style="background: #FAF8F5; padding: 8px 28px 24px 28px;">
-      ${summaryHtml}
-    </div>
-
-    <div style="background: #FAF8F5; padding: 0 28px 32px 28px;">
-      <p style="margin: 0 0 4px 0; color: #002E47; font-size: 11px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase;">The Four Reps</p>
-      ${categoryRows}
-    </div>
-
-    <div style="background: #002E47; padding: 32px 28px; text-align: left;">
-      <p style="margin: 0 0 8px 0; color: #47A88D; font-size: 11px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase;">Next Step</p>
-      <h3 style="margin: 0 0 12px 0; color: #fff; font-size: 22px; font-weight: 800; line-height: 1.3;">
-        Your audit showed you the gaps. Foundation is where you close them.
-      </h3>
-      <p style="margin: 0 0 18px 0; color: rgba(255,255,255,0.8); font-size: 15px; line-height: 1.6;">
-        Foundation is a small-cohort program where managers practice the exact reps you just scored &mdash; setting expectations, following up, reinforcing what works, redirecting what doesn&rsquo;t. Live reps, not theory.
+    <div style="padding: 12px 28px 0 28px;">
+      <p style="margin: 0 0 16px 0; color: #475569; font-size: 14px;">
+        ${greeting}
       </p>
-      <a href="https://www.leaderreps.com/foundation" style="display: inline-block; padding: 14px 24px; background: #E04E1B; color: #fff; text-decoration: none; border-radius: 10px; font-size: 14px; font-weight: 700;">
-        Learn about Foundation
-      </a>
+      <h1 style="margin: 0 0 4px 0; color: #002E47; font-size: 26px; font-weight: 800; line-height: 1.25;">
+        Your Manager Accountability Summary
+      </h1>
+      <p style="margin: 0 0 18px 0; color: #64748b; font-size: 13px;">
+        Based on your audit results
+      </p>
+
+      <div style="background: #FFFFFF; padding: 24px 28px; border-radius: 12px;">
+        <p style="margin: 0 0 6px 0; color: #64748b; font-size: 11px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase;">Overall score</p>
+        <div style="margin-bottom: 14px;">
+          <span style="color: #002E47; font-size: 36px; font-weight: 800; line-height: 1;">${overall}</span>
+          <span style="color: #94a3b8; font-size: 18px; font-weight: 700;"> / 5</span>
+          <span style="display: inline-block; margin-left: 10px; padding: 6px 14px; background: ${bandColors.bg}; color: ${bandColors.text}; border-radius: 999px; font-weight: 900; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; vertical-align: middle;">
+            ${escapeHtml(bandLabel)}
+          </span>
+        </div>
+        <p style="margin: 0; color: #334155; font-size: 14px; line-height: 1.7;">
+          ${escapeHtml(summary)}
+        </p>
+      </div>
+
+      ${strongSection}
+      ${weakSection}
+      ${systemSection}
+      ${downloadSection}
     </div>
 
-    <div style="background: #FFFFFF; padding: 24px; text-align: center;">
-      <p style="margin: 0; color: #aaa; font-size: 12px;">
+    <div style="padding: 28px 28px 0 28px;">
+      <div style="background: #002E47; padding: 28px; border-radius: 12px;">
+        <h3 style="margin: 0 0 10px 0; color: #fff; font-size: 20px; font-weight: 800; line-height: 1.3;">
+          Ready to build this into your management team?
+        </h3>
+        <p style="margin: 0 0 18px 0; color: rgba(255,255,255,0.85); font-size: 14px; line-height: 1.6;">
+          Foundation is a behavior-based development program built on these four reps. Not content to consume &mdash; reps to practice, with accountability built in.
+        </p>
+        <a href="https://www.leaderreps.com/foundation" style="display: inline-block; padding: 13px 22px; background: #47A88D; color: #fff; text-decoration: none; border-radius: 10px; font-size: 14px; font-weight: 700;">
+          Let&rsquo;s see if it&rsquo;s a fit
+        </a>
+      </div>
+    </div>
+
+    <div style="padding: 24px 28px; text-align: center;">
+      <p style="margin: 0; color: #94a3b8; font-size: 12px;">
         &copy; ${new Date().getFullYear()} LeaderReps. All rights reserved.
       </p>
     </div>
@@ -28484,3 +28536,63 @@ exports.aggregateContentMetricEvent = onDocumentCreated(
     }
   }
 );
+
+// ============================================================================
+// Conversation Simulator — Phase 2
+// ============================================================================
+// Mints a short-lived ephemeral token for the Gemini Live API so the browser
+// can connect directly without ever seeing the long-lived API key.
+// Admin-only. Token lifetime is ~10 minutes; session start window is ~1 minute.
+exports.mintSimulatorToken = onCall(
+  {
+    cors: true,
+    region: "us-central1",
+    invoker: "public",
+    secrets: ["GEMINI_API_KEY"],
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be signed in");
+    }
+
+    const db = admin.firestore();
+    const cfg = await db.doc("metadata/config").get();
+    const adminEmails = cfg.exists ? (cfg.data().adminemails || []) : [];
+    const callerEmail = (request.auth.token.email || "").toLowerCase();
+    const isAdmin = adminEmails.map((e) => String(e).toLowerCase()).includes(callerEmail);
+    if (!isAdmin) {
+      throw new HttpsError("permission-denied", "Admin access required");
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new HttpsError("failed-precondition", "GEMINI_API_KEY secret not configured");
+    }
+
+    // ephemeral tokens live in the v1alpha API surface.
+    const { GoogleGenAI } = require("@google/genai");
+    const ai = new GoogleGenAI({ apiKey, httpOptions: { apiVersion: "v1alpha" } });
+
+    const now = Date.now();
+    const expireMs = now + 10 * 60 * 1000;     // token usable for 10 min
+    const newSessionMs = now + 60 * 1000;       // must START a session within 1 min
+
+    const token = await ai.authTokens.create({
+      config: {
+        uses: 1,
+        expireTime: new Date(expireMs).toISOString(),
+        newSessionExpireTime: new Date(newSessionMs).toISOString(),
+        httpOptions: { apiVersion: "v1alpha" },
+      },
+    });
+
+    logger.info("mintSimulatorToken: issued", { caller: callerEmail });
+
+    return {
+      token: token.name,
+      expiresAt: expireMs,
+      sessionStartBy: newSessionMs,
+    };
+  }
+);
+

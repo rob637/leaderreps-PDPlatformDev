@@ -30,7 +30,7 @@ export default function App() {
     setStage('results');
   };
 
-  const handleEmailSubmit = async ({ firstName, email, company }) => {
+  const handleEmailSubmit = async ({ email }) => {
     if (!results) return;
     setSubmitting(true);
     setSubmitError(null);
@@ -39,9 +39,7 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          firstName: (firstName || '').trim(),
           email: (email || '').trim(),
-          company: (company || '').trim(),
           answers,
           results,
         }),

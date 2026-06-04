@@ -28,10 +28,12 @@ import {
   Film,
   Lightbulb,
   ClipboardCheck,
+  Mic,
 } from 'lucide-react';
 import { BreadcrumbNav } from '../ui/BreadcrumbNav.jsx';
 import { getBreadcrumbs } from '../../config/breadcrumbConfig.js';
 import { useAppServices } from '../../services/useAppServices';
+import LabReviewStrip from './LabReviewStrip.jsx';
 
 const StatusBadge = ({ status }) => {
   const styles =
@@ -49,7 +51,7 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const ToolCard = ({ icon, title, status, children }) => {
+const ToolCard = ({ icon, title, status, toolId, children }) => {
   const Icon = icon;
   return (
   <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-6 flex flex-col gap-4">
@@ -67,6 +69,7 @@ const ToolCard = ({ icon, title, status, children }) => {
     <div className="text-sm text-slate-600 dark:text-slate-300 space-y-3">
       {children}
     </div>
+    {toolId && <LabReviewStrip toolId={toolId} />}
   </div>
   );
 };
@@ -136,7 +139,7 @@ const LeaderRepsLab = () => {
           />
 
           {/* Landing Page Promo */}
-          <ToolCard icon={Film} title="Landing Page Promo — Ryan v2" status="Live">
+          <ToolCard toolId="video-promo-ryan-v2" icon={Film} title="Promo Video — 95 seconds" status="MVP">
             <p>
               ~95s cut from Ryan's v2 take. Hook → pain → differentiation →
               solution → CTA. Subtitles burned in for muted autoplay.
@@ -144,7 +147,7 @@ const LeaderRepsLab = () => {
             <div className="relative w-full rounded-lg overflow-hidden bg-black" style={{ paddingTop: '56.25%' }}>
               <iframe
                 src="https://www.youtube.com/embed/zgXA9d0bFsU"
-                title="Landing Page Promo — Ryan v2"
+                title="Promo Video — 95 seconds"
                 className="absolute inset-0 w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
@@ -163,8 +166,38 @@ const LeaderRepsLab = () => {
             </div>
           </ToolCard>
 
+          {/* 60-second Promo */}
+          <ToolCard toolId="video-promo-ryan-60s" icon={Film} title="Promo Video — 60 seconds" status="MVP">
+            <p>
+              ~60s tighter cut from Ryan's take. Same hook → pain →
+              differentiation → solution → CTA arc, trimmed for paid social
+              and shorter attention spans. Subtitles burned in for muted
+              autoplay.
+            </p>
+            <div className="relative w-full rounded-lg overflow-hidden bg-black" style={{ paddingTop: '56.25%' }}>
+              <iframe
+                src="https://www.youtube.com/embed/vX3PFPqlr8w"
+                title="Promo Video — 60 seconds"
+                className="absolute inset-0 w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <a
+                href="https://youtu.be/vX3PFPqlr8w"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-corporate-teal text-corporate-teal-ink text-sm font-semibold hover:bg-corporate-teal/5 transition-colors w-fit"
+              >
+                Open on YouTube
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </div>
+          </ToolCard>
+
           {/* Bloopers Reel */}
-          <ToolCard icon={Film} title="Bloopers Reel — Ryan v1" status="Live">
+          <ToolCard toolId="video-bloopers-ryan-v1" icon={Film} title="Bloopers Reel — Ryan v1" status="MVP">
             <p>
               Behind-the-scenes bloopers from Ryan's v1 take. Internal
               morale / team-channel candy.
@@ -193,6 +226,7 @@ const LeaderRepsLab = () => {
 
           {/* Concept: Choppy Reinforcing Feedback Reorder */}
           <ToolCard
+            toolId="video-concept-reorder-feedback"
             icon={Lightbulb}
             title="Concept — “Reorder the Feedback”"
             status="Concept"
@@ -242,12 +276,53 @@ const LeaderRepsLab = () => {
           </ToolCard>
 
           {/* ────────────────────────────────────────── */}
+          <SectionHeader            title="Internal Prototypes"
+            description="Admin-only experiments. Validate the bet before promoting to a public lead magnet."
+          />
+
+          {/* Conversation Simulator */}
+          <ToolCard
+            toolId="conversation-simulator"
+            icon={Mic}
+            title="Conversation Simulator"
+            status="MVP"
+          >
+            <p>
+              Voice-first role-play. Talk to a simulated direct report
+              (&ldquo;Jamie&rdquo; &mdash; senior analyst, missed two
+              deadlines, has something going on at home she hasn&rsquo;t
+              shared) and rehearse a hard 1:1. Live transcript + latency /
+              cost panel. Admin-only for now; each session mints a 10-minute
+              ephemeral Gemini Live token via Cloud Function.
+            </p>
+            <ul className="text-xs text-slate-500 dark:text-slate-400 list-disc pl-5 space-y-0.5">
+              <li>Phase 0 spike. Decides go/no-go on the full Simulator.</li>
+              <li>Kill criteria in-app: avg round-trip &gt; 1200ms or &gt; $0.50/min.</li>
+              <li>One scenario today; rubric scoring + share links in later phases.</li>
+            </ul>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate('conversation-simulator')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-corporate-teal text-white text-sm font-semibold hover:bg-corporate-teal/90 transition-colors w-fit"
+              >
+                Open simulator
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-400">
+              Tester must be on <code>metadata/config.adminemails</code>. Use a
+              laptop with a real mic; mobile not supported yet.
+            </p>
+          </ToolCard>
+
+          {/* ────────────────────────────────────────── */}
           <SectionHeader            title="Lead Magnets"
             description="Public-facing experiments designed to capture leads. Promote winners; sunset the rest."
           />
 
           {/* Manager Accountability Audit */}
           <ToolCard
+            toolId="manager-accountability-audit"
             icon={ClipboardCheck}
             title="The Manager Accountability Audit"
             status="MVP"
@@ -282,6 +357,7 @@ const LeaderRepsLab = () => {
 
           {/* Anonymous Team Pulse */}
           <ToolCard
+            toolId="anonymous-team-pulse"
             icon={Users}
             title={'Anonymous Team Pulse — “What Is It Like to Be Led By Me?”'}
             status="MVP"
@@ -313,6 +389,7 @@ const LeaderRepsLab = () => {
 
           {/* Leadership Identity Statement Builder */}
           <ToolCard
+            toolId="identity-statement-builder"
             icon={Compass}
             title="Leadership Identity Statement Builder"
             status="MVP"
@@ -343,7 +420,7 @@ const LeaderRepsLab = () => {
           </ToolCard>
 
           {/* Bad Boss Bingo */}
-          <ToolCard icon={Grid3x3} title="Bad Boss Bingo" status="MVP">
+          <ToolCard toolId="bad-boss-bingo" icon={Grid3x3} title="Bad Boss Bingo" status="MVP">
             <p>
               Shareable bingo card of bad-management patterns. Tongue-in-cheek
               viral lead magnet — employees mark squares, share scores on
@@ -370,7 +447,7 @@ const LeaderRepsLab = () => {
           </ToolCard>
 
           {/* Leadership Phrasebook */}
-          <ToolCard icon={BookMarked} title="Leadership Phrasebook" status="MVP">
+          <ToolCard toolId="leadership-phrasebook" icon={BookMarked} title="Leadership Phrasebook" status="MVP">
             <p>
               Public, growing library of <em>exact scripts</em> for hard
               leadership moments. SEO-driven lead magnet. Each phrase deep-links
@@ -398,6 +475,7 @@ const LeaderRepsLab = () => {
 
           {/* State of Leadership Report */}
           <ToolCard
+            toolId="state-of-leadership-report"
             icon={FileBarChart}
             title="State of Leadership Report"
             status="MVP"
@@ -434,7 +512,7 @@ const LeaderRepsLab = () => {
           />
 
           {/* Kudos — moved here from Sales & Marketing */}
-          <ToolCard icon={Heart} title="Kudos" status="MVP">
+          <ToolCard toolId="kudos" icon={Heart} title="Kudos" status="MVP">
             <p>
               AI-moderated warm-touch lead magnet. Send a “kudos from the team
               at LeaderReps” to a prospect; every send is logged as a warm
@@ -464,7 +542,7 @@ const LeaderRepsLab = () => {
           </ToolCard>
 
           {/* Reinforcing Feedback Kudos — leader-facing practice, lives in leadership-lab sub-app */}
-          <ToolCard icon={ThumbsUp} title="Reinforcing Feedback Kudos" status="MVP">
+          <ToolCard toolId="reinforcing-feedback-kudos" icon={ThumbsUp} title="Reinforcing Feedback Kudos" status="MVP">
             <p>
               Leader-facing practice rep. A logged-in leader drafts a piece of
               reinforcing feedback (a “kudos”) and an AI coach evaluates the
@@ -499,6 +577,7 @@ const LeaderRepsLab = () => {
 
           {/* Constructive Nudges — Kudos's twin, but for upward feedback */}
           <ToolCard
+            toolId="constructive-nudges"
             icon={MessageSquareWarning}
             title="Constructive Nudges"
             status="MVP"
@@ -535,6 +614,7 @@ const LeaderRepsLab = () => {
 
           {/* Test Lead Magnets — moved here from Sales & Marketing */}
           <ToolCard
+            toolId="test-lead-magnets"
             icon={BarChart3}
             title="Test Lead Magnets (DNA · ROI · Readiness)"
             status="MVP"
@@ -592,7 +672,7 @@ const LeaderRepsLab = () => {
           />
 
           {/* Win Card Generator */}
-          <ToolCard icon={Share2} title="Win Card Generator" status="MVP">
+          <ToolCard toolId="win-card-generator" icon={Share2} title="Win Card Generator" status="MVP">
             <p>
               "Strava for leaders" demo. Generates a brand-styled,
               LinkedIn-shareable card from a leader's win. Validates whether
@@ -613,7 +693,7 @@ const LeaderRepsLab = () => {
           </ToolCard>
 
           {/* Manager Multiplier */}
-          <ToolCard icon={UserPlus} title="Manager Multiplier" status="MVP">
+          <ToolCard toolId="manager-multiplier" icon={UserPlus} title="Manager Multiplier" status="MVP">
             <p>
               Dropbox-style B2B referral demo. Manager invites direct reports →
               both sides unlock value → Team Plan upsell. Visualizes the full
@@ -634,7 +714,7 @@ const LeaderRepsLab = () => {
           </ToolCard>
 
           {/* Pod Match */}
-          <ToolCard icon={Users2} title="Pod Match Simulator" status="MVP">
+          <ToolCard toolId="pod-match-simulator" icon={Users2} title="Pod Match Simulator" status="MVP">
             <p>
               CrossFit-style "pods of 5" demo. Runs the matching algorithm on a
               mock cohort, scores each pod for diversity, and previews the Pod
@@ -661,7 +741,7 @@ const LeaderRepsLab = () => {
           />
 
           {/* Ascent 1 */}
-          <ToolCard icon={Mountain} title="Ascent 1" status="MVP">
+          <ToolCard toolId="ascent-1" icon={Mountain} title="Ascent 1" status="MVP">
             <p>
               Original Ascent Arena experience. Moved here from the main
               navigator while we evaluate the next iteration.
@@ -681,7 +761,7 @@ const LeaderRepsLab = () => {
           </ToolCard>
 
           {/* Ascent 2 */}
-          <ToolCard icon={Mountain} title="Ascent 2" status="MVP">
+          <ToolCard toolId="ascent-2" icon={Mountain} title="Ascent 2" status="MVP">
             <p>
               Ascent 2 prototype — admin preview of the next-generation
               development arc.
@@ -701,7 +781,7 @@ const LeaderRepsLab = () => {
           </ToolCard>
 
           {/* Leadership Lab — cohort SMS + spaced-repetition experiment (consolidated from SMS Tool + SRS Engine) */}
-          <ToolCard icon={FlaskConical} title="Leadership Lab (SMS + SRS Experiment)" status="MVP">
+          <ToolCard toolId="leadership-lab-sms-srs" icon={FlaskConical} title="Leadership Lab (SMS + SRS Experiment)" status="MVP">
             <p>
               Separate cohort-engagement app. Delivers leadership reps over SMS
               with spaced-repetition cadence — validates both the SMS channel
@@ -731,7 +811,7 @@ const LeaderRepsLab = () => {
           />
 
           {/* Account Intelligence Engine */}
-          <ToolCard icon={Brain} title="Account Intelligence Engine" status="Experimental">
+          <ToolCard toolId="account-intelligence-engine" icon={Brain} title="Account Intelligence Engine" status="Experimental">
             <p>
               Persistent dossiers on every target account, refreshed weekly.
               Tracks leadership turnover, layoffs, earnings call mentions of
@@ -745,7 +825,7 @@ const LeaderRepsLab = () => {
           </ToolCard>
 
           {/* Trigger → Talk Track Generator */}
-          <ToolCard icon={Zap} title="Trigger → Talk Track Generator" status="Experimental">
+          <ToolCard toolId="trigger-talk-track-generator" icon={Zap} title="Trigger → Talk Track Generator" status="Experimental">
             <p>
               Auto-generates a personalized 3-touch outreach the moment a
               buying signal fires (new VP, layoff, earnings miss, “leadership
@@ -757,7 +837,7 @@ const LeaderRepsLab = () => {
           </ToolCard>
 
           {/* Demo Auto-Pilot */}
-          <ToolCard icon={Presentation} title="Demo Auto-Pilot" status="Experimental">
+          <ToolCard toolId="demo-auto-pilot" icon={Presentation} title="Demo Auto-Pilot" status="Experimental">
             <p>
               Live ROI calculator + guided discovery during the sales call.
               Asks 5 questions → generates a custom Leadership ROI Projection
@@ -770,7 +850,7 @@ const LeaderRepsLab = () => {
           </ToolCard>
 
           {/* Champion Enablement Kits */}
-          <ToolCard icon={Briefcase} title="Champion Enablement Kits" status="Experimental">
+          <ToolCard toolId="champion-enablement-kits" icon={Briefcase} title="Champion Enablement Kits" status="Experimental">
             <p>
               The “internal sale” tool. Generates a personalized board deck PDF
               for each prospect (logo, named pain points, peer benchmarks,

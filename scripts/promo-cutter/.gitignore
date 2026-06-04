@@ -1,0 +1,9 @@
+node_modules/
+input/*
+!input/.gitkeep
+output/*
+!output/.gitkeep
+.env
+*.mp4
+*.mov
+*.webm

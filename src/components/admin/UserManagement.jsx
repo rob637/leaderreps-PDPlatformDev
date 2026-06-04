@@ -50,6 +50,34 @@ import NotificationSettingsModal from './NotificationSettingsModal';
 // Facilitators are now stored in Firestore 'facilitators' collection
 // and managed via the Facilitators tab in this admin panel
 
+// Pull a millisecond timestamp out of whatever shape `lastLoginAt` (or its
+// legacy alias `lastActive`) takes — Firestore Timestamp, JS Date, ISO string,
+// or numeric epoch. Returns 0 when missing so sort puts users with no login last.
+function getLastLoginMillis(u) {
+  const raw = u?.lastLoginAt ?? u?.lastActive ?? null;
+  if (!raw) return 0;
+  if (typeof raw?.toMillis === 'function') return raw.toMillis();
+  if (raw instanceof Date) return raw.getTime();
+  if (typeof raw === 'number') return raw;
+  const parsed = Date.parse(raw);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatLastLogin(u) {
+  const ms = getLastLoginMillis(u);
+  if (!ms) return 'Never';
+  const diff = Date.now() - ms;
+  if (diff < 0) return 'Just now';
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(ms).toLocaleDateString();
+}
+
 const UserManagement = () => {
   const { db, user } = useAppServices();
   const [activeTab, setActiveTab] = useState('users'); // 'users', 'invites', 'cohorts'
@@ -987,6 +1015,10 @@ const UserManagement = () => {
           aVal = a.disabled ? 'disabled' : 'active';
           bVal = b.disabled ? 'disabled' : 'active';
           break;
+        case 'lastLogin':
+          aVal = getLastLoginMillis(a);
+          bVal = getLastLoginMillis(b);
+          break;
         default:
           aVal = '';
           bVal = '';
@@ -1170,6 +1202,15 @@ const UserManagement = () => {
                         <SortIcon column="status" />
                       </div>
                     </th>
+                    <th 
+                      className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none"
+                      onClick={() => handleSort('lastLogin')}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        Last Login
+                        <SortIcon column="lastLogin" />
+                      </div>
+                    </th>
                     <th className="px-6 py-3 font-semibold text-slate-700 dark:text-slate-200 text-right">Actions</th>
                   </>
                 ) : activeTab === 'cohorts' ? (
@@ -1270,6 +1311,22 @@ const UserManagement = () => {
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800">
                             <CheckCircle className="w-3 h-3" /> Active
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        {user.type === 'invite' ? (
+                          <span className="text-xs text-slate-400 italic">—</span>
+                        ) : (
+                          <span
+                            className={`text-xs ${getLastLoginMillis(user) ? 'text-slate-600 dark:text-slate-300' : 'text-slate-400 italic'}`}
+                            title={
+                              getLastLoginMillis(user)
+                                ? new Date(getLastLoginMillis(user)).toLocaleString()
+                                : 'No login recorded yet'
+                            }
+                          >
+                            {formatLastLogin(user)}
                           </span>
                         )}
                       </td>

@@ -1,0 +1,19 @@
+{
+  "name": "promo-cutter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local-only tool to cut Ryan's long-form videos into 60-90s promos via Gemini + FFmpeg.",
+  "scripts": {
+    "analyze": "node analyze.mjs",
+    "render": "node render.mjs",
+    "analyze-mix": "node analyze-mix.mjs",
+    "render-mix": "node render-mix.mjs",
+    "transcribe": ".venv/bin/python transcribe.py",
+    "pick-words": "node pick-words.mjs"
+  },
+  "dependencies": {
+    "@google/genai": "^2.7.0",
+    "dotenv": "^16.4.5"
+  }
+}

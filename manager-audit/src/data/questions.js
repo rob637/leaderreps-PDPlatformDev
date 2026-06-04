@@ -1,9 +1,12 @@
 // Manager Accountability Audit — 10 questions across 4 scored categories + 2 gut-check
-// Likert 1–5: 1 Rarely, 2 Occasionally, 3 Sometimes, 4 Usually, 5 Consistently
+// Scored questions: Likert 1–5 (Rarely → Consistently)
+// Gut-check questions (Q9, Q10): binary Agree / Disagree (unscored)
 
 export const ASSESSMENT_TITLE = 'The Manager Accountability Audit';
-export const ASSESSMENT_SUBTITLE =
-  'Find out where your management team is leaving performance on the table.';
+export const ASSESSMENT_SUBTITLE_LINE_1 =
+  'Strong accountability systems run on specific behaviors: setting clear expectations, following up on the work, and delivering feedback.';
+export const ASSESSMENT_SUBTITLE_LINE_2 =
+  'Find out how consistently your managers are running those behaviors, and where the gaps are.';
 
 export const LIKERT_OPTIONS = [
   { value: 1, label: 'Rarely', short: '1' },
@@ -13,29 +16,35 @@ export const LIKERT_OPTIONS = [
   { value: 5, label: 'Consistently', short: '5' },
 ];
 
+// Binary options for gut-check questions (unscored, stored as 'agree' | 'disagree')
+export const AGREE_DISAGREE_OPTIONS = [
+  { value: 'agree', label: 'Agree' },
+  { value: 'disagree', label: 'Disagree' },
+];
+
 // Four scored categories + the unscored gut-check
 export const CATEGORIES = {
   'clear-expectations': {
     id: 'clear-expectations',
-    label: 'Set Clear Expectations',
+    label: 'Setting Clear Expectations',
     order: 1,
     scored: true,
   },
   'follow-up': {
     id: 'follow-up',
-    label: 'Follow-Up on the Work',
+    label: 'Following Up on the Work',
     order: 2,
     scored: true,
   },
   'reinforcing-feedback': {
     id: 'reinforcing-feedback',
-    label: 'Reinforcing Feedback',
+    label: 'Delivering Reinforcing Feedback',
     order: 3,
     scored: true,
   },
   'redirecting-feedback': {
     id: 'redirecting-feedback',
-    label: 'Redirecting Feedback',
+    label: 'Delivering Redirecting Feedback',
     order: 4,
     scored: true,
   },
@@ -47,156 +56,105 @@ export const CATEGORIES = {
   },
 };
 
-// Per-category diagnostic copy shown when the leader scores Gap or Developing
-// in that category. Strong scores get a one-line acknowledgment instead.
-export const CATEGORY_DIAGNOSTICS = {
-  'clear-expectations': {
-    headline: 'Your managers aren\'t setting expectations the team can actually act on.',
-    body:
-      'When expectations are vague, the team improvises — and improvisation is where standards quietly drop. People are working hard, but not necessarily on the right things, in the right way, by the right time. Until the standard is named in plain language, you can\'t hold anyone to it.',
-    rep: 'Before assigning the next piece of work, your manager names the outcome, the standard, and the deadline out loud — and asks the person to repeat it back in their own words.',
-    youWillSee:
-      'Less rework. Fewer "I didn\'t know that\'s what you meant" conversations. Faster handoffs.',
-  },
-  'follow-up': {
-    headline: 'Work is being delegated, but no one is closing the loop.',
-    body:
-      'When follow-up is inconsistent, the team learns that some things matter more than others — and they\'re the ones deciding which. Deadlines slip without consequence. Quality drifts. The manager ends up doing the work themselves "just this once" until that becomes the system.',
-    rep: 'Every time your manager delegates, they put the check-in on the calendar in the same conversation — not later, not "I\'ll ping you," but a specific time before the work is due.',
-    youWillSee:
-      'Fewer end-of-week fire drills. Issues surface days earlier. The manager stops being the bottleneck.',
-  },
-  'reinforcing-feedback': {
-    headline: 'Good work is happening, but it\'s invisible.',
-    body:
-      'When strong work goes unrecognized, top performers start to wonder if it matters. Average becomes the new standard because that\'s what gets the same response as great. Reinforcing feedback isn\'t about being nice — it\'s about making the standard repeatable.',
-    rep: 'When your manager sees the behavior they want more of, they name it on the spot — the specific action, the impact it had, and why it matters.',
-    youWillSee:
-      'Standards lift. The behaviors you want spread across the team. Engagement scores move.',
-  },
-  'redirecting-feedback': {
-    headline: 'Performance problems are being tolerated, not addressed.',
-    body:
-      'When managers avoid the hard conversation, the team feels it. The strongest people lose respect. The under-performers learn that the line is somewhere else. The longer the delay, the bigger the conversation has to be — until it becomes a separation instead of a coaching moment.',
-    rep: 'Within 24 hours of seeing a behavior that misses the standard, your manager addresses it directly — what they observed, why it matters, what good looks like, and what changes next.',
-    youWillSee:
-      'Issues get smaller, not bigger. The team self-corrects. You stop being the one who has to "finally have the conversation."',
-  },
-};
-
-export const CATEGORY_STRONG_NOTES = {
-  'clear-expectations':
-    'Your managers are setting expectations the team can act on. Keep reinforcing the standard.',
-  'follow-up':
-    'Your managers are closing the loop on delegated work. The team knows follow-up is real.',
-  'reinforcing-feedback':
-    'Your managers are catching good work and naming it. That\'s how standards rise.',
-  'redirecting-feedback':
-    'Your managers are addressing performance issues directly and on time. That\'s rare — protect it.',
-};
-
 export const ASSESSMENT_QUESTIONS = [
-  // Set Clear Expectations
+  // Setting Clear Expectations
   {
     id: 'ce-1',
     category: 'clear-expectations',
     prompt:
-      'Our managers spell out what "good" looks like — the outcome, the standard, and the deadline — before work begins.',
+      'Managers define what "done" looks like before work begins, not after it comes back wrong.',
   },
   {
     id: 'ce-2',
     category: 'clear-expectations',
-    prompt:
-      'Our team members could repeat back, in their own words, exactly what is expected of them on their current priorities.',
+    prompt: 'Managers confirm ownership is clear before a project starts.',
   },
-  // Follow-Up on the Work
+  // Following Up on the Work
   {
     id: 'fu-1',
     category: 'follow-up',
     prompt:
-      'Our managers schedule the check-in at the moment they delegate, not after the deadline is missed.',
+      'Managers follow up on the work itself ("Where are you on…"), not just on whether people feel good about it ("How\u2019s the project going?").',
   },
   {
     id: 'fu-2',
     category: 'follow-up',
     prompt:
-      'Issues with delegated work surface days before the deadline, not the morning of.',
+      'When something goes wrong, my managers coach the person through it instead of taking the work back.',
   },
-  // Reinforcing Feedback
+  // Delivering Reinforcing Feedback
   {
     id: 'rp-1',
     category: 'reinforcing-feedback',
     prompt:
-      'Our managers catch people doing the right things and name it specifically — the action, the impact, why it matters.',
+      'Managers name specific behaviors and the impact when they recognize strong performance — they don\u2019t just say "great job."',
   },
   {
     id: 'rp-2',
     category: 'reinforcing-feedback',
     prompt:
-      'Top performers on our team know we see their work and value it.',
+      'When someone on the team does something worth repeating, their manager tells them exactly what it was and why it mattered.',
   },
-  // Redirecting Feedback
+  // Delivering Redirecting Feedback
   {
     id: 'rd-1',
     category: 'redirecting-feedback',
     prompt:
-      'Our managers address performance issues within 24 hours of seeing them, not in the next quarterly review.',
+      'My managers address behavior gaps when they notice them, not after they\u2019ve let them go too long.',
   },
   {
     id: 'rd-2',
     category: 'redirecting-feedback',
     prompt:
-      'Our managers can have a hard conversation without it turning into a relationship problem.',
+      'Managers close the loop by following up after a redirecting feedback conversation to confirm the behavior actually changed.',
   },
-  // Gut check (unscored)
+  // Gut check (unscored, Agree / Disagree)
   {
     id: 'gc-1',
     category: 'gut-check',
-    prompt:
-      'If I left for a month, our team would hit the same standards without me checking in.',
+    optionsType: 'agree-disagree',
+    prompt: 'Managers are having the conversations I\u2019d have if I was in their seat.',
   },
   {
     id: 'gc-2',
     category: 'gut-check',
-    prompt:
-      'I rarely have to step in and rescue work that should have been handled by my managers.',
+    optionsType: 'agree-disagree',
+    prompt: 'I\u2019ve been compensating for gaps more than I should be.',
   },
 ];
 
 // Overall band thresholds (averaged across the 4 scored categories, 1.0–5.0)
+// Copy is fixed — do not change without product sign-off.
 export const SCORE_BANDS = {
   gap: {
     id: 'gap',
     min: 1.0,
     max: 2.4,
-    label: 'Accountability Gap',
-    headline: 'Your management team has a real accountability gap.',
+    label: 'Significant Gap',
     summary:
-      'Right now, the system is mostly running on your effort, not your managers\'. Expectations are unclear, follow-up is inconsistent, and feedback — both kinds — is rare or late. The good news: this is the most leveraged thing you can fix. Small, consistent reps in each of the four areas below will close the gap faster than another off-site or another tool.',
-    kitTag: 'manager-audit-gap',
+      'Significant gaps in your accountability system. Your managers are missing critical reps. Performance and ownership issues are likely showing up across your teams.',
     color: '#B84825',
+    kitTag: 'manager-audit-gap',
   },
   developing: {
     id: 'developing',
     min: 2.5,
     max: 3.4,
     label: 'Developing',
-    headline: 'Your managers are doing some of it — not consistently enough yet.',
     summary:
-      'You\'ve got pockets of accountability working, but it depends on the manager and the day. That inconsistency is what your strongest people feel — and what your weakest people exploit. The categories flagged below are the ones to install as a repeatable system, not a personality trait.',
-    kitTag: 'manager-audit-developing',
+      'Your accountability system is developing. Some reps are running, but inconsistency is creating gaps. Strengthening the weak areas will have a direct impact on team performance.',
     color: '#C9913A',
+    kitTag: 'manager-audit-developing',
   },
   strong: {
     id: 'strong',
     min: 3.5,
     max: 5.0,
     label: 'Strong',
-    headline: 'Your management team is running a strong accountability system.',
     summary:
-      'You\'re in the top tier. The four reps are happening consistently enough that the team trusts the standard. Your work now is protecting that and developing the next layer of managers underneath. Look at any category below that came in under "Strong" — that\'s where the next gain is.',
-    kitTag: 'manager-audit-strong',
+      'Your accountability system is strong. Your managers are running the reps consistently. The opportunity is locking in the ones that still have room to grow.',
     color: '#277A68',
+    kitTag: 'manager-audit-strong',
   },
 };
 
@@ -212,8 +170,14 @@ const getCategoryBandLabel = (score) => {
   return 'Gap';
 };
 
+export const getOptionsForQuestion = (q) => {
+  if (q.optionsType === 'agree-disagree') return AGREE_DISAGREE_OPTIONS;
+  return LIKERT_OPTIONS;
+};
+
 /**
- * Calculate results from an answers object keyed by questionId → 1..5
+ * Calculate results from an answers object keyed by questionId → value.
+ * Scored questions use 1..5 numbers; gut-check questions store 'agree' | 'disagree'.
  */
 export const calculateResults = (answers) => {
   const categoryScores = {};
@@ -222,7 +186,6 @@ export const calculateResults = (answers) => {
   const questionResults = [];
   const gutCheckAnswers = [];
 
-  // Group questions by category
   const byCategory = {};
   ASSESSMENT_QUESTIONS.forEach((q) => {
     if (!byCategory[q.category]) byCategory[q.category] = [];
@@ -230,14 +193,14 @@ export const calculateResults = (answers) => {
   });
 
   Object.entries(byCategory).forEach(([catId, questions]) => {
-    const total = questions.reduce(
-      (sum, q) => sum + Number(answers[q.id] || 0),
-      0,
-    );
-    const score = total / questions.length; // 1–5
     const cat = CATEGORIES[catId];
 
     if (cat?.scored) {
+      const total = questions.reduce(
+        (sum, q) => sum + Number(answers[q.id] || 0),
+        0,
+      );
+      const score = total / questions.length;
       categoryRaw[catId] = total;
       categoryScores[catId] = Number(score.toFixed(2));
       categoryBands[catId] = {
@@ -248,20 +211,21 @@ export const calculateResults = (answers) => {
     }
 
     questions.forEach((q) => {
-      const val = Number(answers[q.id] || 0);
+      const raw = answers[q.id];
+      const opts = getOptionsForQuestion(q);
+      const matched = opts.find((o) => o.value === raw);
       const item = {
         id: q.id,
         category: q.category,
         prompt: q.prompt,
-        answer: val,
-        answerLabel: LIKERT_OPTIONS.find((o) => o.value === val)?.label || '',
+        answer: raw ?? null,
+        answerLabel: matched?.label || '',
       };
       questionResults.push(item);
       if (q.category === 'gut-check') gutCheckAnswers.push(item);
     });
   });
 
-  // Overall = average of the 4 scored categories
   const scoredValues = Object.values(categoryScores);
   const overallScore =
     scoredValues.length > 0
@@ -274,7 +238,6 @@ export const calculateResults = (answers) => {
     overallScore: Number(overallScore.toFixed(2)),
     band: band.id,
     bandLabel: band.label,
-    headline: band.headline,
     summary: band.summary,
     kitTag: band.kitTag,
     categoryScores,

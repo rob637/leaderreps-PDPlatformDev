@@ -31,6 +31,7 @@ export const ensureUserDocs = async (db, uidOrUser) => {
             photoURL: user?.photoURL || null,
             createdAt: timeService.getISOString(),
             arenaEntryDate: serverTimestamp(), // When user first entered the arena
+            lastLoginAt: serverTimestamp(),
             _createdAt: serverTimestamp()
         }, true); // merge: true to preserve cohortId/role from AuthPanel
     } else {
@@ -43,7 +44,10 @@ export const ensureUserDocs = async (db, uidOrUser) => {
         // the Firestore copy is the source of truth — overwriting it from
         // auth.user.email would silently revert their change.
         const existingData = userProfileSnap.data();
-        const updates = {};
+        const updates = {
+            lastLoginAt: serverTimestamp(),
+            lastActive: serverTimestamp(),
+        };
 
         // Only seed email from auth if Firestore has none yet (legacy users).
         if (user?.email && !existingData.email) {
@@ -55,11 +59,8 @@ export const ensureUserDocs = async (db, uidOrUser) => {
         if (user?.photoURL && user.photoURL !== existingData.photoURL) {
             updates.photoURL = user.photoURL;
         }
-        
-        if (Object.keys(updates).length > 0) {
-            updates.lastActive = serverTimestamp();
-            await setDocEx(db, userProfilePath, updates, true); // merge: true
-        }
+
+        await setDocEx(db, userProfilePath, updates, true); // merge: true
     }
 
     // ==================== DEVELOPMENT PLAN MODULE ====================

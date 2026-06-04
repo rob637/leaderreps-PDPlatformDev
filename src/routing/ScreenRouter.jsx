@@ -195,6 +195,9 @@ const ScreenMap = {
   'lab-state-of-leadership': lazy(() =>
     import('../components/admin/lab/StateOfLeadershipAdmin.jsx')
   ),
+  'conversation-simulator': lazy(() =>
+    import('../components/screens/ConversationSimulator.jsx')
+  ),
   'lab-test-lead-magnets': lazy(() =>
     import('../components/admin/lab/LabTestLeadMagnets.jsx')
   ),
