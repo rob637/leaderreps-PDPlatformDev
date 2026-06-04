@@ -198,6 +198,9 @@ const ScreenMap = {
   'conversation-simulator': lazy(() =>
     import('../components/screens/ConversationSimulator.jsx')
   ),
+  'simulator-cost-dashboard': lazy(() =>
+    import('../components/admin/SimulatorCostDashboard.jsx')
+  ),
   'lab-test-lead-magnets': lazy(() =>
     import('../components/admin/lab/LabTestLeadMagnets.jsx')
   ),

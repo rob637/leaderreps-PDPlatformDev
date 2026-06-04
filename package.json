@@ -19,7 +19,6 @@
     "deploy:kudos:dev": "bash ./scripts/deploy-kudos.sh dev",
     "deploy:kudos:test": "bash ./scripts/deploy-kudos.sh test",
     "deploy:kudos:prod": "bash ./scripts/deploy-kudos.sh prod",
-    "deploy:simulator:dev": "bash ./scripts/deploy-conversation-simulator.sh dev",
     "deploy:prod": "bash ./scripts/deploy.sh prod",
     "ship": "bash ./scripts/ship.sh",
     "deploy": "echo '❌ Use deploy:dev, deploy:test, or deploy:prod instead' && exit 1",

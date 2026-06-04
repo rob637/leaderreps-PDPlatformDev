@@ -296,9 +296,9 @@ const LeaderRepsLab = () => {
               ephemeral Gemini Live token via Cloud Function.
             </p>
             <ul className="text-xs text-slate-500 dark:text-slate-400 list-disc pl-5 space-y-0.5">
-              <li>Phase 0 spike. Decides go/no-go on the full Simulator.</li>
-              <li>Kill criteria in-app: avg round-trip &gt; 1200ms or &gt; $0.50/min.</li>
-              <li>One scenario today; rubric scoring + share links in later phases.</li>
+              <li>Three personas (Jamie, Alex, Sam) — different rubrics per scenario.</li>
+              <li>Auto-stop: 6&nbsp;min hard cap + $0.50/min sustained for 60s.</li>
+              <li>Per-admin $20/day cap. Every session logged to Firestore + cost dashboard.</li>
             </ul>
             <div className="flex flex-wrap gap-2">
               <button
@@ -308,10 +308,16 @@ const LeaderRepsLab = () => {
                 Open simulator
                 <ArrowRight className="w-4 h-4" />
               </button>
+              <button
+                onClick={() => navigate('simulator-cost-dashboard')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-corporate-navy text-corporate-navy text-sm font-semibold hover:bg-slate-50 transition-colors w-fit"
+              >
+                Cost dashboard
+              </button>
             </div>
             <p className="text-xs text-slate-400">
               Tester must be on <code>metadata/config.adminemails</code>. Use a
-              laptop with a real mic; mobile not supported yet.
+              laptop with a real mic; mobile not officially supported yet.
             </p>
           </ToolCard>
 

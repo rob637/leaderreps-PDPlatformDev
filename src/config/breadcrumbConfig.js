@@ -434,6 +434,12 @@ export const BREADCRUMB_MAP = {
     { label: 'LeaderReps Lab', path: 'leaderreps-lab' },
     { label: 'Conversation Simulator', path: null }
   ],
+  'simulator-cost-dashboard': [
+    { label: 'Home', path: 'dashboard' },
+    { label: 'Admin', path: 'admin-hub' },
+    { label: 'LeaderReps Lab', path: 'leaderreps-lab' },
+    { label: 'Simulator Cost Dashboard', path: null }
+  ],
   'lab-nudges': [
     { label: 'Home', path: 'dashboard' },
     { label: 'Admin', path: 'admin-hub' },

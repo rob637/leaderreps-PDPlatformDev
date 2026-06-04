@@ -28543,6 +28543,17 @@ exports.aggregateContentMetricEvent = onDocumentCreated(
 // Mints a short-lived ephemeral token for the Gemini Live API so the browser
 // can connect directly without ever seeing the long-lived API key.
 // Admin-only. Token lifetime is ~10 minutes; session start window is ~1 minute.
+//
+// Cost containment:
+//   - Per-admin daily spend cap (DAILY_SPEND_CAP_USD). Refused once exceeded.
+//   - Per-admin daily session-count cap (DAILY_SESSION_CAP).
+//   - Each mint also writes a placeholder session doc at
+//     `users/{uid}/simulator-sessions/{sessionId}`. The client updates that
+//     same doc on open / close with duration, audio bytes, cost, transcript.
+//   - The cost dashboard reads via collectionGroup('simulator-sessions').
+const SIMULATOR_DAILY_SPEND_CAP_USD = 20;
+const SIMULATOR_DAILY_SESSION_CAP = 30;
+
 exports.mintSimulatorToken = onCall(
   {
     cors: true,
@@ -28559,9 +28570,43 @@ exports.mintSimulatorToken = onCall(
     const cfg = await db.doc("metadata/config").get();
     const adminEmails = cfg.exists ? (cfg.data().adminemails || []) : [];
     const callerEmail = (request.auth.token.email || "").toLowerCase();
+    const callerUid = request.auth.uid;
     const isAdmin = adminEmails.map((e) => String(e).toLowerCase()).includes(callerEmail);
     if (!isAdmin) {
       throw new HttpsError("permission-denied", "Admin access required");
+    }
+
+    // --- Daily spend cap (per admin) ---
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const todaySnap = await db
+      .collection("users")
+      .doc(callerUid)
+      .collection("simulator-sessions")
+      .where("createdAtMs", ">=", startOfDay.getTime())
+      .get();
+
+    let spentToday = 0;
+    let sessionsToday = 0;
+    todaySnap.forEach((doc) => {
+      sessionsToday += 1;
+      const c = Number(doc.data()?.costEst);
+      if (Number.isFinite(c)) spentToday += c;
+    });
+
+    if (sessionsToday >= SIMULATOR_DAILY_SESSION_CAP) {
+      logger.warn("mintSimulatorToken: session cap hit", { caller: callerEmail, sessionsToday });
+      throw new HttpsError(
+        "resource-exhausted",
+        `Daily session cap reached (${SIMULATOR_DAILY_SESSION_CAP}). Try again tomorrow.`,
+      );
+    }
+    if (spentToday >= SIMULATOR_DAILY_SPEND_CAP_USD) {
+      logger.warn("mintSimulatorToken: spend cap hit", { caller: callerEmail, spentToday });
+      throw new HttpsError(
+        "resource-exhausted",
+        `Daily spend cap reached ($${SIMULATOR_DAILY_SPEND_CAP_USD.toFixed(2)}). Try again tomorrow.`,
+      );
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
@@ -28586,12 +28631,48 @@ exports.mintSimulatorToken = onCall(
       },
     });
 
-    logger.info("mintSimulatorToken: issued", { caller: callerEmail });
+    // Pre-create the session doc so the cost dashboard sees the attempt
+    // even if the client crashes before onOpen fires.
+    const scenarioId = (request.data && typeof request.data.scenarioId === "string")
+      ? request.data.scenarioId
+      : null;
+    const sessionRef = db
+      .collection("users")
+      .doc(callerUid)
+      .collection("simulator-sessions")
+      .doc();
+
+    await sessionRef.set({
+      sessionId: sessionRef.id,
+      uid: callerUid,
+      callerEmail,
+      scenarioId,
+      status: "minted",
+      createdAtMs: now,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      tokenExpireMs: expireMs,
+      sessionStartByMs: newSessionMs,
+      costEst: 0,
+      audioInBytes: 0,
+      audioOutBytes: 0,
+      durationMs: 0,
+      killed: false,
+    });
+
+    logger.info("mintSimulatorToken: issued", {
+      caller: callerEmail,
+      sessionId: sessionRef.id,
+      sessionsToday: sessionsToday + 1,
+      spentTodayUsd: Number(spentToday.toFixed(4)),
+    });
 
     return {
       token: token.name,
       expiresAt: expireMs,
       sessionStartBy: newSessionMs,
+      sessionId: sessionRef.id,
+      spentTodayUsd: Number(spentToday.toFixed(4)),
+      dailyCapUsd: SIMULATOR_DAILY_SPEND_CAP_USD,
     };
   }
 );

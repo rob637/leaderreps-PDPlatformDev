@@ -92,6 +92,13 @@ service cloud.firestore {
       allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
       allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
+
+    // Conversation Simulator — collection-group queries so admins can see all
+    // sessions across users from the cost dashboard. Per-document rule above
+    // already permits the owner + admins to read/write the docs themselves.
+    match /{path=**}/simulator-sessions/{sessionId} {
+      allow read: if isAdmin();
+    }
     
     // Conditioning notifications - Trainers can write to any user's notifications
     // This allows trainers to push nudges into leader notification queues
