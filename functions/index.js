@@ -13420,7 +13420,7 @@ const buildManagerAuditEmail = (firstName, results, blueprintUrl = '') => {
             <h3 style="margin: 0; color: ${accent}; font-size: 18px; font-weight: 800; line-height: 1.3;">
               ${escapeHtml(cat.label)} &mdash; ${score.toFixed(1)}/5
             </h3>
-            <span style="display: inline-block; padding: 4px 12px; background: ${accent}1A; color: ${accent}; border-radius: 999px; font-weight: 900; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;">
+            &nbsp;&nbsp;<span style="display: inline-block; margin-left: 4px; padding: 4px 12px; background: ${accent}1A; color: ${accent}; border-radius: 999px; font-weight: 900; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;">
               ${subBand}
             </span>
           </div>
