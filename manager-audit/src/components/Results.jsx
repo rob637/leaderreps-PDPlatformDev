@@ -61,10 +61,10 @@ const EmailGate = ({ onSubmit, submitting, submitError, submitted }) => {
       </div>
 
       <p className="text-sm text-slate-700 leading-relaxed">
-        Enter your email to get a PDF of your results and the{' '}
-        <strong>Accountability System Blueprint</strong> &mdash; a one-page
-        reference showing what a fully functioning accountability system looks
-        like in practice.
+        Enter your email to get your full analysis and the{' '}
+        <strong>LeaderReps Accountability System Blueprint</strong> &mdash; a
+        one-page reference showing what a fully functioning accountability
+        system looks like in practice.
       </p>
 
       <p className="mt-3 text-sm text-slate-700 leading-relaxed">

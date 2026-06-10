@@ -13363,7 +13363,7 @@ const MANAGER_AUDIT_BAND_LABELS = {
 /**
  * Build the HTML email for Manager Accountability Audit results.
  */
-const buildManagerAuditEmail = (firstName, results) => {
+const buildManagerAuditEmail = (firstName, results, blueprintUrl = '') => {
   const escapeHtml = (str) => String(str || '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -13458,12 +13458,16 @@ const buildManagerAuditEmail = (firstName, results) => {
     </div>
   `;
 
-  // PDF download assets are not yet hosted — section omitted until they are
-  // available. When the Blueprint PDF and per-user results PDF are uploaded
-  // to hosting, re-enable a download section here.
-  const downloadSection = '';
+  // Download CTA renders only when a blueprint URL has been generated.
+  const downloadSection = blueprintUrl ? `
+    <div style="background: #FFFFFF; padding: 26px 28px; border-radius: 12px; margin-top: 20px; text-align: center;">
+      <a href="${blueprintUrl}" style="display: inline-block; margin: 6px 6px; padding: 12px 22px; background: #FFFFFF; color: #002E47; text-decoration: none; border: 2px solid #002E47; border-radius: 10px; font-size: 13px; font-weight: 700;">
+        Download the LeaderReps Accountability System Blueprint
+      </a>
+    </div>
+  ` : '';
 
-  const greeting = firstName ? `Hi ${escapeHtml(firstName)},` : 'Hi there,';
+  const greeting = firstName ? `Hi ${escapeHtml(firstName)},` : '';
 
   return `<!DOCTYPE html>
 <html>
@@ -13480,9 +13484,7 @@ const buildManagerAuditEmail = (firstName, results) => {
     </div>
 
     <div style="padding: 12px 28px 0 28px;">
-      <p style="margin: 0 0 16px 0; color: #475569; font-size: 14px;">
-        ${greeting}
-      </p>
+      ${greeting ? `<p style="margin: 0 0 16px 0; color: #475569; font-size: 14px;">${greeting}</p>` : ''}
       <h1 style="margin: 0 0 4px 0; color: #002E47; font-size: 26px; font-weight: 800; line-height: 1.25;">
         Your Manager Accountability Summary
       </h1>
@@ -13495,7 +13497,7 @@ const buildManagerAuditEmail = (firstName, results) => {
         <div style="margin-bottom: 14px;">
           <span style="color: #002E47; font-size: 36px; font-weight: 800; line-height: 1;">${overall}</span>
           <span style="color: #94a3b8; font-size: 18px; font-weight: 700;"> / 5</span>
-          <span style="display: inline-block; margin-left: 10px; padding: 6px 14px; background: ${bandColors.bg}; color: ${bandColors.text}; border-radius: 999px; font-weight: 900; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; vertical-align: middle;">
+          &nbsp;&nbsp;<span style="display: inline-block; margin-left: 6px; padding: 6px 14px; background: ${bandColors.bg}; color: ${bandColors.text}; border-radius: 999px; font-weight: 900; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; vertical-align: middle;">
             ${escapeHtml(bandLabel)}
           </span>
         </div>
@@ -13597,7 +13599,22 @@ exports.analyzeManagerAudit = onRequest(
           auth: { user: emailUser, pass: emailPass },
         });
 
-        const htmlEmail = buildManagerAuditEmail(firstName, results);
+        // Generate + upload the Accountability System Blueprint PDF so the
+        // email CTA links to a real downloadable asset.
+        let blueprintUrl = '';
+        try {
+          const blueprintBuffer = await generateBlueprintPdf();
+          const safeEmail = email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+          blueprintUrl = await uploadPdfAndGetUrl(
+            blueprintBuffer,
+            `manager-audit-pdfs/${safeEmail}/${Date.now()}-blueprint.pdf`,
+          );
+        } catch (pdfErr) {
+          logger.error(`Blueprint PDF generation failed for ${email}:`, pdfErr.message);
+          // Non-fatal — email still sends without the download CTA.
+        }
+
+        const htmlEmail = buildManagerAuditEmail(firstName, results, blueprintUrl);
 
         await transporter.sendMail({
           from: `"LeaderReps" <arena@leaderreps.com>`,

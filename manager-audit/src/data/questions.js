@@ -61,52 +61,52 @@ export const ASSESSMENT_QUESTIONS = [
   {
     id: 'ce-1',
     category: 'clear-expectations',
-    prompt:
-      'Managers define what "done" looks like before work begins, not after it comes back wrong.',
+    prompt: 'Managers define what "done" looks like before work begins.',
   },
   {
     id: 'ce-2',
     category: 'clear-expectations',
-    prompt: 'Managers confirm ownership is clear before a project starts.',
+    prompt:
+      'When giving their direct a task, managers explicitly and clearly hand off ownership.',
   },
   // Following Up on the Work
   {
     id: 'fu-1',
     category: 'follow-up',
     prompt:
-      'Managers follow up on the work itself ("Where are you on…"), not just on whether people feel good about it ("How\u2019s the project going?").',
+      'Managers follow up on their direct\u2019s work while it is still in progress.',
   },
   {
     id: 'fu-2',
     category: 'follow-up',
     prompt:
-      'When something goes wrong, my managers coach the person through it instead of taking the work back.',
+      'When their direct is struggling with a task, managers coach them through it instead of taking the work back.',
   },
   // Delivering Reinforcing Feedback
   {
     id: 'rp-1',
     category: 'reinforcing-feedback',
     prompt:
-      'Managers name specific behaviors and the impact when they recognize strong performance — they don\u2019t just say "great job."',
+      'When recognizing strong performance, managers name specific behaviors instead of just saying "great job!"',
   },
   {
     id: 'rp-2',
     category: 'reinforcing-feedback',
     prompt:
-      'When someone on the team does something worth repeating, their manager tells them exactly what it was and why it mattered.',
+      'When their direct does something worth repeating, managers tell them why it mattered.',
   },
   // Delivering Redirecting Feedback
   {
     id: 'rd-1',
     category: 'redirecting-feedback',
     prompt:
-      'My managers address behavior gaps when they notice them, not after they\u2019ve let them go too long.',
+      'Managers address gaps when they notice them, not after they\u2019ve let them go too long.',
   },
   {
     id: 'rd-2',
     category: 'redirecting-feedback',
     prompt:
-      'Managers close the loop by following up after a redirecting feedback conversation to confirm the behavior actually changed.',
+      'After giving feedback, managers follow up to confirm that change happened.',
   },
   // Gut check (unscored, Agree / Disagree)
   {
